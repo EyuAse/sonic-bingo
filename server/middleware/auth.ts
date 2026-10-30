@@ -9,7 +9,7 @@ export interface AuthUser {
   telegramUsername?: string;
   phone?: string;
   fullName: string;
-  role: 'player' | 'cashier' | 'admin';
+  role: 'player' | 'cashier' | 'admin' | 'agent';
 }
 
 export interface AuthenticatedRequest extends Request {
@@ -42,6 +42,18 @@ export function requireAdmin(req: AuthenticatedRequest, res: Response, next: Nex
   requireAuth(req, res, () => {
     if (req.user?.role !== 'admin' && req.user?.role !== 'cashier') {
       return res.status(403).json({ success: false, error: 'Access denied: Admin/Cashier privilege required.' });
+    }
+    next();
+  });
+}
+
+/**
+ * Require Agent or Admin Role
+ */
+export function requireAgent(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  requireAuth(req, res, () => {
+    if (req.user?.role !== 'agent' && req.user?.role !== 'admin') {
+      return res.status(403).json({ success: false, error: 'Access denied: Agent portal privilege required.' });
     }
     next();
   });

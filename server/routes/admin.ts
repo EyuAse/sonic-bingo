@@ -1169,5 +1169,285 @@ router.post('/coins/adjust', requireAdmin, async (req: AuthenticatedRequest, res
   }
 });
 
+/**
+ * Agents Desk: List All Registered Agents
+ */
+router.get('/agents', requireAdmin, async (_req, res) => {
+  try {
+    const agentsRes = await query(`
+      SELECT 
+        ap.*,
+        u.full_name,
+        u.phone,
+        u.created_at as user_created_at,
+        COALESCE((SELECT COUNT(*) FROM users WHERE agent_id = ap.id), 0) as total_players,
+        COALESCE((SELECT COUNT(*) FROM users WHERE agent_id = ap.id AND has_deposited = true), 0) as active_players,
+        COALESCE((SELECT SUM(amount) FROM agent_player_deposits WHERE agent_id = ap.id), 0) as total_volume_deposited
+      FROM agent_profiles ap
+      JOIN users u ON ap.user_id = u.id
+      ORDER BY ap.created_at DESC
+    `);
+
+    return res.json({
+      success: true,
+      agents: agentsRes.rows.map(row => ({
+        ...row,
+        wallet_balance: parseFloat(row.wallet_balance || '0'),
+        initial_deposit: parseFloat(row.initial_deposit || '10000'),
+        low_balance_threshold: parseFloat(row.low_balance_threshold || '1000'),
+        target_monthly: parseFloat(row.target_monthly || '50000'),
+        commission_rate: parseFloat(row.commission_rate || '5'),
+        total_players: parseInt(row.total_players || '0', 10),
+        active_players: parseInt(row.active_players || '0', 10),
+        total_volume_deposited: parseFloat(row.total_volume_deposited || '0'),
+        refLink: `https://t.me/SonicGameOfficialBot?start=agent_${row.agent_code}`
+      }))
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin GET Agents Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve agents list' });
+  }
+});
+
+/**
+ * Agents Desk: Create / Register New Agent
+ */
+router.post('/agents/create', requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { fullName, phone, initialDeposit, targetMonthly, commissionRate, customCode } = req.body;
+
+    if (!fullName || !phone) {
+      return res.status(400).json({ success: false, error: 'Full name and phone number are required' });
+    }
+
+    const cleanPhone = phone.trim();
+    const cleanName = fullName.trim();
+    const initDeposit = typeof initialDeposit === 'number' && initialDeposit >= 1000 ? initialDeposit : 10000.00;
+    const target = typeof targetMonthly === 'number' && targetMonthly > 0 ? targetMonthly : 50000.00;
+    const commission = typeof commissionRate === 'number' && commissionRate > 0 ? commissionRate : 5.00;
+
+    const agentCode = customCode
+      ? customCode.trim().toUpperCase()
+      : `AGT-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const result = await withTransaction(async (client) => {
+      // 1. Check or create user
+      let userId: string;
+      const userCheck = await client.query('SELECT id FROM users WHERE phone = $1', [cleanPhone]);
+
+      if (userCheck.rows.length > 0) {
+        userId = userCheck.rows[0].id;
+        await client.query("UPDATE users SET role = 'agent', full_name = $1 WHERE id = $2", [cleanName, userId]);
+      } else {
+        const newUserRes = await client.query(
+          "INSERT INTO users (phone, full_name, role) VALUES ($1, $2, 'agent') RETURNING id",
+          [cleanPhone, cleanName]
+        );
+        userId = newUserRes.rows[0].id;
+        // Seed player wallet with welcome bonus
+        await client.query("INSERT INTO wallets (user_id, balance, bonus) VALUES ($1, 0.00, 20.00)", [userId]);
+      }
+
+      // 2. Check if agent profile already exists
+      const profileCheck = await client.query('SELECT id FROM agent_profiles WHERE user_id = $1', [userId]);
+      if (profileCheck.rows.length > 0) {
+        throw new Error('This user is already registered as an agent.');
+      }
+
+      // 3. Create agent profile
+      const apRes = await client.query(
+        `INSERT INTO agent_profiles (user_id, agent_code, status, wallet_balance, initial_deposit, low_balance_threshold, target_monthly, commission_rate)
+         VALUES ($1, $2, 'active', $3, $3, 1000.00, $4, $5)
+         RETURNING *`,
+        [userId, agentCode, initDeposit, target, commission]
+      );
+
+      return {
+        userId,
+        profile: apRes.rows[0]
+      };
+    });
+
+    return res.json({
+      success: true,
+      message: `Agent registered successfully with code ${result.profile.agent_code}`,
+      agent: {
+        ...result.profile,
+        refLink: `https://t.me/SonicGameOfficialBot?start=agent_${result.profile.agent_code}`
+      }
+    });
+  } catch (error: any) {
+    if (error.code === '23505') {
+      return res.status(409).json({ success: false, error: 'Agent code or phone already exists.' });
+    }
+    console.error('❌ [Admin Create Agent Error]:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Failed to create agent' });
+  }
+});
+
+/**
+ * Agents Desk: Update Agent Status (active / suspended)
+ */
+router.post('/agents/:id/status', requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!['active', 'suspended', 'pending'].includes(status)) {
+      return res.status(400).json({ success: false, error: 'Invalid status value' });
+    }
+
+    const updateRes = await query(
+      'UPDATE agent_profiles SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      [status, id]
+    );
+
+    if (updateRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent not found' });
+    }
+
+    return res.json({
+      success: true,
+      message: `Agent status updated to ${status}`,
+      agent: updateRes.rows[0]
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Agent Status Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to update agent status' });
+  }
+});
+
+/**
+ * Agents Desk: Get Agent Recharge Requests
+ */
+router.get('/agents/recharges', requireAdmin, async (req, res) => {
+  try {
+    const status = req.query.status as string;
+    const whereClause = status ? 'WHERE arr.status = $1' : '';
+    const params = status ? [status] : [];
+
+    const rechargesRes = await query(
+      `SELECT arr.*, ap.agent_code, u.full_name as agent_name, u.phone as agent_phone, ap.wallet_balance as current_agent_balance
+       FROM agent_recharge_requests arr
+       JOIN agent_profiles ap ON arr.agent_id = ap.id
+       JOIN users u ON ap.user_id = u.id
+       ${whereClause}
+       ORDER BY arr.created_at DESC
+       LIMIT 100`,
+      params
+    );
+
+    return res.json({
+      success: true,
+      recharges: rechargesRes.rows
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Agent Recharges GET Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve agent recharge requests' });
+  }
+});
+
+/**
+ * Agents Desk: Approve Agent Recharge Request
+ */
+router.post('/agents/recharges/:id/approve', requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const adminId = req.user!.id;
+
+    const result = await withTransaction(async (client) => {
+      const reqRes = await client.query(
+        'SELECT * FROM agent_recharge_requests WHERE id = $1 FOR UPDATE',
+        [id]
+      );
+
+      if (reqRes.rows.length === 0) {
+        throw new Error('Recharge request not found');
+      }
+
+      const recharge = reqRes.rows[0];
+      if (recharge.status !== 'pending') {
+        throw new Error(`Request is already ${recharge.status}`);
+      }
+
+      const amount = parseFloat(recharge.amount);
+
+      // 1. Mark recharge approved
+      await client.query(
+        `UPDATE agent_recharge_requests 
+         SET status = 'approved', reviewed_by = $1, reviewed_at = NOW() 
+         WHERE id = $2`,
+        [adminId, id]
+      );
+
+      // 2. Credit agent wallet
+      const agentRes = await client.query(
+        `UPDATE agent_profiles 
+         SET wallet_balance = wallet_balance + $1, 
+             low_balance_alert_sent = FALSE,
+             updated_at = NOW() 
+         WHERE id = $2 
+         RETURNING wallet_balance, agent_code`,
+        [amount, recharge.agent_id]
+      );
+
+      return {
+        agentId: recharge.agent_id,
+        amount,
+        newBalance: parseFloat(agentRes.rows[0]?.wallet_balance || '0'),
+        agentCode: agentRes.rows[0]?.agent_code
+      };
+    });
+
+    // Notify agent via WebSocket
+    io.emit(`agent_${result.agentId}_balance`, {
+      type: 'recharge_approved',
+      amount: result.amount,
+      newBalance: result.newBalance
+    });
+
+    return res.json({
+      success: true,
+      message: `Recharge of ${result.amount.toFixed(2)} ETB approved for agent ${result.agentCode}`,
+      newAgentBalance: result.newBalance
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Approve Recharge Error]:', error);
+    return res.status(400).json({ success: false, error: error.message || 'Failed to approve recharge request' });
+  }
+});
+
+/**
+ * Agents Desk: Reject Agent Recharge Request
+ */
+router.post('/agents/recharges/:id/reject', requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const adminId = req.user!.id;
+    const { adminNotes } = req.body;
+
+    const result = await query(
+      `UPDATE agent_recharge_requests 
+       SET status = 'rejected', reviewed_by = $1, reviewed_at = NOW(), admin_notes = $2 
+       WHERE id = $3 AND status = 'pending' 
+       RETURNING *`,
+      [adminId, adminNotes || 'Rejected by admin', id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Pending recharge request not found' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Recharge request rejected',
+      recharge: result.rows[0]
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Reject Recharge Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to reject recharge request' });
+  }
+});
+
 export default router;
 
