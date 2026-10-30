@@ -4,6 +4,7 @@ import { requireAdmin, AuthenticatedRequest } from '../middleware/auth.ts';
 import { io } from '../io.ts';
 import { gameEngine } from '../game/BingoGameEngine.ts';
 import { exportDatabaseBackup } from '../scripts/backup_database.ts';
+import { coinService } from '../services/coinService.ts';
 
 const router = Router();
 
@@ -386,6 +387,13 @@ router.post('/deposits/:id/approve', requireAdmin, async (req: AuthenticatedRequ
           `Deposit approved via ${deposit.payment_method} (${deposit.transaction_ref})`
         ]
       );
+
+      // 4b. Coin Earning Engine: 1.5x Coins per Eligible Deposit ETB (50 ETB -> 75 coins)
+      try {
+        await coinService.awardCoinsForDeposit(deposit.user_id, amount, deposit.transaction_ref, client);
+      } catch (coinErr) {
+        console.error('⚠️ [Admin Approve Deposit] Failed to award coins:', coinErr);
+      }
 
       // 5. One-Time 10% Referral Bonus (Friend's 1st Approved Deposit)
       let referralBonusPaid = false;
@@ -1084,6 +1092,80 @@ router.post('/jackpots/adjust', requireAdmin, async (req: AuthenticatedRequest, 
   } catch (error: any) {
     console.error('❌ [Admin Jackpots Adjust Error]:', error);
     return res.status(500).json({ success: false, error: 'Failed to adjust jackpot pool' });
+  }
+});
+
+/**
+ * Coins & Rewards Desk: View circulation, top coin holders & recent coin transactions
+ */
+router.get('/coins', requireAdmin, async (_req, res) => {
+  try {
+    const [statsRes, topUsersRes, recentTxRes] = await Promise.all([
+      query(`
+        SELECT 
+          COALESCE(SUM(balance), 0) as total_circulation,
+          COALESCE(SUM(lifetime_earned), 0) as total_earned,
+          COALESCE(SUM(lifetime_redeemed), 0) as total_redeemed,
+          COUNT(*) as total_holders
+        FROM coin_wallets
+      `),
+      query(`
+        SELECT cw.*, u.full_name as user_name, u.phone as user_phone
+        FROM coin_wallets cw
+        JOIN users u ON cw.user_id = u.id
+        ORDER BY cw.balance DESC
+        LIMIT 25
+      `),
+      query(`
+        SELECT ct.*, u.full_name as user_name, u.phone as user_phone
+        FROM coin_transactions ct
+        JOIN users u ON ct.user_id = u.id
+        ORDER BY ct.created_at DESC
+        LIMIT 50
+      `)
+    ]);
+
+    const s = statsRes.rows[0] || {};
+    return res.json({
+      success: true,
+      stats: {
+        totalCirculation: parseInt(s.total_circulation || '0', 10),
+        totalEarned: parseInt(s.total_earned || '0', 10),
+        totalRedeemed: parseInt(s.total_redeemed || '0', 10),
+        totalHolders: parseInt(s.total_holders || '0', 10),
+        earningRate: '1.5 coins per 1 ETB deposit',
+        redemptionRate: '1,000 coins = 10 ETB bonus'
+      },
+      topHolders: topUsersRes.rows,
+      recentTransactions: recentTxRes.rows
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Coins GET Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve coin statistics' });
+  }
+});
+
+/**
+ * Coins & Rewards Desk: Admin Manual Coin Credit/Debit
+ */
+router.post('/coins/adjust', requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { userId, amount, reason } = req.body;
+    if (!userId || typeof amount !== 'number' || amount === 0) {
+      return res.status(400).json({ success: false, error: 'Valid userId and non-zero amount are required' });
+    }
+
+    const desc = reason || `Admin manual adjustment of ${amount > 0 ? '+' : ''}${amount} coins`;
+    const result = await coinService.adminAdjustCoins(userId, amount, desc);
+
+    return res.json({
+      success: true,
+      message: `Coins adjusted successfully for user ${userId}`,
+      newBalance: result.newBalance
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Coins Adjust Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to adjust coins' });
   }
 });
 

@@ -3145,7 +3145,6 @@ class BingoGameEngine {
       }
 
       // 2. Process Bot Victory: Real Ledger Credit in Neon DB
-      const isRoom10 = room.id === 'room-10' || room.id === ARENA_ROOM_ID || room.id === 'default';
       if (botWinners.length > 0 && realWinners.length === 0) {
         try {
           if (isRoom10) {

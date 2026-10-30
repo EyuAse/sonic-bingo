@@ -4,6 +4,7 @@ import { requireAuth, AuthenticatedRequest } from '../middleware/auth.ts';
 import { io } from '../io.ts';
 import { gameEngine } from '../game/BingoGameEngine.ts';
 import { generateCardFromId } from '../game/cartelaGenerator.ts';
+import { coinService } from '../services/coinService.ts';
 
 const router = Router();
 
@@ -13,22 +14,25 @@ const router = Router();
 router.get('/balance', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user!.id;
-    const walletRes = await query(
-      'SELECT balance, bonus, locked_balance, currency FROM wallets WHERE user_id = $1',
-      [userId]
-    );
+    const [walletRes, coinRes] = await Promise.all([
+      query('SELECT balance, bonus, locked_balance, currency FROM wallets WHERE user_id = $1', [userId]),
+      query('SELECT balance, lifetime_earned, lifetime_redeemed FROM coin_wallets WHERE user_id = $1', [userId])
+    ]);
 
     if (walletRes.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Wallet not found' });
     }
 
     const w = walletRes.rows[0];
+    const cw = coinRes.rows[0];
     return res.json({
       success: true,
       balance: parseFloat(w.balance || '0'),
       bonus: parseFloat(w.bonus || '0'),
       lockedBalance: parseFloat(w.locked_balance || '0'),
-      currency: w.currency || 'ETB'
+      currency: w.currency || 'ETB',
+      coins: cw ? parseInt(cw.balance || '0', 10) : 0,
+      coinsLifetimeEarned: cw ? parseInt(cw.lifetime_earned || '0', 10) : 0
     });
   } catch (error: any) {
     console.error('❌ [Wallet Balance Error]:', error);
@@ -715,6 +719,59 @@ router.get('/game-history', requireAuth, async (req: AuthenticatedRequest, res) 
   } catch (error: any) {
     console.error('❌ [Wallet Game History Error]:', error);
     return res.status(500).json({ success: false, error: 'Failed to retrieve game history' });
+  }
+});
+
+/**
+ * GET /api/wallet/coins
+ * Retrieve Player's Current Coin Balance & Coin Transaction Ledger
+ */
+router.get('/coins', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const summary = await coinService.getUserCoins(userId);
+    return res.json({
+      success: true,
+      coins: summary.balance,
+      lifetimeEarned: summary.lifetimeEarned,
+      lifetimeRedeemed: summary.lifetimeRedeemed,
+      transactions: summary.transactions,
+      rate: {
+        earning: '1.5 coins per 1 ETB deposit',
+        redemption: '1,000 coins = 10 ETB bonus'
+      }
+    });
+  } catch (error: any) {
+    console.error('❌ [Wallet Coins Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve coin details' });
+  }
+});
+
+/**
+ * POST /api/wallet/redeem-coins
+ * Exchange 1,000 Coins for 10.00 ETB Game Play Bonus
+ */
+router.post('/redeem-coins', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const coins = typeof req.body.coins === 'number' ? req.body.coins : 1000;
+
+    const result = await coinService.redeemCoinsForBonus(userId, coins);
+    if (!result.success) {
+      return res.status(400).json({ success: false, error: result.error });
+    }
+
+    return res.json({
+      success: true,
+      message: `Successfully redeemed ${result.coinsRedeemed} coins for ${result.bonusAwarded} ETB bonus!`,
+      coinsRedeemed: result.coinsRedeemed,
+      bonusAwarded: result.bonusAwarded,
+      newCoinBalance: result.newCoinBalance,
+      newBonusBalance: result.newBonusBalance
+    });
+  } catch (error: any) {
+    console.error('❌ [Wallet Redeem Coins Error]:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Failed to redeem coins' });
   }
 });
 
