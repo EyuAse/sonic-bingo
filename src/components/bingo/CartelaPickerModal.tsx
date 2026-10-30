@@ -8,7 +8,9 @@ const CARD_RANGES = [
   { label: '101 - 200', min: 101, max: 200 },
   { label: '201 - 300', min: 201, max: 300 },
   { label: '301 - 400', min: 301, max: 400 },
-  { label: 'All 400', min: 1, max: 400 }
+  { label: '401 - 500', min: 401, max: 500 },
+  { label: '501 - 600', min: 501, max: 600 },
+  { label: 'All 600', min: 1, max: 600 }
 ];
 
 export const CartelaPickerModal: React.FC = () => {
@@ -46,8 +48,8 @@ export const CartelaPickerModal: React.FC = () => {
 
   if (!isCartelaPickerOpen) return null;
 
-  // Filter 1 to 400 numbers by range and search
-  const visibleNumbers = Array.from({ length: 400 }, (_, i) => i + 1).filter(num => {
+  // Filter 1 to 600 numbers by range and search
+  const visibleNumbers = Array.from({ length: 600 }, (_, i) => i + 1).filter(num => {
     if (searchTerm) {
       return String(num).includes(searchTerm);
     }
@@ -95,7 +97,7 @@ export const CartelaPickerModal: React.FC = () => {
           <div className="afro-active-chips">
             {activeSelected.map((id, idx) => (
               <span key={id} className="afro-chip-pill">
-                #{id} {idx === 0 ? '(Card 1)' : '(Card 2)'}
+                #{id} {idx === 0 ? '(Card 1)' : idx === 1 ? '(Card 2)' : idx === 2 ? '(Card 3)' : '(Card 4)'}
               </span>
             ))}
           </div>
@@ -126,7 +128,7 @@ export const CartelaPickerModal: React.FC = () => {
             <input
               type="number"
               min="1"
-              max="400"
+              max="600"
               placeholder="Search #..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}

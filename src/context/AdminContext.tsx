@@ -80,6 +80,7 @@ interface AdminContextType {
   brandName: string;
   setBrandName: (name: string) => void;
   isAuthenticated: boolean;
+  adminToken: string;
   loginAdmin: (pin: string) => boolean;
   logoutAdmin: () => void;
   adminPin: string;
@@ -773,6 +774,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         brandName,
         setBrandName,
         isAuthenticated,
+        adminToken: (typeof window !== 'undefined' ? localStorage.getItem('sonic_admin_token') : null) || '1234',
         loginAdmin,
         logoutAdmin,
         adminPin,

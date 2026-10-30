@@ -13,6 +13,10 @@ import { BotAccountsDesk } from '../components/admin/BotAccountsDesk.tsx';
 import { CartelasDesk } from '../components/admin/CartelasDesk.tsx';
 import { TelegramBotDesk } from '../components/admin/TelegramBotDesk.tsx';
 import { BotEngineControllerDesk } from '../components/admin/BotEngineControllerDesk.tsx';
+import { AgentsDesk } from '../components/admin/AgentsDesk.tsx';
+import { AgentRechargesDesk } from '../components/admin/AgentRechargesDesk.tsx';
+import { JackpotDesk } from '../components/admin/JackpotDesk.tsx';
+import { CoinsRewardsDesk } from '../components/admin/CoinsRewardsDesk.tsx';
 import '../styles/admin.css';
 
 export const AdminPage: React.FC = () => {
@@ -59,6 +63,10 @@ export const AdminPage: React.FC = () => {
                 {activeTab === 'bot-engine' && 'Room 10 Dynamic Bot Engine (0-50 Control Desk)'}
                 {activeTab === 'cartelas' && '600 Serial Cartela Cards Library'}
                 {activeTab === 'telegram-bot' && 'Telegram Bot & Ads Broadcast Center'}
+                {activeTab === 'agents' && 'Decentralized Agents Network & Wallets'}
+                {activeTab === 'agent-recharges' && 'Agent Float Recharge Requests'}
+                {activeTab === 'jackpots' && 'Progressive Jackpot Pools & Settlement'}
+                {activeTab === 'coins' && 'Coins Loyalty & Rewards Engine (1.5x)'}
               </h2>
               <p className="viewport-page-amharic-sub">
                 {activeTab === 'cashier' && 'ተወራራጅ ክፍያዎችን ያጽድቁ እና ገንዘቦችን በቀጥታ ባንክ ይላኩ'}
@@ -69,6 +77,10 @@ export const AdminPage: React.FC = () => {
                 {activeTab === 'bot-engine' && 'የክፍል 10 ተለዋዋጭ ቦቶች ቁጥጥር ማዕከል - ከ 0 እስከ 50 ቦቶች በቀጥታ ያስተካክሉ'}
                 {activeTab === 'cartelas' && '600 የቢንጎ ካርቴላ ካርዶች ቤተ-መጽሐፍት'}
                 {activeTab === 'telegram-bot' && 'የቴሌግራም ቦት ማስተዋወቂያ፣ የቻናል ልጥፎች እና የተጠቃሚዎች ማስታወቂያ ማዕከል'}
+                {activeTab === 'agents' && 'የወኪሎች መረብ፣ የዋሌት ቀሪ ሂሳብ፣ የኮሚሽን እና የደንበኞች ተቀማጭ መዝገብ'}
+                {activeTab === 'agent-recharges' && 'የወኪሎች የዋሌት መሙያ ጥያቄዎችን ይገምግሙ እና ያጽድቁ'}
+                {activeTab === 'jackpots' && 'የ 4ቱ ክፍሎች ፕሮግረሲቭ ጃክፖት ሳጥን፣ የ 10% ድልድል እና የ 18 ኳስ አሸናፊዎች'}
+                {activeTab === 'coins' && 'የተጠቃሚዎች የኮይን ነጥቦች (1.5x)፣ የመቀየሪያ ህጎች እና የቦነስ ልውውጥ'}
               </p>
             </div>
           </div>
@@ -128,7 +140,11 @@ export const AdminPage: React.FC = () => {
             { id: 'users', label: '👥 Players' },
             { id: 'bots', label: '🤖 200 Bots' },
             { id: 'telegram-bot', label: '📢 Telegram Bot' },
-            { id: 'cartelas', label: '🗂️ 600 Cards' }
+            { id: 'cartelas', label: '🗂️ 600 Cards' },
+            { id: 'agents', label: '🤝 Agents' },
+            { id: 'agent-recharges', label: '⚡ Recharges' },
+            { id: 'jackpots', label: '🎰 Jackpots' },
+            { id: 'coins', label: '🪙 Coins' }
           ].map(t => (
             <button
               key={t.id}
@@ -191,11 +207,23 @@ export const AdminPage: React.FC = () => {
           {/* TAB 5b: ROOM 10 DYNAMIC BOT ENGINE (0-50) */}
           {activeTab === 'bot-engine' && <BotEngineControllerDesk />}
 
-          {/* TAB 6: 400 SERIAL CARTELA CARDS LIBRARY */}
+          {/* TAB 6: 600 SERIAL CARTELA CARDS LIBRARY */}
           {activeTab === 'cartelas' && <CartelasDesk />}
 
           {/* TAB 7: TELEGRAM BOT & ADS BROADCAST CENTER */}
           {activeTab === 'telegram-bot' && <TelegramBotDesk />}
+
+          {/* TAB 8: AGENTS DIRECTORY */}
+          {activeTab === 'agents' && <AgentsDesk />}
+
+          {/* TAB 9: AGENT RECHARGES */}
+          {activeTab === 'agent-recharges' && <AgentRechargesDesk />}
+
+          {/* TAB 10: PROGRESSIVE JACKPOTS */}
+          {activeTab === 'jackpots' && <JackpotDesk />}
+
+          {/* TAB 11: COINS & REWARDS */}
+          {activeTab === 'coins' && <CoinsRewardsDesk />}
         </main>
 
         {/* 3. Mobile App-Style Bottom Navigation Bar (< 768px) */}

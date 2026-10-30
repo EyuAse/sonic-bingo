@@ -82,7 +82,7 @@ export const BettingBar: React.FC = () => {
             <i className={waitingForPlayers ? 'fa-solid fa-hourglass-half waiting-pulse-icon' : 'fa-solid fa-circle-check'}></i>
             <div className="lobby-placed-text-group">
               <span className="lobby-placed-text">
-                BET PLACED · {cardQuantity === 1 ? '1 CARD' : '2 CARDS'} ({totalCost} ETB)
+                BET PLACED · {cardQuantity === 1 ? '1 CARD' : `${cardQuantity} CARDS`} ({totalCost} ETB)
               </span>
               <span className="lobby-matchmaking-hint">
                 {waitingForPlayers
@@ -136,8 +136,8 @@ export const BettingBar: React.FC = () => {
           {/* ── Responsive 2-Row Lobby Buy Bar (Controls Row + Full-Width CTA) ── */}
           <div className="compact-lobby-buy-bar">
             <div className="compact-lobby-controls-row">
-              {/* 1. Stepper for 1 or 2 cartelas */}
-              <div className="compact-lobby-stepper" title="Choose 1 or 2 cartelas">
+              {/* 1. Stepper for 1 to 4 cartelas */}
+              <div className="compact-lobby-stepper" title="Choose 1 to 4 cartelas">
                 <button
                   type="button"
                   className="btn-stepper-mini"
@@ -151,7 +151,7 @@ export const BettingBar: React.FC = () => {
                   type="button"
                   className="btn-stepper-mini"
                   onClick={() => setCardQuantity(cardQuantity + 1)}
-                  disabled={cardQuantity >= 2 || hasTicket}
+                  disabled={cardQuantity >= 4 || hasTicket}
                 >
                   +
                 </button>
@@ -162,7 +162,7 @@ export const BettingBar: React.FC = () => {
                 type="button"
                 className="btn-compact-pick-cards"
                 onClick={openCartelaPicker}
-                title="Pick your cartela numbers (from 400 cards)"
+                title="Pick your cartela numbers (from 600 cards)"
               >
                 <i className="fa-solid fa-hand-pointer"></i>
                 <span>

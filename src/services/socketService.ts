@@ -423,6 +423,14 @@ class SocketService {
     return this.subscribeEvent('round_winner', callback);
   }
 
+  public onJackpotUpdate(callback: (data: any) => void): () => void {
+    return this.subscribeEvent('jackpot_update', callback);
+  }
+
+  public onJackpotWon(callback: (data: any) => void): () => void {
+    return this.subscribeEvent('jackpot_won', callback);
+  }
+
   public onUserBalanceUpdate(userId: string, callback: (data: any) => void): () => void {
     const eventName = `user_${userId}_balance`;
     return this.subscribeEvent(eventName, callback);

@@ -65,7 +65,7 @@ export const AdminBottomNav: React.FC<AdminBottomNavProps> = ({
     },
     {
       id: 'cartelas',
-      label: '400 Cards',
+      label: '600 Cards',
       amharicLabel: 'ካርቴላዎች',
       iconClass: 'fa-solid fa-layer-group'
     },
@@ -74,6 +74,30 @@ export const AdminBottomNav: React.FC<AdminBottomNavProps> = ({
       label: 'Telegram Bot',
       amharicLabel: 'ቴሌግራም',
       iconClass: 'fa-brands fa-telegram'
+    },
+    {
+      id: 'agents',
+      label: 'Agents',
+      amharicLabel: 'ወኪሎች',
+      iconClass: 'fa-solid fa-handshake'
+    },
+    {
+      id: 'agent-recharges',
+      label: 'Recharges',
+      amharicLabel: 'መሙያ',
+      iconClass: 'fa-solid fa-bolt'
+    },
+    {
+      id: 'jackpots',
+      label: 'Jackpots',
+      amharicLabel: 'ጃክፖት',
+      iconClass: 'fa-solid fa-trophy'
+    },
+    {
+      id: 'coins',
+      label: 'Coins',
+      amharicLabel: 'ኮይኖች',
+      iconClass: 'fa-solid fa-coins'
     }
   ];
 

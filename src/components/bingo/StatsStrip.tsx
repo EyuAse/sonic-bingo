@@ -7,6 +7,7 @@ export const StatsStrip: React.FC = () => {
   const {
     betAmount,
     setBetAmount,
+    jackpotPool,
     prizePool,
     totalPot,
     playersCount,
@@ -32,14 +33,12 @@ export const StatsStrip: React.FC = () => {
     ? Math.max(currentPlayers, cardQuantity || 1)
     : currentPlayers;
 
-  // Dynamic Real-Flow Derash Calculation:
-  // Computes the expected pot from confirmed ticketed cartelas across any stake room (10, 20, 50, 100 ETB)
+  // Dynamic Real-Flow Derash Calculation (70% Winner Payout):
+  // 70% winner payout, 10% progressive jackpot contribution, 20% house fee
   const expectedPot = effectivePlayerCount * betAmount;
-  const calculatedPrize = betAmount === 10
-    ? Math.floor(expectedPot * 0.8)
-    : (effectivePlayerCount <= 5 ? expectedPot : Math.floor(expectedPot * 0.8));
+  const calculatedPrize = Math.floor(expectedPot * 0.70);
 
-  // Derash strictly displays the net prize pool after platform commission (e.g. 408 ETB on 510 ETB pot)
+  // Derash strictly displays the net prize pool (70% share)
   const currentPrize = prizePool > 0 ? prizePool : calculatedPrize;
 
   const prizeDisplay = isSpectatingHouse && roundPhase === 'playing'
@@ -84,10 +83,20 @@ export const StatsStrip: React.FC = () => {
           <span className="status-strip-val text-purple">{gameId}</span>
         </div>
 
-        {/* 2. Derash (ደራሽ / Prize Pool) */}
+        {/* 2. Derash (ደራሽ / Prize Pool 70%) */}
         <div className="status-strip-box derash-box">
-          <span className="status-strip-lbl">{lang === 'am' ? 'ደራሽ' : 'Derash'}</span>
+          <span className="status-strip-lbl">{lang === 'am' ? 'ደራሽ (70%)' : 'Derash (70%)'}</span>
           <span className="status-strip-val text-green">{prizeDisplay}</span>
+        </div>
+
+        {/* 2b. Progressive Jackpot Vault (10% Pool) */}
+        <div className="status-strip-box jackpot-strip-box" style={{ background: '#fef3c7', borderColor: '#facc15' }} title="Progressive Jackpot (Won in <= 18 balls)">
+          <span className="status-strip-lbl" style={{ color: '#854d0e', fontWeight: 700 }}>
+            {lang === 'am' ? '🎰 ጃክፖት' : '🎰 Jackpot'}
+          </span>
+          <span className="status-strip-val" style={{ color: '#b45309', fontWeight: 800 }}>
+            {jackpotPool >= 1000 ? `${(jackpotPool / 1000).toFixed(1)}K` : `${jackpotPool}`}
+          </span>
         </div>
 
         {/* 3. Players */}

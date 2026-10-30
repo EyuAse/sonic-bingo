@@ -57,8 +57,8 @@ export const WithdrawPage: React.FC = () => {
       return;
     }
 
-    if (amount > 25000) {
-      showToast(lang === 'am' ? '⚠️ ከፍተኛ የማውጣት መጠን 25,000 ብር ነው።' : '⚠️ Maximum withdrawal limit is 25,000 ETB.');
+    if (amount > 5000) {
+      showToast(lang === 'am' ? '⚠️ ከፍተኛ የማውጣት መጠን 5,000 ብር ነው።' : '⚠️ Maximum withdrawal limit is 5,000 ETB.');
       return;
     }
 
@@ -266,9 +266,9 @@ export const WithdrawPage: React.FC = () => {
                   <button
                     type="button"
                     className="btn-max-amount"
-                    onClick={() => setAmount(Math.min(balance, 25000))}
+                    onClick={() => setAmount(Math.min(balance, 5000))}
                   >
-                    {lang === 'am' ? 'ሁሉንም' : 'Max All'}
+                    {lang === 'am' ? 'ሁሉንም (እስከ 5,000)' : 'Max (Up to 5,000)'}
                   </button>
                 </div>
 
@@ -292,7 +292,7 @@ export const WithdrawPage: React.FC = () => {
                   <input
                     type="number"
                     min="50"
-                    max="25000"
+                    max="5000"
                     value={amount || ''}
                     onChange={e => setAmount(Number(e.target.value))}
                     placeholder={lang === 'am' ? 'መጠን ያስገቡ' : 'Enter amount'}

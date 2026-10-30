@@ -68,6 +68,7 @@ interface BingoContextType {
   // Betting & Tickets
   betAmount: number;
   setBetAmount: (amt: number) => void;
+  jackpotPool: number;
   cardQuantity: number;
   setCardQuantity: (qty: number) => void;
   hasTicket: boolean;
@@ -303,6 +304,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   // Betting state (Stakes: 10, 20, 50, 100 Birr)
   const [betAmount, setBetAmountState] = useState<number>(10);
+  const [jackpotPool, setJackpotPool] = useState<number>(1000);
   const [stakeRoomsSummary, setStakeRoomsSummary] = useState<Record<number, number>>({ 10: 0, 20: 0, 50: 0, 100: 0 });
   const [cardQuantity, setCardQuantityState] = useState<number>(1);
   const [hasTicket, setHasTicket] = useState<boolean>(false);
@@ -784,7 +786,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         // Valid within 15 minutes (active lobby or game in progress)
         if (ageMs < 15 * 60 * 1000) {
           if (typeof saved.betAmount === 'number') setBetAmountState(saved.betAmount);
-          if (typeof saved.cardQuantity === 'number') setCardQuantityState(Math.max(1, Math.min(2, saved.cardQuantity)));
+          if (typeof saved.cardQuantity === 'number') setCardQuantityState(Math.max(1, Math.min(4, saved.cardQuantity)));
           if (typeof saved.isAutoPlay === 'boolean') {
             setAutoPlay(saved.isAutoPlay);
             autoPlayRef.current = saved.isAutoPlay;
@@ -794,12 +796,13 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             setSelectedCartelaIds([
               saved.selectedCartelaIds[0] || selectedCartelaIds[0],
               saved.selectedCartelaIds[1] || selectedCartelaIds[1],
-              saved.selectedCartelaIds[2] || selectedCartelaIds[2]
-            ]);
+              saved.selectedCartelaIds[2] || selectedCartelaIds[2],
+              saved.selectedCartelaIds[3] || selectedCartelaIds[3]
+            ].filter(Boolean));
             setCartela1Data(generateCardFromId(saved.selectedCartelaIds[0]));
-            if (saved.selectedCartelaIds[1]) {
-              setCartela2Data(generateCardFromId(saved.selectedCartelaIds[1]));
-            }
+            if (saved.selectedCartelaIds[1]) setCartela2Data(generateCardFromId(saved.selectedCartelaIds[1]));
+            if (saved.selectedCartelaIds[2]) setCartela3Data(generateCardFromId(saved.selectedCartelaIds[2]));
+            if (saved.selectedCartelaIds[3]) setCartela4Data(generateCardFromId(saved.selectedCartelaIds[3]));
           }
           setHasTicket(true);
           setGameActive(true);
@@ -871,6 +874,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (typeof state.totalPot === 'number') setTotalPot(state.totalPot);
       if (typeof state.winnerPayout === 'number') setPrizePool(state.winnerPayout);
       else if (typeof state.totalPot === 'number') setPrizePool(state.totalPot);
+      if (typeof state.jackpotPool === 'number') setJackpotPool(state.jackpotPool);
 
       if (typeof state.waitingForPlayers === 'boolean') setWaitingForPlayers(state.waitingForPlayers);
       if (typeof state.waitingForOtherHouses === 'boolean') setWaitingForOtherHouses(state.waitingForOtherHouses);
@@ -1195,6 +1199,33 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
     });
 
+    // 9. Progressive Jackpot Live Updates & Hits
+    const unsubJackpotUpdate = socketService.onJackpotUpdate((data: any) => {
+      if (data && (data.roomId === roomId || !data.roomId)) {
+        if (typeof data.pool === 'number') setJackpotPool(data.pool);
+      }
+    });
+
+    const unsubJackpotWon = socketService.onJackpotWon((data: any) => {
+      if (data && (data.roomId === roomId || !data.roomId)) {
+        if (typeof data.resetPool === 'number') setJackpotPool(data.resetPool);
+        showToast(`🎰 💥 JACKPOT WON! ${data.winnerName || 'Player'} won ${data.jackpotAmount} ETB in ${data.calledCount} balls!`);
+      }
+    });
+
+    // Fetch initial jackpot balance for current room
+    fetch('/api/jackpots')
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.success && Array.isArray(d.data)) {
+          const p = d.data.find((item: any) => item.room_id === roomId);
+          if (p && typeof p.balance === 'number') {
+            setJackpotPool(p.balance);
+          }
+        }
+      })
+      .catch(() => {});
+
     return () => {
       socketService.leaveRoom(roomId);
       unsubRoomState();
@@ -1208,6 +1239,8 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       unsubOfflineWins();
       unsubPlayerJoined();
       unsubRoomUserJoined();
+      unsubJackpotUpdate();
+      unsubJackpotWon();
     };
   }, [getActiveRoomId, user?.id, currentPage, hasTicket]);
 
@@ -2022,6 +2055,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         winnerCountdown,
         betAmount,
         setBetAmount,
+        jackpotPool,
         cardQuantity,
         setCardQuantity,
         hasTicket,

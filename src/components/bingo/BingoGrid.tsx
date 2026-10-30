@@ -36,7 +36,7 @@ const NewCard5x5: React.FC<{
       <div
         className={`new-cartela-card empty-cartela-placeholder ${isSingleCard ? 'single-card' : ''}`}
         onClick={onOpenPicker}
-        title="Tap to choose your cartela from 400 available boards"
+        title="Tap to choose your cartela from 600 available boards"
       >
         <div className="empty-cartela-inner">
           <div className="empty-cartela-top">
@@ -50,7 +50,7 @@ const NewCard5x5: React.FC<{
             {lang === 'am' ? 'ካርቴላ ለመምረጥ ይንኩ' : 'Tap to Choose Board'}
           </div>
           <div className="empty-cartela-sub">
-            {lang === 'am' ? 'ከ400 ካርቴላዎች ውስጥ ይምረጡ' : 'Pick your number from 400 cartelas'}
+            {lang === 'am' ? 'ከ600 ካርቴላዎች ውስጥ ይምረጡ' : 'Pick your number from 600 cartelas'}
           </div>
           <button
             type="button"
@@ -76,7 +76,7 @@ const NewCard5x5: React.FC<{
           className="new-card-header-left"
           onClick={isPreview && onOpenPicker ? onOpenPicker : undefined}
           style={{ cursor: isPreview ? 'pointer' : 'default' }}
-          title={isPreview ? "Click to pick from 400 cartelas" : undefined}
+          title={isPreview ? "Click to pick from 600 cartelas" : undefined}
         >
           <span className="new-card-header-label">{label}</span>
           {isPreview && <span className="new-card-preview-badge">PREVIEW</span>}
@@ -89,7 +89,7 @@ const NewCard5x5: React.FC<{
               e.stopPropagation();
               onOpenPicker();
             }}
-            title="Choose from 400 cartelas"
+            title="Choose from 600 cartelas"
           >
             🎟️ Pick
           </button>
@@ -150,6 +150,8 @@ export const BingoGrid: React.FC = () => {
   const {
     cartela1Data,
     cartela2Data,
+    cartela3Data,
+    cartela4Data,
     totalPlayableCards,
     selectedCartelaIds,
     handleManualDaub,
@@ -174,6 +176,18 @@ export const BingoGrid: React.FC = () => {
       id: selectedCartelaIds[1] || 0,
       cardIndex: 1,
       label: selectedCartelaIds[1] ? `Cartela #${selectedCartelaIds[1]}` : 'Cartela #2 (Unselected)',
+    },
+    {
+      data: cartela3Data,
+      id: selectedCartelaIds[2] || 0,
+      cardIndex: 2,
+      label: selectedCartelaIds[2] ? `Cartela #${selectedCartelaIds[2]}` : 'Cartela #3 (Unselected)',
+    },
+    {
+      data: cartela4Data,
+      id: selectedCartelaIds[3] || 0,
+      cardIndex: 3,
+      label: selectedCartelaIds[3] ? `Cartela #${selectedCartelaIds[3]}` : 'Cartela #4 (Unselected)',
     },
   ].slice(0, totalPlayableCards);
 

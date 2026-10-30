@@ -6,12 +6,14 @@ import { useAuth } from './AuthContext.tsx';
 interface WalletContextType {
   balance: number;
   bonus: number;
+  coins: number;
   isBalanceVisible: boolean;
   toggleBalanceVisibility: () => void;
   addBalance: (amount: number) => void;
   deductBalance: (amount: number) => boolean;
   addBonus: (amount: number) => void;
   deductBonus: (amount: number) => boolean;
+  redeemCoins: () => Promise<{ success: boolean; message: string; coins?: number; bonusAdded?: number }>;
   refreshBalance: () => Promise<void>;
   isRefreshing: boolean;
 }
@@ -39,6 +41,11 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     return saved ? parseFloat(saved) : 0.0;
   });
 
+  const [coins, setCoins] = useState<number>(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('sonic_live_coins') : null;
+    return saved ? parseInt(saved, 10) : 0;
+  });
+
   const [isBalanceVisible, setIsBalanceVisible] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
@@ -51,6 +58,10 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     localStorage.setItem('sonic_live_bonus', bonus.toFixed(2));
   }, [bonus]);
 
+  useEffect(() => {
+    localStorage.setItem('sonic_live_coins', String(coins));
+  }, [coins]);
+
   // Fetch Live Real Balance directly from Neon PostgreSQL
   const fetchLiveBalance = useCallback(async () => {
     try {
@@ -58,6 +69,9 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       if (data && typeof data.balance === 'number') {
         setBalance(data.balance);
         setBonus(data.bonus);
+        if (typeof (data as any).coins === 'number') {
+          setCoins((data as any).coins);
+        }
       }
     } catch {
       // Offline fallback
@@ -187,17 +201,47 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }, 400);
   };
 
+  const redeemCoins = async (): Promise<{ success: boolean; message: string; coins?: number; bonusAdded?: number }> => {
+    try {
+      const token = localStorage.getItem('sonic_auth_token') || localStorage.getItem('auth_token');
+      const res = await fetch('/api/wallet/redeem-coins', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        if (typeof data.coins === 'number') setCoins(data.coins);
+        if (typeof data.bonus === 'number') setBonus(data.bonus);
+        else if (typeof data.bonusAdded === 'number') setBonus(prev => prev + data.bonusAdded);
+        return {
+          success: true,
+          message: data.message || 'Successfully redeemed 1,000 coins for 10 ETB bonus!',
+          coins: data.coins,
+          bonusAdded: data.bonusAdded
+        };
+      }
+      return { success: false, message: data?.error || 'Failed to redeem coins' };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Network error while redeeming coins' };
+    }
+  };
+
   return (
     <WalletContext.Provider
       value={{
         balance,
         bonus,
+        coins,
         isBalanceVisible,
         toggleBalanceVisibility,
         addBalance,
         deductBalance,
         addBonus,
         deductBonus,
+        redeemCoins,
         refreshBalance,
         isRefreshing
       }}

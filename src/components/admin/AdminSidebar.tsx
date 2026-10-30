@@ -10,7 +10,11 @@ export type AdminTab =
   | 'bots'
   | 'bot-engine'
   | 'cartelas'
-  | 'telegram-bot';
+  | 'telegram-bot'
+  | 'agents'
+  | 'agent-recharges'
+  | 'jackpots'
+  | 'coins';
 
 interface AdminSidebarProps {
   activeTab: AdminTab;
@@ -202,20 +206,20 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             )}
           </button>
 
-          {/* 6. 400 Cartelas */}
+          {/* 6. 600 Cartelas */}
           <button
             type="button"
             className={`light-nav-item ${activeTab === 'cartelas' ? 'active' : ''}`}
             onClick={() => handleSelectTab('cartelas')}
-            title="400 Cartelas"
+            title="600 Cartelas"
           >
             <div className="light-nav-icon">
               <i className="fa-solid fa-layer-group"></i>
             </div>
             {!isSidebarCollapsed && (
               <>
-                <span className="light-nav-text">400 Cartelas</span>
-                <span className="light-nav-badge">400</span>
+                <span className="light-nav-text">600 Cartelas</span>
+                <span className="light-nav-badge">600</span>
               </>
             )}
           </button>
@@ -234,6 +238,78 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               <>
                 <span className="light-nav-text">Telegram Bot & Ads</span>
                 <span className="light-nav-badge" style={{ background: '#e0f2fe', color: '#0369a1' }}>📢 Ads</span>
+              </>
+            )}
+          </button>
+
+          {/* 8. Agents Directory */}
+          <button
+            type="button"
+            className={`light-nav-item ${activeTab === 'agents' ? 'active' : ''}`}
+            onClick={() => handleSelectTab('agents')}
+            title="Agents Directory"
+          >
+            <div className="light-nav-icon">
+              <i className="fa-solid fa-handshake" style={{ color: '#059669' }}></i>
+            </div>
+            {!isSidebarCollapsed && (
+              <>
+                <span className="light-nav-text">Agents Directory</span>
+                <span className="light-nav-badge green-badge">Portal</span>
+              </>
+            )}
+          </button>
+
+          {/* 9. Agent Float Recharges */}
+          <button
+            type="button"
+            className={`light-nav-item ${activeTab === 'agent-recharges' ? 'active' : ''}`}
+            onClick={() => handleSelectTab('agent-recharges')}
+            title="Agent Float Recharges"
+          >
+            <div className="light-nav-icon">
+              <i className="fa-solid fa-bolt" style={{ color: '#d97706' }}></i>
+            </div>
+            {!isSidebarCollapsed && (
+              <>
+                <span className="light-nav-text">Agent Recharges</span>
+                <span className="light-nav-badge yellow-badge">Float</span>
+              </>
+            )}
+          </button>
+
+          {/* 10. Progressive Jackpots */}
+          <button
+            type="button"
+            className={`light-nav-item ${activeTab === 'jackpots' ? 'active' : ''}`}
+            onClick={() => handleSelectTab('jackpots')}
+            title="Progressive Jackpots"
+          >
+            <div className="light-nav-icon">
+              <i className="fa-solid fa-trophy" style={{ color: '#f59e0b' }}></i>
+            </div>
+            {!isSidebarCollapsed && (
+              <>
+                <span className="light-nav-text">Progressive Jackpots</span>
+                <span className="light-nav-badge" style={{ background: '#fef3c7', color: '#b45309' }}>Vault</span>
+              </>
+            )}
+          </button>
+
+          {/* 11. Coins & Loyalty Rewards */}
+          <button
+            type="button"
+            className={`light-nav-item ${activeTab === 'coins' ? 'active' : ''}`}
+            onClick={() => handleSelectTab('coins')}
+            title="Coins & Rewards Engine"
+          >
+            <div className="light-nav-icon">
+              <i className="fa-solid fa-coins" style={{ color: '#eab308' }}></i>
+            </div>
+            {!isSidebarCollapsed && (
+              <>
+                <span className="light-nav-text">Coins & Rewards</span>
+                <span className="light-nav-badge" style={{ background: '#fef08a', color: '#854d0e' }}>1.5x</span>
               </>
             )}
           </button>
