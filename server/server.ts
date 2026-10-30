@@ -271,7 +271,7 @@ if (cloudflareFrontendUrl) {
   });
 } else if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
-  app.get('*', (req, res, next) => {
+  app.use((req, res, next) => {
     if (
       req.path.startsWith('/api') ||
       req.path.startsWith('/socket.io') ||
@@ -279,7 +279,10 @@ if (cloudflareFrontendUrl) {
     ) {
       return next();
     }
-    res.sendFile(path.join(distPath, 'index.html'));
+    if (req.method === 'GET' || req.method === 'HEAD') {
+      return res.sendFile(path.join(distPath, 'index.html'));
+    }
+    next();
   });
 }
 
