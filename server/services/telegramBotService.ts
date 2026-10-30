@@ -266,7 +266,7 @@ export class TelegramBotService {
    * Register Webhook with Telegram API
    */
   public async setWebhook(customWebhookUrl?: string): Promise<{ success: boolean; message: string }> {
-    const defaultBackendOrigin = process.env.TELEGRAM_WEBHOOK_URL || process.env.RENDER_EXTERNAL_URL || 'https://bingo-mini-app-hp80.onrender.com';
+    const defaultBackendOrigin = process.env.TELEGRAM_WEBHOOK_URL || process.env.RENDER_EXTERNAL_URL || 'https://sonic-bingo-enod.onrender.com';
     let rawUrl = customWebhookUrl || (defaultBackendOrigin ? `${defaultBackendOrigin}/api/telegram-webhook` : (cfg.webAppUrl ? `${cfg.webAppUrl}/api/telegram-webhook` : ''));
     if (!rawUrl) {
       return { success: false, message: 'Webhook URL is required (configure TELEGRAM_WEBAPP_URL in Admin Desk or .env)' };
@@ -585,7 +585,7 @@ export class TelegramBotService {
               const match = btnUrl.match(/startapp=([^&]+)/);
               if (match) startParam = decodeURIComponent(match[1]);
             }
-            const targetWebUrl = (!btnUrl || btnUrl.includes('t.me')) ? (cfg.webAppUrl || 'https://bingo-mini-app.asefaeyob962.workers.dev') : btnUrl;
+            const targetWebUrl = (!btnUrl || btnUrl.includes('t.me')) ? (cfg.webAppUrl || 'https://sonic-bingo-enod.onrender.com') : btnUrl;
             const versionedUrl = this.getVersionedWebAppUrl(targetWebUrl, startParam);
             inlineKeyboard.push([
               { text: opts.buttonText, web_app: { url: versionedUrl } }

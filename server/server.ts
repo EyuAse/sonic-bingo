@@ -250,22 +250,38 @@ app.post(['/api/telegram-webhook', '/api/telegram/webhook', '/telegram-webhook']
 });
 
 // Production Edge Shield: Offload all static frontend & asset traffic to Cloudflare CDN to preserve 0 MB Render bandwidth
-const cloudflareFrontendUrl = (process.env.TELEGRAM_WEBAPP_URL || 'https://bingo-mini-app.asefaeyob962.workers.dev').replace(/\/+$/, '');
-app.use((req, res, next) => {
-  if (
-    req.path.startsWith('/api') ||
-    req.path.startsWith('/socket.io') ||
-    req.path.startsWith('/telegram-webhook')
-  ) {
-    return next();
-  }
-  if (req.method === 'GET' || req.method === 'HEAD') {
-    const targetUrl = `${cloudflareFrontendUrl}${req.url}`;
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-    return res.redirect(301, targetUrl);
-  }
-  next();
-});
+const distPath = path.join(__dirname, '../dist');
+const cloudflareFrontendUrl = (process.env.CLOUDFLARE_FRONTEND_URL || '').replace(/\/+$/, '');
+
+if (cloudflareFrontendUrl) {
+  app.use((req, res, next) => {
+    if (
+      req.path.startsWith('/api') ||
+      req.path.startsWith('/socket.io') ||
+      req.path.startsWith('/telegram-webhook')
+    ) {
+      return next();
+    }
+    if (req.method === 'GET' || req.method === 'HEAD') {
+      const targetUrl = `${cloudflareFrontendUrl}${req.url}`;
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      return res.redirect(301, targetUrl);
+    }
+    next();
+  });
+} else if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  app.get('*', (req, res, next) => {
+    if (
+      req.path.startsWith('/api') ||
+      req.path.startsWith('/socket.io') ||
+      req.path.startsWith('/telegram-webhook')
+    ) {
+      return next();
+    }
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
 
 // Global Error Handler
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
