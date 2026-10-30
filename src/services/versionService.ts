@@ -21,12 +21,12 @@ class VersionService {
 
   public ensureFreshness() {
     try {
-      const storedVersion = localStorage.getItem('lomi_app_client_version');
+      const storedVersion = localStorage.getItem('sonic_app_client_version');
       if (storedVersion !== CLIENT_BUILD_VERSION) {
         console.log(`🚀 [VersionService] New build detected: ${storedVersion || 'none'} -> ${CLIENT_BUILD_VERSION}. Synchronizing cache...`);
         // Invalidate stale ticket cache from older builds so round state rehydrates fresh from server
         localStorage.removeItem('betika_bingo_active_ticket');
-        localStorage.setItem('lomi_app_client_version', CLIENT_BUILD_VERSION);
+        localStorage.setItem('sonic_app_client_version', CLIENT_BUILD_VERSION);
       }
     } catch (e) {
       console.warn('[VersionService] Cache guard check skipped:', e);

@@ -30,12 +30,12 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, []);
 
   const [balance, setBalance] = useState<number>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('lomi_live_balance') : null;
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('sonic_live_balance') : null;
     return saved ? parseFloat(saved) : 0.0;
   });
 
   const [bonus, setBonus] = useState<number>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('lomi_live_bonus') : null;
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('sonic_live_bonus') : null;
     return saved ? parseFloat(saved) : 0.0;
   });
 
@@ -44,11 +44,11 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   // Sync strictly to live cache
   useEffect(() => {
-    localStorage.setItem('lomi_live_balance', balance.toFixed(2));
+    localStorage.setItem('sonic_live_balance', balance.toFixed(2));
   }, [balance]);
 
   useEffect(() => {
-    localStorage.setItem('lomi_live_bonus', bonus.toFixed(2));
+    localStorage.setItem('sonic_live_bonus', bonus.toFixed(2));
   }, [bonus]);
 
   // Fetch Live Real Balance directly from Neon PostgreSQL
@@ -84,8 +84,8 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     };
 
     const handleStorage = () => {
-      const saved = localStorage.getItem('lomi_live_balance');
-      const savedBonus = localStorage.getItem('lomi_live_bonus');
+      const saved = localStorage.getItem('sonic_live_balance');
+      const savedBonus = localStorage.getItem('sonic_live_bonus');
       if (saved) setBalance(parseFloat(saved));
       if (savedBonus) setBonus(parseFloat(savedBonus));
     };

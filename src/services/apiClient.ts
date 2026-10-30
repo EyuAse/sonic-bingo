@@ -8,14 +8,14 @@ const API_BASE = getApiBase();
 
 function getAuthHeader(): Record<string, string> {
   const token = typeof window !== 'undefined'
-    ? localStorage.getItem('lomi_auth_token')
+    ? localStorage.getItem('sonic_auth_token')
     : null;
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (res.status === 401 && typeof window !== 'undefined') {
-    localStorage.removeItem('lomi_admin_token');
+    localStorage.removeItem('sonic_admin_token');
   }
   const contentType = res.headers.get('content-type') || '';
   if (!contentType.includes('application/json')) {
@@ -36,7 +36,7 @@ async function fetchWithRetry(url: string, options?: RequestInit, retries = 3, d
     try {
       const res = await fetch(url, options);
       if (res.status === 401 && typeof window !== 'undefined') {
-        localStorage.removeItem('lomi_admin_token');
+        localStorage.removeItem('sonic_admin_token');
       }
       // Never retry rate-limited responses — retrying makes it worse
       if (res.status === 429) return res;
@@ -51,7 +51,7 @@ async function fetchWithRetry(url: string, options?: RequestInit, retries = 3, d
 
 async function getAdminAuthHeader(): Promise<Record<string, string>> {
   if (typeof window === 'undefined') return {};
-  let token = localStorage.getItem('lomi_admin_token');
+  let token = localStorage.getItem('sonic_admin_token');
   if (!token) {
     try {
       const res = await fetch(`${API_BASE}/auth/admin-login`, {
@@ -62,7 +62,7 @@ async function getAdminAuthHeader(): Promise<Record<string, string>> {
       const data = await res.json();
       if (data.token) {
         token = data.token;
-        localStorage.setItem('lomi_admin_token', data.token);
+        localStorage.setItem('sonic_admin_token', data.token);
       }
     } catch {}
   }
@@ -87,7 +87,7 @@ export const apiClient = {
       }>(res);
 
       if (data.token) {
-        localStorage.setItem('lomi_admin_token', data.token);
+        localStorage.setItem('sonic_admin_token', data.token);
       }
 
       return data;
@@ -119,7 +119,7 @@ export const apiClient = {
       }>(res);
 
       if (data.token) {
-        localStorage.setItem('lomi_auth_token', data.token);
+        localStorage.setItem('sonic_auth_token', data.token);
       }
 
       return data;
@@ -140,7 +140,7 @@ export const apiClient = {
       }>(res);
 
       if (data.token) {
-        localStorage.setItem('lomi_auth_token', data.token);
+        localStorage.setItem('sonic_auth_token', data.token);
       }
 
       return data;
@@ -171,7 +171,7 @@ export const apiClient = {
       }>(res);
 
       if (data.token) {
-        localStorage.setItem('lomi_auth_token', data.token);
+        localStorage.setItem('sonic_auth_token', data.token);
       }
 
       return data;

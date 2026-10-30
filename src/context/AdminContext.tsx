@@ -593,7 +593,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const logoutAdmin = () => {
     setIsAuthenticated(false);
     sessionStorage.removeItem('lomibingo_admin_auth');
-    localStorage.removeItem('lomi_admin_token');
+    localStorage.removeItem('sonic_admin_token');
   };
 
   const adjustUserBalance = (userId: string, amount: number, isBonus = false) => {

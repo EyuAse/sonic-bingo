@@ -26,7 +26,7 @@ export const LandingPage: React.FC = () => {
   const [isExistingAccount, setIsExistingAccount] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     try {
-      const storedUser = localStorage.getItem('lomi_user');
+      const storedUser = localStorage.getItem('sonic_user');
       if (storedUser) {
         const parsed = JSON.parse(storedUser);
         if (parsed && (parsed.id || parsed.telegramId)) {
@@ -46,7 +46,7 @@ export const LandingPage: React.FC = () => {
 
     if (typeof window !== 'undefined') {
       try {
-        const storedUser = localStorage.getItem('lomi_user');
+        const storedUser = localStorage.getItem('sonic_user');
         if (storedUser) {
           const parsed = JSON.parse(storedUser);
           if (parsed && (parsed.id || parsed.telegramId)) {
@@ -58,7 +58,7 @@ export const LandingPage: React.FC = () => {
 
       // Check if user previously logged out from Telegram on this device
       const tgId = telegramUser?.id || (window as any)?.Telegram?.WebApp?.initDataUnsafe?.user?.id;
-      if (tgId && localStorage.getItem(`lomi_explicit_logout_${tgId}`) === 'true') {
+      if (tgId && localStorage.getItem(`sonic_explicit_logout_${tgId}`) === 'true') {
         setIsExistingAccount(true);
         return;
       }

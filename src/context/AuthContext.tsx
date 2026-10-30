@@ -37,16 +37,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(() => {
     if (typeof window === 'undefined') return null;
     try {
-      const stored = localStorage.getItem('lomi_user');
+      const stored = localStorage.getItem('sonic_user');
       if (!stored) return null;
       const parsed = JSON.parse(stored);
       if (!parsed || !parsed.id) return null;
 
       // Check explicit logout
-      if (parsed.telegramId && localStorage.getItem(`lomi_explicit_logout_${parsed.telegramId}`) === 'true') {
+      if (parsed.telegramId && localStorage.getItem(`sonic_explicit_logout_${parsed.telegramId}`) === 'true') {
         return null;
       }
-      if (localStorage.getItem('lomi_explicit_logout') === 'true') {
+      if (localStorage.getItem('sonic_explicit_logout') === 'true') {
         return null;
       }
 
@@ -67,16 +67,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [token, setToken] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
     try {
-      const stored = localStorage.getItem('lomi_user');
+      const stored = localStorage.getItem('sonic_user');
       if (!stored) return null;
       const parsed = JSON.parse(stored);
-      if (parsed?.telegramId && localStorage.getItem(`lomi_explicit_logout_${parsed.telegramId}`) === 'true') {
+      if (parsed?.telegramId && localStorage.getItem(`sonic_explicit_logout_${parsed.telegramId}`) === 'true') {
         return null;
       }
-      if (localStorage.getItem('lomi_explicit_logout') === 'true') {
+      if (localStorage.getItem('sonic_explicit_logout') === 'true') {
         return null;
       }
-      return localStorage.getItem('lomi_auth_token');
+      return localStorage.getItem('sonic_auth_token');
     } catch {
       return null;
     }
@@ -85,14 +85,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
     try {
-      const stored = localStorage.getItem('lomi_user');
-      const storedToken = localStorage.getItem('lomi_auth_token');
+      const stored = localStorage.getItem('sonic_user');
+      const storedToken = localStorage.getItem('sonic_auth_token');
       if (stored && storedToken) {
         const parsed = JSON.parse(stored);
-        if (parsed?.telegramId && localStorage.getItem(`lomi_explicit_logout_${parsed.telegramId}`) === 'true') {
+        if (parsed?.telegramId && localStorage.getItem(`sonic_explicit_logout_${parsed.telegramId}`) === 'true') {
           return true;
         }
-        if (localStorage.getItem('lomi_explicit_logout') === 'true') {
+        if (localStorage.getItem('sonic_explicit_logout') === 'true') {
           return true;
         }
         const tgUser = (window as any)?.Telegram?.WebApp?.initDataUnsafe?.user;
@@ -117,8 +117,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setConcurrentSessionNotice(null);
     const tgUser = telegramUser || telegramService.getTelegramUser();
     if (tgUser && tgUser.id) {
-      localStorage.removeItem(`lomi_explicit_logout_${tgUser.id}`);
-      localStorage.removeItem('lomi_explicit_logout');
+      localStorage.removeItem(`sonic_explicit_logout_${tgUser.id}`);
+      localStorage.removeItem('sonic_explicit_logout');
       try {
         await loginWithTelegram(tgUser);
       } catch (e) {
@@ -128,7 +128,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
     } else {
-      localStorage.removeItem('lomi_explicit_logout');
+      localStorage.removeItem('sonic_explicit_logout');
       if (typeof window !== 'undefined') {
         window.location.reload();
       }
@@ -142,15 +142,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       socketService.terminateSession();
       setConcurrentSessionNotice(data);
       authService.clearSession();
-      localStorage.removeItem('lomi_auth_token');
-      localStorage.removeItem('lomi_user');
-      localStorage.removeItem('lomi_live_balance');
-      localStorage.removeItem('lomi_live_bonus');
+      localStorage.removeItem('sonic_auth_token');
+      localStorage.removeItem('sonic_user');
+      localStorage.removeItem('sonic_live_balance');
+      localStorage.removeItem('sonic_live_bonus');
       const tgId = telegramUser?.id || telegramService.getTelegramUser()?.id;
       if (tgId) {
-        localStorage.setItem(`lomi_explicit_logout_${tgId}`, 'true');
+        localStorage.setItem(`sonic_explicit_logout_${tgId}`, 'true');
       }
-      localStorage.setItem('lomi_explicit_logout', 'true');
+      localStorage.setItem('sonic_explicit_logout', 'true');
       setUser(null);
       setToken(null);
     });
@@ -164,17 +164,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // Purge legacy storage keys
+        // Purge all legacy storage keys from previous client apps
+    if (typeof window !== 'undefined') {
+      try {
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('lomi_') || k.startsWith('betika_') || k.startsWith('lb_')) {
+            localStorage.removeItem(k);
+          }
+        });
+      } catch {}
+    }
+    // Legacy storage keys
         if (typeof window !== 'undefined') {
           const legacyKeys = [
             'betika_user_balance',
             'betika_user_bonus',
             'lb_admin_users',
             'lb_admin_transactions',
-            'lomi_registered_users',
-            'lomi_registered_users_v2',
-            'lomi_registered_users_v3',
-            'lomi_registered_users_v4'
+            'sonic_registered_users',
+            'sonic_registered_users_v2',
+            'sonic_registered_users_v3',
+            'sonic_registered_users_v4'
           ];
           legacyKeys.forEach(k => localStorage.removeItem(k));
         }
@@ -183,7 +193,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         telegramService.initWebApp();
         const startParam = telegramService.getStartParam();
         if (startParam && typeof window !== 'undefined') {
-          sessionStorage.setItem('lomi_pending_referral', startParam);
+          sessionStorage.setItem('sonic_pending_referral', startParam);
         }
         const tgUser = telegramService.getTelegramUser();
         const isTg = telegramService.isTelegram() && !!tgUser;
@@ -192,22 +202,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         // 2. Multi-Account Isolation: If inside Telegram, clear previous user's cached data if account switched
         if (isTg && tgUser && tgUser.id) {
-          const storedUserJson = localStorage.getItem('lomi_user');
+          const storedUserJson = localStorage.getItem('sonic_user');
           if (storedUserJson) {
             try {
               const parsed = JSON.parse(storedUserJson);
               if (parsed.telegramId && String(parsed.telegramId) !== String(tgUser.id)) {
                 // Switched to a different Telegram account on the same phone!
-                localStorage.removeItem('lomi_auth_token');
-                localStorage.removeItem('lomi_user');
-                localStorage.removeItem('lomi_live_balance');
-                localStorage.removeItem('lomi_live_bonus');
+                localStorage.removeItem('sonic_auth_token');
+                localStorage.removeItem('sonic_user');
+                localStorage.removeItem('sonic_live_balance');
+                localStorage.removeItem('sonic_live_bonus');
               }
             } catch {}
           }
 
           const isExplicitlyLoggedOut =
-            typeof window !== 'undefined' && localStorage.getItem(`lomi_explicit_logout_${tgUser.id}`) === 'true';
+            typeof window !== 'undefined' && localStorage.getItem(`sonic_explicit_logout_${tgUser.id}`) === 'true';
 
           // Auto-authenticate: loginWithTelegram handles both login + registration
           try {
@@ -244,11 +254,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               setUser(mappedUser);
               setToken(apiResult.token);
               setIsFirstTimeTelegramUser(!!apiResult.isNewUser);
-              localStorage.setItem('lomi_user', JSON.stringify(mappedUser));
-              localStorage.setItem('lomi_auth_token', apiResult.token);
+              localStorage.setItem('sonic_user', JSON.stringify(mappedUser));
+              localStorage.setItem('sonic_auth_token', apiResult.token);
               if (apiResult.wallet) {
-                localStorage.setItem('lomi_live_balance', apiResult.wallet.balance.toFixed(2));
-                localStorage.setItem('lomi_live_bonus', apiResult.wallet.bonus.toFixed(2));
+                localStorage.setItem('sonic_live_balance', apiResult.wallet.balance.toFixed(2));
+                localStorage.setItem('sonic_live_bonus', apiResult.wallet.bonus.toFixed(2));
                 window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: apiResult.wallet }));
               }
               return;
@@ -256,8 +266,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           } catch (err) {
             console.warn('⚠️ Server auth check notice:', (err as any)?.message || err);
             // Fall back to existing cached session on any network/server glitch so existing user is never kicked to sign-up
-            const cachedUser = localStorage.getItem('lomi_user');
-            const cachedToken = localStorage.getItem('lomi_auth_token');
+            const cachedUser = localStorage.getItem('sonic_user');
+            const cachedToken = localStorage.getItem('sonic_auth_token');
             if (cachedUser && cachedToken) {
               try {
                 const parsed = JSON.parse(cachedUser);
@@ -273,10 +283,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         // 3. Fallback to existing verified session (Web browser)
         const isWebExplicitLogout =
-          typeof window !== 'undefined' && localStorage.getItem('lomi_explicit_logout') === 'true';
+          typeof window !== 'undefined' && localStorage.getItem('sonic_explicit_logout') === 'true';
 
         if (!isWebExplicitLogout && !isTg) {
-          const storedToken = localStorage.getItem('lomi_auth_token');
+          const storedToken = localStorage.getItem('sonic_auth_token');
           if (storedToken) {
             try {
               const meRes = await apiClient.auth.getMe();
@@ -307,8 +317,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               setUser(mappedUser);
               setToken(storedToken);
               if (meRes.wallet) {
-                localStorage.setItem('lomi_live_balance', meRes.wallet.balance.toFixed(2));
-                localStorage.setItem('lomi_live_bonus', meRes.wallet.bonus.toFixed(2));
+                localStorage.setItem('sonic_live_balance', meRes.wallet.balance.toFixed(2));
+                localStorage.setItem('sonic_live_bonus', meRes.wallet.bonus.toFixed(2));
               }
               return;
             } catch {
@@ -346,9 +356,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           phone: payload.phone,
           pin: payload.pin,
           fullName: payload.fullName,
-          referralCode: payload.referralCode || (typeof window !== 'undefined' ? sessionStorage.getItem('lomi_pending_referral') || undefined : undefined)
+          referralCode: payload.referralCode || (typeof window !== 'undefined' ? sessionStorage.getItem('sonic_pending_referral') || undefined : undefined)
         });
-        localStorage.removeItem('lomi_explicit_logout');
+        localStorage.removeItem('sonic_explicit_logout');
         const u = apiRes.user;
         const mappedUser: User = {
           id: u.id,
@@ -367,15 +377,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(mappedUser);
         setToken(apiRes.token);
         if (apiRes.wallet) {
-          localStorage.setItem('lomi_live_balance', apiRes.wallet.balance.toFixed(2));
-          localStorage.setItem('lomi_live_bonus', apiRes.wallet.bonus.toFixed(2));
+          localStorage.setItem('sonic_live_balance', apiRes.wallet.balance.toFixed(2));
+          localStorage.setItem('sonic_live_bonus', apiRes.wallet.bonus.toFixed(2));
           window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: apiRes.wallet }));
         }
         return mappedUser;
       } catch (backendErr) {
         console.warn('Backend register notice, using local service:', backendErr);
         const result = await authService.register(payload);
-        localStorage.removeItem('lomi_explicit_logout');
+        localStorage.removeItem('sonic_explicit_logout');
         setUser(result.user);
         setToken(result.token);
         return result.user;
@@ -389,7 +399,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoading(true);
     try {
       const apiResult = await apiClient.auth.loginWithPin(payload.phone, payload.pin);
-      localStorage.removeItem('lomi_explicit_logout');
+      localStorage.removeItem('sonic_explicit_logout');
       const u = apiResult.user;
       const mappedUser: User = {
         id: u.id,
@@ -408,12 +418,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       };
       setUser(mappedUser);
       setToken(apiResult.token);
-      localStorage.setItem('lomi_user', JSON.stringify(mappedUser));
-      localStorage.setItem('lomi_auth_token', apiResult.token);
+      localStorage.setItem('sonic_user', JSON.stringify(mappedUser));
+      localStorage.setItem('sonic_auth_token', apiResult.token);
       return mappedUser;
     } catch {
       const result = await authService.login(payload);
-      localStorage.removeItem('lomi_explicit_logout');
+      localStorage.removeItem('sonic_explicit_logout');
       setUser(result.user);
       setToken(result.token);
       return result.user;
@@ -434,9 +444,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     setIsLoading(true);
     try {
-      const refCode = referralCode || (typeof window !== 'undefined' ? sessionStorage.getItem('lomi_pending_referral') || undefined : undefined);
+      const refCode = referralCode || (typeof window !== 'undefined' ? sessionStorage.getItem('sonic_pending_referral') || undefined : undefined);
       const apiResult = await apiClient.auth.loginWithTelegram(tgUser, customPhone, refCode);
-      localStorage.removeItem('lomi_explicit_logout');
+      localStorage.removeItem('sonic_explicit_logout');
 
       const tgIdStr = String(tgUser.id);
       const isRealPhoneProvided = customPhone || (apiResult.user.phone &&
@@ -467,11 +477,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       setUser(mappedUser);
       setToken(apiResult.token);
-      localStorage.setItem('lomi_user', JSON.stringify(mappedUser));
-      localStorage.setItem('lomi_auth_token', apiResult.token);
+      localStorage.setItem('sonic_user', JSON.stringify(mappedUser));
+      localStorage.setItem('sonic_auth_token', apiResult.token);
       if (apiResult.wallet) {
-        localStorage.setItem('lomi_live_balance', apiResult.wallet.balance.toFixed(2));
-        localStorage.setItem('lomi_live_bonus', apiResult.wallet.bonus.toFixed(2));
+        localStorage.setItem('sonic_live_balance', apiResult.wallet.balance.toFixed(2));
+        localStorage.setItem('sonic_live_bonus', apiResult.wallet.bonus.toFixed(2));
         window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: apiResult.wallet }));
       }
 
@@ -500,14 +510,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = () => {
     authService.clearSession();
-    localStorage.removeItem('lomi_auth_token');
-    localStorage.removeItem('lomi_user');
-    localStorage.removeItem('lomi_live_balance');
-    localStorage.removeItem('lomi_live_bonus');
+    localStorage.removeItem('sonic_auth_token');
+    localStorage.removeItem('sonic_user');
+    localStorage.removeItem('sonic_live_balance');
+    localStorage.removeItem('sonic_live_bonus');
     if (telegramUser?.id) {
-      localStorage.setItem(`lomi_explicit_logout_${telegramUser.id}`, 'true');
+      localStorage.setItem(`sonic_explicit_logout_${telegramUser.id}`, 'true');
     }
-    localStorage.setItem('lomi_explicit_logout', 'true');
+    localStorage.setItem('sonic_explicit_logout', 'true');
     setUser(null);
     setToken(null);
   };
@@ -542,7 +552,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           isPhoneVerified: !!finalPhone
         };
         setUser(updatedUser);
-        localStorage.setItem('lomi_user', JSON.stringify(updatedUser));
+        localStorage.setItem('sonic_user', JSON.stringify(updatedUser));
         if (updatedUser.attachedAccounts) {
           localStorage.setItem('betika_attached_payout_accounts', JSON.stringify(updatedUser.attachedAccounts));
         }
@@ -563,7 +573,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       isPhoneVerified: !!rawPhone
     };
     setUser(fallbackUser);
-    localStorage.setItem('lomi_user', JSON.stringify(fallbackUser));
+    localStorage.setItem('sonic_user', JSON.stringify(fallbackUser));
     if (fallbackUser.attachedAccounts) {
       localStorage.setItem('betika_attached_payout_accounts', JSON.stringify(fallbackUser.attachedAccounts));
     }
