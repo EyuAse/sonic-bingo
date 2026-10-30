@@ -691,7 +691,7 @@ router.post('/withdrawals/:id/reject', requireAdmin, async (req: AuthenticatedRe
  */
 router.get('/stats', requireAdmin, async (_req, res) => {
   try {
-    const [userCountRes, depositSumRes, withdrawSumRes, roundsStatsRes, netCashRes] = await Promise.all([
+    const [userCountRes, depositSumRes, withdrawSumRes, roundsStatsRes, netCashRes, jackpotPoolRes, jackpotPaidRes] = await Promise.all([
       query(
         "SELECT COUNT(*) as count FROM users WHERE role = 'player' AND (is_bot IS NULL OR is_bot = false) AND full_name NOT LIKE 'Synthetic%'"
       ),
@@ -715,7 +715,9 @@ router.get('/stats', requireAdmin, async (_req, res) => {
         WHERE wt.created_at >= CURRENT_DATE
           AND u.role = 'player'
           AND (u.is_bot IS NULL OR u.is_bot = false)
-      `)
+      `),
+      query("SELECT COALESCE(SUM(balance), 0) as total_jackpot_pool FROM jackpot_pool"),
+      query("SELECT COALESCE(SUM(amount), 0) as total_jackpot_paid FROM jackpot_winners")
     ]);
 
     const rStats = roundsStatsRes.rows[0] || {};
@@ -732,6 +734,8 @@ router.get('/stats', requireAdmin, async (_req, res) => {
         totalHouseRevenue: parseFloat(rStats.total_house_revenue || '0'),
         todayHouseRevenue: parseFloat(rStats.today_house_revenue || '0'),
         todayNetCashProfit: netCash,
+        totalJackpotPool: parseFloat(jackpotPoolRes.rows[0]?.total_jackpot_pool || '0'),
+        totalJackpotPaid: parseFloat(jackpotPaidRes.rows[0]?.total_jackpot_paid || '0'),
         defaultCommissionRate: 20
       }
     });
@@ -973,6 +977,113 @@ router.post('/database-prune', requireAdmin, async (_req, res) => {
   } catch (error: any) {
     console.error('❌ [Admin DB Prune Error]:', error);
     return res.status(500).json({ success: false, error: 'Failed to optimize database storage' });
+  }
+});
+
+/**
+ * Progressive Jackpots Desk: View all pools & recent jackpot winners
+ */
+router.get('/jackpots', requireAdmin, async (_req, res) => {
+  try {
+    const [poolsRes, winnersRes] = await Promise.all([
+      query(`
+        SELECT jp.*, gr.name as room_name, gr.stake_amount
+        FROM jackpot_pool jp
+        LEFT JOIN game_rooms gr ON jp.room_id = gr.id
+        ORDER BY jp.room_id
+      `),
+      query(`
+        SELECT jw.*, u.full_name as winner_name, u.phone as winner_phone, gr.name as room_name
+        FROM jackpot_winners jw
+        JOIN users u ON jw.user_id = u.id
+        LEFT JOIN game_rooms gr ON jw.room_id = gr.id
+        ORDER BY jw.won_at DESC
+        LIMIT 50
+      `)
+    ]);
+
+    const pools = poolsRes.rows.map(row => {
+      const liveRoom = gameEngine.getRoom(row.room_id);
+      return {
+        ...row,
+        liveBalance: liveRoom?.jackpotPoolBalance !== undefined ? liveRoom.jackpotPoolBalance : parseFloat(row.balance || '0')
+      };
+    });
+
+    return res.json({
+      success: true,
+      pools,
+      winners: winnersRes.rows
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Jackpots GET Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve jackpot data' });
+  }
+});
+
+/**
+ * Progressive Jackpots Desk: Admin Seed / Balance Adjustment
+ */
+router.post('/jackpots/adjust', requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { roomId, balance, seedAmount } = req.body;
+    if (!roomId) {
+      return res.status(400).json({ success: false, error: 'Room ID is required' });
+    }
+
+    const updates: string[] = [];
+    const values: any[] = [];
+    let idx = 1;
+
+    if (typeof balance === 'number' && balance >= 0) {
+      updates.push(`balance = $${idx++}`);
+      values.push(balance);
+    }
+    if (typeof seedAmount === 'number' && seedAmount >= 0) {
+      updates.push(`seed_amount = $${idx++}`);
+      values.push(seedAmount);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ success: false, error: 'No valid fields to update' });
+    }
+
+    updates.push(`updated_at = NOW()`);
+    values.push(roomId);
+
+    const updateQuery = `
+      UPDATE jackpot_pool 
+      SET ${updates.join(', ')} 
+      WHERE room_id = $${idx} 
+      RETURNING *
+    `;
+
+    const result = await query(updateQuery, values);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Jackpot pool for room not found' });
+    }
+
+    // Update in-memory engine pool immediately
+    const updatedRow = result.rows[0];
+    const liveRoom = gameEngine.getRoom(roomId);
+    if (liveRoom && typeof balance === 'number') {
+      liveRoom.jackpotPoolBalance = balance;
+      if (roomId === 'room-10') {
+        const arena = gameEngine.getRoom('lomi-arena');
+        if (arena) arena.jackpotPoolBalance = balance;
+        const def = gameEngine.getRoom('default');
+        if (def) def.jackpotPoolBalance = balance;
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: `Progressive jackpot pool for ${roomId} updated successfully`,
+      pool: updatedRow
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Jackpots Adjust Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to adjust jackpot pool' });
   }
 });
 

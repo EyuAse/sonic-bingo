@@ -7,7 +7,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import { checkDbConnection } from './db.ts';
+import { checkDbConnection, query } from './db.ts';
 
 import authRouter from './routes/auth.ts';
 import walletRouter from './routes/wallet.ts';
@@ -148,6 +148,41 @@ app.get('/api/rooms', (_req, res) => {
   });
 });
 
+// Progressive Jackpots Endpoint (Public & Client State)
+app.get('/api/jackpots', async (_req, res) => {
+  try {
+    const dbRes = await query(`
+      SELECT jp.room_id, jp.balance, jp.seed_amount, jp.last_won_amount, jp.last_won_at, jp.updated_at,
+             gr.name as room_name, gr.stake_amount
+      FROM jackpot_pool jp
+      LEFT JOIN game_rooms gr ON jp.room_id = gr.id
+      ORDER BY jp.room_id
+    `);
+
+    const jackpots = dbRes.rows.map(row => {
+      const liveRoom = gameEngine.getRoom(row.room_id);
+      return {
+        roomId: row.room_id,
+        roomName: row.room_name || liveRoom?.name || row.room_id,
+        stakeAmount: liveRoom?.stakeAmount || parseFloat(row.stake_amount || '10'),
+        balance: liveRoom?.jackpotPoolBalance !== undefined ? liveRoom.jackpotPoolBalance : parseFloat(row.balance || '0'),
+        seedAmount: parseFloat(row.seed_amount || '0'),
+        lastWonAmount: parseFloat(row.last_won_amount || '0'),
+        lastWonAt: row.last_won_at,
+        updatedAt: row.updated_at
+      };
+    });
+
+    res.json({
+      success: true,
+      jackpots
+    });
+  } catch (err: any) {
+    console.error('⚠️ [API] Failed to fetch jackpots:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch jackpot data' });
+  }
+});
+
 // Dual-Engine HTTP Fallback State Sync for Low-Network / Disconnected Devices
 app.get('/api/rooms/:id/sync', (req, res) => {
   const room = gameEngine.getRoom(req.params.id);
@@ -190,6 +225,9 @@ app.get('/api/rooms/:id/sync', (req, res) => {
     stakeAmount: room.stakeAmount,
     totalPot: room.totalPot,
     winnerPayout: room.winnerPayout,
+    houseFee: room.houseFee || 0,
+    jackpotFee: room.jackpotFee || 0,
+    jackpotPool: room.jackpotPoolBalance || 0,
     playersCount: gameEngine.getRoomPlayersCount(room),
     drawnNumbers: room.drawnNumbers,
     totalDrawn: room.drawnNumbers.length,

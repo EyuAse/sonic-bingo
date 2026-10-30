@@ -80,6 +80,8 @@ export interface GameRoomState {
   totalPot: number;
   winnerPayout: number;
   houseFee: number;
+  jackpotFee: number;
+  jackpotPoolBalance: number;
   tickets: Map<string, PlayerTicket[]>; // userId -> active tickets in current round
   nextRoundTickets: Map<string, PlayerTicket[]>; // userId -> queued tickets for Round N+1 (Anytime Pre-Betting)
   activeSockets: Set<string>;
@@ -266,6 +268,7 @@ class BingoGameEngine {
     this.initializeUnifiedArena();
     this.loadBotAccounts();
     this.loadDepositedUsers();
+    this.loadJackpotPools();
   }
 
   public static getInstance(): BingoGameEngine {
@@ -316,6 +319,28 @@ class BingoGameEngine {
     }
   }
 
+  public async loadJackpotPools() {
+    try {
+      const res = await query('SELECT room_id, balance FROM jackpot_pool');
+      for (const row of res.rows) {
+        const bal = parseFloat(row.balance || '0');
+        const room = this.rooms.get(row.room_id);
+        if (room) {
+          room.jackpotPoolBalance = bal;
+        }
+        if (row.room_id === 'room-10') {
+          const arena = this.rooms.get(ARENA_ROOM_ID);
+          if (arena) arena.jackpotPoolBalance = bal;
+          const def = this.rooms.get('default');
+          if (def) def.jackpotPoolBalance = bal;
+        }
+      }
+      console.log('🏆 [BingoGameEngine] Loaded live Progressive Jackpot pools from DB');
+    } catch (err) {
+      console.error('⚠️ [BingoGameEngine] Error loading jackpot pools from DB:', err);
+    }
+  }
+
   private createRoomState(id: string, name: string, stakeAmount: number): GameRoomState {
     return {
       id,
@@ -337,6 +362,8 @@ class BingoGameEngine {
       totalPot: 0,
       winnerPayout: 0,
       houseFee: 0,
+      jackpotFee: 0,
+      jackpotPoolBalance: (id === 'room-10' || id === ARENA_ROOM_ID || id === 'default') ? 500 : id === 'room-20' ? 1000 : id === 'room-50' ? 2500 : 5000,
       tickets: new Map(),
       nextRoundTickets: new Map(),
       activeSockets: new Set(),
@@ -439,6 +466,9 @@ class BingoGameEngine {
       realPlayerCount: this.getRealCartelaCount(r),
       totalPot: r.totalPot,
       winnerPayout: r.winnerPayout,
+      houseFee: r.houseFee || 0,
+      jackpotFee: r.jackpotFee || 0,
+      jackpotPool: r.jackpotPoolBalance || 0,
       winResult: r.winResult
     });
 
@@ -1136,7 +1166,8 @@ class BingoGameEngine {
 
     room.totalPot = pot > 0 ? pot : 0;
     room.houseFee = room.commissionEnabled ? Math.floor(room.totalPot * 0.20) : 0;
-    room.winnerPayout = room.totalPot - room.houseFee;
+    room.jackpotFee = room.commissionEnabled ? Math.floor(room.totalPot * 0.10) : 0;
+    room.winnerPayout = room.totalPot - room.houseFee - (room.jackpotFee || 0);
   }
 
   /**
@@ -1675,9 +1706,9 @@ class BingoGameEngine {
         if (room.tickets.size > 0) {
           try {
             const roundRes = await query(
-              `INSERT INTO game_rounds (room_id, round_number, phase, total_pot, platform_fee, winner_payout, started_at)
-               VALUES ($1, $2, 'playing', $3, $4, $5, NOW()) RETURNING id`,
-              [room.id, room.roundNumber, room.totalPot, room.houseFee, room.winnerPayout]
+              `INSERT INTO game_rounds (room_id, round_number, phase, total_pot, platform_fee, jackpot_fee, winner_payout, started_at)
+               VALUES ($1, $2, 'playing', $3, $4, $5, $6, NOW()) RETURNING id`,
+              [room.id, room.roundNumber, room.totalPot, room.houseFee, room.jackpotFee || 0, room.winnerPayout]
             );
             room.currentRoundId = roundRes.rows[0]?.id;
 
@@ -1708,6 +1739,7 @@ class BingoGameEngine {
         room.totalPot = 0;
         room.winnerPayout = 0;
         room.houseFee = 0;
+        room.jackpotFee = 0;
         room.currentRoundId = null;
 
         // Lone-Player Stake Protection: If a player placed a bet in this house but no opponent joined (< 2 players),
@@ -2845,6 +2877,8 @@ class BingoGameEngine {
               winningIndices: [],
               totalPot: r.totalPot,
               houseFee: 0,
+              jackpotFee: 0,
+              jackpotPool: r.jackpotPoolBalance || 0,
               netPrizePot: 0,
               commissionPercent: 0,
               winnerPayout: 0,
@@ -2916,6 +2950,17 @@ class BingoGameEngine {
         realWinnersByUser.set(rw.userId, list);
       }
 
+      const isRoom10 = room.id === 'room-10' || room.id === ARENA_ROOM_ID || room.id === 'default';
+      const dbRoomId = isRoom10 ? 'room-10' : room.id;
+
+      // Phase 3: Progressive Jackpot Hit Detection (Real player wins in <= 18 balls drawn)
+      const ballsDrawn = room.drawnNumbers.length;
+      const isJackpotHit = realWinners.length > 0 && ballsDrawn <= 18 && (room.jackpotPoolBalance || 0) > 0;
+      const totalJackpotAwarded = isJackpotHit ? (room.jackpotPoolBalance || 0) : 0;
+      const jackpotSharePerRealUser = (isJackpotHit && realWinnersByUser.size > 0)
+        ? Math.floor(totalJackpotAwarded / realWinnersByUser.size)
+        : 0;
+
       const netPayout = room.winnerPayout > 0 ? room.winnerPayout : room.totalPot;
       const perCardPayout = Math.max(1, Math.floor(netPayout / totalWinningCards));
 
@@ -2929,8 +2974,10 @@ class BingoGameEngine {
             for (const [userId, userWinningCards] of realWinnersByUser.entries()) {
               const userTickets = room.tickets.get(userId) || [];
 
-              // Calculate total payout for this user based on dynamic net prize pool:
-              const userTotalWin = userWinningCards.length * perCardPayout;
+              // Calculate total payout: regular 70% pot share + progressive jackpot share (if hit)
+              const normalWin = userWinningCards.length * perCardPayout;
+              const userJackpotShare = isJackpotHit ? jackpotSharePerRealUser : 0;
+              const userTotalWin = normalWin + userJackpotShare;
 
               primaryUserPayout = userTotalWin;
               displayWinnerPayout = userTotalWin;
@@ -2956,15 +3003,26 @@ class BingoGameEngine {
                 const firstTicket = userTickets.find(t => t.cartelaId === userWinningCards[0].cartelaId);
                 const ticketStake = firstTicket?.betAmount || room.stakeAmount;
 
-                const description = isSplit
-                  ? `Split Pot Winner (${userWinningCards.length} of ${totalWinningCards} cards, ${ticketStake} ETB Stake) in ${room.name} (Cartela ${winningCardIds})${isOffline ? ' [Protected Offline Auto-Claim]' : ''}`
-                  : `Bingo Solo Winner (${ticketStake} ETB Stake) in ${room.name} (Cartela ${winningCardIds})${isOffline ? ' [Protected Offline Auto-Claim]' : ''}`;
+                const description = isJackpotHit
+                  ? `🔥 PROGRESSIVE JACKPOT + Bingo Winner (${userWinningCards.length} cards, ${ticketStake} ETB Stake) in ${room.name} (Cartela ${winningCardIds}) [${normalWin} ETB Pot + ${userJackpotShare} ETB Jackpot Hit in ${ballsDrawn} balls!]${isOffline ? ' [Protected Offline Auto-Claim]' : ''}`
+                  : isSplit
+                    ? `Split Pot Winner (${userWinningCards.length} of ${totalWinningCards} cards, ${ticketStake} ETB Stake) in ${room.name} (Cartela ${winningCardIds})${isOffline ? ' [Protected Offline Auto-Claim]' : ''}`
+                    : `Bingo Solo Winner (${ticketStake} ETB Stake) in ${room.name} (Cartela ${winningCardIds})${isOffline ? ' [Protected Offline Auto-Claim]' : ''}`;
 
                 await client.query(
                   `INSERT INTO wallet_transactions (user_id, type, amount, balance_after, reference_code, status, payment_method, description)
                    VALUES ($1, 'win', $2, $3, $4, 'completed', 'in_game', $5)`,
                   [userId, userTotalWin, newBal, winRef, description]
                 );
+
+                // Record progressive jackpot winner if hit
+                if (isJackpotHit) {
+                  await client.query(
+                    `INSERT INTO jackpot_winners (room_id, round_id, user_id, amount, balls_count)
+                     VALUES ($1, $2, $3, $4, $5)`,
+                    [dbRoomId, room.currentRoundId || null, userId, userJackpotShare, ballsDrawn]
+                  );
+                }
 
                 // Disconnect Protection: Record in authoritative offline/online ledger
                 const winRecord: OfflineWinRecord = {
@@ -2990,7 +3048,7 @@ class BingoGameEngine {
                 telegramBotService.announceBigWinner(
                   userWinningCards[0].userName,
                   userTotalWin,
-                  room.name,
+                  isJackpotHit ? `${room.name} [PROGRESSIVE JACKPOT]` : room.name,
                   userWinningCards[0].cartelaId
                 ).catch(() => { });
 
@@ -3008,9 +3066,81 @@ class BingoGameEngine {
                 });
               }
             }
+
+            // Reset jackpot pool in DB back to seed_amount on jackpot hit
+            if (isJackpotHit) {
+              const resetRes = await client.query(
+                `UPDATE jackpot_pool 
+                 SET balance = seed_amount, 
+                     last_won_amount = $1, 
+                     last_winner_user_id = $2, 
+                     last_won_at = NOW(), 
+                     updated_at = NOW() 
+                 WHERE room_id = $3 
+                 RETURNING balance, seed_amount`,
+                [totalJackpotAwarded, Array.from(realWinnersByUser.keys())[0], dbRoomId]
+              );
+              if (resetRes.rows.length > 0) {
+                const seedBal = parseFloat(resetRes.rows[0].balance || resetRes.rows[0].seed_amount || '0');
+                room.jackpotPoolBalance = seedBal;
+                if (isRoom10) {
+                  const r10 = this.rooms.get('room-10');
+                  if (r10) r10.jackpotPoolBalance = seedBal;
+                  const arena = this.rooms.get(ARENA_ROOM_ID);
+                  if (arena) arena.jackpotPoolBalance = seedBal;
+                  const def = this.rooms.get('default');
+                  if (def) def.jackpotPoolBalance = seedBal;
+                }
+              }
+            }
           });
+
+          if (isJackpotHit) {
+            io.emit('jackpot_won', {
+              roomId: room.id,
+              roomName: room.name,
+              winnerNames: Array.from(new Set(realWinners.map(w => w.userName))),
+              amount: totalJackpotAwarded,
+              ballsCount: ballsDrawn,
+              newPoolBalance: room.jackpotPoolBalance
+            });
+            console.log(`🏆 [Jackpot Hit!] Real player(s) won progressive jackpot of ${totalJackpotAwarded} ETB in ${room.id} (${ballsDrawn} balls)!`);
+          }
         } catch (err) {
           console.error(`❌ [GameEngine Error processing winning payout in ${room.id}]:`, err);
+        }
+      }
+
+      // Progressive Jackpot Rollover: If jackpot not hit and pot has jackpot fee, roll over into pool
+      if (!isJackpotHit && room.jackpotFee > 0 && (room.tickets.size > 0 || realWinners.length > 0)) {
+        try {
+          const rolloverRes = await query(
+            `UPDATE jackpot_pool 
+             SET balance = balance + $1, updated_at = NOW() 
+             WHERE room_id = $2 
+             RETURNING balance`,
+            [room.jackpotFee, dbRoomId]
+          );
+          if (rolloverRes.rows.length > 0) {
+            const newPoolBal = parseFloat(rolloverRes.rows[0].balance || '0');
+            room.jackpotPoolBalance = newPoolBal;
+            if (isRoom10) {
+              const r10 = this.rooms.get('room-10');
+              if (r10) r10.jackpotPoolBalance = newPoolBal;
+              const arena = this.rooms.get(ARENA_ROOM_ID);
+              if (arena) arena.jackpotPoolBalance = newPoolBal;
+              const def = this.rooms.get('default');
+              if (def) def.jackpotPoolBalance = newPoolBal;
+            }
+          }
+          io.emit('jackpot_update', {
+            roomId: room.id,
+            balance: room.jackpotPoolBalance,
+            added: room.jackpotFee
+          });
+          console.log(`🎰 [Progressive Jackpot Rollover] +${room.jackpotFee} ETB (10% pot) -> ${room.id} pool. Current Balance: ${room.jackpotPoolBalance} ETB`);
+        } catch (rollErr) {
+          console.error(`⚠️ [GameEngine] Error rolling over jackpot fee in ${room.id}:`, rollErr);
         }
       }
 
@@ -3092,6 +3222,10 @@ class BingoGameEngine {
         winningIndices: firstWinner.winningIndices,
         totalPot: room.totalPot,
         houseFee: room.houseFee || 0,
+        jackpotFee: room.jackpotFee || 0,
+        jackpotPool: room.jackpotPoolBalance || 0,
+        isJackpotHit: !!isJackpotHit,
+        jackpotWonAmount: isJackpotHit ? totalJackpotAwarded : 0,
         netPrizePot: room.winnerPayout > 0 ? room.winnerPayout : room.totalPot,
         commissionPercent: room.commissionEnabled ? (room.commissionPercent || 20) : 0,
         winnerPayout: effectiveWinnerPayout,
@@ -3455,6 +3589,9 @@ class BingoGameEngine {
       playersCount: this.getRoomPlayersCount(room),
       totalPot: room.totalPot,
       winnerPayout: room.winnerPayout,
+      houseFee: room.houseFee || 0,
+      jackpotFee: room.jackpotFee || 0,
+      jackpotPool: room.jackpotPoolBalance || 0,
       stakeAmount: room.stakeAmount,
       drawnNumbers: room.drawnNumbers,
       drawnNumbersCount: room.drawnNumbers.length,
