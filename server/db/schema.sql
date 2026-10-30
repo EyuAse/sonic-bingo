@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS wallets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     balance NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CHECK (balance >= 0),
-    bonus NUMERIC(12, 2) NOT NULL DEFAULT 10.00 CHECK (bonus >= 0),
+    bonus NUMERIC(12, 2) NOT NULL DEFAULT 20.00 CHECK (bonus >= 0),
     locked_balance NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CHECK (locked_balance >= 0),
     currency VARCHAR(10) DEFAULT 'ETB',
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
@@ -75,8 +75,8 @@ CREATE INDEX IF NOT EXISTS idx_wallet_tx_created ON wallet_transactions(created_
 CREATE TABLE IF NOT EXISTS deposit_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    amount NUMERIC(12, 2) NOT NULL CHECK (amount >= 10),
-    payment_method VARCHAR(50) NOT NULL CHECK (payment_method IN ('Telebirr', 'CBE')),
+    amount NUMERIC(12, 2) NOT NULL CHECK (amount >= 50 AND amount <= 5000),
+    payment_method VARCHAR(50) NOT NULL CHECK (payment_method IN ('Telebirr', 'CBE', 'M-Pesa')),
     player_phone VARCHAR(30) NOT NULL,
     transaction_ref VARCHAR(100) UNIQUE NOT NULL,
     receipt_image TEXT,
@@ -95,8 +95,8 @@ CREATE INDEX IF NOT EXISTS idx_deposit_tx_ref ON deposit_requests(transaction_re
 CREATE TABLE IF NOT EXISTS withdrawal_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    amount NUMERIC(12, 2) NOT NULL CHECK (amount >= 50),
-    payment_method VARCHAR(50) NOT NULL CHECK (payment_method IN ('Telebirr', 'CBE')),
+    amount NUMERIC(12, 2) NOT NULL CHECK (amount >= 50 AND amount <= 5000),
+    payment_method VARCHAR(50) NOT NULL CHECK (payment_method IN ('Telebirr', 'CBE', 'M-Pesa')),
     account_phone VARCHAR(30) NOT NULL,
     account_name VARCHAR(100),
     status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'completed')),
@@ -145,7 +145,7 @@ CREATE TABLE IF NOT EXISTS game_tickets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     round_id UUID NOT NULL REFERENCES game_rounds(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    cartela_id INT NOT NULL CHECK (cartela_id BETWEEN 1 AND 400),
+    cartela_id INT NOT NULL CHECK (cartela_id BETWEEN 1 AND 600),
     card_matrix JSONB NOT NULL,
     bet_amount NUMERIC(10, 2) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'won', 'lost', 'cancelled')),
@@ -218,3 +218,102 @@ CREATE INDEX IF NOT EXISTS idx_referrals_referred ON referrals(referred_user_id)
 CREATE INDEX IF NOT EXISTS idx_referrals_status ON referrals(status);
 
 
+
+-- 13. Coin Wallets Table (Loyalty Rewards 1.5x of deposit)
+CREATE TABLE IF NOT EXISTS coin_wallets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    balance INT NOT NULL DEFAULT 0 CHECK (balance >= 0),
+    lifetime_earned INT NOT NULL DEFAULT 0 CHECK (lifetime_earned >= 0),
+    lifetime_redeemed INT NOT NULL DEFAULT 0 CHECK (lifetime_redeemed >= 0),
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_coin_wallets_user ON coin_wallets(user_id);
+
+-- 14. Coin Transactions Table (1,000 Coins = 10 ETB Redemption)
+CREATE TABLE IF NOT EXISTS coin_transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    amount INT NOT NULL,
+    type VARCHAR(30) NOT NULL CHECK (type IN ('earned_deposit', 'redeemed_bonus', 'admin_adjustment')),
+    balance_after INT NOT NULL,
+    reference_id VARCHAR(100),
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_coin_tx_user ON coin_transactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_coin_tx_created ON coin_transactions(created_at DESC);
+
+-- 15. Progressive Jackpot Pool (10% pot allocation rollover)
+CREATE TABLE IF NOT EXISTS jackpot_pool (
+    room_id VARCHAR(50) PRIMARY KEY REFERENCES game_rooms(id),
+    balance NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CHECK (balance >= 0),
+    seed_amount NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CHECK (seed_amount >= 0),
+    last_won_amount NUMERIC(12, 2) DEFAULT 0.00,
+    last_winner_user_id UUID REFERENCES users(id),
+    last_won_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 16. Progressive Jackpot Winners Ledger
+CREATE TABLE IF NOT EXISTS jackpot_winners (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id VARCHAR(50) NOT NULL REFERENCES game_rooms(id),
+    round_id UUID REFERENCES game_rounds(id),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    amount NUMERIC(12, 2) NOT NULL,
+    balls_count INT NOT NULL,
+    won_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_jackpot_winners_room ON jackpot_winners(room_id);
+CREATE INDEX IF NOT EXISTS idx_jackpot_winners_user ON jackpot_winners(user_id);
+
+-- 17. Agent Profiles Table (Decentralized Cashier Network)
+CREATE TABLE IF NOT EXISTS agent_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    agent_code VARCHAR(50) UNIQUE NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'suspended', 'pending')),
+    wallet_balance NUMERIC(12, 2) NOT NULL DEFAULT 10000.00 CHECK (wallet_balance >= 0),
+    initial_deposit NUMERIC(12, 2) NOT NULL DEFAULT 10000.00,
+    low_balance_threshold NUMERIC(12, 2) NOT NULL DEFAULT 1000.00,
+    target_monthly NUMERIC(12, 2) NOT NULL DEFAULT 50000.00,
+    commission_rate NUMERIC(5, 2) NOT NULL DEFAULT 5.00,
+    low_balance_alert_sent BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_agent_code ON agent_profiles(agent_code);
+CREATE INDEX IF NOT EXISTS idx_agent_user ON agent_profiles(user_id);
+
+-- 18. Agent Wallet Recharge Requests (Telebirr / M-Pesa / CBE)
+CREATE TABLE IF NOT EXISTS agent_recharge_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    agent_id UUID NOT NULL REFERENCES agent_profiles(id) ON DELETE CASCADE,
+    amount NUMERIC(12, 2) NOT NULL CHECK (amount >= 1000),
+    payment_method VARCHAR(50) NOT NULL CHECK (payment_method IN ('Telebirr', 'M-Pesa', 'CBE')),
+    transaction_code VARCHAR(100) UNIQUE NOT NULL,
+    receipt_image TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    reviewed_by UUID REFERENCES users(id),
+    reviewed_at TIMESTAMPTZ,
+    admin_notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_agent_recharge_status ON agent_recharge_requests(status);
+CREATE INDEX IF NOT EXISTS idx_agent_recharge_agent ON agent_recharge_requests(agent_id);
+
+-- 19. Payment Accounts (Admin Dynamic Accounts Rotation)
+CREATE TABLE IF NOT EXISTS payment_accounts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    provider VARCHAR(50) NOT NULL CHECK (provider IN ('Telebirr', 'M-Pesa', 'CBE')),
+    account_number VARCHAR(100) NOT NULL,
+    account_name VARCHAR(150) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    daily_limit NUMERIC(12, 2) DEFAULT 100000.00,
+    current_daily_turnover NUMERIC(12, 2) DEFAULT 0.00,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_payment_accounts_provider ON payment_accounts(provider);

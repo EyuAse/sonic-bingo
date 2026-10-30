@@ -114,7 +114,7 @@ router.post('/telegram', async (req, res) => {
 
       // Backfill referral_code if missing
       if (!userRow.referral_code) {
-        const genCode = 'LOMI-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        const genCode = 'SONIC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
         await query('UPDATE users SET referral_code = $1 WHERE id = $2', [genCode, userRow.id]);
         userRow.referral_code = genCode;
       }
@@ -140,7 +140,7 @@ router.post('/telegram', async (req, res) => {
     } else {
       // New User: Create atomically with initial 10 ETB Welcome Bonus & Referral Attribution
       isNewUser = true;
-      const myReferralCode = 'LOMI-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+      const myReferralCode = 'SONIC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
       const result = await withTransaction(async (client) => {
         // Resolve referrer if valid code passed
@@ -182,10 +182,10 @@ router.post('/telegram', async (req, res) => {
           console.log(`🎁 [Referral Link] User ${newUser.id} attributed to referrer ${referrerId}`);
         }
 
-        // Create Wallet with 10 ETB Welcome Bonus
+        // Create Wallet with 20 ETB Welcome Bonus (Enqu Requirements)
         const newWalletRes = await client.query(
           `INSERT INTO wallets (user_id, balance, bonus, locked_balance)
-           VALUES ($1, 0.00, 10.00, 0.00)
+           VALUES ($1, 0.00, 20.00, 0.00)
            RETURNING *`,
           [newUser.id]
         );
@@ -194,17 +194,26 @@ router.post('/telegram', async (req, res) => {
         // Record Welcome Bonus Ledger Transaction
         await client.query(
           `INSERT INTO wallet_transactions (user_id, type, amount, balance_after, reference_code, status, payment_method, description)
-           VALUES ($1, 'bonus', 10.00, 10.00, $2, 'completed', 'welcome_reward', 'Telegram Mini App 10 ETB Registration Bonus')`,
+           VALUES ($1, 'bonus', 20.00, 20.00, $2, 'completed', 'welcome_reward', 'Sonic Bingo 20 ETB Registration Bonus')`,
           [newUser.id, `BONUS-TG-${tgIdNum}-${Date.now().toString().slice(-6)}`]
         );
 
-        return { user: newUser, wallet: newWallet };
+        // Initialize Coin Wallet (Loyalty System)
+        await client.query(
+          `INSERT INTO coin_wallets (user_id, balance, lifetime_earned, lifetime_redeemed)
+           VALUES ($1, 0, 0, 0)
+           ON CONFLICT (user_id) DO NOTHING`,
+          [newUser.id]
+        );
+
+
+      return { user: newUser, wallet: newWallet };
       });
 
       userRow = result.user;
       walletRow = {
         balance: parseFloat(result.wallet.balance || '0'),
-        bonus: parseFloat(result.wallet.bonus || '10.00'),
+        bonus: parseFloat(result.wallet.bonus || '20.00'),
         lockedBalance: parseFloat(result.wallet.locked_balance || '0')
       };
 
@@ -216,7 +225,7 @@ router.post('/telegram', async (req, res) => {
         telegramUsername: userRow.telegram_username,
         role: userRow.role,
         balance: 0,
-        bonus: 10,
+        bonus: 20,
         createdAt: userRow.created_at
       });
     }
@@ -321,7 +330,7 @@ router.post('/register', async (req, res) => {
 
       const newWalletRes = await client.query(
         `INSERT INTO wallets (user_id, balance, bonus, locked_balance)
-         VALUES ($1, 0.00, 10.00, 0.00)
+         VALUES ($1, 0.00, 20.00, 0.00)
          RETURNING *`,
         [newUser.id]
       );
@@ -329,8 +338,16 @@ router.post('/register', async (req, res) => {
 
       await client.query(
         `INSERT INTO wallet_transactions (user_id, type, amount, balance_after, reference_code, status, payment_method, description)
-         VALUES ($1, 'bonus', 10.00, 10.00, $2, 'completed', 'welcome_reward', 'Web 10 ETB Registration Bonus')`,
+         VALUES ($1, 'bonus', 20.00, 20.00, $2, 'completed', 'welcome_reward', 'Sonic Bingo 20 ETB Registration Bonus')`,
         [newUser.id, `BONUS-WEB-${Date.now().toString().slice(-6)}`]
+      );
+
+      // Initialize Coin Wallet (Loyalty System)
+      await client.query(
+        `INSERT INTO coin_wallets (user_id, balance, lifetime_earned, lifetime_redeemed)
+         VALUES ($1, 0, 0, 0)
+         ON CONFLICT (user_id) DO NOTHING`,
+        [newUser.id]
       );
 
       return { user: newUser, wallet: newWallet };
@@ -351,7 +368,7 @@ router.post('/register', async (req, res) => {
       phone: result.user.phone,
       role: result.user.role,
       balance: 0,
-      bonus: 10,
+      bonus: 20,
       createdAt: result.user.created_at
     });
 
@@ -367,7 +384,7 @@ router.post('/register', async (req, res) => {
       },
       wallet: {
         balance: parseFloat(result.wallet.balance || '0'),
-        bonus: parseFloat(result.wallet.bonus || '10.00'),
+        bonus: parseFloat(result.wallet.bonus || '20.00'),
         lockedBalance: parseFloat(result.wallet.locked_balance || '0')
       }
     });

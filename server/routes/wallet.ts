@@ -49,8 +49,8 @@ router.post('/deposit', requireAuth, async (req: AuthenticatedRequest, res) => {
       return res.status(400).json({ success: false, error: 'Minimum deposit is 50 ETB.' });
     }
 
-    if (!paymentMethod || !['Telebirr', 'CBE'].includes(paymentMethod)) {
-      return res.status(400).json({ success: false, error: 'Payment method must be Telebirr or CBE.' });
+    if (!paymentMethod || !['Telebirr', 'CBE', 'M-Pesa'].includes(paymentMethod)) {
+      return res.status(400).json({ success: false, error: 'Payment method must be Telebirr, CBE, or M-Pesa.' });
     }
 
     if (!playerPhone || playerPhone.trim().length < 8) {
@@ -117,12 +117,12 @@ router.post('/withdraw', requireAuth, async (req: AuthenticatedRequest, res) => 
     const { amount, paymentMethod, accountPhone, accountName } = req.body;
 
     const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount < 50) {
-      return res.status(400).json({ success: false, error: 'Minimum withdrawal amount is 50 ETB.' });
+    if (isNaN(numAmount) || numAmount < 50 || numAmount > 5000) {
+      return res.status(400).json({ success: false, error: 'Withdrawal amount must be between 50 and 5,000 ETB.' });
     }
 
-    if (!paymentMethod || !['Telebirr', 'CBE'].includes(paymentMethod)) {
-      return res.status(400).json({ success: false, error: 'Payment method must be Telebirr or CBE.' });
+    if (!paymentMethod || !['Telebirr', 'CBE', 'M-Pesa'].includes(paymentMethod)) {
+      return res.status(400).json({ success: false, error: 'Payment method must be Telebirr, CBE, or M-Pesa.' });
     }
 
     if (!accountPhone || accountPhone.trim().length < 8) {
