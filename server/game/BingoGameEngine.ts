@@ -133,6 +133,8 @@ function getRandomBotStake(): number {
 export const ARENA_ROOM_ID = 'lomi-arena';
 export const ROOM_ALIASES = ['lomi-arena', 'room-10', 'room-20', 'room-50', 'room-100', 'default'];
 export const STAKE_ROOM_IDS = ['room-10', 'room-20', 'room-50', 'room-100'];
+export const TOTAL_CARTELAS = 600;
+export const MAX_TICKETS_PER_PLAYER = 4;
 
 class BingoGameEngine {
   private static instance: BingoGameEngine;
@@ -819,9 +821,9 @@ class BingoGameEngine {
     // Determine quantity requested (1 or 2 cards)
     let quantity = 1;
     if (Array.isArray(requestedCartelaIds)) {
-      quantity = Math.max(1, Math.min(2, requestedCartelaIds.length));
+      quantity = Math.max(1, Math.min(MAX_TICKETS_PER_PLAYER, requestedCartelaIds.length));
     } else if (typeof requestedCartelaIds === 'number') {
-      quantity = Math.max(1, Math.min(2, requestedCartelaIds));
+      quantity = Math.max(1, Math.min(MAX_TICKETS_PER_PLAYER, requestedCartelaIds));
     }
 
     // Multi-Device / Double-Click Protection: If user already has active or pre-bought tickets, return existing tickets without deducting balance again
@@ -851,7 +853,7 @@ class BingoGameEngine {
         : (typeof requestedCartelaIds === 'number' ? [requestedCartelaIds] : []);
 
       for (const reqId of requestedList) {
-        if (reqId >= 1 && reqId <= 400) {
+        if (reqId >= 1 && reqId <= TOTAL_CARTELAS) {
           const conflictingBotIdx = room.opponentCards.findIndex(o => isStandbyBotId(o.botUserId) && o.cartelaId === reqId);
           if (conflictingBotIdx !== -1) {
             // Find taken IDs by real players and other bots
@@ -861,9 +863,9 @@ class BingoGameEngine {
             requestedList.forEach(id => taken.add(id));
             room.opponentCards.forEach((o, idx) => { if (idx !== conflictingBotIdx) taken.add(o.cartelaId); });
 
-            let newBotCartelaId = Math.floor(1 + Math.random() * 400);
+            let newBotCartelaId = Math.floor(1 + Math.random() * TOTAL_CARTELAS);
             while (taken.has(newBotCartelaId)) {
-              newBotCartelaId = Math.floor(1 + Math.random() * 400);
+              newBotCartelaId = Math.floor(1 + Math.random() * TOTAL_CARTELAS);
             }
 
             const yieldedBot = room.opponentCards[conflictingBotIdx];
@@ -890,19 +892,19 @@ class BingoGameEngine {
     const getNextUniqueCartelaId = (): number => {
       let attempts = 0;
       while (attempts < 1000) {
-        const id = Math.floor(1 + Math.random() * 400);
+        const id = Math.floor(1 + Math.random() * TOTAL_CARTELAS);
         if (!assignedIds.has(id) && !drawnIds.includes(id)) {
           return id;
         }
         attempts++;
       }
-      return Math.floor(1 + Math.random() * 400);
+      return Math.floor(1 + Math.random() * TOTAL_CARTELAS);
     };
 
     if (Array.isArray(requestedCartelaIds) && requestedCartelaIds.length > 0) {
       for (let i = 0; i < quantity; i++) {
         const reqId = requestedCartelaIds[i];
-        if (reqId && reqId >= 1 && reqId <= 400) {
+        if (reqId && reqId >= 1 && reqId <= TOTAL_CARTELAS) {
           if (!assignedIds.has(reqId) && !drawnIds.includes(reqId)) {
             drawnIds.push(reqId);
           } else {
@@ -914,7 +916,7 @@ class BingoGameEngine {
           }
         }
       }
-    } else if (typeof requestedCartelaIds === 'number' && requestedCartelaIds >= 1 && requestedCartelaIds <= 400) {
+    } else if (typeof requestedCartelaIds === 'number' && requestedCartelaIds >= 1 && requestedCartelaIds <= TOTAL_CARTELAS) {
       if (!assignedIds.has(requestedCartelaIds)) {
         drawnIds.push(requestedCartelaIds);
       } else {
@@ -1200,10 +1202,10 @@ class BingoGameEngine {
       }
 
       for (let i = 0; i < sampledBots.length; i++) {
-        let botCartelaId = Math.floor(1 + Math.random() * 400);
+        let botCartelaId = Math.floor(1 + Math.random() * TOTAL_CARTELAS);
         let attempts = 0;
         while (assignedIds.has(botCartelaId) && attempts < 1000) {
-          botCartelaId = Math.floor(1 + Math.random() * 400);
+          botCartelaId = Math.floor(1 + Math.random() * TOTAL_CARTELAS);
           attempts++;
         }
         assignedIds.add(botCartelaId);
@@ -1234,10 +1236,10 @@ class BingoGameEngine {
           .slice(0, targetCount - room.opponentCards.length);
 
         for (const botProfile of missingBots) {
-          let botCartelaId = Math.floor(1 + Math.random() * 400);
+          let botCartelaId = Math.floor(1 + Math.random() * TOTAL_CARTELAS);
           let attempts = 0;
           while (assignedIds.has(botCartelaId) && attempts < 1000) {
-            botCartelaId = Math.floor(1 + Math.random() * 400);
+            botCartelaId = Math.floor(1 + Math.random() * TOTAL_CARTELAS);
             attempts++;
           }
           assignedIds.add(botCartelaId);
@@ -1263,13 +1265,13 @@ class BingoGameEngine {
 
       for (const bot of room.opponentCards) {
         if (assignedIds.has(bot.cartelaId)) {
-          let newBotCartelaId = Math.floor(1 + Math.random() * 400);
+          let newBotCartelaId = Math.floor(1 + Math.random() * TOTAL_CARTELAS);
           let attempts = 0;
           while (
             (assignedIds.has(newBotCartelaId) || room.opponentCards.some(o => o !== bot && o.cartelaId === newBotCartelaId)) &&
             attempts < 1000
           ) {
-            newBotCartelaId = Math.floor(1 + Math.random() * 400);
+            newBotCartelaId = Math.floor(1 + Math.random() * TOTAL_CARTELAS);
             attempts++;
           }
           console.log(`🤝 [Room 10 Bot Auto-Yield] Bot "${bot.opponentName}" yielded colliding Cartela #${bot.cartelaId} -> new Cartela #${newBotCartelaId}`);
@@ -1336,9 +1338,9 @@ class BingoGameEngine {
           }
 
           for (let i = 0; i < baselineBots.length; i++) {
-            let botCartelaId = Math.floor(1 + Math.random() * 400);
+            let botCartelaId = Math.floor(1 + Math.random() * TOTAL_CARTELAS);
             while (assignedIds.has(botCartelaId)) {
-              botCartelaId = Math.floor(1 + Math.random() * 400);
+              botCartelaId = Math.floor(1 + Math.random() * TOTAL_CARTELAS);
             }
             assignedIds.add(botCartelaId);
             const b = baselineBots[i];
@@ -1494,9 +1496,9 @@ class BingoGameEngine {
 
             const nextBot = room10.targetBotsToSeed[nextBotIdx];
 
-            let botCartelaId = Math.floor(1 + Math.random() * 400);
+            let botCartelaId = Math.floor(1 + Math.random() * TOTAL_CARTELAS);
             while (assignedIds.has(botCartelaId)) {
-              botCartelaId = Math.floor(1 + Math.random() * 400);
+              botCartelaId = Math.floor(1 + Math.random() * TOTAL_CARTELAS);
             }
             assignedIds.add(botCartelaId);
 
@@ -1602,9 +1604,9 @@ class BingoGameEngine {
             room.tickets.forEach(list => list.forEach(t => assignedIds.add(t.cartelaId)));
 
             for (let i = 0; i < 3; i++) {
-              let botCartelaId = Math.floor(1 + Math.random() * 400);
+              let botCartelaId = Math.floor(1 + Math.random() * TOTAL_CARTELAS);
               while (assignedIds.has(botCartelaId)) {
-                botCartelaId = Math.floor(1 + Math.random() * 400);
+                botCartelaId = Math.floor(1 + Math.random() * TOTAL_CARTELAS);
               }
               assignedIds.add(botCartelaId);
               const botProfile = botPool[i];

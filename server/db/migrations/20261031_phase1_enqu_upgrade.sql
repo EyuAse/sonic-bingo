@@ -171,3 +171,4 @@ ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
 INSERT INTO coin_wallets (user_id, balance, lifetime_earned, lifetime_redeemed)
 SELECT id, 0, 0, 0 FROM users
 ON CONFLICT (user_id) DO NOTHING;
+

@@ -72,3 +72,4 @@ runPhase1Migration().catch((err) => {
   console.error('Fatal Phase 1 error:', err);
   process.exit(1);
 });
+

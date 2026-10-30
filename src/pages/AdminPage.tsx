@@ -57,7 +57,7 @@ export const AdminPage: React.FC = () => {
                 {activeTab === 'users' && 'Player Accounts & Wallets Directory'}
                 {activeTab === 'bots' && '200 Bot Player Accounts & Wallets'}
                 {activeTab === 'bot-engine' && 'Room 10 Dynamic Bot Engine (0-50 Control Desk)'}
-                {activeTab === 'cartelas' && '400 Serial Cartela Cards Library'}
+                {activeTab === 'cartelas' && '600 Serial Cartela Cards Library'}
                 {activeTab === 'telegram-bot' && 'Telegram Bot & Ads Broadcast Center'}
               </h2>
               <p className="viewport-page-amharic-sub">
@@ -67,7 +67,7 @@ export const AdminPage: React.FC = () => {
                 {activeTab === 'users' && 'የተመዘገቡ ተጫዋቾች፣ የዋሌት ቀሪ ሂሳብ እና የቦነስ ማበረታቻዎች'}
                 {activeTab === 'bots' && 'እውነተኛ የውሂብ ጎታ ያላቸው 200 የቦቶች ዋሌቶች፣ ራስ-ሰር ተወራራጅነት እና የቀጥታ አሸናፊነት መዝገብ'}
                 {activeTab === 'bot-engine' && 'የክፍል 10 ተለዋዋጭ ቦቶች ቁጥጥር ማዕከል - ከ 0 እስከ 50 ቦቶች በቀጥታ ያስተካክሉ'}
-                {activeTab === 'cartelas' && '400 የቢንጎ ካርቴላ ካርዶች ቤተ-መጽሐፍት'}
+                {activeTab === 'cartelas' && '600 የቢንጎ ካርቴላ ካርዶች ቤተ-መጽሐፍት'}
                 {activeTab === 'telegram-bot' && 'የቴሌግራም ቦት ማስተዋወቂያ፣ የቻናል ልጥፎች እና የተጠቃሚዎች ማስታወቂያ ማዕከል'}
               </p>
             </div>
@@ -128,7 +128,7 @@ export const AdminPage: React.FC = () => {
             { id: 'users', label: '👥 Players' },
             { id: 'bots', label: '🤖 200 Bots' },
             { id: 'telegram-bot', label: '📢 Telegram Bot' },
-            { id: 'cartelas', label: '🗂️ 400 Cards' }
+            { id: 'cartelas', label: '🗂️ 600 Cards' }
           ].map(t => (
             <button
               key={t.id}

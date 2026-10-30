@@ -31,7 +31,7 @@ export const CartelasDesk: React.FC = () => {
   const handleJumpRange = (start: number) => {
     const pageTarget = Math.ceil(start / cardsPerPage) || 1;
     setCurrentPage(pageTarget);
-    showToast(`✓ Viewing Cards ${start} to ${Math.min(start + cardsPerPage - 1, 400)}`);
+    showToast(`✓ Viewing Cards ${start} to ${Math.min(start + cardsPerPage - 1, 600)}`);
   };
 
   const handleCopySerial = (serial: string) => {
@@ -51,13 +51,13 @@ export const CartelasDesk: React.FC = () => {
             <div className="cartelas-hero-badge-row">
               <span className="cartelas-live-badge">
                 <span className="pulse-green-dot"></span>
-                <span>400 SERIALIZED CARDS ACTIVE</span>
+                <span>600 SERIALIZED CARDS ACTIVE</span>
               </span>
-              <span className="cartelas-uptime-tag">LB-0001 to LB-0400</span>
+              <span className="cartelas-uptime-tag">LB-0001 to LB-0600</span>
             </div>
-            <h1 className="cartelas-hero-main-title">400 SERIAL CARTELA CARDS LIBRARY</h1>
+            <h1 className="cartelas-hero-main-title">600 SERIAL CARTELA CARDS LIBRARY</h1>
             <p className="cartelas-hero-sub-title">
-              የሎሚ ቢንጎ 400 ካርቴላ ካርዶች ቤተ-መጽሐፍት፣ የቁጥሮች አቀማመጥ እና የካርድ አጠቃቀም
+              የሶኒክ ቢንጎ 600 ካርቴላ ካርዶች ቤተ-መጽሐፍት፣ የቁጥሮች አቀማመጥ እና የካርድ አጠቃቀም
             </p>
           </div>
         </div>
@@ -78,7 +78,7 @@ export const CartelasDesk: React.FC = () => {
 
           <div className="cartelas-status-chip">
             <i className="fa-solid fa-grid-2"></i>
-            <span>Pool Size: 400 Unique Boards</span>
+            <span>Pool Size: 600 Unique Boards</span>
           </div>
         </div>
       </div>
@@ -93,9 +93,9 @@ export const CartelasDesk: React.FC = () => {
               <i className="fa-solid fa-layer-group"></i>
             </div>
           </div>
-          <div className="ckpi-value gold">400 <span className="ckpi-unit">Cartelas</span></div>
+          <div className="ckpi-value gold">600 <span className="ckpi-unit">Cartelas</span></div>
           <div className="ckpi-footer">
-            <span className="ckpi-badge gold">LB-0001 &ndash; LB-0400</span>
+            <span className="ckpi-badge gold">LB-0001 &ndash; LB-0600</span>
             <span className="ckpi-micro-text">Zero duplicate layouts</span>
           </div>
         </div>
@@ -210,7 +210,7 @@ export const CartelasDesk: React.FC = () => {
               <i className="fa-solid fa-magnifying-glass search-icon"></i>
               <input
                 type="text"
-                placeholder="Search Card # (1-400) or LB-0042..."
+                placeholder="Search Card # (1-600) or LB-0042..."
                 value={searchQuery}
                 onChange={e => {
                   setSearchQuery(e.target.value);

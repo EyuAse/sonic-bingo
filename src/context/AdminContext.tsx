@@ -221,9 +221,9 @@ const generateEthiopianBots = (): BotPlayer[] => {
 };
 
 // Generate 400 Unique Cartela Definitions
-const generate400Cartelas = (): CartelaCard[] => {
+const generate600Cartelas = (): CartelaCard[] => {
   const cards: CartelaCard[] = [];
-  for (let c = 1; c <= 400; c++) {
+  for (let c = 1; c <= 600; c++) {
     let seed = c * 7919 + 1013;
     const pseudoRandom = () => {
       seed = (seed * 9301 + 49297) % 233280;
@@ -287,7 +287,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [botWinRate, setBotWinRateState] = useState<number>(30);
   const [ownerWinTarget, setOwnerWinTargetState] = useState<number>(20);
   const [botPool] = useState<BotPlayer[]>(generateEthiopianBots);
-  const [cartelaPool] = useState<CartelaCard[]>(generate400Cartelas);
+  const [cartelaPool] = useState<CartelaCard[]>(generate600Cartelas);
 
   const setHouseCommissionEnabled = (enabled: boolean) => {
     setHouseCommissionEnabledState(enabled);
