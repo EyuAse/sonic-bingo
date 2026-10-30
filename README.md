@@ -1,14 +1,12 @@
-# 🍋 Lomi Bingo (Betika Bingo Mini-App)
+# sonic-bingo
 
-> Pixel-perfect, high-performance real-time Telegram Mini-App Bingo Casino platform.
+> High-performance, real-time Telegram Mini-App Bingo Casino platform.
 
 ---
 
-## 📖 AI Assistant & Developer Handover Guide
+## 📖 Handover & Architectural Blueprint
 
-If you are continuing work on this project on another computer or with a new AI assistant, please refer to the master handover guide:
-
-👉 **[AGENTS.md](AGENTS.md)** — Complete architectural documentation, Cloudflare edge offloading, multi-room isolation rules, Ethiopian bot schedule, bingo math specifications, and setup instructions.
+Refer to **[AGENTS.md](AGENTS.md)** and **[SONIC_BINGO_RENDER_AND_TELEGRAM_PLAN.md](SONIC_BINGO_RENDER_AND_TELEGRAM_PLAN.md)** for complete architectural specifications, zero-cost edge offloading, multi-room mechanics, Ethiopian bot schedules, and deployment guides.
 
 ---
 
@@ -20,20 +18,21 @@ If you are continuing work on this project on another computer or with a new AI 
 
 ---
 
-## 🚀 Quick Setup on a New PC
+## 🚀 Quick Setup & Deployment
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/EyuAse/Bingo-Mini-app.git
-cd Bingo-Mini-app
+git clone https://github.com/EyuAse/sonic-bingo.git
+cd sonic-bingo
 
-# 2. Add backup mirror remote
-git remote add tycons-origin https://github.com/tycons9/Bingo-Mini-app.git
-
-# 3. Install dependencies
+# 2. Install dependencies
 npm install
 
-# 4. Copy .env with DATABASE_URL, TELEGRAM_BOT_TOKEN, etc.
+# 3. Configure environment (.env)
+# Set your Neon DATABASE_URL, TELEGRAM_BOT_TOKEN, JWT_SECRET
+
+# 4. Run database migrations
+npm run db:migrate
 
 # 5. Run test suites
 npx tsc --noEmit
@@ -46,7 +45,5 @@ npm run dev
 
 ---
 
-## 🏛️ Repository Architecture & Remotes
-
-- **Production Primary**: [`https://github.com/EyuAse/Bingo-Mini-app`](https://github.com/EyuAse/Bingo-Mini-app) (`origin`) — Deployed to Render & Cloudflare.
-- **Backup Mirror**: [`https://github.com/tycons9/Bingo-Mini-app`](https://github.com/tycons9/Bingo-Mini-app) (`tycons-origin`).
+## 🏛️ Git Remote
+- **Primary**: `https://github.com/EyuAse/sonic-bingo.git` (`origin`)
