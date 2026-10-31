@@ -1208,5 +1208,302 @@ router.get('/my-agent-deposits', requireAuth, async (req: AuthenticatedRequest, 
   }
 });
 
+/**
+ * POST /api/wallet/withdraw-via-agent
+ * Decentralized Player Withdrawal through Selected Online Agent
+ * Locks player funds into atomic escrow until agent confirms mobile payout.
+ */
+router.post('/withdraw-via-agent', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const { agentId, amount, payoutMethod, payoutAccount, payoutAccountName } = req.body;
+
+    if (!agentId || !amount || !payoutMethod || !payoutAccount) {
+      return res.status(400).json({
+        success: false,
+        error: 'Agent ID, amount, payout method, and receiving account are required'
+      });
+    }
+
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount < 50 || numAmount > 5000) {
+      return res.status(400).json({
+        success: false,
+        error: 'Withdrawal amount must be between 50 and 5,000 ETB'
+      });
+    }
+
+    const validMethods = ['Telebirr', 'CBE', 'M-Pesa'];
+    if (!validMethods.includes(payoutMethod)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid payout method. Supported: ${validMethods.join(', ')}`
+      });
+    }
+
+    // 1. Verify agent exists, is active, and online
+    const agentRes = await query(
+      `SELECT id, agent_code, status, is_online FROM agent_profiles WHERE id = $1`,
+      [agentId]
+    );
+    if (agentRes.rows.length === 0 || agentRes.rows[0].status !== 'active') {
+      return res.status(400).json({ success: false, error: 'Selected agent is not available. Please pick another agent.' });
+    }
+    const agent = agentRes.rows[0];
+
+    // 2. Atomic Escrow Transaction
+    const result = await withTransaction(async (client) => {
+      // Lock player wallet FOR UPDATE
+      const walletRes = await client.query(
+        `SELECT id, balance FROM wallets WHERE user_id = $1 FOR UPDATE`,
+        [userId]
+      );
+      if (walletRes.rows.length === 0) {
+        throw new Error('Wallet not found');
+      }
+
+      const currentBalance = parseFloat(walletRes.rows[0].balance || '0');
+      if (currentBalance < numAmount) {
+        throw new Error(`Insufficient withdrawable balance. Available: ${currentBalance.toFixed(2)} ETB`);
+      }
+
+      const newBalance = currentBalance - numAmount;
+
+      // Deduct balance into escrow
+      await client.query(
+        `UPDATE wallets SET balance = $1, updated_at = NOW() WHERE user_id = $2`,
+        [newBalance, userId]
+      );
+
+      // Create withdrawal request row
+      const reqRes = await client.query(
+        `INSERT INTO agent_withdrawal_requests (
+          player_id, agent_id, amount, payout_method, payout_account,
+          payout_account_name, player_balance_before, player_balance_after, status
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
+        RETURNING *`,
+        [
+          userId,
+          agent.id,
+          numAmount,
+          payoutMethod,
+          payoutAccount.trim(),
+          payoutAccountName ? payoutAccountName.trim() : (req.user!.fullName || null),
+          currentBalance,
+          newBalance
+        ]
+      );
+
+      // Record pending ledger transaction
+      const txRef = `WDR-AGT-${Date.now().toString().slice(-6)}`;
+      await client.query(
+        `INSERT INTO wallet_transactions (
+          user_id, type, amount, balance_after, reference_code,
+          status, payment_method, description
+        )
+        VALUES ($1, 'withdrawal', $2, $3, $4, 'pending', $5, $6)`,
+        [
+          userId,
+          numAmount,
+          newBalance,
+          txRef,
+          payoutMethod,
+          `Withdrawal via Sonic Agent #${agent.agent_code} (${payoutMethod}: ${payoutAccount})`
+        ]
+      );
+
+      return {
+        withdrawal: reqRes.rows[0],
+        newBalance,
+        txRef
+      };
+    });
+
+    // 3. Emit real-time WebSocket notifications
+    const agentAlertPayload = {
+      requestId: result.withdrawal.id,
+      amount: numAmount,
+      payoutMethod,
+      payoutAccount: payoutAccount.trim(),
+      payoutAccountName: payoutAccountName || req.user!.fullName,
+      playerName: req.user!.fullName || 'Player',
+      playerUsername: req.user!.telegramUsername || null,
+      createdAt: result.withdrawal.created_at
+    };
+
+    io.emit(`agent_${agent.id}_new_withdrawal_request`, agentAlertPayload);
+    io.emit(`agent_${agent.id}_request_updated`, {
+      type: 'withdrawal',
+      requestId: result.withdrawal.id,
+      status: 'pending'
+    });
+
+    // Push updated balance to player
+    const balancePayload = {
+      userId,
+      newBalance: result.newBalance,
+      balance: result.newBalance,
+      amount: -numAmount,
+      type: 'withdrawal_escrow'
+    };
+    io.emit('user_balance_updated', balancePayload);
+    io.emit(`user_${userId}_balance`, balancePayload);
+
+    return res.json({
+      success: true,
+      message: `Withdrawal request for ${numAmount.toFixed(2)} ETB submitted to Sonic Agent #${agent.agent_code}.`,
+      request: {
+        id: result.withdrawal.id,
+        amount: numAmount,
+        payoutMethod,
+        payoutAccount: payoutAccount.trim(),
+        agentCode: agent.agent_code,
+        agentDisplayName: `Sonic Agent #${agent.agent_code}`,
+        status: 'pending',
+        createdAt: result.withdrawal.created_at
+      },
+      newBalance: result.newBalance
+    });
+  } catch (error: any) {
+    console.error('❌ [Wallet Withdraw via Agent Error]:', error);
+    return res.status(400).json({ success: false, error: error.message || 'Failed to submit withdrawal request' });
+  }
+});
+
+/**
+ * GET /api/wallet/my-agent-withdrawals
+ * Get player's recent agent withdrawal requests
+ */
+router.get('/my-agent-withdrawals', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const requestsRes = await query(
+      `SELECT req.id, req.amount, req.payout_method, req.payout_account, req.payout_account_name,
+              req.status, req.agent_tx_ref, req.rejection_reason, req.created_at, req.resolved_at,
+              ap.agent_code, ap.telebirr_phone, ap.cbe_account
+       FROM agent_withdrawal_requests req
+       JOIN agent_profiles ap ON req.agent_id = ap.id
+       WHERE req.player_id = $1
+       ORDER BY req.created_at DESC
+       LIMIT 20`,
+      [userId]
+    );
+
+    return res.json({
+      success: true,
+      requests: requestsRes.rows.map(r => ({
+        id: r.id,
+        amount: parseFloat(r.amount),
+        payoutMethod: r.payout_method,
+        payoutAccount: r.payout_account,
+        payoutAccountName: r.payout_account_name,
+        agentTxRef: r.agent_tx_ref,
+        status: r.status,
+        rejectionReason: r.rejection_reason,
+        createdAt: r.created_at,
+        resolvedAt: r.resolved_at,
+        agentCode: r.agent_code,
+        agentDisplayName: `Sonic Agent #${r.agent_code}`
+      }))
+    });
+  } catch (error: any) {
+    console.error('❌ [Wallet My Agent Withdrawals Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve agent withdrawal requests' });
+  }
+});
+
+/**
+ * POST /api/wallet/cancel-agent-withdrawal
+ * Allows player to cancel a pending agent withdrawal request and refunds escrow.
+ */
+router.post('/cancel-agent-withdrawal', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const { requestId } = req.body;
+
+    if (!requestId) {
+      return res.status(400).json({ success: false, error: 'Request ID is required' });
+    }
+
+    const result = await withTransaction(async (client) => {
+      const reqRes = await client.query(
+        `SELECT * FROM agent_withdrawal_requests 
+         WHERE id = $1 AND player_id = $2 FOR UPDATE`,
+        [requestId, userId]
+      );
+
+      if (reqRes.rows.length === 0) {
+        throw new Error('Withdrawal request not found');
+      }
+
+      const withReq = reqRes.rows[0];
+      if (withReq.status !== 'pending') {
+        throw new Error(`Cannot cancel request with status "${withReq.status}"`);
+      }
+
+      const refundAmount = parseFloat(withReq.amount);
+
+      // Refund escrow to player wallet
+      const walletRes = await client.query(
+        `UPDATE wallets 
+         SET balance = balance + $1, updated_at = NOW() 
+         WHERE user_id = $2 
+         RETURNING balance`,
+        [refundAmount, userId]
+      );
+      const refundedBal = parseFloat(walletRes.rows[0].balance);
+
+      // Mark request as cancelled
+      await client.query(
+        `UPDATE agent_withdrawal_requests 
+         SET status = 'cancelled', resolved_at = NOW() 
+         WHERE id = $1`,
+        [requestId]
+      );
+
+      // Update wallet_transactions ledger
+      await client.query(
+        `UPDATE wallet_transactions 
+         SET status = 'cancelled' 
+         WHERE user_id = $1 AND type = 'withdrawal' AND status = 'pending' 
+           AND amount = $2 AND created_at >= $3`,
+        [userId, refundAmount, withReq.created_at]
+      );
+
+      return {
+        refundAmount,
+        refundedBal,
+        agentId: withReq.agent_id
+      };
+    });
+
+    // Real-time WebSocket push
+    const balancePayload = {
+      userId,
+      newBalance: result.refundedBal,
+      balance: result.refundedBal,
+      amount: result.refundAmount,
+      type: 'withdrawal_cancelled_refund'
+    };
+    io.emit('user_balance_updated', balancePayload);
+    io.emit(`user_${userId}_balance`, balancePayload);
+    io.emit(`agent_${result.agentId}_request_updated`, {
+      type: 'withdrawal',
+      requestId,
+      status: 'cancelled'
+    });
+
+    return res.json({
+      success: true,
+      message: `Withdrawal request cancelled. ${result.refundAmount.toFixed(2)} ETB refunded to your balance.`,
+      newBalance: result.refundedBal
+    });
+  } catch (error: any) {
+    console.error('❌ [Wallet Cancel Agent Withdrawal Error]:', error);
+    return res.status(400).json({ success: false, error: error.message || 'Failed to cancel withdrawal request' });
+  }
+});
+
 export default router;
 

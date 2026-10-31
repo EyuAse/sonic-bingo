@@ -478,6 +478,71 @@ export const apiClient = {
           agentDisplayName: string;
         }>;
       }>(res);
+    },
+
+    async withdrawViaAgent(payload: {
+      agentId: string;
+      amount: number;
+      payoutMethod: 'Telebirr' | 'CBE' | 'CBEBirr' | 'M-Pesa' | string;
+      payoutAccount: string;
+      payoutAccountName?: string;
+    }) {
+      const res = await fetch(`${API_BASE}/wallet/withdraw-via-agent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify(payload)
+      });
+      return handleResponse<{
+        success: boolean;
+        message: string;
+        request: {
+          id: string;
+          amount: number;
+          payoutMethod: string;
+          payoutAccount: string;
+          agentCode: string;
+          agentDisplayName: string;
+          status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+          createdAt: string;
+        };
+        newBalance: number;
+      }>(res);
+    },
+
+    async getMyAgentWithdrawals() {
+      const res = await fetch(`${API_BASE}/wallet/my-agent-withdrawals`, {
+        headers: { ...getAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        requests: Array<{
+          id: string;
+          amount: number;
+          payoutMethod: string;
+          payoutAccount: string;
+          payoutAccountName?: string;
+          agentTxRef?: string;
+          status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+          rejectionReason?: string;
+          createdAt: string;
+          resolvedAt?: string;
+          agentCode: string;
+          agentDisplayName: string;
+        }>;
+      }>(res);
+    },
+
+    async cancelAgentWithdrawal(requestId: string) {
+      const res = await fetch(`${API_BASE}/wallet/cancel-agent-withdrawal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify({ requestId })
+      });
+      return handleResponse<{
+        success: boolean;
+        message: string;
+        newBalance: number;
+      }>(res);
     }
   },
 
@@ -909,13 +974,15 @@ export const apiClient = {
           fullName: string;
           phone: string;
           username: string;
-          balance: number;
+          status: string;
         }>;
       }>(res);
     },
 
     async depositForPlayer(payload: {
-      playerPhone: string;
+      playerId?: string;
+      playerPhone?: string;
+      username?: string;
       amount: number;
       paymentMethod?: string;
     }) {
@@ -1111,6 +1178,126 @@ export const apiClient = {
         agentCode: string;
         isOnline: boolean;
         message: string;
+      }>(res);
+    },
+
+    async getWithdrawalRequests() {
+      const res = await fetch(`${API_BASE}/agent/withdrawal-requests`, {
+        headers: { ...getAgentAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        pendingCount: number;
+        requests: Array<{
+          id: string;
+          amount: number;
+          payoutMethod: string;
+          payoutAccount: string;
+          payoutAccountName?: string;
+          agentTxRef?: string;
+          agentCommissionEarned: number;
+          status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+          rejectionReason?: string;
+          createdAt: string;
+          resolvedAt?: string;
+          playerId: string;
+          playerName: string;
+          playerPhone?: string;
+          playerUsername?: string;
+        }>;
+      }>(res);
+    },
+
+    async approveWithdrawalRequest(requestId: string, agentTxRef: string) {
+      const res = await fetch(`${API_BASE}/agent/withdrawal-requests/${requestId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAgentAuthHeader() },
+        body: JSON.stringify({ agentTxRef })
+      });
+      return handleResponse<{
+        success: boolean;
+        message: string;
+        details: {
+          withdrawalAmount: number;
+          commissionEarned: number;
+          newAgentBalance: number;
+          agentTxRef: string;
+        };
+      }>(res);
+    },
+
+    async rejectWithdrawalRequest(requestId: string, reason: string) {
+      const res = await fetch(`${API_BASE}/agent/withdrawal-requests/${requestId}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAgentAuthHeader() },
+        body: JSON.stringify({ reason })
+      });
+      return handleResponse<{
+        success: boolean;
+        message: string;
+        rejectionReason: string;
+      }>(res);
+    },
+
+    async getCommissionOverview() {
+      const res = await fetch(`${API_BASE}/agent/commission/overview`, {
+        headers: { ...getAgentAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        commissionBalance: number;
+        walletBalance: number;
+        lifetimeEarned: number;
+        commissionRate: number;
+        breakdown: {
+          deposit: number;
+          withdrawal: number;
+          referral_first_deposit: number;
+        };
+        recentPayouts: Array<{
+          id: string;
+          amount: number;
+          payoutMethod: string;
+          payoutAccount: string;
+          status: string;
+          createdAt: string;
+          settledAt?: string;
+        }>;
+      }>(res);
+    },
+
+    async convertCommissionToFloat(amount?: number) {
+      const res = await fetch(`${API_BASE}/agent/commission/convert-to-float`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAgentAuthHeader() },
+        body: JSON.stringify({ amount })
+      });
+      return handleResponse<{
+        success: boolean;
+        message: string;
+        convertedAmount: number;
+        newWalletBalance: number;
+        newCommissionBalance: number;
+      }>(res);
+    },
+
+    async requestCommissionCashout(payload: {
+      amount: number;
+      payoutMethod: 'Telebirr' | 'CBE' | 'CBEBirr' | string;
+      payoutAccount: string;
+      payoutAccountName?: string;
+    }) {
+      const res = await fetch(`${API_BASE}/agent/commission/request-cashout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAgentAuthHeader() },
+        body: JSON.stringify(payload)
+      });
+      return handleResponse<{
+        success: boolean;
+        message: string;
+        payoutId: string;
+        amount: number;
+        newCommissionBalance: number;
       }>(res);
     }
   }

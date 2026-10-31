@@ -9,8 +9,10 @@ import { AgentSidebar, AgentDeskTab } from '../components/agent/AgentSidebar.tsx
 import { AgentHeader } from '../components/agent/AgentHeader.tsx';
 import { AgentDashboardDesk } from '../components/agent/AgentDashboardDesk.tsx';
 import { AgentDepositRequestsDesk } from '../components/agent/AgentDepositRequestsDesk.tsx';
+import { AgentWithdrawalRequestsDesk } from '../components/agent/AgentWithdrawalRequestsDesk.tsx';
 import { AgentCashInDesk } from '../components/agent/AgentCashInDesk.tsx';
 import { AgentCashOutDesk } from '../components/agent/AgentCashOutDesk.tsx';
+import { AgentCommissionDesk } from '../components/agent/AgentCommissionDesk.tsx';
 import { AgentRechargeDesk } from '../components/agent/AgentRechargeDesk.tsx';
 import { AgentPlayersDesk } from '../components/agent/AgentPlayersDesk.tsx';
 import { AgentStatementDesk } from '../components/agent/AgentStatementDesk.tsx';
@@ -53,6 +55,7 @@ export const AgentPortalPage: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [pendingRequestsCount, setPendingRequestsCount] = useState<number>(0);
+  const [pendingWithdrawalsCount, setPendingWithdrawalsCount] = useState<number>(0);
 
   // Agent Session & Data
   const [profile, setProfile] = useState<AgentProfile | null>(null);
@@ -73,10 +76,11 @@ export const AgentPortalPage: React.FC = () => {
   const loadAgentData = async () => {
     try {
       setLoading(true);
-      const [profileRes, perfRes, reqsRes] = await Promise.all([
+      const [profileRes, perfRes, reqsRes, withRes] = await Promise.all([
         apiClient.agent.getProfile(),
         apiClient.agent.getPerformance(),
-        apiClient.agent.getDepositRequests('pending').catch(() => ({ success: false, pendingCount: 0 }))
+        apiClient.agent.getDepositRequests('pending').catch(() => ({ success: false, pendingCount: 0 })),
+        apiClient.agent.getWithdrawalRequests().catch(() => ({ success: false, requests: [] }))
       ]);
 
       if (profileRes.success && profileRes.profile) {
@@ -88,6 +92,10 @@ export const AgentPortalPage: React.FC = () => {
       }
       if (reqsRes.success && typeof reqsRes.pendingCount === 'number') {
         setPendingRequestsCount(reqsRes.pendingCount);
+      }
+      if (withRes.success && withRes.requests) {
+        const pendingCount = withRes.requests.filter((r: any) => r.status === 'pending').length;
+        setPendingWithdrawalsCount(pendingCount);
       }
     } catch (err: any) {
       console.warn('Agent session not active:', err.message);
@@ -106,14 +114,19 @@ export const AgentPortalPage: React.FC = () => {
     }
   }, []);
 
-  // Real-Time Socket Listener for Incoming Player Deposit Requests
+  // Real-Time Socket Listener for Incoming Player Deposit & Withdrawal Requests
   useEffect(() => {
     if (!profile?.id) return;
 
     const unsubNewReq = socketService.on(`agent_${profile.id}_new_request`, (data: any) => {
       showToast(`📥 New Deposit Request: +${data.amount} ETB from ${data.playerPhone}`);
       setPendingRequestsCount(prev => prev + 1);
-      // Refresh profile & metrics
+      loadAgentData();
+    });
+
+    const unsubNewWithReq = socketService.on(`agent_${profile.id}_new_withdrawal_request`, (data: any) => {
+      showToast(`📤 New Withdrawal Request: ${data.amount} ETB to ${data.payoutMethod}`);
+      setPendingWithdrawalsCount(prev => prev + 1);
       loadAgentData();
     });
 
@@ -129,6 +142,7 @@ export const AgentPortalPage: React.FC = () => {
 
     return () => {
       unsubNewReq();
+      unsubNewWithReq();
       unsubGlobalReq();
       unsubReqUpdated();
     };
@@ -324,6 +338,7 @@ export const AgentPortalPage: React.FC = () => {
         closeMobile={() => setIsMobileOpen(false)}
         agentProfile={profile}
         pendingRequestsCount={pendingRequestsCount}
+        pendingWithdrawalsCount={pendingWithdrawalsCount}
         onLogout={handleLogout}
       />
 
@@ -366,6 +381,15 @@ export const AgentPortalPage: React.FC = () => {
             />
           )}
 
+          {/* Desk: Player Withdrawal Requests Queue */}
+          {activeTab === 'withdrawal_requests' && (
+            <AgentWithdrawalRequestsDesk
+              agentProfile={profile}
+              onActionCompleted={loadAgentData}
+              showToast={showToast}
+            />
+          )}
+
           {/* Desk 2: Player Cash-In */}
           {activeTab === 'cash_in' && (
             <AgentCashInDesk
@@ -376,10 +400,11 @@ export const AgentPortalPage: React.FC = () => {
             />
           )}
 
-          {/* Desk 3: Cash-Out Voucher Counter */}
+          {/* Desk 3: Commission Wallet */}
           {activeTab === 'cash_out' && (
-            <AgentCashOutDesk
-              onPayoutSuccess={loadAgentData}
+            <AgentCommissionDesk
+              agentProfile={profile}
+              onRefresh={loadAgentData}
               showToast={showToast}
             />
           )}

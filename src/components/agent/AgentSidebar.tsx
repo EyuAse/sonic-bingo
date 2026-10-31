@@ -3,6 +3,7 @@ import React from 'react';
 export type AgentDeskTab =
   | 'overview'
   | 'deposit_requests'
+  | 'withdrawal_requests'
   | 'cash_in'
   | 'cash_out'
   | 'recharge'
@@ -19,6 +20,7 @@ interface AgentSidebarProps {
   closeMobile: () => void;
   agentProfile: any;
   pendingRequestsCount?: number;
+  pendingWithdrawalsCount?: number;
   onLogout: () => void;
 }
 
@@ -31,6 +33,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
   closeMobile,
   agentProfile,
   pendingRequestsCount = 0,
+  pendingWithdrawalsCount = 0,
   onLogout
 }) => {
   const navItems: Array<{
@@ -40,13 +43,12 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
   }> = [
     { id: 'overview', label: 'Dashboard', icon: 'fa-solid fa-table-cells-large' },
     { id: 'deposit_requests', label: 'Deposit Requests', icon: 'fa-solid fa-inbox' },
+    { id: 'withdrawal_requests', label: 'Withdrawal Desk', icon: 'fa-solid fa-money-bill-transfer' },
     { id: 'players', label: 'My Players', icon: 'fa-solid fa-users' },
-    { id: 'cash_in', label: 'Wallet', icon: 'fa-solid fa-wallet' },
-    { id: 'cash_out', label: 'Commission', icon: 'fa-solid fa-percent' },
+    { id: 'cash_in', label: 'Direct Cash-In', icon: 'fa-solid fa-bolt' },
+    { id: 'cash_out', label: 'Commission Desk', icon: 'fa-solid fa-coins' },
     { id: 'recharge', label: 'Targets', icon: 'fa-solid fa-bullseye' },
     { id: 'statements', label: 'Transactions', icon: 'fa-solid fa-clock-rotate-left' },
-    { id: 'profile', label: 'Referrals', icon: 'fa-solid fa-user-plus' },
-    { id: 'profile', label: 'Support', icon: 'fa-solid fa-headset' },
     { id: 'profile', label: 'Settings', icon: 'fa-solid fa-gear' },
   ];
 
@@ -190,6 +192,21 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
                         {pendingRequestsCount}
                       </span>
                     )}
+                    {item.id === 'withdrawal_requests' && pendingWithdrawalsCount > 0 && (
+                      <span
+                        style={{
+                          background: '#f59e0b',
+                          color: '#000000',
+                          borderRadius: '9999px',
+                          padding: '1px 7px',
+                          fontSize: '10px',
+                          fontWeight: 900,
+                          lineHeight: '14px'
+                        }}
+                      >
+                        {pendingWithdrawalsCount}
+                      </span>
+                    )}
                   </span>
                 )}
                 {isCollapsed && item.id === 'deposit_requests' && pendingRequestsCount > 0 && (
@@ -202,6 +219,19 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
                       height: '8px',
                       borderRadius: '50%',
                       background: '#ef4444'
+                    }}
+                  />
+                )}
+                {isCollapsed && item.id === 'withdrawal_requests' && pendingWithdrawalsCount > 0 && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: '6px',
+                      right: '10px',
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      background: '#f59e0b'
                     }}
                   />
                 )}

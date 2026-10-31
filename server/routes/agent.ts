@@ -131,16 +131,19 @@ router.get('/profile', requireAgent, async (req: AuthenticatedRequest, res: Resp
 
 /**
  * Deposit for Player (Cash-in)
- * Agent collects payment from player via Telebirr/M-Pesa and instantly credits player's wallet
- * from the agent's pre-funded platform wallet balance.
+ * Agent collects payment from player via Telebirr/M-Pesa/Cash and instantly credits player's wallet
+ * from the agent's pre-funded platform wallet balance. Supports lookup by UUID, phone, or Telegram username.
  */
 router.post('/deposit-for-player', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
-    const { playerPhone, amount, paymentMethod } = req.body;
+    const { playerId, playerPhone, username, amount, paymentMethod } = req.body;
 
-    if (!playerPhone || !amount) {
-      return res.status(400).json({ success: false, error: 'Player phone and deposit amount are required' });
+    if ((!playerId && !playerPhone && !username) || !amount) {
+      return res.status(400).json({
+        success: false,
+        error: 'Player identifier (ID, phone, or username) and deposit amount are required'
+      });
     }
 
     const numAmount = parseFloat(amount);
@@ -148,8 +151,9 @@ router.post('/deposit-for-player', requireAgent, async (req: AuthenticatedReques
       return res.status(400).json({ success: false, error: 'Minimum deposit amount is 50 ETB' });
     }
 
-    const method = paymentMethod === 'M-Pesa' ? 'M-Pesa' : 'Telebirr';
-    const cleanPhone = playerPhone.trim();
+    const method = paymentMethod === 'M-Pesa' ? 'M-Pesa' : (paymentMethod === 'Cash' ? 'Cash' : 'Telebirr');
+    const cleanPhone = (playerPhone || '').trim();
+    const cleanUsername = (username || '').replace(/^@/, '').trim();
 
     const result = await withTransaction(async (client) => {
       // 1. Lock agent profile
@@ -171,22 +175,45 @@ router.post('/deposit-for-player', requireAgent, async (req: AuthenticatedReques
         throw new Error(`Insufficient agent balance (${agentBal.toFixed(2)} ETB). Please recharge your agent wallet.`);
       }
 
-      // 2. Find player user
-      const playerRes = await client.query(
-        `SELECT u.id, u.full_name, u.agent_id, w.balance 
-         FROM users u
-         JOIN wallets w ON u.id = w.user_id
-         WHERE u.phone = $1 FOR UPDATE`,
-        [cleanPhone]
-      );
+      // 2. Find player user by UUID first (most authoritative), phone, or username
+      let playerRes;
+      if (playerId) {
+        playerRes = await client.query(
+          `SELECT u.id, u.full_name, u.phone, u.telegram_username, u.agent_id, 
+                  COALESCE(w.balance, 0) as balance, w.id as wallet_id
+           FROM users u
+           LEFT JOIN wallets w ON u.id = w.user_id
+           WHERE u.id = $1 FOR UPDATE OF u`,
+          [playerId]
+        );
+      } else if (cleanPhone) {
+        playerRes = await client.query(
+          `SELECT u.id, u.full_name, u.phone, u.telegram_username, u.agent_id, 
+                  COALESCE(w.balance, 0) as balance, w.id as wallet_id
+           FROM users u
+           LEFT JOIN wallets w ON u.id = w.user_id
+           WHERE u.phone = $1 FOR UPDATE OF u`,
+          [cleanPhone]
+        );
+      } else if (cleanUsername) {
+        playerRes = await client.query(
+          `SELECT u.id, u.full_name, u.phone, u.telegram_username, u.agent_id, 
+                  COALESCE(w.balance, 0) as balance, w.id as wallet_id
+           FROM users u
+           LEFT JOIN wallets w ON u.id = w.user_id
+           WHERE u.telegram_username ILIKE $1 FOR UPDATE OF u`,
+          [cleanUsername]
+        );
+      }
 
-      if (playerRes.rows.length === 0) {
-        throw new Error(`Player with phone ${cleanPhone} not found in Sonic Bingo.`);
+      if (!playerRes || playerRes.rows.length === 0) {
+        throw new Error(`Player not found in Sonic Bingo.`);
       }
 
       const player = playerRes.rows[0];
       const newAgentBal = agentBal - numAmount;
-      const newPlayerBal = parseFloat(player.balance || '0') + numAmount;
+      const oldPlayerBal = parseFloat(player.balance || '0');
+      const newPlayerBal = oldPlayerBal + numAmount;
       const refCode = `AGT-DEP-${Date.now().toString().slice(-6)}`;
 
       // 3. Deduct from agent wallet
@@ -199,12 +226,13 @@ router.post('/deposit-for-player', requireAgent, async (req: AuthenticatedReques
         [newAgentBal, agent.id]
       );
 
-      // 4. Credit player wallet
+      // 4. Atomically upsert player wallet
       await client.query(
-        `UPDATE wallets 
-         SET balance = $1, updated_at = NOW() 
-         WHERE user_id = $2`,
-        [newPlayerBal, player.id]
+        `INSERT INTO wallets (user_id, balance, bonus, currency, updated_at)
+         VALUES ($1, $2, 0.00, 'ETB', NOW())
+         ON CONFLICT (user_id) DO UPDATE 
+         SET balance = wallets.balance + $3, updated_at = NOW()`,
+        [player.id, numAmount, numAmount]
       );
 
       // 5. Flag player has_deposited and link agent if not linked
@@ -251,25 +279,32 @@ router.post('/deposit-for-player', requireAgent, async (req: AuthenticatedReques
         newAgentBal,
         playerId: player.id,
         playerName: player.full_name,
+        playerPhone: player.phone,
+        playerUsername: player.telegram_username,
         newPlayerBal,
         isLowBalance: newAgentBal <= parseFloat(agent.low_balance_threshold || '1000')
       };
     });
 
-    // Live Socket Notifications
-    io.emit(`user_${result.playerId}_balance`, {
-      type: 'deposit_credited',
+    // Broadcast live WebSocket notifications across all player & agent channels
+    const balancePayload = {
+      userId: result.playerId,
+      newBalance: result.newPlayerBal,
+      balance: result.newPlayerBal,
       amount: numAmount,
-      newBalance: result.newPlayerBal
-    });
-    io.emit('user_balance_updated', { userId: result.playerId });
+      type: 'deposit_credited'
+    };
+    io.emit('user_balance_updated', balancePayload);
+    io.emit(`user_${result.playerId}_balance`, balancePayload);
+    io.to(`user_${result.playerId}`).emit('user_balance_updated', balancePayload);
+    io.emit('deposit_status_updated', { userId: result.playerId });
 
     return res.json({
       success: true,
       message: `Successfully credited ${numAmount.toFixed(2)} ETB to ${result.playerName}`,
       referenceCode: result.refCode,
       playerName: result.playerName,
-      playerPhone: cleanPhone,
+      playerPhone: result.playerPhone || result.playerUsername || 'Telegram Account',
       amount: numAmount,
       newAgentBalance: result.newAgentBal,
       isLowBalance: result.isLowBalance,
@@ -517,7 +552,8 @@ router.get('/performance', requireAgent, async (req: AuthenticatedRequest, res: 
 });
 
 /**
- * Search Players for Fast Cash-In (By Phone Number, Full Name, or Username)
+ * Search Players for Fast Cash-In (By Phone Number, Full Name, Username, or Telegram ID)
+ * Privacy Guard: Player wallet balance is strictly confidential and 100% REDACTED from agent results.
  */
 router.get('/search-player', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -526,23 +562,30 @@ router.get('/search-player', requireAgent, async (req: AuthenticatedRequest, res
       return res.json({ success: true, players: [] });
     }
 
-    const searchParam = `%${rawQuery}%`;
+    const cleanQuery = rawQuery.replace(/^@/, '');
+    const searchParam = `%${cleanQuery}%`;
     const searchRes = await query(
-      `SELECT u.id, u.full_name, u.phone, u.telegram_username as username, w.balance
+      `SELECT u.id, u.full_name, u.phone, u.telegram_username as username, u.telegram_id, u.status
        FROM users u
-       LEFT JOIN wallets w ON u.id = w.user_id
-       WHERE (u.phone ILIKE $1 OR u.full_name ILIKE $1 OR u.telegram_username ILIKE $1)
+       WHERE (
+         u.phone ILIKE $1 
+         OR u.full_name ILIKE $1 
+         OR u.telegram_username ILIKE $1
+         OR CAST(u.telegram_id AS TEXT) ILIKE $1
+       )
        ORDER BY u.created_at DESC
        LIMIT 10`,
       [searchParam]
     );
 
+    // Balance is 100% redacted for financial privacy
     const players = searchRes.rows.map(row => ({
       id: row.id,
-      fullName: row.full_name,
-      phone: row.phone,
-      username: row.username,
-      balance: parseFloat(row.balance || '0')
+      fullName: row.full_name || row.username || 'Sonic Player',
+      phone: row.phone || '',
+      username: row.username || '',
+      telegramId: row.telegram_id,
+      status: 'active'
     }));
 
     return res.json({ success: true, players });
@@ -1014,13 +1057,22 @@ router.post('/deposit-requests/:id/approve', requireAgent, async (req: Authentic
         );
       }
 
-      // C. Lock player wallet
-      const playerWalletRes = await client.query(
+      // C. Lock player wallet (with automatic creation if needed)
+      let playerWalletRes = await client.query(
         `SELECT id, balance, user_id FROM wallets WHERE user_id = $1 FOR UPDATE`,
         [depReq.player_id]
       );
       if (playerWalletRes.rows.length === 0) {
-        throw new Error('Player wallet not found');
+        await client.query(
+          `INSERT INTO wallets (user_id, balance, bonus, currency, updated_at)
+           VALUES ($1, 0.00, 0.00, 'ETB', NOW())
+           ON CONFLICT (user_id) DO NOTHING`,
+          [depReq.player_id]
+        );
+        playerWalletRes = await client.query(
+          `SELECT id, balance, user_id FROM wallets WHERE user_id = $1 FOR UPDATE`,
+          [depReq.player_id]
+        );
       }
       const playerWallet = playerWalletRes.rows[0];
       const playerOldBalance = parseFloat(playerWallet.balance || '0');
@@ -1068,17 +1120,18 @@ router.post('/deposit-requests/:id/approve', requireAgent, async (req: Authentic
         [agentId, depReq.player_id, depositAmount, agentBalAfter, playerBalAfter, depReq.payment_method, depReq.transaction_code]
       );
 
-      // J. Record in player's transactions ledger
+      // J. Record in player's wallet_transactions ledger
       await client.query(
-        `INSERT INTO transactions 
-          (user_id, type, amount, status, payment_method, description, reference_id)
-         VALUES ($1, 'deposit', $2, 'completed', $3, $4, $5)`,
+        `INSERT INTO wallet_transactions 
+          (user_id, type, amount, balance_after, reference_code, status, payment_method, description)
+         VALUES ($1, 'deposit', $2, $3, $4, 'completed', $5, $6)`,
         [
           depReq.player_id,
           depositAmount,
+          playerBalAfter,
+          depReq.transaction_code,
           depReq.payment_method,
-          `Deposit via Sonic Agent #${agentProfile.agent_code}`,
-          depReq.transaction_code
+          `Deposit via Sonic Agent #${agentProfile.agent_code}`
         ]
       );
 
@@ -1108,13 +1161,21 @@ router.post('/deposit-requests/:id/approve', requireAgent, async (req: Authentic
       };
     });
 
-    // 3. Broadcast real-time WebSocket notifications
-    io.emit('user_balance_updated', { userId: result.playerId });
-    io.emit(`user_${result.playerId}_balance`, {
-      type: 'agent_deposit_approved',
+    // 3. Broadcast real-time WebSocket notifications across all player & agent channels
+    const balancePayload = {
+      userId: result.playerId,
+      newBalance: result.playerBalAfter,
+      balance: result.playerBalAfter,
       amount: result.depositAmount,
-      coinsEarned: result.coinsEarned,
-      newBalance: result.playerBalAfter
+      type: 'deposit_credited'
+    };
+    io.emit('user_balance_updated', balancePayload);
+    io.emit(`user_${result.playerId}_balance`, balancePayload);
+    io.to(`user_${result.playerId}`).emit('user_balance_updated', balancePayload);
+    io.emit('deposit_status_updated', {
+      userId: result.playerId,
+      requestId: result.requestId,
+      status: 'approved'
     });
     io.emit(`user_${result.playerId}_deposit_approved`, {
       requestId: result.requestId,
@@ -1187,11 +1248,16 @@ router.post('/deposit-requests/:id/reject', requireAgent, async (req: Authentica
       [rejectionReason, requestId]
     );
 
-    // Broadcast WebSocket rejection to player
+    // Broadcast WebSocket rejection to player across all listener channels
     io.emit(`user_${depReq.player_id}_deposit_rejected`, {
       requestId,
       reason: rejectionReason,
       agentDisplayName: `Sonic Agent #${agentRes.rows[0].agent_code}`
+    });
+    io.emit('deposit_status_updated', {
+      userId: depReq.player_id,
+      requestId,
+      status: 'rejected'
     });
     io.emit(`agent_${agentId}_request_updated`, {
       requestId,
@@ -1239,6 +1305,591 @@ router.put('/status', requireAgent, async (req: AuthenticatedRequest, res: Respo
   } catch (error: any) {
     console.error('❌ [Agent Status Toggle Error]:', error);
     return res.status(500).json({ success: false, error: 'Failed to update status' });
+  }
+});
+
+/**
+ * GET /api/agent/withdrawal-requests
+ * Feed of player withdrawal requests submitted to this agent
+ */
+router.get('/withdrawal-requests', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const agentRes = await query('SELECT id, agent_code FROM agent_profiles WHERE user_id = $1', [userId]);
+    if (agentRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent profile not found' });
+    }
+    const agentId = agentRes.rows[0].id;
+
+    const requestsRes = await query(
+      `SELECT req.id, req.amount, req.payout_method, req.payout_account, req.payout_account_name,
+              req.status, req.agent_tx_ref, req.agent_commission_earned, req.rejection_reason,
+              req.created_at, req.resolved_at,
+              u.id as player_id, u.full_name as player_name, u.phone as player_phone,
+              u.telegram_username as player_username
+       FROM agent_withdrawal_requests req
+       JOIN users u ON req.player_id = u.id
+       WHERE req.agent_id = $1
+       ORDER BY req.created_at DESC
+       LIMIT 50`,
+      [agentId]
+    );
+
+    const pendingCount = requestsRes.rows.filter(r => r.status === 'pending').length;
+
+    return res.json({
+      success: true,
+      pendingCount,
+      requests: requestsRes.rows.map(r => ({
+        id: r.id,
+        amount: parseFloat(r.amount),
+        payoutMethod: r.payout_method,
+        payoutAccount: r.payout_account,
+        payoutAccountName: r.payout_account_name,
+        agentTxRef: r.agent_tx_ref,
+        agentCommissionEarned: parseFloat(r.agent_commission_earned || '0'),
+        status: r.status,
+        rejectionReason: r.rejection_reason,
+        createdAt: r.created_at,
+        resolvedAt: r.resolved_at,
+        playerId: r.player_id,
+        playerName: r.player_name || r.player_username || 'Sonic Player',
+        playerPhone: r.player_phone,
+        playerUsername: r.player_username
+      }))
+    });
+  } catch (error: any) {
+    console.error('❌ [Agent Withdrawal Requests GET Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve withdrawal requests' });
+  }
+});
+
+/**
+ * POST /api/agent/withdrawal-requests/:id/approve
+ * Agent confirms payout to player via Telebirr/CBE and receives float replenishment + commission
+ */
+router.post('/withdrawal-requests/:id/approve', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const requestId = req.params.id;
+    const { agentTxRef } = req.body;
+
+    if (!agentTxRef || !agentTxRef.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Payment transaction reference (SMS code) is required to confirm payout.'
+      });
+    }
+
+    const cleanRef = agentTxRef.trim();
+
+    const agentRes = await query(
+      'SELECT id, agent_code, wallet_balance, commission_balance FROM agent_profiles WHERE user_id = $1',
+      [userId]
+    );
+    if (agentRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent profile not found' });
+    }
+    const agentId = agentRes.rows[0].id;
+
+    const result = await withTransaction(async (client) => {
+      // 1. Lock withdrawal request row
+      const reqRes = await client.query(
+        `SELECT * FROM agent_withdrawal_requests 
+         WHERE id = $1 AND agent_id = $2 FOR UPDATE`,
+        [requestId, agentId]
+      );
+      if (reqRes.rows.length === 0) {
+        throw new Error('Withdrawal request not found or not assigned to this agent');
+      }
+
+      const withReq = reqRes.rows[0];
+      if (withReq.status !== 'pending') {
+        throw new Error(`Withdrawal request is already ${withReq.status}`);
+      }
+
+      const withdrawalAmount = parseFloat(withReq.amount);
+
+      // 2. Lock agent profile row
+      const agentProfileRes = await client.query(
+        `SELECT id, agent_code, wallet_balance, commission_balance, commission_rate 
+         FROM agent_profiles WHERE id = $1 FOR UPDATE`,
+        [agentId]
+      );
+      const agentProfile = agentProfileRes.rows[0];
+      const agentBalBefore = parseFloat(agentProfile.wallet_balance || '0');
+      const commissionBalBefore = parseFloat(agentProfile.commission_balance || '0');
+
+      // 2% cashier payout commission
+      const commissionRate = 2.0;
+      const commissionEarned = Math.round(withdrawalAmount * (commissionRate / 100) * 100) / 100;
+
+      // Platform reimburses agent float (+withdrawalAmount) and adds commission (+commissionEarned)
+      const agentBalAfter = agentBalBefore + withdrawalAmount + commissionEarned;
+      const commissionBalAfter = commissionBalBefore + commissionEarned;
+
+      // 3. Replenish Agent Float and update Commission Balance
+      await client.query(
+        `UPDATE agent_profiles 
+         SET wallet_balance = $1, 
+             commission_balance = $2,
+             updated_at = NOW() 
+         WHERE id = $3`,
+        [agentBalAfter, commissionBalAfter, agentId]
+      );
+
+      // 4. Record commission audit ledger
+      await client.query(
+        `INSERT INTO agent_commissions 
+          (agent_id, source_type, source_id, amount, commission_rate, commission_earned)
+         VALUES ($1, 'withdrawal', $2, $3, $4, $5)`,
+        [agentId, requestId, withdrawalAmount, commissionRate, commissionEarned]
+      );
+
+      // 5. Update Request Status to 'approved'
+      await client.query(
+        `UPDATE agent_withdrawal_requests
+         SET status = 'approved',
+             agent_tx_ref = $1,
+             agent_commission_earned = $2,
+             agent_balance_before = $3,
+             agent_balance_after = $4,
+             resolved_at = NOW()
+         WHERE id = $5`,
+        [cleanRef, commissionEarned, agentBalBefore, agentBalAfter, requestId]
+      );
+
+      // 6. Complete player's ledger transaction
+      await client.query(
+        `UPDATE wallet_transactions 
+         SET status = 'completed',
+             reference_code = $1
+         WHERE user_id = $2 AND type = 'withdrawal' AND status = 'pending' 
+           AND amount = $3 AND created_at >= $4`,
+        [cleanRef, withReq.player_id, withdrawalAmount, withReq.created_at]
+      );
+
+      return {
+        requestId,
+        withdrawalAmount,
+        commissionEarned,
+        agentBalAfter,
+        playerId: withReq.player_id,
+        agentCode: agentProfile.agent_code,
+        agentTxRef: cleanRef
+      };
+    });
+
+    // 7. Real-time WebSocket notifications
+    const playerAlertPayload = {
+      requestId: result.requestId,
+      amount: result.withdrawalAmount,
+      agentTxRef: result.agentTxRef,
+      agentDisplayName: `Sonic Agent #${result.agentCode}`
+    };
+
+    io.emit(`player_${result.playerId}_withdrawal_approved`, playerAlertPayload);
+    io.emit(`user_${result.playerId}_withdrawal_approved`, playerAlertPayload);
+    io.emit('withdrawal_status_updated', {
+      userId: result.playerId,
+      requestId: result.requestId,
+      status: 'approved'
+    });
+    io.emit(`agent_${agentId}_request_updated`, {
+      type: 'withdrawal',
+      requestId: result.requestId,
+      status: 'approved',
+      newAgentBalance: result.agentBalAfter
+    });
+
+    return res.json({
+      success: true,
+      message: `Withdrawal of ${result.withdrawalAmount.toFixed(2)} ETB successfully confirmed and settled!`,
+      details: {
+        withdrawalAmount: result.withdrawalAmount,
+        commissionEarned: result.commissionEarned,
+        newAgentBalance: result.agentBalAfter,
+        agentTxRef: result.agentTxRef
+      }
+    });
+  } catch (error: any) {
+    console.error('❌ [Agent Approve Withdrawal Error]:', error);
+    return res.status(400).json({ success: false, error: error.message || 'Failed to approve withdrawal request' });
+  }
+});
+
+/**
+ * POST /api/agent/withdrawal-requests/:id/reject
+ * Reject a player withdrawal request and instantly refund held escrow to the player's wallet
+ */
+router.post('/withdrawal-requests/:id/reject', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const requestId = req.params.id;
+    const { reason } = req.body;
+
+    const agentRes = await query('SELECT id, agent_code FROM agent_profiles WHERE user_id = $1', [userId]);
+    if (agentRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent profile not found' });
+    }
+    const agentId = agentRes.rows[0].id;
+    const agentCode = agentRes.rows[0].agent_code;
+
+    const rejectionReason = (reason || 'Agent unable to process payout. Escrow refunded.').trim();
+
+    const result = await withTransaction(async (client) => {
+      // 1. Lock withdrawal request row
+      const reqRes = await client.query(
+        `SELECT * FROM agent_withdrawal_requests 
+         WHERE id = $1 AND agent_id = $2 FOR UPDATE`,
+        [requestId, agentId]
+      );
+      if (reqRes.rows.length === 0) {
+        throw new Error('Withdrawal request not found or not assigned to this agent');
+      }
+
+      const withReq = reqRes.rows[0];
+      if (withReq.status !== 'pending') {
+        throw new Error(`Withdrawal request is already ${withReq.status}`);
+      }
+
+      const refundAmount = parseFloat(withReq.amount);
+
+      // 2. Refund escrow to player wallet
+      const walletRes = await client.query(
+        `UPDATE wallets 
+         SET balance = balance + $1, updated_at = NOW() 
+         WHERE user_id = $2 
+         RETURNING balance`,
+        [refundAmount, withReq.player_id]
+      );
+      const refundedBal = parseFloat(walletRes.rows[0].balance);
+
+      // 3. Mark request as rejected
+      await client.query(
+        `UPDATE agent_withdrawal_requests 
+         SET status = 'rejected',
+             rejection_reason = $1,
+             resolved_at = NOW() 
+         WHERE id = $2`,
+        [rejectionReason, requestId]
+      );
+
+      // 4. Update ledger
+      await client.query(
+        `UPDATE wallet_transactions 
+         SET status = 'rejected',
+             description = description || ' (Rejected by agent: ' || $1 || ')'
+         WHERE user_id = $2 AND type = 'withdrawal' AND status = 'pending' 
+           AND amount = $3 AND created_at >= $4`,
+        [rejectionReason, withReq.player_id, refundAmount, withReq.created_at]
+      );
+
+      return {
+        requestId,
+        refundAmount,
+        refundedBal,
+        playerId: withReq.player_id
+      };
+    });
+
+    // 5. Emit real-time WebSocket notifications
+    const balancePayload = {
+      userId: result.playerId,
+      newBalance: result.refundedBal,
+      balance: result.refundedBal,
+      amount: result.refundAmount,
+      type: 'withdrawal_refund'
+    };
+
+    io.emit(`player_${result.playerId}_withdrawal_rejected`, {
+      requestId: result.requestId,
+      reason: rejectionReason,
+      agentDisplayName: `Sonic Agent #${agentCode}`
+    });
+    io.emit(`user_${result.playerId}_withdrawal_rejected`, {
+      requestId: result.requestId,
+      reason: rejectionReason,
+      agentDisplayName: `Sonic Agent #${agentCode}`
+    });
+    io.emit('withdrawal_status_updated', {
+      userId: result.playerId,
+      requestId: result.requestId,
+      status: 'rejected'
+    });
+    io.emit('user_balance_updated', balancePayload);
+    io.emit(`user_${result.playerId}_balance`, balancePayload);
+    io.emit(`agent_${agentId}_request_updated`, {
+      type: 'withdrawal',
+      requestId: result.requestId,
+      status: 'rejected'
+    });
+
+    return res.json({
+      success: true,
+      message: 'Withdrawal request rejected. Escrow refunded to player.',
+      rejectionReason
+    });
+  } catch (error: any) {
+    console.error('❌ [Agent Reject Withdrawal Error]:', error);
+    return res.status(400).json({ success: false, error: error.message || 'Failed to reject withdrawal request' });
+  }
+});
+
+/**
+ * GET /api/agent/commission/overview
+ * Returns commission balance, lifetime earnings, and source breakdown
+ */
+router.get('/commission/overview', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const agentRes = await query(
+      `SELECT id, agent_code, wallet_balance, commission_balance, commission_rate, target_monthly 
+       FROM agent_profiles WHERE user_id = $1`,
+      [userId]
+    );
+
+    if (agentRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent profile not found' });
+    }
+
+    const agent = agentRes.rows[0];
+    const agentId = agent.id;
+
+    // Aggregate lifetime earnings by source
+    const commStats = await query(
+      `SELECT source_type, 
+              SUM(commission_earned) as total_earned,
+              COUNT(*) as count
+       FROM agent_commissions
+       WHERE agent_id = $1 AND commission_earned > 0
+       GROUP BY source_type`,
+      [agentId]
+    );
+
+    let lifetimeEarned = 0;
+    const breakdown: Record<string, number> = {
+      deposit: 0,
+      withdrawal: 0,
+      referral_first_deposit: 0
+    };
+
+    commStats.rows.forEach(r => {
+      const earned = parseFloat(r.total_earned || '0');
+      lifetimeEarned += earned;
+      if (r.source_type) {
+        breakdown[r.source_type] = earned;
+      }
+    });
+
+    // Recent payout requests
+    const payoutsRes = await query(
+      `SELECT id, amount, payout_method, payout_account, status, created_at, settled_at
+       FROM agent_commission_payout_requests
+       WHERE agent_id = $1
+       ORDER BY created_at DESC
+       LIMIT 10`,
+      [agentId]
+    );
+
+    return res.json({
+      success: true,
+      commissionBalance: parseFloat(agent.commission_balance || '0'),
+      walletBalance: parseFloat(agent.wallet_balance || '0'),
+      lifetimeEarned,
+      commissionRate: parseFloat(agent.commission_rate || '5.0'),
+      breakdown,
+      recentPayouts: payoutsRes.rows.map(p => ({
+        id: p.id,
+        amount: parseFloat(p.amount),
+        payoutMethod: p.payout_method,
+        payoutAccount: p.payout_account,
+        status: p.status,
+        createdAt: p.created_at,
+        settledAt: p.settled_at
+      }))
+    });
+  } catch (error: any) {
+    console.error('❌ [Agent Commission Overview Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve commission overview' });
+  }
+});
+
+/**
+ * POST /api/agent/commission/convert-to-float
+ * Option A: 1-click instant conversion of accumulated commission into working float
+ */
+router.post('/commission/convert-to-float', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { amount } = req.body;
+
+    const agentRes = await query(
+      'SELECT id, agent_code, wallet_balance, commission_balance FROM agent_profiles WHERE user_id = $1',
+      [userId]
+    );
+    if (agentRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent profile not found' });
+    }
+    const agent = agentRes.rows[0];
+    const curCommission = parseFloat(agent.commission_balance || '0');
+
+    // Default to converting entire commission balance if amount is not specified or larger than available
+    const convertAmount = amount ? Math.min(parseFloat(amount), curCommission) : curCommission;
+
+    if (convertAmount < 10) {
+      return res.status(400).json({
+        success: false,
+        error: `Minimum commission conversion is 10 ETB. Current commission: ${curCommission.toFixed(2)} ETB.`
+      });
+    }
+
+    const result = await withTransaction(async (client) => {
+      const aRes = await client.query(
+        `SELECT id, wallet_balance, commission_balance FROM agent_profiles WHERE id = $1 FOR UPDATE`,
+        [agent.id]
+      );
+      const ag = aRes.rows[0];
+      const liveCommission = parseFloat(ag.commission_balance || '0');
+      const liveFloat = parseFloat(ag.wallet_balance || '0');
+
+      if (liveCommission < convertAmount) {
+        throw new Error(`Insufficient commission balance (${liveCommission.toFixed(2)} ETB).`);
+      }
+
+      const newCommissionBal = liveCommission - convertAmount;
+      const newFloatBal = liveFloat + convertAmount;
+
+      // Transfer from commission_balance to wallet_balance atomically
+      await client.query(
+        `UPDATE agent_profiles 
+         SET wallet_balance = $1, 
+             commission_balance = $2, 
+             updated_at = NOW() 
+         WHERE id = $3`,
+        [newFloatBal, newCommissionBal, agent.id]
+      );
+
+      // Record in agent_commissions audit log
+      await client.query(
+        `INSERT INTO agent_commissions (agent_id, source_type, amount, commission_rate, commission_earned)
+         VALUES ($1, 'commission_to_float', $2, 100.0, $3)`,
+        [agent.id, convertAmount, -convertAmount]
+      );
+
+      return {
+        convertedAmount: convertAmount,
+        newFloatBal,
+        newCommissionBal
+      };
+    });
+
+    // Notify agent desk
+    io.emit(`agent_${agent.id}_request_updated`, {
+      type: 'commission_conversion',
+      newAgentBalance: result.newFloatBal,
+      newCommissionBalance: result.newCommissionBal
+    });
+
+    return res.json({
+      success: true,
+      message: `🎉 Successfully converted ${result.convertedAmount.toFixed(2)} ETB commission into working float!`,
+      convertedAmount: result.convertedAmount,
+      newWalletBalance: result.newFloatBal,
+      newCommissionBalance: result.newCommissionBal
+    });
+  } catch (error: any) {
+    console.error('❌ [Agent Convert Commission Error]:', error);
+    return res.status(400).json({ success: false, error: error.message || 'Failed to convert commission to float' });
+  }
+});
+
+/**
+ * POST /api/agent/commission/request-cashout
+ * Option B: Agent requests direct mobile payout of accumulated commission from Admin
+ */
+router.post('/commission/request-cashout', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { amount, payoutMethod, payoutAccount } = req.body;
+
+    if (!amount || !payoutMethod || !payoutAccount) {
+      return res.status(400).json({
+        success: false,
+        error: 'Amount, payout method, and payout account are required'
+      });
+    }
+
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount < 50) {
+      return res.status(400).json({
+        success: false,
+        error: 'Minimum commission cash-out payout is 50 ETB'
+      });
+    }
+
+    const validMethods = ['Telebirr', 'CBE'];
+    if (!validMethods.includes(payoutMethod)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid payout method. Supported: ${validMethods.join(', ')}`
+      });
+    }
+
+    const agentRes = await query(
+      'SELECT id, agent_code, commission_balance FROM agent_profiles WHERE user_id = $1',
+      [userId]
+    );
+    if (agentRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent profile not found' });
+    }
+    const agent = agentRes.rows[0];
+
+    const result = await withTransaction(async (client) => {
+      const aRes = await client.query(
+        `SELECT id, commission_balance FROM agent_profiles WHERE id = $1 FOR UPDATE`,
+        [agent.id]
+      );
+      const liveCommission = parseFloat(aRes.rows[0].commission_balance || '0');
+
+      if (liveCommission < numAmount) {
+        throw new Error(`Insufficient commission balance (${liveCommission.toFixed(2)} ETB) for ${numAmount.toFixed(2)} ETB payout.`);
+      }
+
+      const newCommissionBal = liveCommission - numAmount;
+
+      // Deduct from commission balance into pending payout escrow
+      await client.query(
+        `UPDATE agent_profiles 
+         SET commission_balance = $1, updated_at = NOW() 
+         WHERE id = $2`,
+        [newCommissionBal, agent.id]
+      );
+
+      // Create payout request
+      const insRes = await client.query(
+        `INSERT INTO agent_commission_payout_requests (agent_id, amount, payout_method, payout_account, status)
+         VALUES ($1, $2, $3, $4, 'pending')
+         RETURNING id, created_at, status`,
+        [agent.id, numAmount, payoutMethod, payoutAccount.trim()]
+      );
+
+      return {
+        payoutRequest: insRes.rows[0],
+        newCommissionBal
+      };
+    });
+
+    return res.json({
+      success: true,
+      message: `Commission cash-out request of ${numAmount.toFixed(2)} ETB submitted to Admin. Payout will be sent to your ${payoutMethod} (${payoutAccount.trim()}).`,
+      payoutId: result.payoutRequest.id,
+      amount: numAmount,
+      newCommissionBalance: result.newCommissionBal
+    });
+  } catch (error: any) {
+    console.error('❌ [Agent Commission Cashout Error]:', error);
+    return res.status(400).json({ success: false, error: error.message || 'Failed to request commission cash-out' });
   }
 });
 

@@ -51,7 +51,8 @@ export const AgentCashInDesk: React.FC<AgentCashInDeskProps> = ({
 
   const handleSelectPlayer = (player: any) => {
     setSelectedPlayer(player);
-    setSearchQuery(`${player.fullName} (${player.phone})`);
+    const identifier = player.username ? `@${player.username}` : (player.phone || 'Telegram User');
+    setSearchQuery(`${player.fullName} (${identifier})`);
     setSearchResults([]);
   };
 
@@ -81,7 +82,9 @@ export const AgentCashInDesk: React.FC<AgentCashInDeskProps> = ({
     try {
       setIsSubmitting(true);
       const res = await apiClient.agent.depositForPlayer({
-        playerPhone: selectedPlayer.phone,
+        playerId: selectedPlayer.id,
+        playerPhone: selectedPlayer.phone || '',
+        username: selectedPlayer.username || '',
         amount,
         paymentMethod
       });
@@ -128,13 +131,13 @@ export const AgentCashInDesk: React.FC<AgentCashInDeskProps> = ({
             {/* 1. Player Search Input */}
             <div style={{ marginBottom: '16px', position: 'relative' }}>
               <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: '#334155', marginBottom: '6px' }}>
-                Search Player (Phone Number or Name)
+                Search Player (Username, Phone Number, or Name)
               </label>
               <div style={{ position: 'relative' }}>
                 <input
                   type="text"
                   className="sonic-input-field"
-                  placeholder="Type 09... or player full name"
+                  placeholder="Type @username, 09..., or player name"
                   value={searchQuery}
                   onChange={e => {
                     setSearchQuery(e.target.value);
@@ -203,11 +206,14 @@ export const AgentCashInDesk: React.FC<AgentCashInDeskProps> = ({
                     >
                       <div>
                         <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '13px' }}>{p.fullName}</div>
-                        <div style={{ fontSize: '11px', color: '#64748b', fontFamily: 'monospace' }}>{p.phone}</div>
+                        <div style={{ fontSize: '11px', color: '#64748b', fontFamily: 'monospace' }}>
+                          {p.username ? `@${p.username}` : ''}
+                          {p.username && p.phone ? ' • ' : ''}
+                          {p.phone || (!p.username ? 'Telegram Account' : '')}
+                        </div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        <span style={{ fontSize: '11px', color: '#64748b' }}>Balance: </span>
-                        <strong style={{ fontSize: '13px', color: '#047857' }}>{p.balance.toFixed(2)} ETB</strong>
+                        <span style={{ fontSize: '11px', color: '#059669', fontWeight: 800 }}>Verified ✓</span>
                       </div>
                     </div>
                   ))}
@@ -232,11 +238,15 @@ export const AgentCashInDesk: React.FC<AgentCashInDeskProps> = ({
                     ✓ Confirmed Target Player
                   </span>
                   <div style={{ fontSize: '14px', fontWeight: 900, color: '#0f172a' }}>{selectedPlayer.fullName}</div>
-                  <div style={{ fontSize: '12px', color: '#64748b', fontFamily: 'monospace' }}>{selectedPlayer.phone}</div>
+                  <div style={{ fontSize: '12px', color: '#64748b', fontFamily: 'monospace' }}>
+                    {selectedPlayer.username ? `@${selectedPlayer.username}` : ''}
+                    {selectedPlayer.username && selectedPlayer.phone ? ' • ' : ''}
+                    {selectedPlayer.phone || (!selectedPlayer.username ? 'Telegram Account' : '')}
+                  </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>Current Balance</div>
-                  <div style={{ fontSize: '15px', fontWeight: 900, color: '#047857' }}>{selectedPlayer.balance.toFixed(2)} ETB</div>
+                  <div style={{ fontSize: '11px', color: '#059669', fontWeight: 800 }}>Account Status</div>
+                  <div style={{ fontSize: '13px', fontWeight: 900, color: '#047857' }}>🟢 Verified Player</div>
                 </div>
               </div>
             )}
