@@ -93,7 +93,7 @@ export const ProfilePage: React.FC = () => {
               </div>
               <div className="settings-row-text-col">
                 <strong className="settings-row-title" style={{ color: '#fbbf24' }}>Agent Terminal & Counter Cashier</strong>
-                <span className="settings-row-sub">Deposit for players, redeem vouchers & manage float</span>
+                <span className="settings-row-sub">Deposit for players, process withdrawals & manage float</span>
               </div>
               <i className="fa-solid fa-chevron-right settings-chevron"></i>
             </div>

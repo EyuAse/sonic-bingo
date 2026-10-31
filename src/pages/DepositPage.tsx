@@ -1241,7 +1241,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                     padding: '24px 16px',
                     background: '#0f172a',
                     borderRadius: '18px',
-                    border: activeWithdrawalRequest.status === 'completed'
+                    border: (activeWithdrawalRequest.status === 'completed' || activeWithdrawalRequest.status === 'approved')
                       ? '1px solid #10b981'
                       : activeWithdrawalRequest.status === 'rejected'
                       ? '1px solid #ef4444'
@@ -1269,7 +1269,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                       >
                         📡
                       </div>
-                    ) : activeWithdrawalRequest.status === 'completed' ? (
+                    ) : (activeWithdrawalRequest.status === 'completed' || activeWithdrawalRequest.status === 'approved') ? (
                       <div
                         style={{
                           width: '70px',
@@ -1305,14 +1305,14 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                   </div>
 
                   <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '6px' }}>
-                    {activeWithdrawalRequest.status === 'completed'
+                    {(activeWithdrawalRequest.status === 'completed' || activeWithdrawalRequest.status === 'approved')
                       ? (lang === 'am' ? 'ገንዘቡ በተሳካ ሁኔታ ተላልፏል!' : 'Withdrawal Paid Successfully!')
                       : activeWithdrawalRequest.status === 'rejected'
                       ? (lang === 'am' ? 'የማውጣት ጥያቄው አልተሳካም' : 'Withdrawal Request Rejected')
                       : (lang === 'am' ? 'ኤጀንቱ ክፍያውን በሞባይል እየላኩ ነው...' : 'Agent is Processing Mobile Payout...')}
                   </h3>
                   <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 20px 0', lineHeight: 1.5 }}>
-                    {activeWithdrawalRequest.status === 'completed'
+                    {(activeWithdrawalRequest.status === 'completed' || activeWithdrawalRequest.status === 'approved')
                       ? (lang === 'am' ? 'ገንዘቡ በቀጥታ ወደ ሂሳብዎ ተላልፏል። እባክዎ የሞባይል ኤስኤምኤስዎን ይመልከቱ።' : 'Funds have been transferred to your account. Check your mobile SMS.')
                       : activeWithdrawalRequest.status === 'rejected'
                       ? (activeWithdrawalRequest.rejectionReason || (lang === 'am' ? 'ጥያቄው ተሰርዟል እና ገንዘብዎ ወደ ዋሌት ተመልሷል።' : 'Request was cancelled and funds have been refunded to your wallet.'))
@@ -1365,7 +1365,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                   </div>
 
                   {/* Actions */}
-                  {activeWithdrawalRequest.status === 'completed' ? (
+                  {(activeWithdrawalRequest.status === 'completed' || activeWithdrawalRequest.status === 'approved') ? (
                     <button
                       type="button"
                       onClick={() => setActiveWithdrawalRequest(null)}
