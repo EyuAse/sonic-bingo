@@ -81,7 +81,7 @@ export const App: React.FC = () => {
   // If on Agent portal route, render full-screen bypassing 480px app-container
   if (currentPage === 'agent') {
     return (
-      <div className="agent-fullscreen-root">
+      <div className="agent-fullscreen-root" style={{ backgroundColor: '#f4f6f8', minHeight: '100vh', width: '100%', color: '#0f172a' }}>
         <AgentPortalPage />
         <Toast />
       </div>

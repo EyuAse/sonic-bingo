@@ -278,7 +278,7 @@ export const AgentPortalPage: React.FC = () => {
 
   // 4. Authenticated Agent Terminal Layout
   return (
-    <div className="sonic-agent-layout-wrapper">
+    <div className="sonic-agent-layout-wrapper" style={{ backgroundColor: '#f4f6f8', minHeight: '100vh', width: '100%' }}>
       {/* A. Collapsible Responsive Sidebar */}
       <AgentSidebar
         activeTab={activeTab}
@@ -292,7 +292,10 @@ export const AgentPortalPage: React.FC = () => {
       />
 
       {/* B. Main Viewport */}
-      <div className={`sonic-agent-main-viewport ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <div
+        className={`sonic-agent-main-viewport ${isCollapsed ? 'sidebar-collapsed' : ''}`}
+        style={{ backgroundColor: '#f4f6f8', minHeight: '100vh' }}
+      >
         {/* Sticky Header */}
         <AgentHeader
           activeTab={activeTab}
@@ -303,7 +306,7 @@ export const AgentPortalPage: React.FC = () => {
         />
 
         {/* Page Content Container */}
-        <main className="sonic-agent-page-content">
+        <main className="sonic-agent-page-content" style={{ backgroundColor: '#f4f6f8' }}>
           {/* Desk 1: Overview & Float */}
           {activeTab === 'overview' && (
             <AgentDashboardDesk

@@ -12,32 +12,29 @@ interface AgentHeaderProps {
 export const AgentHeader: React.FC<AgentHeaderProps> = ({
   activeTab,
   agentProfile,
-  openMobile,
-  onPlayBingo,
-  onLogout
+  openMobile
 }) => {
   const agentName = agentProfile?.fullName || agentProfile?.agentCode || 'Agent001';
-  const initial = agentName.charAt(0).toUpperCase();
+  const initial = (agentProfile?.fullName || agentProfile?.agentCode || 'A').charAt(0).toUpperCase();
 
   return (
     <header
-      className="sonic-agent-header"
       style={{
         background: '#ffffff',
         borderBottom: '1px solid #e2e8f0',
-        padding: '12px 28px',
+        padding: '14px 32px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         position: 'sticky',
         top: 0,
         zIndex: 30,
-        minHeight: '70px',
+        minHeight: '68px',
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)'
       }}
     >
-      {/* Left: Mobile Menu Trigger + Search Bar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, maxWidth: '420px' }}>
+      {/* Left: Mobile Drawer Trigger + Search Bar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, maxWidth: '380px' }}>
         <button
           type="button"
           className="sonic-mobile-menu-btn"
@@ -62,7 +59,7 @@ export const AgentHeader: React.FC<AgentHeaderProps> = ({
             className="fa-solid fa-magnifying-glass"
             style={{
               position: 'absolute',
-              left: '14px',
+              left: '16px',
               top: '50%',
               transform: 'translateY(-50%)',
               color: '#94a3b8',
@@ -77,7 +74,7 @@ export const AgentHeader: React.FC<AgentHeaderProps> = ({
               background: '#f1f5f9',
               border: '1px solid transparent',
               borderRadius: '9999px',
-              padding: '10px 16px 10px 38px',
+              padding: '9px 16px 9px 40px',
               fontSize: '13px',
               color: '#0f172a',
               outline: 'none',
@@ -85,20 +82,26 @@ export const AgentHeader: React.FC<AgentHeaderProps> = ({
               fontWeight: 500,
               transition: 'all 0.15s ease'
             }}
-            onFocus={e => (e.target.style.background = '#ffffff', e.target.style.borderColor = '#cbd5e1')}
-            onBlur={e => (e.target.style.background = '#f1f5f9', e.target.style.borderColor = 'transparent')}
+            onFocus={e => {
+              e.target.style.background = '#ffffff';
+              e.target.style.borderColor = '#cbd5e1';
+            }}
+            onBlur={e => {
+              e.target.style.background = '#f1f5f9';
+              e.target.style.borderColor = 'transparent';
+            }}
           />
         </div>
       </div>
 
-      {/* Right: Notifications Bell + Profile Dropdown + Quick Actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      {/* Right: Notifications Bell + Profile Pill matching Reference UI */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
         {/* Notification Bell with Red Badge "3" */}
         <div
           style={{
             position: 'relative',
-            width: '40px',
-            height: '40px',
+            width: '38px',
+            height: '38px',
             borderRadius: '50%',
             background: '#f8fafc',
             border: '1px solid #e2e8f0',
@@ -106,7 +109,7 @@ export const AgentHeader: React.FC<AgentHeaderProps> = ({
             alignItems: 'center',
             justifyContent: 'center',
             color: '#334155',
-            fontSize: '15px',
+            fontSize: '14px',
             cursor: 'pointer'
           }}
           title="3 unread notifications"
@@ -115,8 +118,8 @@ export const AgentHeader: React.FC<AgentHeaderProps> = ({
           <span
             style={{
               position: 'absolute',
-              top: '2px',
-              right: '2px',
+              top: '-2px',
+              right: '-2px',
               width: '18px',
               height: '18px',
               borderRadius: '50%',
@@ -152,15 +155,15 @@ export const AgentHeader: React.FC<AgentHeaderProps> = ({
           {/* Avatar Circle with Initial "A" */}
           <div
             style={{
-              width: '32px',
-              height: '32px',
+              width: '30px',
+              height: '30px',
               borderRadius: '50%',
-              background: '#1e293b',
+              background: '#0f172a',
               color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '14px',
+              fontSize: '13px',
               fontWeight: 800
             }}
           >
@@ -171,31 +174,8 @@ export const AgentHeader: React.FC<AgentHeaderProps> = ({
             {agentName}
           </span>
 
-          <i className="fa-solid fa-chevron-down" style={{ fontSize: '11px', color: '#94a3b8' }}></i>
+          <i className="fa-solid fa-chevron-down" style={{ fontSize: '10px', color: '#94a3b8' }}></i>
         </div>
-
-        {/* Quick Return to Player Bingo App */}
-        <button
-          type="button"
-          onClick={onPlayBingo}
-          style={{
-            background: '#ffffff',
-            border: '1px solid #cbd5e1',
-            borderRadius: '8px',
-            padding: '8px 14px',
-            fontSize: '12px',
-            fontWeight: 700,
-            color: '#334155',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}
-          title="Return to Player Gaming App"
-        >
-          <i className="fa-solid fa-gamepad" style={{ color: '#f59e0b' }}></i>
-          <span className="hidden sm:inline">Play Bingo</span>
-        </button>
       </div>
     </header>
   );
