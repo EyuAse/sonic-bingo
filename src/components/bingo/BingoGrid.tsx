@@ -200,6 +200,7 @@ export const BingoGrid: React.FC<{ isFullWidth?: boolean }> = ({ isFullWidth = f
     cartela2Data,
     cartela3Data,
     cartela4Data,
+    cartela5Data,
     totalPlayableCards,
     cardQuantity,
     selectedCartelaIds,
@@ -239,6 +240,12 @@ export const BingoGrid: React.FC<{ isFullWidth?: boolean }> = ({ isFullWidth = f
       cardIndex: 3,
       label: selectedCartelaIds[3] ? `Cartela #${selectedCartelaIds[3]}` : 'Cartela #4',
     },
+    {
+      data: cartela5Data,
+      id: selectedCartelaIds[4] || 0,
+      cardIndex: 4,
+      label: selectedCartelaIds[4] ? `Cartela #${selectedCartelaIds[4]}` : 'Cartela #5',
+    },
   ].slice(0, effectiveCount);
 
   // Calculate To-Go for each card
@@ -247,10 +254,10 @@ export const BingoGrid: React.FC<{ isFullWidth?: boolean }> = ({ isFullWidth = f
     toGo: calculateCardToGo(c.data)
   }));
 
-  // 3 or 4 Cartelas: 2x2 Grid taking 100% full width (Matching Image!)
+  // 3 to 5 Cartelas: 2x2 Grid (with Cartela 5 centered below, smoothly scrollable down)
   if (isFullWidth || effectiveCount >= 3) {
     return (
-      <div className="bingo-cartelas-2x2-grid">
+      <div className={`bingo-cartelas-2x2-grid ${effectiveCount === 5 ? 'has-5-cartelas' : ''}`}>
         {cardsWithToGo.map(card => (
           <NewCard5x5
             key={card.cardIndex}

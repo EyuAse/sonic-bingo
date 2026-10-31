@@ -96,6 +96,7 @@ interface BingoContextType {
   cartela2Data: BingoCell[];
   cartela3Data: BingoCell[];
   cartela4Data: BingoCell[];
+  cartela5Data: BingoCell[];
   totalPlayableCards: number;
   activeCartelaIndex: number;
   setActiveCartelaIndex: (idx: number) => void;
@@ -292,7 +293,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   // Round Lifecycle Phase
   const [roundPhase, setRoundPhase] = useState<RoundPhase>('lobby');
-  const [lobbyCountdown, setLobbyCountdown] = useState<number>(45);
+  const [lobbyCountdown, setLobbyCountdown] = useState<number>(40);
   const [winnerCountdown, setWinnerCountdown] = useState<number>(8);
   const [waitingForPlayers, setWaitingForPlayers] = useState<boolean>(true);
   const [waitingForOtherHouses, setWaitingForOtherHouses] = useState<boolean>(false);
@@ -316,7 +317,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [occupiedCartelaIds, setOccupiedCartelaIds] = useState<number[]>([]);
 
   const setCardQuantity = (qty: number) => {
-    setCardQuantityState(Math.max(1, Math.min(4, qty)));
+    setCardQuantityState(Math.max(1, Math.min(5, qty)));
   };
 
   const totalPlayableCards = cardQuantity;
@@ -334,6 +335,9 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   );
   const [cartela4Data, setCartela4Data] = useState<BingoCell[]>(() =>
     selectedCartelaIds[3] ? generateCardFromId(selectedCartelaIds[3]) : []
+  );
+  const [cartela5Data, setCartela5Data] = useState<BingoCell[]>(() =>
+    selectedCartelaIds[4] ? generateCardFromId(selectedCartelaIds[4]) : []
   );
   const [activeCartelaIndex, setActiveCartelaIndex] = useState<number>(0);
 
@@ -382,7 +386,8 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const win2 = totalPlayableCards >= 2 && cartela2Data.length > 0 ? checkWinningPatterns(cartela2Data) : null;
       const win3 = totalPlayableCards >= 3 && cartela3Data.length > 0 ? checkWinningPatterns(cartela3Data) : null;
       const win4 = totalPlayableCards >= 4 && cartela4Data.length > 0 ? checkWinningPatterns(cartela4Data) : null;
-      return { hasWinningPattern: !!(win1 || win2 || win3 || win4), hasSleptPattern: false };
+      const win5 = totalPlayableCards >= 5 && cartela5Data.length > 0 ? checkWinningPatterns(cartela5Data) : null;
+      return { hasWinningPattern: !!(win1 || win2 || win3 || win4 || win5), hasSleptPattern: false };
     }
 
     // Manual Mode: Check if any completed pattern contains the current active ball
@@ -391,7 +396,8 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const active2 = totalPlayableCards >= 2 && cartela2Data.length > 0 && eligibleBalls.length > 0 ? getActiveWinningPatternOnBall(cartela2Data, eligibleBalls) : null;
     const active3 = totalPlayableCards >= 3 && cartela3Data.length > 0 && eligibleBalls.length > 0 ? getActiveWinningPatternOnBall(cartela3Data, eligibleBalls) : null;
     const active4 = totalPlayableCards >= 4 && cartela4Data.length > 0 && eligibleBalls.length > 0 ? getActiveWinningPatternOnBall(cartela4Data, eligibleBalls) : null;
-    const hasActive = !!(active1 || active2 || active3 || active4);
+    const active5 = totalPlayableCards >= 5 && cartela5Data.length > 0 && eligibleBalls.length > 0 ? getActiveWinningPatternOnBall(cartela5Data, eligibleBalls) : null;
+    const hasActive = !!(active1 || active2 || active3 || active4 || active5);
 
     if (hasActive) {
       return { hasWinningPattern: true, hasSleptPattern: false };
@@ -402,10 +408,11 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const all2 = totalPlayableCards >= 2 && cartela2Data.length > 0 ? checkWinningPatterns(cartela2Data) : null;
     const all3 = totalPlayableCards >= 3 && cartela3Data.length > 0 ? checkWinningPatterns(cartela3Data) : null;
     const all4 = totalPlayableCards >= 4 && cartela4Data.length > 0 ? checkWinningPatterns(cartela4Data) : null;
-    const hasSlept = !!(all1 || all2 || all3 || all4);
+    const all5 = totalPlayableCards >= 5 && cartela5Data.length > 0 ? checkWinningPatterns(cartela5Data) : null;
+    const hasSlept = !!(all1 || all2 || all3 || all4 || all5);
 
     return { hasWinningPattern: false, hasSleptPattern: hasSlept };
-  }, [roundPhase, autoPlay, currentCall?.num, cartela1Data, cartela2Data, cartela3Data, cartela4Data, totalPlayableCards]);
+  }, [roundPhase, autoPlay, currentCall?.num, cartela1Data, cartela2Data, cartela3Data, cartela4Data, cartela5Data, totalPlayableCards]);
   const winModalDismissedForRoundRef = useRef<number | null>(null);
   const activeWinModalRoundRef = useRef<number | null>(null);
   const lastLiveWinRoundRef = useRef<number | null>(null);
@@ -555,6 +562,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setCartela2Data(selectedCartelaIds[1] ? generateCardFromId(selectedCartelaIds[1]) : []);
       setCartela3Data(selectedCartelaIds[2] ? generateCardFromId(selectedCartelaIds[2]) : []);
       setCartela4Data(selectedCartelaIds[3] ? generateCardFromId(selectedCartelaIds[3]) : []);
+      setCartela5Data(selectedCartelaIds[4] ? generateCardFromId(selectedCartelaIds[4]) : []);
     }
   }, [selectedCartelaIds, roundPhase, hasTicket]);
 
@@ -570,8 +578,9 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const c2Win = totalPlayableCards >= 2 && check(cartela2Data);
     const c3Win = totalPlayableCards >= 3 && check(cartela3Data);
     const c4Win = totalPlayableCards >= 4 && check(cartela4Data);
-    setCanWin(c1Win || c2Win || c3Win || c4Win);
-  }, [cartela1Data, cartela2Data, cartela3Data, totalPlayableCards]);
+    const c5Win = totalPlayableCards >= 5 && check(cartela5Data);
+    setCanWin(c1Win || c2Win || c3Win || c4Win || c5Win);
+  }, [cartela1Data, cartela2Data, cartela3Data, cartela4Data, cartela5Data, totalPlayableCards]);
 
   // Auto-daub helper when a number is called
   const applyDrawnNumber = useCallback((num: number, col: string) => {
@@ -604,6 +613,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setCartela2Data(prev => daubCard(prev));
       setCartela3Data(prev => daubCard(prev));
       setCartela4Data(prev => daubCard(prev));
+      setCartela5Data(prev => daubCard(prev));
     }
   }, []);
 
@@ -642,6 +652,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setCartela2Data(prev => markMatching(prev));
     setCartela3Data(prev => markMatching(prev));
     setCartela4Data(prev => markMatching(prev));
+    setCartela5Data(prev => markMatching(prev));
   }, []);
 
   const roundPhaseRef = useRef(roundPhase);
@@ -679,6 +690,8 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   cartela3DataRef.current = cartela3Data;
   const cartela4DataRef = useRef<BingoCell[]>([]);
   cartela4DataRef.current = cartela4Data;
+  const cartela5DataRef = useRef<BingoCell[]>([]);
+  cartela5DataRef.current = cartela5Data;
 
   // Storage key and in-memory set for user-marked cell indices in manual mode
   const ACTIVE_MANUAL_MARKS_KEY = 'betika_bingo_manual_marks';
@@ -786,7 +799,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         // Valid within 15 minutes (active lobby or game in progress)
         if (ageMs < 15 * 60 * 1000) {
           if (typeof saved.betAmount === 'number') setBetAmountState(saved.betAmount);
-          if (typeof saved.cardQuantity === 'number') setCardQuantityState(Math.max(1, Math.min(4, saved.cardQuantity)));
+          if (typeof saved.cardQuantity === 'number') setCardQuantityState(Math.max(1, Math.min(5, saved.cardQuantity)));
           if (typeof saved.isAutoPlay === 'boolean') {
             setAutoPlay(saved.isAutoPlay);
             autoPlayRef.current = saved.isAutoPlay;
@@ -797,12 +810,14 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               saved.selectedCartelaIds[0] || selectedCartelaIds[0],
               saved.selectedCartelaIds[1] || selectedCartelaIds[1],
               saved.selectedCartelaIds[2] || selectedCartelaIds[2],
-              saved.selectedCartelaIds[3] || selectedCartelaIds[3]
+              saved.selectedCartelaIds[3] || selectedCartelaIds[3],
+              saved.selectedCartelaIds[4] || selectedCartelaIds[4]
             ].filter(Boolean));
             setCartela1Data(generateCardFromId(saved.selectedCartelaIds[0]));
             if (saved.selectedCartelaIds[1]) setCartela2Data(generateCardFromId(saved.selectedCartelaIds[1]));
             if (saved.selectedCartelaIds[2]) setCartela3Data(generateCardFromId(saved.selectedCartelaIds[2]));
             if (saved.selectedCartelaIds[3]) setCartela4Data(generateCardFromId(saved.selectedCartelaIds[3]));
+            if (saved.selectedCartelaIds[4]) setCartela5Data(generateCardFromId(saved.selectedCartelaIds[4]));
           }
           setHasTicket(true);
           setGameActive(true);
@@ -850,6 +865,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setCartela2Data(generateCardFromId(currentIds[1]));
         setCartela3Data(currentIds[2] ? generateCardFromId(currentIds[2]) : []);
         setCartela4Data(currentIds[3] ? generateCardFromId(currentIds[3]) : []);
+        setCartela5Data(currentIds[4] ? generateCardFromId(currentIds[4]) : []);
       }
 
       if (state.phase) {
@@ -1042,7 +1058,8 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setCartela1Data(generateCardFromId(currentIds[0]));
       setCartela2Data(generateCardFromId(currentIds[1]));
       setCartela3Data(currentIds[2] ? generateCardFromId(currentIds[2]) : []);
-        setCartela4Data(currentIds[3] ? generateCardFromId(currentIds[3]) : []);
+      setCartela4Data(currentIds[3] ? generateCardFromId(currentIds[3]) : []);
+      setCartela5Data(currentIds[4] ? generateCardFromId(currentIds[4]) : []);
     });
 
     // 4. Round Winner & Split Pot Handler
@@ -1110,7 +1127,8 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           newIds[0] || selectedCartelaIdsRef.current[0],
           newIds[1] || selectedCartelaIdsRef.current[1],
           newIds[2] || selectedCartelaIdsRef.current[2],
-          newIds[3] || selectedCartelaIdsRef.current[3]
+          newIds[3] || selectedCartelaIdsRef.current[3],
+          newIds[4] || selectedCartelaIdsRef.current[4]
         ].filter(Boolean);
         setSelectedCartelaIds(updatedIds);
         const drawn = calledNumbersRef.current;
@@ -1118,6 +1136,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         if (tickets[1]?.cardMatrix) setCartela2Data(hydrateCardWithDrawn(tickets[1].cardMatrix, drawn, autoPlayRef.current, updatedIds[1], cartela2DataRef.current));
         if (tickets[2]?.cardMatrix) setCartela3Data(hydrateCardWithDrawn(tickets[2].cardMatrix, drawn, autoPlayRef.current, updatedIds[2], cartela3DataRef.current));
         if (tickets[3]?.cardMatrix) setCartela4Data(hydrateCardWithDrawn(tickets[3].cardMatrix, drawn, autoPlayRef.current, updatedIds[3], cartela4DataRef.current));
+        if (tickets[4]?.cardMatrix) setCartela5Data(hydrateCardWithDrawn(tickets[4].cardMatrix, drawn, autoPlayRef.current, updatedIds[4], cartela5DataRef.current));
 
         if (data.isPreBuy) {
           setHasPreBoughtNext(true);
@@ -1265,7 +1284,8 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setCartela1Data(generateCardFromId(currentIds[0]));
       setCartela2Data(generateCardFromId(currentIds[1]));
       setCartela3Data(currentIds[2] ? generateCardFromId(currentIds[2]) : []);
-        setCartela4Data(currentIds[3] ? generateCardFromId(currentIds[3]) : []);
+      setCartela4Data(currentIds[3] ? generateCardFromId(currentIds[3]) : []);
+      setCartela5Data(currentIds[4] ? generateCardFromId(currentIds[4]) : []);
     }
 
     if (data.phase) {
@@ -1287,7 +1307,8 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           setCartela1Data(generateCardFromId(currentIds[0]));
           setCartela2Data(generateCardFromId(currentIds[1]));
           setCartela3Data(currentIds[2] ? generateCardFromId(currentIds[2]) : []);
-        setCartela4Data(currentIds[3] ? generateCardFromId(currentIds[3]) : []);
+          setCartela4Data(currentIds[3] ? generateCardFromId(currentIds[3]) : []);
+          setCartela5Data(currentIds[4] ? generateCardFromId(currentIds[4]) : []);
         } else if (data.phase === 'playing') {
           setGameActive(true);
         }
@@ -1322,17 +1343,19 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const tickets = data.userTickets;
       const newIds = tickets.map((t: any) => t.cartelaId);
       const updatedIds: number[] = [
-          newIds[0] || selectedCartelaIdsRef.current[0],
-          newIds[1] || selectedCartelaIdsRef.current[1],
-          newIds[2] || selectedCartelaIdsRef.current[2],
-          newIds[3] || selectedCartelaIdsRef.current[3]
-        ].filter(Boolean);
+        newIds[0] || selectedCartelaIdsRef.current[0],
+        newIds[1] || selectedCartelaIdsRef.current[1],
+        newIds[2] || selectedCartelaIdsRef.current[2],
+        newIds[3] || selectedCartelaIdsRef.current[3],
+        newIds[4] || selectedCartelaIdsRef.current[4]
+      ].filter(Boolean);
       setSelectedCartelaIds(updatedIds);
       const drawn = (data.drawnNumbers && data.drawnNumbers.length > 0) ? data.drawnNumbers : calledNumbersRef.current;
       if (tickets[0]?.cardMatrix) setCartela1Data(hydrateCardWithDrawn(tickets[0].cardMatrix, drawn, autoPlayRef.current, updatedIds[0], cartela1DataRef.current));
       if (tickets[1]?.cardMatrix) setCartela2Data(hydrateCardWithDrawn(tickets[1].cardMatrix, drawn, autoPlayRef.current, updatedIds[1], cartela2DataRef.current));
       if (tickets[2]?.cardMatrix) setCartela3Data(hydrateCardWithDrawn(tickets[2].cardMatrix, drawn, autoPlayRef.current, updatedIds[2], cartela3DataRef.current));
-        if (tickets[3]?.cardMatrix) setCartela4Data(hydrateCardWithDrawn(tickets[3].cardMatrix, drawn, autoPlayRef.current, updatedIds[3], cartela4DataRef.current));
+      if (tickets[3]?.cardMatrix) setCartela4Data(hydrateCardWithDrawn(tickets[3].cardMatrix, drawn, autoPlayRef.current, updatedIds[3], cartela4DataRef.current));
+      if (tickets[4]?.cardMatrix) setCartela5Data(hydrateCardWithDrawn(tickets[4].cardMatrix, drawn, autoPlayRef.current, updatedIds[4], cartela5DataRef.current));
 
       // Keep player auto/manual mode synchronized with server ticket
       if (tickets[0]?.isAutoPlay === false && autoPlayRef.current !== false) {
@@ -1525,12 +1548,13 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (hasTicket && roundPhase === 'playing') return;
     const clamped = Math.max(1, Math.min(600, newId));
     setSelectedCartelaIds(prev => {
-      const updated: [number, number, number] = [prev[0], prev[1], prev[2]];
+      const updated = [...prev];
       updated[slotIdx] = clamped;
       if (slotIdx === 0) setCartela1Data(generateCardFromId(clamped));
       else if (slotIdx === 1) setCartela2Data(generateCardFromId(clamped));
       else if (slotIdx === 2) setCartela3Data(generateCardFromId(clamped));
       else if (slotIdx === 3) setCartela4Data(generateCardFromId(clamped));
+      else if (slotIdx === 4) setCartela5Data(generateCardFromId(clamped));
       return updated;
     });
     soundEngine.playPop();
@@ -1563,10 +1587,11 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
 
       // Sync data matrices
-      if (updated[0]) setCartela1Data(generateCardFromId(updated[0]));
-      else setCartela1Data([]);
-      if (updated[1]) setCartela2Data(generateCardFromId(updated[1]));
-      else setCartela2Data([]);
+      setCartela1Data(updated[0] ? generateCardFromId(updated[0]) : []);
+      setCartela2Data(updated[1] ? generateCardFromId(updated[1]) : []);
+      setCartela3Data(updated[2] ? generateCardFromId(updated[2]) : []);
+      setCartela4Data(updated[3] ? generateCardFromId(updated[3]) : []);
+      setCartela5Data(updated[4] ? generateCardFromId(updated[4]) : []);
 
       return updated;
     });
@@ -1576,7 +1601,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const shuffleCartela = (cardIdx: number = 0) => {
     if (hasTicket && roundPhase === 'playing') return;
     setSelectedCartelaIds(prev => {
-      const next: [number, number, number] = [prev[0], prev[1], prev[2]];
+      const next = [...prev];
       let newId = Math.floor(1 + Math.random() * 600);
       while (next.includes(newId)) {
         newId = Math.floor(1 + Math.random() * 600);
@@ -1587,6 +1612,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       else if (cardIdx === 1) setCartela2Data(generateCardFromId(newId));
       else if (cardIdx === 2) setCartela3Data(generateCardFromId(newId));
       else if (cardIdx === 3) setCartela4Data(generateCardFromId(newId));
+      else if (cardIdx === 4) setCartela5Data(generateCardFromId(newId));
 
       return next;
     });
@@ -1605,29 +1631,34 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return id;
     };
 
-    const id1 = getRandomUnique();
-    const id2 = getRandomUnique();
-    const id3 = getRandomUnique();
+    const targetCount = Math.max(1, Math.min(5, count));
+    const newIds: number[] = [];
+    for (let i = 0; i < targetCount; i++) {
+      newIds.push(getRandomUnique());
+    }
 
-    setSelectedCartelaIds([id1, id2, id3]);
-    setCartela1Data(generateCardFromId(id1));
-    setCartela2Data(generateCardFromId(id2));
-    setCartela3Data(generateCardFromId(id3));
+    setSelectedCartelaIds(newIds);
+    setCartela1Data(newIds[0] ? generateCardFromId(newIds[0]) : []);
+    setCartela2Data(newIds[1] ? generateCardFromId(newIds[1]) : []);
+    setCartela3Data(newIds[2] ? generateCardFromId(newIds[2]) : []);
+    setCartela4Data(newIds[3] ? generateCardFromId(newIds[3]) : []);
+    setCartela5Data(newIds[4] ? generateCardFromId(newIds[4]) : []);
 
     soundEngine.playPop();
-    showToast(count >= 2 ? `🎲 Shuffled Cartelas (#${id1}, #${id2})` : `🎲 Shuffled to Cartela #${id1}`);
+    showToast(count >= 2 ? `🎲 Shuffled Cartelas (#${newIds.join(', #')})` : `🎲 Shuffled to Cartela #${newIds[0]}`);
   };
 
   const selectSpecificCartela = (cardIdx: number, cartelaId: number) => {
     if (hasTicket && roundPhase === 'playing') return;
     const clamped = Math.max(1, Math.min(600, cartelaId));
     setSelectedCartelaIds(prev => {
-      const next: [number, number, number] = [prev[0], prev[1], prev[2]];
+      const next = [...prev];
       next[cardIdx] = clamped;
       if (cardIdx === 0) setCartela1Data(generateCardFromId(clamped));
       else if (cardIdx === 1) setCartela2Data(generateCardFromId(clamped));
       else if (cardIdx === 2) setCartela3Data(generateCardFromId(clamped));
       else if (cardIdx === 3) setCartela4Data(generateCardFromId(clamped));
+      else if (cardIdx === 4) setCartela5Data(generateCardFromId(clamped));
       return next;
     });
     showToast(`🎟️ Selected Cartela #${clamped}`);
@@ -1661,6 +1692,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setCartela2Data(prev => prev.map(c => (!c.marked && !c.isFree && calledNumbers.includes(c.val as number) ? { ...c, marked: true } : c)));
       setCartela3Data(prev => prev.map(c => (!c.marked && !c.isFree && calledNumbers.includes(c.val as number) ? { ...c, marked: true } : c)));
       setCartela4Data(prev => prev.map(c => (!c.marked && !c.isFree && calledNumbers.includes(c.val as number) ? { ...c, marked: true } : c)));
+      setCartela5Data(prev => prev.map(c => (!c.marked && !c.isFree && calledNumbers.includes(c.val as number) ? { ...c, marked: true } : c)));
       showToast('⚡ Auto-Play Activated');
     } else {
       showToast('✋ Manual Mode Activated');
@@ -1703,14 +1735,19 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
       if (res.tickets && res.tickets.length > 0) {
         const newIds = res.tickets.map((t: any) => t.cartelaId);
-        const updatedIds: [number, number, number] = [
+        const updatedIds: number[] = [
           newIds[0] || selectedCartelaIds[0],
           newIds[1] || selectedCartelaIds[1],
-          newIds[2] || selectedCartelaIds[2]
-        ];
+          newIds[2] || selectedCartelaIds[2],
+          newIds[3] || selectedCartelaIds[3],
+          newIds[4] || selectedCartelaIds[4]
+        ].filter(Boolean);
         setSelectedCartelaIds(updatedIds);
         if (res.tickets[0]) setCartela1Data(res.tickets[0].cardMatrix);
         if (res.tickets[1]) setCartela2Data(res.tickets[1].cardMatrix);
+        if (res.tickets[2]) setCartela3Data(res.tickets[2].cardMatrix);
+        if (res.tickets[3]) setCartela4Data(res.tickets[3].cardMatrix);
+        if (res.tickets[4]) setCartela5Data(res.tickets[4].cardMatrix);
       }
 
       if (res.preBoughtForNextRound) {
@@ -1764,6 +1801,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setCartela2Data(prev => prev.map(c => (!c.marked && !c.isFree && calledNumbers.includes(c.val as number) ? { ...c, marked: true } : c)));
       setCartela3Data(prev => prev.map(c => (!c.marked && !c.isFree && calledNumbers.includes(c.val as number) ? { ...c, marked: true } : c)));
       setCartela4Data(prev => prev.map(c => (!c.marked && !c.isFree && calledNumbers.includes(c.val as number) ? { ...c, marked: true } : c)));
+      setCartela5Data(prev => prev.map(c => (!c.marked && !c.isFree && calledNumbers.includes(c.val as number) ? { ...c, marked: true } : c)));
     }
 
     soundEngine.playLuckyPick();
@@ -1793,16 +1831,19 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
       if (res.tickets && res.tickets.length > 0) {
         const newIds = res.tickets.map((t: any) => t.cartelaId);
-        const updatedIds: [number, number, number] = [
+        const updatedIds: number[] = [
           newIds[0] || selectedCartelaIds[0],
           newIds[1] || selectedCartelaIds[1],
-          newIds[2] || selectedCartelaIds[2]
-        ];
+          newIds[2] || selectedCartelaIds[2],
+          newIds[3] || selectedCartelaIds[3],
+          newIds[4] || selectedCartelaIds[4]
+        ].filter(Boolean);
         setSelectedCartelaIds(updatedIds);
         if (res.tickets[0]) setCartela1Data(res.tickets[0].cardMatrix);
         if (res.tickets[1]) setCartela2Data(res.tickets[1].cardMatrix);
         if (res.tickets[2]) setCartela3Data(res.tickets[2].cardMatrix);
         if (res.tickets[3]) setCartela4Data(res.tickets[3].cardMatrix);
+        if (res.tickets[4]) setCartela5Data(res.tickets[4].cardMatrix);
       }
     } else {
       const success = deductBalance(totalCost);
@@ -1866,8 +1907,8 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
     lastDaubClickTimeRef.current[clickKey] = now;
 
-    const targetData = cartelaIdx === 0 ? cartela1Data : cartelaIdx === 1 ? cartela2Data : cartelaIdx === 2 ? cartela3Data : cartela4Data;
-    const setTargetData = cartelaIdx === 0 ? setCartela1Data : cartelaIdx === 1 ? setCartela2Data : cartelaIdx === 2 ? setCartela3Data : setCartela4Data;
+    const targetData = cartelaIdx === 0 ? cartela1Data : cartelaIdx === 1 ? cartela2Data : cartelaIdx === 2 ? cartela3Data : cartelaIdx === 3 ? cartela4Data : cartela5Data;
+    const setTargetData = cartelaIdx === 0 ? setCartela1Data : cartelaIdx === 1 ? setCartela2Data : cartelaIdx === 2 ? setCartela3Data : cartelaIdx === 3 ? setCartela4Data : setCartela5Data;
     const cell = targetData[cellIdx];
     const cartelaId = selectedCartelaIds[cartelaIdx];
 
@@ -2079,6 +2120,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         cartela2Data,
         cartela3Data,
         cartela4Data,
+        cartela5Data,
         totalPlayableCards,
         activeCartelaIndex,
         setActiveCartelaIndex,

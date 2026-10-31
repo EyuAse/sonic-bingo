@@ -136,7 +136,8 @@ export const ARENA_ROOM_ID = 'lomi-arena';
 export const ROOM_ALIASES = ['lomi-arena', 'room-10', 'room-20', 'room-50', 'room-100', 'default'];
 export const STAKE_ROOM_IDS = ['room-10', 'room-20', 'room-50', 'room-100'];
 export const TOTAL_CARTELAS = 600;
-export const MAX_TICKETS_PER_PLAYER = 4;
+export const MAX_TICKETS_PER_PLAYER = 5;
+export const LOBBY_DURATION_SECONDS = 40;
 
 class BingoGameEngine {
   private static instance: BingoGameEngine;
@@ -352,7 +353,7 @@ class BingoGameEngine {
       mode: 'active',
       isProcessingVictory: false,
       lastBallTime: Date.now(),
-      lobbyCountdown: 45,
+      lobbyCountdown: LOBBY_DURATION_SECONDS,
       winnerCountdown: 8,
       currentRoundId: null,
       roundNumber: 1,
@@ -640,7 +641,7 @@ class BingoGameEngine {
             return isR10 ? r.tickets.size >= 1 : r.tickets.size >= 2;
           });
           if (!anyHouseReady) {
-            room.lobbyCountdown = 45;
+            room.lobbyCountdown = LOBBY_DURATION_SECONDS;
           }
         }
         if (room.nextRoundTickets) {
@@ -1209,9 +1210,9 @@ class BingoGameEngine {
 
     // Determine expected bot count at this exact moment (respecting S-Curve during lobby countdown)
     const isLobbyStaggered = Boolean(this.botConfig.staggeredJoin && room.phase === 'lobby' && !forceRotate);
-    const elapsedSeconds = Math.max(0, Math.min(45, 45 - (room.lobbyCountdown ?? 45)));
+    const elapsedSeconds = Math.max(0, Math.min(LOBBY_DURATION_SECONDS, LOBBY_DURATION_SECONDS - (room.lobbyCountdown ?? LOBBY_DURATION_SECONDS)));
     const targetCount = isLobbyStaggered
-      ? getTargetBotsForElapsedSecond(fullRoundTarget, elapsedSeconds)
+      ? getTargetBotsForElapsedSecond(fullRoundTarget, elapsedSeconds, LOBBY_DURATION_SECONDS)
       : fullRoundTarget;
 
     // Ensure standby roster pool is pre-sampled for this round
@@ -1338,7 +1339,7 @@ class BingoGameEngine {
       room.isHoldingClaimWindow = false;
       room.phase = 'lobby';
       room.mode = 'active';
-      room.lobbyCountdown = 45;
+      room.lobbyCountdown = LOBBY_DURATION_SECONDS;
       room.drawnNumbers = [];
       room.currentCall = null;
       room.winResult = null;
@@ -1427,7 +1428,7 @@ class BingoGameEngine {
       this.broadcastRoomState(room);
     }
 
-    let currentLobbyCountdown = 45;
+    let currentLobbyCountdown = LOBBY_DURATION_SECONDS;
 
     const interval = setInterval(async () => {
       const sample = this.rooms.get('room-10');
@@ -1480,7 +1481,7 @@ class BingoGameEngine {
 
         if (!anyHouseReady) {
           room.waitingForPlayers = true;
-          room.lobbyCountdown = 45;
+          room.lobbyCountdown = LOBBY_DURATION_SECONDS;
           this.broadcastRoomState(room);
         } else {
           // If bots are present and clock is ticking, Room 10 is active/ready; if bots = 0 or Rooms 20, 50, 100, strictly require tickets.size >= 2
@@ -1493,7 +1494,7 @@ class BingoGameEngine {
       }
 
       if (!anyHouseReady) {
-        currentLobbyCountdown = 45;
+        currentLobbyCountdown = LOBBY_DURATION_SECONDS;
         return;
       }
 
@@ -1506,9 +1507,9 @@ class BingoGameEngine {
         room10.targetBotsToSeed &&
         room10.targetBotsToSeed.length > 0
       ) {
-        const elapsedSeconds = 45 - currentLobbyCountdown;
+        const elapsedSeconds = LOBBY_DURATION_SECONDS - currentLobbyCountdown;
         const totalTarget = room10.dynamicBotTarget || 0;
-        const desiredBotCount = getTargetBotsForElapsedSecond(totalTarget, elapsedSeconds);
+        const desiredBotCount = getTargetBotsForElapsedSecond(totalTarget, elapsedSeconds, LOBBY_DURATION_SECONDS);
 
         if (room10.opponentCards.length < desiredBotCount) {
           // Allow smooth bursts of 1 to 3 bots per second tick to match the arrival curve

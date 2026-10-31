@@ -4301,6 +4301,18 @@
   box-sizing: border-box;
 }
 
+/* 5th Cartela Layout: Centered below the 2x2 grid, smoothly scrollable down */
+.bingo-cartelas-2x2-grid.has-5-cartelas {
+  padding-bottom: 12px;
+}
+
+.bingo-cartelas-2x2-grid.has-5-cartelas .new-cartela-card:nth-child(5) {
+  grid-column: 1 / -1;
+  max-width: min(320px, 92%);
+  margin: 4px auto 0 auto;
+  width: 100%;
+}
+
 .bingo-cartelas-2x2-grid .new-cartela-card {
   width: 100%;
   background: #ffffff;

@@ -446,34 +446,34 @@ export function calculateRoom10TargetBots(previousTarget?: number, customDate?: 
  * @param elapsedSeconds Seconds elapsed in lobby (0 to 45)
  * @returns Cumulative bot count that should have arrived by this second
  */
-export function getTargetBotsForElapsedSecond(targetBots: number, elapsedSeconds: number): number {
+export function getTargetBotsForElapsedSecond(targetBots: number, elapsedSeconds: number, totalDuration: number = 40): number {
   if (targetBots <= 0) return 0;
   if (elapsedSeconds <= 0) {
-    // At second 0 (45s remaining): Seed initial baseline of 1-2 players
+    // At second 0 (40s remaining): Seed initial baseline of 1-2 players
     return Math.min(targetBots, Math.max(1, Math.min(2, Math.floor(targetBots * 0.05) || 1)));
   }
   if (targetBots <= 2) {
     return Math.min(targetBots, elapsedSeconds >= 1 ? targetBots : 1);
   }
-  if (elapsedSeconds >= 44) {
+  if (elapsedSeconds >= totalDuration - 1) {
     return targetBots; // 100% sealed at gate closure
   }
 
-  const tau = Math.max(0, Math.min(45, elapsedSeconds));
+  const tau = Math.max(0, Math.min(totalDuration, elapsedSeconds));
   let fraction: number;
 
-  if (tau <= 7) {
+  if (tau <= 6) {
     // Early birds (5% to 10%)
-    fraction = 0.05 + (tau / 7) * 0.05;
-  } else if (tau <= 21) {
+    fraction = 0.05 + (tau / 6) * 0.05;
+  } else if (tau <= 18) {
     // Steady trickle (10% to 35%)
-    fraction = 0.10 + ((tau - 7) / 14) * 0.25;
-  } else if (tau <= 35) {
+    fraction = 0.10 + ((tau - 6) / 12) * 0.25;
+  } else if (tau <= 31) {
     // The "Hurry-Up" influx (35% to 75%)
-    fraction = 0.35 + ((tau - 21) / 14) * 0.40;
+    fraction = 0.35 + ((tau - 18) / 13) * 0.40;
   } else {
     // Last minute rush (75% to 100%)
-    fraction = 0.75 + ((tau - 35) / 9) * 0.25;
+    fraction = 0.75 + ((tau - 31) / (totalDuration - 31)) * 0.25;
   }
 
   const targetAtSecond = Math.floor(targetBots * fraction);
