@@ -208,6 +208,257 @@ router.get('/users', requireAdmin, async (req, res) => {
 });
 
 /**
+ * GET /api/admin/cashier-ledger
+ * Authoritative P2P Cashier Surveillance & Network Audit Ledger
+ * Combines Agent Deposits, Agent Withdrawals, and Historical Direct Transactions
+ */
+router.get('/cashier-ledger', requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { timeframe = 'today', rail = 'all', status = 'all', type = 'all', search } = req.query as {
+      timeframe?: string;
+      rail?: string;
+      status?: string;
+      type?: string;
+      search?: string;
+    };
+
+    // 1. Authoritative Network KPI Ribbon from PostgreSQL
+    const [depStatsRes, wdStatsRes, floatStatsRes, commStatsRes] = await Promise.all([
+      // Today's P2P Deposits
+      query(`
+        SELECT 
+          COALESCE(SUM(amount), 0) as amount,
+          COUNT(*) as count,
+          COALESCE(SUM(amount * 0.05), 0) as commission
+        FROM agent_deposit_requests
+        WHERE status = 'approved' AND created_at >= CURRENT_DATE
+      `),
+      // Today's P2P Withdrawals
+      query(`
+        SELECT 
+          COALESCE(SUM(amount), 0) as amount,
+          COUNT(*) as count,
+          COALESCE(SUM(COALESCE(agent_commission_earned, amount * 0.02)), 0) as commission
+        FROM agent_withdrawal_requests
+        WHERE status = 'approved' AND created_at >= CURRENT_DATE
+      `),
+      // Agent Float in Circulation
+      query(`
+        SELECT COALESCE(SUM(wallet_balance), 0) as total_float
+        FROM agent_profiles
+        WHERE status = 'active'
+      `),
+      // Total Agent Commission Distributed
+      query(`
+        SELECT COALESCE(SUM(commission_earned), 0) as total_comm
+        FROM agent_commissions
+      `)
+    ]);
+
+    const stats = {
+      todayDepositsAmount: parseFloat(depStatsRes.rows[0]?.amount || '0'),
+      todayDepositsCount: parseInt(depStatsRes.rows[0]?.count || '0', 10),
+      todayDepositsCommission: parseFloat(depStatsRes.rows[0]?.commission || '0'),
+      todayWithdrawalsAmount: parseFloat(wdStatsRes.rows[0]?.amount || '0'),
+      todayWithdrawalsCount: parseInt(wdStatsRes.rows[0]?.count || '0', 10),
+      todayWithdrawalsFee: parseFloat(wdStatsRes.rows[0]?.commission || '0'),
+      agentFloatCirculation: parseFloat(floatStatsRes.rows[0]?.total_float || '0'),
+      totalCommissionDistributed: parseFloat(commStatsRes.rows[0]?.total_comm || '0')
+    };
+
+    // 2. Build Unified Surveillance Ledger Query
+    const whereClauses: string[] = [];
+    const queryParams: any[] = [];
+
+    if (timeframe === 'today') {
+      whereClauses.push(`created_at >= CURRENT_DATE`);
+    } else if (timeframe === 'week') {
+      whereClauses.push(`created_at >= NOW() - INTERVAL '7 days'`);
+    } else if (timeframe === 'month') {
+      whereClauses.push(`created_at >= NOW() - INTERVAL '30 days'`);
+    }
+
+    if (rail && rail !== 'all') {
+      queryParams.push(rail);
+      whereClauses.push(`payment_method = $${queryParams.length}`);
+    }
+
+    if (status && status !== 'all') {
+      queryParams.push(status);
+      whereClauses.push(`status = $${queryParams.length}`);
+    }
+
+    if (type && type !== 'all') {
+      queryParams.push(type);
+      whereClauses.push(`type = $${queryParams.length}`);
+    }
+
+    if (search && search.trim()) {
+      queryParams.push(`%${search.trim().toLowerCase()}%`);
+      const pIdx = queryParams.length;
+      whereClauses.push(`(
+        LOWER(COALESCE(user_name, '')) LIKE $${pIdx} OR 
+        LOWER(COALESCE(user_phone, '')) LIKE $${pIdx} OR 
+        LOWER(COALESCE(player_phone, '')) LIKE $${pIdx} OR 
+        LOWER(COALESCE(agent_code, '')) LIKE $${pIdx} OR 
+        LOWER(COALESCE(agent_name, '')) LIKE $${pIdx} OR 
+        LOWER(COALESCE(reference_number, '')) LIKE $${pIdx}
+      )`);
+    }
+
+    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    const ledgerSql = `
+      WITH p2p_txs AS (
+        SELECT 
+          adr.id,
+          'deposit' as type,
+          adr.amount,
+          adr.payment_method,
+          adr.player_phone,
+          adr.transaction_code as reference_number,
+          adr.status,
+          adr.rejection_reason,
+          adr.screenshot_url as receipt_image,
+          ROUND(adr.amount * 0.05, 2) as agent_commission,
+          adr.created_at,
+          adr.resolved_at,
+          u.id as user_id,
+          u.full_name as user_name,
+          u.phone as user_phone,
+          ap.id as agent_id,
+          ap.agent_code,
+          COALESCE(au.full_name, ap.telebirr_name, CONCAT('Sonic Agent #', ap.agent_code)) as agent_name,
+          ap.telebirr_phone as agent_telebirr,
+          ap.cbe_account as agent_cbe
+        FROM agent_deposit_requests adr
+        JOIN users u ON adr.player_id = u.id
+        JOIN agent_profiles ap ON adr.agent_id = ap.id
+        LEFT JOIN users au ON ap.user_id = au.id
+
+        UNION ALL
+
+        SELECT 
+          awr.id,
+          'withdrawal' as type,
+          awr.amount,
+          awr.payout_method as payment_method,
+          awr.payout_account as player_phone,
+          COALESCE(awr.agent_tx_ref, CONCAT('WD-', UPPER(awr.payout_method), '-', SUBSTRING(CAST(awr.id as TEXT), 1, 6))) as reference_number,
+          awr.status,
+          awr.rejection_reason,
+          NULL as receipt_image,
+          COALESCE(awr.agent_commission_earned, ROUND(awr.amount * 0.02, 2)) as agent_commission,
+          awr.created_at,
+          awr.resolved_at,
+          u.id as user_id,
+          u.full_name as user_name,
+          u.phone as user_phone,
+          ap.id as agent_id,
+          ap.agent_code,
+          COALESCE(au.full_name, ap.telebirr_name, CONCAT('Sonic Agent #', ap.agent_code)) as agent_name,
+          ap.telebirr_phone as agent_telebirr,
+          ap.cbe_account as agent_cbe
+        FROM agent_withdrawal_requests awr
+        JOIN users u ON awr.player_id = u.id
+        JOIN agent_profiles ap ON awr.agent_id = ap.id
+        LEFT JOIN users au ON ap.user_id = au.id
+
+        UNION ALL
+
+        SELECT 
+          dr.id,
+          'deposit' as type,
+          dr.amount,
+          dr.payment_method,
+          dr.player_phone,
+          dr.transaction_ref as reference_number,
+          dr.status,
+          dr.admin_notes as rejection_reason,
+          CASE WHEN (dr.receipt_image IS NOT NULL AND dr.receipt_image != '' AND dr.receipt_image NOT LIKE '[ARCHIVED%') THEN CONCAT('/api/admin/deposits/', dr.id, '/receipt') ELSE NULL END as receipt_image,
+          0.00 as agent_commission,
+          dr.created_at,
+          dr.reviewed_at as resolved_at,
+          u.id as user_id,
+          u.full_name as user_name,
+          u.phone as user_phone,
+          NULL as agent_id,
+          'DIRECT' as agent_code,
+          'Central Treasury' as agent_name,
+          NULL as agent_telebirr,
+          NULL as agent_cbe
+        FROM deposit_requests dr
+        JOIN users u ON dr.user_id = u.id
+
+        UNION ALL
+
+        SELECT 
+          wr.id,
+          'withdrawal' as type,
+          wr.amount,
+          wr.payment_method,
+          wr.account_phone as player_phone,
+          CONCAT('WD-', UPPER(wr.payment_method), '-', SUBSTRING(CAST(wr.id as TEXT), 1, 6)) as reference_number,
+          wr.status,
+          NULL as rejection_reason,
+          NULL as receipt_image,
+          0.00 as agent_commission,
+          wr.created_at,
+          wr.reviewed_at as resolved_at,
+          u.id as user_id,
+          u.full_name as user_name,
+          u.phone as user_phone,
+          NULL as agent_id,
+          'DIRECT' as agent_code,
+          'Central Treasury' as agent_name,
+          NULL as agent_telebirr,
+          NULL as agent_cbe
+        FROM withdrawal_requests wr
+        JOIN users u ON wr.user_id = u.id
+      )
+      SELECT * FROM p2p_txs
+      ${whereSql}
+      ORDER BY created_at DESC
+      LIMIT 200;
+    `;
+
+    const txRes = await query(ledgerSql, queryParams);
+
+    const formattedTxs = txRes.rows.map(r => ({
+      id: r.id,
+      type: r.type,
+      amount: parseFloat(r.amount),
+      paymentMethod: r.payment_method,
+      playerPhone: r.player_phone,
+      referenceNumber: r.reference_number,
+      status: r.status,
+      rejectionReason: r.rejection_reason,
+      receiptImage: r.receipt_image,
+      agentCommission: parseFloat(r.agent_commission || '0'),
+      createdAt: r.created_at,
+      resolvedAt: r.resolved_at,
+      userId: r.user_id,
+      userName: r.user_name,
+      userPhone: r.user_phone,
+      agentId: r.agent_id,
+      agentCode: r.agent_code,
+      agentName: r.agent_name,
+      agentTelebirr: r.agent_telebirr,
+      agentCbe: r.agent_cbe
+    }));
+
+    return res.json({
+      success: true,
+      stats,
+      transactions: formattedTxs
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Cashier Ledger Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve cashier audit ledger' });
+  }
+});
+
+/**
  * Get All Deposit Requests (Admin/Cashier View)
  */
 router.get('/deposits', requireAdmin, async (_req, res) => {

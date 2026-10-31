@@ -119,19 +119,19 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             {!isSidebarCollapsed && <span className="light-nav-text">Dashboard</span>}
           </button>
 
-          {/* 2. Cashier Queue */}
+          {/* 2. P2P Cashier Surveillance */}
           <button
             type="button"
             className={`light-nav-item ${activeTab === 'cashier' ? 'active' : ''}`}
             onClick={() => handleSelectTab('cashier')}
-            title="Cashier Queue"
+            title="P2P Cashier Surveillance"
           >
             <div className="light-nav-icon">
-              <i className="fa-solid fa-inbox"></i>
+              <i className="fa-solid fa-shield-halved"></i>
             </div>
             {!isSidebarCollapsed && (
               <>
-                <span className="light-nav-text">Cashier Queue</span>
+                <span className="light-nav-text">P2P Cashier</span>
                 {pendingCount > 0 && (
                   <span className="light-nav-badge yellow-badge">{pendingCount}</span>
                 )}

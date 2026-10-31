@@ -592,6 +592,51 @@ export const apiClient = {
       }>(res);
     },
 
+    async getCashierLedger(params?: {
+      timeframe?: 'today' | 'week' | 'month' | 'all';
+      rail?: string;
+      status?: string;
+      type?: string;
+      search?: string;
+    }) {
+      const adminHeaders = await getAdminAuthHeader();
+      const query = new URLSearchParams();
+      if (params?.timeframe) query.append('timeframe', params.timeframe);
+      if (params?.rail && params.rail !== 'all') query.append('rail', params.rail);
+      if (params?.status && params.status !== 'all') query.append('status', params.status);
+      if (params?.type && params.type !== 'all') query.append('type', params.type);
+      if (params?.search && params.search.trim()) query.append('search', params.search.trim());
+      const qStr = query.toString() ? `?${query.toString()}` : '';
+
+      const res = await fetch(`${API_BASE}/admin/cashier-ledger${qStr}`, {
+        headers: { ...adminHeaders }
+      });
+      const data = await handleResponse<{
+        success: boolean;
+        stats: {
+          todayDepositsAmount: number;
+          todayDepositsCount: number;
+          todayDepositsCommission: number;
+          todayWithdrawalsAmount: number;
+          todayWithdrawalsCount: number;
+          todayWithdrawalsFee: number;
+          agentFloatCirculation: number;
+          totalCommissionDistributed: number;
+        };
+        transactions: any[];
+      }>(res);
+
+      if (data && Array.isArray(data.transactions)) {
+        data.transactions = data.transactions.map((t: any) => ({
+          ...t,
+          receiptImage: t.receiptImage && t.receiptImage.startsWith('/')
+            ? `${getBackendOrigin()}${t.receiptImage}`
+            : t.receiptImage
+        }));
+      }
+      return data;
+    },
+
     async getDeposits() {
       const adminHeaders = await getAdminAuthHeader();
       const res = await fetch(`${API_BASE}/admin/deposits`, {

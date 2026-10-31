@@ -56,7 +56,7 @@ export const AdminPage: React.FC = () => {
               <h2 className="viewport-page-main-heading">
                 <i className="fa-solid fa-bolt-lightning header-gold-bolt"></i>
                 {activeTab === 'overview' && 'Dashboard & Operations Desk'}
-                {activeTab === 'cashier' && 'Cashier Approvals & Settlement Queue'}
+                {activeTab === 'cashier' && 'P2P Cashier Surveillance & Network Audit Ledger'}
                 {activeTab === 'cashflow' && 'Cash Flow & Revenue Analytics'}
                 {activeTab === 'users' && 'Player Accounts & Wallets Directory'}
                 {activeTab === 'bots' && '200 Bot Player Accounts & Wallets'}
@@ -69,7 +69,7 @@ export const AdminPage: React.FC = () => {
                 {activeTab === 'coins' && 'Coins Loyalty & Rewards Engine (1.5x)'}
               </h2>
               <p className="viewport-page-amharic-sub">
-                {activeTab === 'cashier' && 'ተወራራጅ ክፍያዎችን ያጽድቁ እና ገንዘቦችን በቀጥታ ባንክ ይላኩ'}
+                {activeTab === 'cashier' && 'የወኪሎች P2P ተቀማጭ እና ክፍያ ክትትል፣ የሞባይል ገንዘብ ኦዲት መዝገብ እና የፍሎት ቁጥጥር'}
                 {activeTab === 'overview' && 'የቀጥታ ጨዋታዎችን፣ የኮሚሽን ትርፍን እና የክፍያዎችን ፍሰት ይቆጣጠሩ'}
                 {activeTab === 'cashflow' && 'የቀን ተቀማጭ፣ የክፍያ ወጪ እና የተጣራ የሎሚ ቢንጎ ገቢ ዝርዝር'}
                 {activeTab === 'users' && 'የተመዘገቡ ተጫዋቾች፣ የዋሌት ቀሪ ሂሳብ እና የቦነስ ማበረታቻዎች'}
@@ -135,7 +135,7 @@ export const AdminPage: React.FC = () => {
           {[
             { id: 'overview', label: '📊 Dashboard' },
             { id: 'bot-engine', label: '🎚️ Bot Engine (0-50)', highlight: true },
-            { id: 'cashier', label: '📥 Cashier Queue' },
+            { id: 'cashier', label: '🛡️ P2P Cashier' },
             { id: 'cashflow', label: '⚖️ Cash Flow' },
             { id: 'users', label: '👥 Players' },
             { id: 'bots', label: '🤖 200 Bots' },
