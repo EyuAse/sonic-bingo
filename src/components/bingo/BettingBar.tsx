@@ -136,8 +136,8 @@ export const BettingBar: React.FC = () => {
           {/* ── Responsive 2-Row Lobby Buy Bar (Controls Row + Full-Width CTA) ── */}
           <div className="compact-lobby-buy-bar">
             <div className="compact-lobby-controls-row">
-              {/* 1. Stepper for 1 to 5 cartelas */}
-              <div className="compact-lobby-stepper" title="Choose 1 to 5 cartelas">
+              {/* 1. Stepper for 1 to 4 cartelas */}
+              <div className="compact-lobby-stepper" title="Choose 1 to 4 cartelas">
                 <button
                   type="button"
                   className="btn-stepper-mini"
@@ -151,7 +151,7 @@ export const BettingBar: React.FC = () => {
                   type="button"
                   className="btn-stepper-mini"
                   onClick={() => setCardQuantity(cardQuantity + 1)}
-                  disabled={cardQuantity >= 5 || hasTicket}
+                  disabled={cardQuantity >= 4 || hasTicket}
                 >
                   +
                 </button>

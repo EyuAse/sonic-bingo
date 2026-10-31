@@ -136,7 +136,7 @@ export const ARENA_ROOM_ID = 'lomi-arena';
 export const ROOM_ALIASES = ['lomi-arena', 'room-10', 'room-20', 'room-50', 'room-100', 'default'];
 export const STAKE_ROOM_IDS = ['room-10', 'room-20', 'room-50', 'room-100'];
 export const TOTAL_CARTELAS = 600;
-export const MAX_TICKETS_PER_PLAYER = 5;
+export const MAX_TICKETS_PER_PLAYER = 4;
 export const LOBBY_DURATION_SECONDS = 40;
 
 class BingoGameEngine {
