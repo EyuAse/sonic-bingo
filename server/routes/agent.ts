@@ -485,7 +485,7 @@ router.get('/performance', requireAgent, async (req: AuthenticatedRequest, res: 
     const targetMonthly = parseFloat(agent.target_monthly || '50000');
     const targetProgress = targetMonthly > 0 ? Math.min(100, Math.round((monthDeposited / targetMonthly) * 100)) : 0;
     const commissionRate = parseFloat(agent.commission_rate || '5');
-    
+
     // Strict Commission Accounting from agent_commissions ledger or verified transactions
     const ledgerTotal = parseFloat(c.total_comm_earned || '0');
     const depositCommission = ledgerTotal > 0
@@ -516,7 +516,7 @@ router.get('/performance', requireAgent, async (req: AuthenticatedRequest, res: 
       const dDate = new Date(now.getFullYear(), now.getMonth(), dayNum);
       const dayKey = dDate.toISOString().split('T')[0];
       const volume = dbTrendMap.get(dayKey) || 0;
-      
+
       // Calculate realistic cumulative player active count reaching totalActive at end
       const count = totalActive > 0
         ? Math.round(totalActive * (0.3 + (idx / 4) * 0.7))
@@ -969,16 +969,185 @@ router.get('/transactions', requireAgent, async (req: AuthenticatedRequest, res:
 });
 
 /**
+ * GET /api/agent/payment-accounts
+ * Agent retrieves their current configured receiving/payout accounts
+ */
+router.get('/payment-accounts', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const resProfile = await query(
+      `SELECT ap.id, ap.agent_code, ap.telebirr_phone, ap.telebirr_name,
+              ap.cbe_account, ap.cbe_name, ap.mpesa_phone, ap.mpesa_name,
+              ap.active_rails, u.full_name
+       FROM agent_profiles ap
+       JOIN users u ON ap.user_id = u.id
+       WHERE ap.user_id = $1`,
+      [userId]
+    );
+
+    if (resProfile.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent profile not found' });
+    }
+
+    const ap = resProfile.rows[0];
+    const activeRailsList = (ap.active_rails || 'Telebirr,CBE').split(',').map((s: string) => s.trim());
+
+    return res.json({
+      success: true,
+      accounts: {
+        telebirr: {
+          accountNumber: ap.telebirr_phone || '',
+          accountName: ap.telebirr_name || ap.full_name || '',
+          isActive: activeRailsList.includes('Telebirr') && Boolean(ap.telebirr_phone)
+        },
+        cbe: {
+          accountNumber: ap.cbe_account || '',
+          accountName: ap.cbe_name || ap.full_name || '',
+          isActive: activeRailsList.includes('CBE') && Boolean(ap.cbe_account)
+        },
+        mpesa: {
+          accountNumber: ap.mpesa_phone || '',
+          accountName: ap.mpesa_name || ap.full_name || '',
+          isActive: activeRailsList.includes('M-Pesa') && Boolean(ap.mpesa_phone)
+        }
+      },
+      supportedRails: activeRailsList.filter((r: string) => {
+        if (r === 'Telebirr') return Boolean(ap.telebirr_phone);
+        if (r === 'CBE') return Boolean(ap.cbe_account);
+        if (r === 'M-Pesa') return Boolean(ap.mpesa_phone);
+        return false;
+      })
+    });
+  } catch (error: any) {
+    console.error('❌ [Agent Payment Accounts GET Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve payment accounts' });
+  }
+});
+
+/**
+ * PUT /api/agent/payment-accounts
+ * Agent updates their payment receiving/payout rails (Telebirr, CBE Bank, M-Pesa)
+ */
+router.put('/payment-accounts', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { telebirr, cbe, mpesa } = req.body;
+
+    const resProfile = await query(
+      `SELECT ap.id, u.full_name FROM agent_profiles ap JOIN users u ON ap.user_id = u.id WHERE ap.user_id = $1`,
+      [userId]
+    );
+
+    if (resProfile.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent profile not found' });
+    }
+
+    const agentId = resProfile.rows[0].id;
+    const defaultName = resProfile.rows[0].full_name || 'Agent';
+
+    const cleanTelebirrPhone = telebirr?.accountNumber?.trim() || null;
+    const cleanTelebirrName = telebirr?.accountName?.trim() || (cleanTelebirrPhone ? defaultName : null);
+    const isTelebirrActive = Boolean(telebirr?.isActive && cleanTelebirrPhone);
+
+    const cleanCbeAcc = cbe?.accountNumber?.trim() || null;
+    const cleanCbeName = cbe?.accountName?.trim() || (cleanCbeAcc ? defaultName : null);
+    const isCbeActive = Boolean(cbe?.isActive && cleanCbeAcc);
+
+    const cleanMpesaPhone = mpesa?.accountNumber?.trim() || null;
+    const cleanMpesaName = mpesa?.accountName?.trim() || (cleanMpesaPhone ? defaultName : null);
+    const isMpesaActive = Boolean(mpesa?.isActive && cleanMpesaPhone);
+
+    // Validation
+    if (isTelebirrActive && cleanTelebirrPhone) {
+      const phoneDigits = cleanTelebirrPhone.replace(/\D/g, '');
+      if (phoneDigits.length < 9 || phoneDigits.length > 13) {
+        return res.status(400).json({ success: false, error: 'Please enter a valid 9 to 13-digit Telebirr phone number.' });
+      }
+    }
+
+    if (isCbeActive && cleanCbeAcc) {
+      const cbeDigits = cleanCbeAcc.replace(/\s+/g, '');
+      if (cbeDigits.length < 10 || cbeDigits.length > 16) {
+        return res.status(400).json({ success: false, error: 'Please enter a valid Commercial Bank of Ethiopia (CBE) account number.' });
+      }
+    }
+
+    if (isMpesaActive && cleanMpesaPhone) {
+      const mpesaDigits = cleanMpesaPhone.replace(/\D/g, '');
+      if (mpesaDigits.length < 9 || mpesaDigits.length > 13) {
+        return res.status(400).json({ success: false, error: 'Please enter a valid Safaricom M-Pesa phone number.' });
+      }
+    }
+
+    const activeRailsList: string[] = [];
+    if (isTelebirrActive) activeRailsList.push('Telebirr');
+    if (isCbeActive) activeRailsList.push('CBE');
+    if (isMpesaActive) activeRailsList.push('M-Pesa');
+
+    if (activeRailsList.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'You must have at least one active payment rail (Telebirr, CBE Bank, or Safaricom M-Pesa) configured.'
+      });
+    }
+
+    const activeRailsStr = activeRailsList.join(',');
+
+    await query(
+      `UPDATE agent_profiles 
+       SET telebirr_phone = $1,
+           telebirr_name = $2,
+           cbe_account = $3,
+           cbe_name = $4,
+           mpesa_phone = $5,
+           mpesa_name = $6,
+           active_rails = $7,
+           updated_at = NOW()
+       WHERE id = $8`,
+      [
+        cleanTelebirrPhone,
+        cleanTelebirrName,
+        cleanCbeAcc,
+        cleanCbeName,
+        cleanMpesaPhone,
+        cleanMpesaName,
+        activeRailsStr,
+        agentId
+      ]
+    );
+
+    return res.json({
+      success: true,
+      message: 'Payment accounts updated successfully!',
+      accounts: {
+        telebirr: { accountNumber: cleanTelebirrPhone, accountName: cleanTelebirrName, isActive: isTelebirrActive },
+        cbe: { accountNumber: cleanCbeAcc, accountName: cleanCbeName, isActive: isCbeActive },
+        mpesa: { accountNumber: cleanMpesaPhone, accountName: cleanMpesaName, isActive: isMpesaActive }
+      },
+      supportedRails: activeRailsList
+    });
+  } catch (error: any) {
+    console.error('❌ [Agent Payment Accounts PUT Error]:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Failed to update payment accounts' });
+  }
+});
+
+/**
  * GET /api/agent/available
- * Public / Player endpoint to fetch online certified agents.
- * STRICT PRIVACY: Redacts personal names and exposes only Unique Agent Codes and payment rails.
+ * Public / Player endpoint to fetch online certified agents with their real configured rails.
+ * STRICT PRIVACY: Returns verified agent codes and active payment rails. Zero mock accounts.
  */
 router.get('/available', async (_req, res) => {
   try {
     const agentsRes = await query(
-      `SELECT ap.id, ap.agent_code, ap.status, ap.telebirr_phone, ap.cbe_account, ap.mpesa_phone, 
-              ap.is_online, ap.wallet_balance
+      `SELECT ap.id, ap.agent_code, ap.status, 
+              ap.telebirr_phone, ap.telebirr_name, 
+              ap.cbe_account, ap.cbe_name, 
+              ap.mpesa_phone, ap.mpesa_name,
+              ap.active_rails, ap.is_online, ap.wallet_balance,
+              u.full_name
        FROM agent_profiles ap
+       JOIN users u ON ap.user_id = u.id
        WHERE ap.status = 'active'
          AND COALESCE(ap.is_online, true) = true
          AND ap.wallet_balance >= 50.00
@@ -986,19 +1155,35 @@ router.get('/available', async (_req, res) => {
        LIMIT 30`
     );
 
-    return res.json({
-      success: true,
-      agents: agentsRes.rows.map(a => ({
+    const formattedAgents = agentsRes.rows.map(a => {
+      const activeList = (a.active_rails || 'Telebirr,CBE').split(',').map((s: string) => s.trim());
+      const supportedRails = activeList.filter((r: string) => {
+        if (r === 'Telebirr') return Boolean(a.telebirr_phone);
+        if (r === 'CBE') return Boolean(a.cbe_account);
+        if (r === 'M-Pesa') return Boolean(a.mpesa_phone);
+        return false;
+      });
+
+      return {
         id: a.id,
         agentCode: a.agent_code,
         displayName: `Sonic Agent #${a.agent_code}`,
-        phone: a.telebirr_phone || '0982624574',
-        telebirrPhone: a.telebirr_phone || '0982624574',
-        cbeAccount: a.cbe_account || '1000458291048',
+        phone: a.telebirr_phone || a.mpesa_phone || null,
+        telebirrPhone: a.telebirr_phone || null,
+        telebirrName: a.telebirr_name || a.full_name || 'Agent',
+        cbeAccount: a.cbe_account || null,
+        cbeName: a.cbe_name || a.full_name || 'Sonic Gaming Agent',
         mpesaPhone: a.mpesa_phone || null,
+        mpesaName: a.mpesa_name || a.full_name || 'Agent',
+        supportedRails,
         isOnline: a.is_online !== false,
         avgApprovalMinutes: 2
-      }))
+      };
+    }).filter(a => a.supportedRails.length > 0);
+
+    return res.json({
+      success: true,
+      agents: formattedAgents
     });
   } catch (error: any) {
     console.error('❌ [Agent Available GET Error]:', error);
@@ -1009,6 +1194,7 @@ router.get('/available', async (_req, res) => {
 /**
  * GET /api/agent/deposit-requests
  * Agent views incoming player deposit requests assigned to their unique agent code.
+ * Includes Today / This Week / This Month SQL aggregates.
  */
 router.get('/deposit-requests', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -1020,11 +1206,12 @@ router.get('/deposit-requests', requireAgent, async (req: AuthenticatedRequest, 
 
     const agentId = agentRes.rows[0].id;
     const statusFilter = (req.query.status as string) || 'all';
+    const timeframe = (req.query.timeframe as string) || 'all';
 
     let sql = `
       SELECT req.id, req.amount, req.payment_method, req.player_phone, req.transaction_code,
              req.screenshot_url, req.status, req.rejection_reason, req.created_at, req.resolved_at,
-             u.full_name as player_name
+             u.full_name as player_name, u.telegram_username as player_username
       FROM agent_deposit_requests req
       JOIN users u ON req.player_id = u.id
       WHERE req.agent_id = $1
@@ -1032,28 +1219,62 @@ router.get('/deposit-requests', requireAgent, async (req: AuthenticatedRequest, 
     const params: any[] = [agentId];
 
     if (statusFilter !== 'all') {
-      sql += ` AND req.status = $2`;
       params.push(statusFilter);
+      sql += ` AND req.status = $${params.length}`;
     }
 
-    sql += ` ORDER BY req.created_at DESC LIMIT 50`;
+    if (timeframe === 'today') {
+      sql += ` AND req.created_at >= CURRENT_DATE`;
+    } else if (timeframe === 'week') {
+      sql += ` AND req.created_at >= date_trunc('week', CURRENT_DATE)`;
+    } else if (timeframe === 'month') {
+      sql += ` AND req.created_at >= date_trunc('month', CURRENT_DATE)`;
+    }
 
-    const [requestsRes, pendingCountRes] = await Promise.all([
+    sql += ` ORDER BY req.created_at DESC LIMIT 100`;
+
+    const [requestsRes, pendingCountRes, analyticsRes] = await Promise.all([
       query(sql, params),
-      query(`SELECT COUNT(*) as count FROM agent_deposit_requests WHERE agent_id = $1 AND status = 'pending'`, [agentId])
+      query(`SELECT COUNT(*) as count FROM agent_deposit_requests WHERE agent_id = $1 AND status = 'pending'`, [agentId]),
+      query(
+        `SELECT
+           COALESCE(SUM(amount) FILTER (WHERE status = 'approved' AND created_at >= CURRENT_DATE), 0) as today_amount,
+           COUNT(*) FILTER (WHERE status = 'approved' AND created_at >= CURRENT_DATE) as today_count,
+           COALESCE(SUM(amount) FILTER (WHERE status = 'approved' AND created_at >= date_trunc('week', CURRENT_DATE)), 0) as week_amount,
+           COUNT(*) FILTER (WHERE status = 'approved' AND created_at >= date_trunc('week', CURRENT_DATE)) as week_count,
+           COALESCE(SUM(amount) FILTER (WHERE status = 'approved' AND created_at >= date_trunc('month', CURRENT_DATE)), 0) as month_amount,
+           COUNT(*) FILTER (WHERE status = 'approved' AND created_at >= date_trunc('month', CURRENT_DATE)) as month_count,
+           COALESCE(SUM(amount) FILTER (WHERE status = 'approved'), 0) as all_time_amount,
+           COUNT(*) FILTER (WHERE status = 'approved') as all_time_count
+         FROM agent_deposit_requests
+         WHERE agent_id = $1`,
+        [agentId]
+      )
     ]);
 
     const pendingCount = parseInt(pendingCountRes.rows[0]?.count || '0', 10);
+    const a = analyticsRes.rows[0] || {};
+    const todayAmount = parseFloat(a.today_amount || '0');
+    const weekAmount = parseFloat(a.week_amount || '0');
+    const monthAmount = parseFloat(a.month_amount || '0');
+    const allTimeAmount = parseFloat(a.all_time_amount || '0');
 
     return res.json({
       success: true,
       pendingCount,
+      analytics: {
+        today: { amount: todayAmount, count: parseInt(a.today_count || '0', 10), commission: Number((todayAmount * 0.05).toFixed(2)) },
+        week: { amount: weekAmount, count: parseInt(a.week_count || '0', 10), commission: Number((weekAmount * 0.05).toFixed(2)) },
+        month: { amount: monthAmount, count: parseInt(a.month_count || '0', 10), commission: Number((monthAmount * 0.05).toFixed(2)) },
+        allTime: { amount: allTimeAmount, count: parseInt(a.all_time_count || '0', 10), commission: Number((allTimeAmount * 0.05).toFixed(2)) }
+      },
       requests: requestsRes.rows.map(r => ({
         id: r.id,
         amount: parseFloat(r.amount),
         paymentMethod: r.payment_method,
         playerPhone: r.player_phone,
-        playerName: r.player_name,
+        playerName: r.player_name || r.player_username || 'Player',
+        playerUsername: r.player_username,
         transactionCode: r.transaction_code,
         screenshotUrl: r.screenshot_url,
         status: r.status,
@@ -1377,7 +1598,8 @@ router.put('/status', requireAgent, async (req: AuthenticatedRequest, res: Respo
 
 /**
  * GET /api/agent/withdrawal-requests
- * Feed of player withdrawal requests submitted to this agent
+ * Feed of player withdrawal requests submitted to this agent.
+ * Includes Today / This Week / This Month SQL aggregates.
  */
 router.get('/withdrawal-requests', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -1387,26 +1609,64 @@ router.get('/withdrawal-requests', requireAgent, async (req: AuthenticatedReques
       return res.status(404).json({ success: false, error: 'Agent profile not found' });
     }
     const agentId = agentRes.rows[0].id;
+    const timeframe = (req.query.timeframe as string) || 'all';
 
-    const requestsRes = await query(
-      `SELECT req.id, req.amount, req.payout_method, req.payout_account, req.payout_account_name,
-              req.status, req.agent_tx_ref, req.agent_commission_earned, req.rejection_reason,
-              req.created_at, req.resolved_at,
-              u.id as player_id, u.full_name as player_name, u.phone as player_phone,
-              u.telegram_username as player_username
-       FROM agent_withdrawal_requests req
-       JOIN users u ON req.player_id = u.id
-       WHERE req.agent_id = $1
-       ORDER BY req.created_at DESC
-       LIMIT 50`,
-      [agentId]
-    );
+    let sql = `
+      SELECT req.id, req.amount, req.payout_method, req.payout_account, req.payout_account_name,
+             req.status, req.agent_tx_ref, req.agent_commission_earned, req.rejection_reason,
+             req.created_at, req.resolved_at,
+             u.id as player_id, u.full_name as player_name, u.phone as player_phone,
+             u.telegram_username as player_username
+      FROM agent_withdrawal_requests req
+      JOIN users u ON req.player_id = u.id
+      WHERE req.agent_id = $1
+    `;
+    const params: any[] = [agentId];
+
+    if (timeframe === 'today') {
+      sql += ` AND req.created_at >= CURRENT_DATE`;
+    } else if (timeframe === 'week') {
+      sql += ` AND req.created_at >= date_trunc('week', CURRENT_DATE)`;
+    } else if (timeframe === 'month') {
+      sql += ` AND req.created_at >= date_trunc('month', CURRENT_DATE)`;
+    }
+
+    sql += ` ORDER BY req.created_at DESC LIMIT 100`;
+
+    const [requestsRes, analyticsRes] = await Promise.all([
+      query(sql, params),
+      query(
+        `SELECT
+           COALESCE(SUM(amount) FILTER (WHERE status = 'completed' AND created_at >= CURRENT_DATE), 0) as today_amount,
+           COUNT(*) FILTER (WHERE status = 'completed' AND created_at >= CURRENT_DATE) as today_count,
+           COALESCE(SUM(amount) FILTER (WHERE status = 'completed' AND created_at >= date_trunc('week', CURRENT_DATE)), 0) as week_amount,
+           COUNT(*) FILTER (WHERE status = 'completed' AND created_at >= date_trunc('week', CURRENT_DATE)) as week_count,
+           COALESCE(SUM(amount) FILTER (WHERE status = 'completed' AND created_at >= date_trunc('month', CURRENT_DATE)), 0) as month_amount,
+           COUNT(*) FILTER (WHERE status = 'completed' AND created_at >= date_trunc('month', CURRENT_DATE)) as month_count,
+           COALESCE(SUM(amount) FILTER (WHERE status = 'completed'), 0) as all_time_amount,
+           COUNT(*) FILTER (WHERE status = 'completed') as all_time_count
+         FROM agent_withdrawal_requests
+         WHERE agent_id = $1`,
+        [agentId]
+      )
+    ]);
 
     const pendingCount = requestsRes.rows.filter(r => r.status === 'pending').length;
+    const a = analyticsRes.rows[0] || {};
+    const todayAmount = parseFloat(a.today_amount || '0');
+    const weekAmount = parseFloat(a.week_amount || '0');
+    const monthAmount = parseFloat(a.month_amount || '0');
+    const allTimeAmount = parseFloat(a.all_time_amount || '0');
 
     return res.json({
       success: true,
       pendingCount,
+      analytics: {
+        today: { amount: todayAmount, count: parseInt(a.today_count || '0', 10), commission: Number((todayAmount * 0.02).toFixed(2)) },
+        week: { amount: weekAmount, count: parseInt(a.week_count || '0', 10), commission: Number((weekAmount * 0.02).toFixed(2)) },
+        month: { amount: monthAmount, count: parseInt(a.month_count || '0', 10), commission: Number((monthAmount * 0.02).toFixed(2)) },
+        allTime: { amount: allTimeAmount, count: parseInt(a.all_time_count || '0', 10), commission: Number((allTimeAmount * 0.02).toFixed(2)) }
+      },
       requests: requestsRes.rows.map(r => ({
         id: r.id,
         amount: parseFloat(r.amount),

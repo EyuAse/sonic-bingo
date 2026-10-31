@@ -1026,9 +1026,14 @@ router.get('/agent-voucher/active', requireAuth, async (req: AuthenticatedReques
 router.get(['/agents/active', '/agents/available'], async (_req, res) => {
   try {
     const agentsRes = await query(
-      `SELECT ap.id, ap.agent_code, ap.status, ap.telebirr_phone, ap.cbe_account, ap.mpesa_phone, 
-              ap.is_online, ap.wallet_balance
+      `SELECT ap.id, ap.agent_code, ap.status, 
+              ap.telebirr_phone, ap.telebirr_name, 
+              ap.cbe_account, ap.cbe_name, 
+              ap.mpesa_phone, ap.mpesa_name,
+              ap.active_rails, ap.is_online, ap.wallet_balance,
+              u.full_name
        FROM agent_profiles ap
+       JOIN users u ON ap.user_id = u.id
        WHERE ap.status = 'active'
          AND COALESCE(ap.is_online, true) = true
          AND ap.wallet_balance >= 50.00
@@ -1036,19 +1041,35 @@ router.get(['/agents/active', '/agents/available'], async (_req, res) => {
        LIMIT 30`
     );
 
-    return res.json({
-      success: true,
-      agents: agentsRes.rows.map(a => ({
+    const formattedAgents = agentsRes.rows.map(a => {
+      const activeList = (a.active_rails || 'Telebirr,CBE').split(',').map((s: string) => s.trim());
+      const supportedRails = activeList.filter((r: string) => {
+        if (r === 'Telebirr') return Boolean(a.telebirr_phone);
+        if (r === 'CBE') return Boolean(a.cbe_account);
+        if (r === 'M-Pesa') return Boolean(a.mpesa_phone);
+        return false;
+      });
+
+      return {
         id: a.id,
         agentCode: a.agent_code,
         displayName: `Sonic Agent #${a.agent_code}`,
-        phone: a.telebirr_phone || '0982624574',
-        telebirrPhone: a.telebirr_phone || '0982624574',
-        cbeAccount: a.cbe_account || '1000458291048',
+        phone: a.telebirr_phone || a.mpesa_phone || null,
+        telebirrPhone: a.telebirr_phone || null,
+        telebirrName: a.telebirr_name || a.full_name || 'Agent',
+        cbeAccount: a.cbe_account || null,
+        cbeName: a.cbe_name || a.full_name || 'Sonic Gaming Agent',
         mpesaPhone: a.mpesa_phone || null,
+        mpesaName: a.mpesa_name || a.full_name || 'Agent',
+        supportedRails,
         isOnline: a.is_online !== false,
         avgApprovalMinutes: 2
-      }))
+      };
+    }).filter(a => a.supportedRails.length > 0);
+
+    return res.json({
+      success: true,
+      agents: formattedAgents
     });
   } catch (error: any) {
     console.error('❌ [Wallet Active Agents Error]:', error);
@@ -1085,7 +1106,7 @@ router.post('/deposit-via-agent', requireAuth, async (req: AuthenticatedRequest,
     }
 
     // 1. Locate Agent Profile (by ID or Unique Code)
-    let agentQuery = 'SELECT id, agent_code, wallet_balance, status, is_online FROM agent_profiles WHERE ';
+    let agentQuery = 'SELECT id, agent_code, wallet_balance, status, is_online, telebirr_phone, cbe_account, mpesa_phone, active_rails FROM agent_profiles WHERE ';
     let agentParam: any[] = [];
     if (agentId) {
       agentQuery += 'id = $1';
@@ -1113,6 +1134,20 @@ router.post('/deposit-via-agent', requireAuth, async (req: AuthenticatedRequest,
       return res.status(400).json({ 
         success: false, 
         error: `Agent #${agent.agent_code} does not have sufficient float for this amount right now. Please select another agent or try a lower amount.` 
+      });
+    }
+
+    // Verify agent supports requested paymentMethod
+    const activeList = (agent.active_rails || 'Telebirr,CBE').split(',').map((s: string) => s.trim());
+    let railConfigured = false;
+    if (paymentMethod === 'Telebirr' && activeList.includes('Telebirr') && agent.telebirr_phone) railConfigured = true;
+    if (paymentMethod === 'CBE' && activeList.includes('CBE') && agent.cbe_account) railConfigured = true;
+    if (paymentMethod === 'M-Pesa' && activeList.includes('M-Pesa') && agent.mpesa_phone) railConfigured = true;
+
+    if (!railConfigured) {
+      return res.status(400).json({ 
+        success: false, 
+        error: `Agent #${agent.agent_code} does not currently support deposits via ${paymentMethod}. Please choose another payment method or agent.` 
       });
     }
 
@@ -1243,13 +1278,27 @@ router.post('/withdraw-via-agent', requireAuth, async (req: AuthenticatedRequest
 
     // 1. Verify agent exists, is active, and online
     const agentRes = await query(
-      `SELECT id, agent_code, status, is_online FROM agent_profiles WHERE id = $1`,
+      `SELECT id, agent_code, status, is_online, telebirr_phone, cbe_account, mpesa_phone, active_rails FROM agent_profiles WHERE id = $1`,
       [agentId]
     );
     if (agentRes.rows.length === 0 || agentRes.rows[0].status !== 'active') {
       return res.status(400).json({ success: false, error: 'Selected agent is not available. Please pick another agent.' });
     }
     const agent = agentRes.rows[0];
+
+    // Verify agent supports requested payoutMethod
+    const activeList = (agent.active_rails || 'Telebirr,CBE').split(',').map((s: string) => s.trim());
+    let payoutRailSupported = false;
+    if (payoutMethod === 'Telebirr' && activeList.includes('Telebirr') && agent.telebirr_phone) payoutRailSupported = true;
+    if (payoutMethod === 'CBE' && activeList.includes('CBE') && agent.cbe_account) payoutRailSupported = true;
+    if (payoutMethod === 'M-Pesa' && activeList.includes('M-Pesa') && agent.mpesa_phone) payoutRailSupported = true;
+
+    if (!payoutRailSupported) {
+      return res.status(400).json({
+        success: false,
+        error: `Agent #${agent.agent_code} does not support payouts via ${payoutMethod}. Please select another agent or payout method.`
+      });
+    }
 
     // 2. Atomic Escrow Transaction
     const result = await withTransaction(async (client) => {

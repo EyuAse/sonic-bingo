@@ -426,8 +426,12 @@ export const apiClient = {
           displayName: string;
           phone: string;
           telebirrPhone: string;
+          telebirrName?: string;
           cbeAccount: string;
+          cbeName?: string;
           mpesaPhone: string | null;
+          mpesaName?: string;
+          supportedRails?: string[];
           isOnline: boolean;
           avgApprovalMinutes: number;
         }>;
@@ -1118,20 +1122,30 @@ export const apiClient = {
     },
 
     // Agent Deposit Requests (Decentralized Player Deposit Flow)
-    async getDepositRequests(status?: string) {
-      const queryParam = status ? `?status=${encodeURIComponent(status)}` : '';
-      const res = await fetch(`${API_BASE}/agent/deposit-requests${queryParam}`, {
+    async getDepositRequests(status?: string, timeframe?: string) {
+      const params = new URLSearchParams();
+      if (status && status !== 'all') params.append('status', status);
+      if (timeframe && timeframe !== 'all') params.append('timeframe', timeframe);
+      const queryStr = params.toString() ? `?${params.toString()}` : '';
+      const res = await fetch(`${API_BASE}/agent/deposit-requests${queryStr}`, {
         headers: { ...getAgentAuthHeader() }
       });
       return handleResponse<{
         success: boolean;
         pendingCount: number;
+        analytics?: {
+          today: { amount: number; count: number; commission: number };
+          week: { amount: number; count: number; commission: number };
+          month: { amount: number; count: number; commission: number };
+          allTime: { amount: number; count: number; commission: number };
+        };
         requests: Array<{
           id: string;
           amount: number;
           paymentMethod: string;
           playerPhone: string;
           playerName?: string;
+          playerUsername?: string;
           transactionCode: string;
           screenshotUrl?: string;
           status: 'pending' | 'approved' | 'rejected';
@@ -1186,13 +1200,20 @@ export const apiClient = {
       }>(res);
     },
 
-    async getWithdrawalRequests() {
-      const res = await fetch(`${API_BASE}/agent/withdrawal-requests`, {
+    async getWithdrawalRequests(timeframe?: string) {
+      const queryStr = timeframe && timeframe !== 'all' ? `?timeframe=${encodeURIComponent(timeframe)}` : '';
+      const res = await fetch(`${API_BASE}/agent/withdrawal-requests${queryStr}`, {
         headers: { ...getAgentAuthHeader() }
       });
       return handleResponse<{
         success: boolean;
         pendingCount: number;
+        analytics?: {
+          today: { amount: number; count: number; commission: number };
+          week: { amount: number; count: number; commission: number };
+          month: { amount: number; count: number; commission: number };
+          allTime: { amount: number; count: number; commission: number };
+        };
         requests: Array<{
           id: string;
           amount: number;
@@ -1210,6 +1231,45 @@ export const apiClient = {
           playerPhone?: string;
           playerUsername?: string;
         }>;
+      }>(res);
+    },
+
+    // Agent Configurable Payment Rails
+    async getPaymentAccounts() {
+      const res = await fetch(`${API_BASE}/agent/payment-accounts`, {
+        headers: { ...getAgentAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        accounts: {
+          telebirr: { accountNumber: string; accountName: string; isActive: boolean };
+          cbe: { accountNumber: string; accountName: string; isActive: boolean };
+          mpesa: { accountNumber: string; accountName: string; isActive: boolean };
+        };
+        supportedRails: string[];
+      }>(res);
+    },
+
+    async updatePaymentAccounts(payload: {
+      telebirr?: { accountNumber: string; accountName: string; isActive: boolean };
+      cbe?: { accountNumber: string; accountName: string; isActive: boolean };
+      mpesa?: { accountNumber: string; accountName: string; isActive: boolean };
+    }) {
+      const res = await fetch(`${API_BASE}/agent/payment-accounts`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAgentAuthHeader() },
+        body: JSON.stringify(payload)
+      });
+      return handleResponse<{
+        success: boolean;
+        message?: string;
+        error?: string;
+        accounts: {
+          telebirr: { accountNumber: string; accountName: string; isActive: boolean };
+          cbe: { accountNumber: string; accountName: string; isActive: boolean };
+          mpesa: { accountNumber: string; accountName: string; isActive: boolean };
+        };
+        supportedRails: string[];
       }>(res);
     },
 

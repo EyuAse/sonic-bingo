@@ -1167,8 +1167,8 @@ class BingoGameEngine {
 
     room.totalPot = pot > 0 ? pot : 0;
     room.houseFee = room.commissionEnabled ? Math.floor(room.totalPot * 0.20) : 0;
-    room.jackpotFee = room.commissionEnabled ? Math.floor(room.totalPot * 0.10) : 0;
-    room.winnerPayout = room.totalPot - room.houseFee - (room.jackpotFee || 0);
+    room.jackpotFee = 0;
+    room.winnerPayout = room.totalPot - room.houseFee;
   }
 
   /**

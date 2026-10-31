@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../services/apiClient.ts';
 import { socketService } from '../../services/socketService.ts';
+import { TelebirrLogo, CBELogo, MpesaLogo } from '../wallet/PaymentLogos.tsx';
 
 interface DepositRequestItem {
   id: string;
@@ -8,12 +9,26 @@ interface DepositRequestItem {
   paymentMethod: string;
   playerPhone: string;
   playerName?: string;
+  playerUsername?: string;
   transactionCode: string;
   screenshotUrl?: string;
   status: 'pending' | 'approved' | 'rejected';
   rejectionReason?: string;
   createdAt: string;
   resolvedAt?: string;
+}
+
+interface AnalyticsWindow {
+  amount: number;
+  count: number;
+  commission: number;
+}
+
+interface DepositAnalytics {
+  today: AnalyticsWindow;
+  week: AnalyticsWindow;
+  month: AnalyticsWindow;
+  allTime: AnalyticsWindow;
 }
 
 interface AgentDepositRequestsDeskProps {
@@ -27,11 +42,27 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
   onActionCompleted,
   showToast
 }) => {
+  // Main Sub-Tab: 'live' (Pending Actions) vs 'history' (Settled Archive)
+  const [activeSubTab, setActiveSubTab] = useState<'live' | 'history'>('live');
+
+  // Timeframe Category Filter (for history & aggregates)
+  const [timeframe, setTimeframe] = useState<'today' | 'week' | 'month' | 'all'>('today');
+
+  // History status filter
+  const [historyStatus, setHistoryStatus] = useState<'all' | 'approved' | 'rejected'>('all');
+
   const [requests, setRequests] = useState<DepositRequestItem[]>([]);
   const [pendingCount, setPendingCount] = useState<number>(0);
-  const [statusFilter, setStatusFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
+
+  // Authoritative SQL Analytics State
+  const [analytics, setAnalytics] = useState<DepositAnalytics>({
+    today: { amount: 0, count: 0, commission: 0 },
+    week: { amount: 0, count: 0, commission: 0 },
+    month: { amount: 0, count: 0, commission: 0 },
+    allTime: { amount: 0, count: 0, commission: 0 }
+  });
 
   // Modal State for Approval Confirmation
   const [approvingItem, setApprovingItem] = useState<DepositRequestItem | null>(null);
@@ -46,14 +77,20 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
   // Lightbox Modal for Receipt Screenshot
   const [activeReceiptUrl, setActiveReceiptUrl] = useState<string | null>(null);
 
-  // 1. Fetch Requests from Backend
-  const loadRequests = async (status = statusFilter) => {
+  // 1. Fetch Requests & Analytics from Neon DB Backend
+  const loadRequests = async (subTab = activeSubTab, tf = timeframe, histStat = historyStatus) => {
     try {
       setLoading(true);
-      const res = await apiClient.agent.getDepositRequests(status === 'all' ? undefined : status);
+      const queryStatus = subTab === 'live' ? 'pending' : (histStat === 'all' ? undefined : histStat);
+      const queryTf = subTab === 'live' ? undefined : (tf === 'all' ? undefined : tf);
+
+      const res = await apiClient.agent.getDepositRequests(queryStatus, queryTf);
       if (res.success) {
-        setRequests(res.requests);
-        setPendingCount(res.pendingCount);
+        setRequests(res.requests || []);
+        setPendingCount(res.pendingCount || 0);
+        if (res.analytics) {
+          setAnalytics(res.analytics);
+        }
       }
     } catch (err: any) {
       console.warn('Failed to load deposit requests:', err);
@@ -64,23 +101,22 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
   };
 
   useEffect(() => {
-    loadRequests(statusFilter);
-  }, [statusFilter]);
+    loadRequests(activeSubTab, timeframe, historyStatus);
+  }, [activeSubTab, timeframe, historyStatus]);
 
   // 2. Real-Time WebSocket Alerts for Incoming Requests
   useEffect(() => {
     if (!agentProfile?.id) return;
 
-    // Listen for new requests directed to this agent
     const unsubNewReq = socketService.on(`agent_${agentProfile.id}_new_request`, (data: any) => {
       showToast(`📥 New Deposit Request: +${data.amount} ETB from ${data.playerPhone}`);
-      loadRequests(statusFilter);
+      loadRequests(activeSubTab, timeframe, historyStatus);
       onActionCompleted();
     });
 
     const unsubGlobalReq = socketService.on('agent_new_deposit_request', (data: any) => {
       if (data?.agentId === agentProfile.id) {
-        loadRequests(statusFilter);
+        loadRequests(activeSubTab, timeframe, historyStatus);
       }
     });
 
@@ -88,7 +124,7 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
       unsubNewReq();
       unsubGlobalReq();
     };
-  }, [agentProfile?.id, statusFilter]);
+  }, [agentProfile?.id, activeSubTab, timeframe, historyStatus]);
 
   // 3. Handle Approval
   const handleConfirmApproval = async () => {
@@ -100,7 +136,7 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
       if (res.success) {
         showToast(`🎉 Approved: +${approvingItem.amount} ETB credited! Commission: +${res.details.commissionEarned.toFixed(2)} ETB`);
         setApprovingItem(null);
-        loadRequests(statusFilter);
+        loadRequests(activeSubTab, timeframe, historyStatus);
         onActionCompleted();
       }
     } catch (err: any) {
@@ -121,7 +157,7 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
       if (res.success) {
         showToast('❌ Deposit request rejected');
         setRejectingItem(null);
-        loadRequests(statusFilter);
+        loadRequests(activeSubTab, timeframe, historyStatus);
         onActionCompleted();
       }
     } catch (err: any) {
@@ -143,25 +179,27 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
   });
 
   return (
-    <div style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }} className="space-y-6">
-      {/* 1. Header Banner & Quick Metrics */}
+    <div style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }} className="space-y-5">
+      {/* 1. Header Banner & Live Float Liquidity Indicator */}
       <div
         className="sonic-white-card"
         style={{
-          padding: '24px',
+          padding: '22px 24px',
           borderRadius: '16px',
           display: 'flex',
           flexWrap: 'wrap',
           justifyContent: 'space-between',
           alignItems: 'center',
-          gap: '16px'
+          gap: '16px',
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+          border: '1px solid #e2e8f0'
         }}
       >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '24px' }}>📥</span>
             <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a', margin: 0 }}>
-              Player Deposit Requests Queue
+              Deposit Cashier Desk
             </h2>
             {pendingCount > 0 && (
               <span
@@ -171,7 +209,8 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
                   padding: '2px 10px',
                   borderRadius: '9999px',
                   fontSize: '12px',
-                  fontWeight: 900
+                  fontWeight: 900,
+                  boxShadow: '0 2px 6px rgba(239, 68, 68, 0.3)'
                 }}
               >
                 {pendingCount} Pending
@@ -179,25 +218,26 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
             )}
           </div>
           <p style={{ fontSize: '13px', color: '#64748b', margin: '4px 0 0 0' }}>
-            Review incoming mobile transfers, verify SMS receipts on your phone, and approve to credit player wallets.
+            Verify incoming mobile payments, approve player deposits, and earn instant <strong>+5% cashier commissions</strong>.
           </p>
         </div>
 
-        {/* Live Float Liquidity Indicator */}
+        {/* Float Balance Pill */}
         <div
           style={{
-            background: '#f8fafc',
-            border: '1px solid #e2e8f0',
+            background: '#ffffff',
+            border: '1px solid #cbd5e1',
             borderRadius: '12px',
-            padding: '12px 18px',
+            padding: '10px 18px',
             display: 'flex',
             alignItems: 'center',
-            gap: '16px'
+            gap: '16px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
           }}
         >
           <div>
-            <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
-              Your Available Float
+            <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Available Working Float
             </div>
             <div style={{ fontSize: '18px', fontWeight: 900, color: '#059669' }}>
               {Number(agentProfile?.walletBalance || agentProfile?.wallet_balance || 0).toLocaleString()} ETB
@@ -207,7 +247,7 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
             type="button"
             onClick={() => loadRequests()}
             className="sonic-ghost-btn"
-            style={{ padding: '8px 12px', fontSize: '12px' }}
+            style={{ padding: '8px 12px', fontSize: '12px', borderRadius: '8px' }}
             title="Refresh List"
           >
             <i className={`fa-solid fa-rotate ${loading ? 'fa-spin' : ''}`}></i>
@@ -215,11 +255,134 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
         </div>
       </div>
 
-      {/* 2. Filter Tabs & Search Controls */}
+      {/* 2. Top KPI Analytics Ribbon (Today / Week / Month Aggregates) */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+          gap: '12px'
+        }}
+      >
+        {/* Card 1: Today */}
+        <div
+          className="sonic-white-card"
+          style={{
+            padding: '16px',
+            borderRadius: '14px',
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+              Today's Deposits
+            </span>
+            <span style={{ fontSize: '15px' }}>💳</span>
+          </div>
+          <div style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a' }}>
+            {analytics.today.amount.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }}>ETB</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px' }}>
+            <span style={{ color: '#059669', fontWeight: 700 }}>
+              +{analytics.today.commission.toFixed(2)} ETB (5%)
+            </span>
+            <span style={{ color: '#64748b' }}>{analytics.today.count} txns</span>
+          </div>
+        </div>
+
+        {/* Card 2: This Week */}
+        <div
+          className="sonic-white-card"
+          style={{
+            padding: '16px',
+            borderRadius: '14px',
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+              This Week's Volume
+            </span>
+            <span style={{ fontSize: '15px' }}>📈</span>
+          </div>
+          <div style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a' }}>
+            {analytics.week.amount.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }}>ETB</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px' }}>
+            <span style={{ color: '#059669', fontWeight: 700 }}>
+              +{analytics.week.commission.toFixed(2)} ETB (5%)
+            </span>
+            <span style={{ color: '#64748b' }}>{analytics.week.count} txns</span>
+          </div>
+        </div>
+
+        {/* Card 3: This Month */}
+        <div
+          className="sonic-white-card"
+          style={{
+            padding: '16px',
+            borderRadius: '14px',
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+              This Month's Volume
+            </span>
+            <span style={{ fontSize: '15px' }}>🏆</span>
+          </div>
+          <div style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a' }}>
+            {analytics.month.amount.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }}>ETB</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px' }}>
+            <span style={{ color: '#059669', fontWeight: 700 }}>
+              +{analytics.month.commission.toFixed(2)} ETB (5%)
+            </span>
+            <span style={{ color: '#64748b' }}>{analytics.month.count} txns</span>
+          </div>
+        </div>
+
+        {/* Card 4: All-Time Cashier Earnings */}
+        <div
+          className="sonic-white-card"
+          style={{
+            padding: '16px',
+            borderRadius: '14px',
+            background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+            border: '1px solid #fcd34d',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: '#92400e', textTransform: 'uppercase' }}>
+              Commission Earned
+            </span>
+            <span style={{ fontSize: '15px' }}>🪙</span>
+          </div>
+          <div style={{ fontSize: '20px', fontWeight: 900, color: '#92400e' }}>
+            +{analytics.allTime.commission.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 700 }}>ETB</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px', color: '#b45309' }}>
+            <span>All-Time 5% Earnings</span>
+            <span style={{ fontWeight: 800 }}>{analytics.allTime.count} settled</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Sub-Navigation Tabs & Filters Toolbar */}
       <div
         className="sonic-white-card"
         style={{
-          padding: '16px 20px',
+          padding: '14px 18px',
           borderRadius: '16px',
           display: 'flex',
           flexWrap: 'wrap',
@@ -228,58 +391,103 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
           gap: '12px'
         }}
       >
-        {/* Status Pill Tabs */}
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {[
-            { id: 'pending', label: 'Pending', count: pendingCount, icon: 'fa-solid fa-clock' },
-            { id: 'approved', label: 'Approved', icon: 'fa-solid fa-circle-check' },
-            { id: 'rejected', label: 'Rejected', icon: 'fa-solid fa-circle-xmark' },
-            { id: 'all', label: 'All Requests', icon: 'fa-solid fa-list' }
-          ].map(tab => {
-            const isActive = statusFilter === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setStatusFilter(tab.id as any)}
+        {/* Left: Sub-Navigation (Live Requests vs Settled History) */}
+        <div style={{ display: 'flex', background: '#f1f5f9', padding: '3px', borderRadius: '10px', gap: '4px' }}>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('live')}
+            style={{
+              padding: '8px 16px',
+              border: 'none',
+              borderRadius: '8px',
+              background: activeSubTab === 'live' ? '#ffffff' : 'transparent',
+              color: activeSubTab === 'live' ? '#0f172a' : '#64748b',
+              fontWeight: 800,
+              fontSize: '13px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: activeSubTab === 'live' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <span>📥 Live Requests</span>
+            {pendingCount > 0 && (
+              <span
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 16px',
-                  borderRadius: '10px',
-                  border: isActive ? '1px solid #f59e0b' : '1px solid #e2e8f0',
-                  background: isActive ? '#fef3c7' : '#ffffff',
-                  color: isActive ? '#92400e' : '#64748b',
-                  fontSize: '13px',
-                  fontWeight: isActive ? 800 : 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease'
+                  background: '#ef4444',
+                  color: '#ffffff',
+                  borderRadius: '9999px',
+                  padding: '1px 6px',
+                  fontSize: '10px',
+                  fontWeight: 900
                 }}
               >
-                <i className={tab.icon}></i>
-                <span>{tab.label}</span>
-                {tab.count !== undefined && tab.count > 0 && (
-                  <span
-                    style={{
-                      background: isActive ? '#d97706' : '#ef4444',
-                      color: '#ffffff',
-                      borderRadius: '9999px',
-                      padding: '1px 6px',
-                      fontSize: '10px',
-                      fontWeight: 900
-                    }}
-                  >
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+                {pendingCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('history')}
+            style={{
+              padding: '8px 16px',
+              border: 'none',
+              borderRadius: '8px',
+              background: activeSubTab === 'history' ? '#ffffff' : 'transparent',
+              color: activeSubTab === 'history' ? '#0f172a' : '#64748b',
+              fontWeight: 800,
+              fontSize: '13px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: activeSubTab === 'history' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <span>🗄️ Settled History</span>
+          </button>
         </div>
 
-        {/* Search Bar */}
-        <div style={{ position: 'relative', minWidth: '240px' }}>
+        {/* Right: Timeframe Category Filter (For Settled History) */}
+        {activeSubTab === 'history' && (
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700 }}>Timeframe:</span>
+            {[
+              { id: 'today', label: 'Today' },
+              { id: 'week', label: 'This Week' },
+              { id: 'month', label: 'This Month' },
+              { id: 'all', label: 'All Time' }
+            ].map(tf => {
+              const isSelected = timeframe === tf.id;
+              return (
+                <button
+                  key={tf.id}
+                  type="button"
+                  onClick={() => setTimeframe(tf.id as any)}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: isSelected ? 800 : 600,
+                    border: isSelected ? '1px solid #3b82f6' : '1px solid #e2e8f0',
+                    background: isSelected ? '#eff6ff' : '#ffffff',
+                    color: isSelected ? '#1d4ed8' : '#64748b',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {tf.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Search Input */}
+        <div style={{ position: 'relative', minWidth: '220px' }}>
           <i
             className="fa-solid fa-magnifying-glass"
             style={{
@@ -310,7 +518,7 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
         </div>
       </div>
 
-      {/* 3. Requests Table / Cards */}
+      {/* 4. Requests Table */}
       <div
         className="sonic-white-card"
         style={{
@@ -322,16 +530,18 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
         {loading ? (
           <div style={{ padding: '48px', textAlign: 'center', color: '#64748b' }}>
             <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '28px', color: '#f59e0b' }}></i>
-            <p style={{ marginTop: '12px', fontSize: '14px', fontWeight: 700 }}>Loading deposit requests...</p>
+            <p style={{ marginTop: '12px', fontSize: '14px', fontWeight: 700 }}>Loading deposit records...</p>
           </div>
         ) : filteredRequests.length === 0 ? (
           <div style={{ padding: '48px', textAlign: 'center', color: '#64748b' }}>
             <i className="fa-solid fa-inbox" style={{ fontSize: '36px', color: '#cbd5e1', marginBottom: '12px' }}></i>
             <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#334155' }}>
-              No {statusFilter !== 'all' ? statusFilter : ''} deposit requests found
+              {activeSubTab === 'live' ? 'No pending deposit requests right now' : 'No deposit history records found for this timeframe'}
             </h4>
             <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>
-              When players submit deposits targeting your agent code, they will appear here in real-time.
+              {activeSubTab === 'live'
+                ? 'When players submit deposits targeting your agent code, they will appear here instantly.'
+                : 'Approved and settled transactions will be recorded here.'}
             </p>
           </div>
         ) : (
@@ -340,11 +550,12 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   <th style={{ padding: '14px 18px' }}>Player Details</th>
-                  <th style={{ padding: '14px 18px' }}>Amount</th>
+                  <th style={{ padding: '14px 18px' }}>Amount (ETB)</th>
                   <th style={{ padding: '14px 18px' }}>Payment Rail</th>
                   <th style={{ padding: '14px 18px' }}>SMS Transaction Code</th>
+                  <th style={{ padding: '14px 18px' }}>Cashier Commission</th>
                   <th style={{ padding: '14px 18px' }}>Receipt Proof</th>
-                  <th style={{ padding: '14px 18px' }}>Submitted Time</th>
+                  <th style={{ padding: '14px 18px' }}>Time</th>
                   <th style={{ padding: '14px 18px' }}>Status</th>
                   <th style={{ padding: '14px 18px', textAlign: 'right' }}>Actions</th>
                 </tr>
@@ -352,6 +563,7 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
               <tbody>
                 {filteredRequests.map(item => {
                   const isPending = item.status === 'pending';
+                  const comm = Number((item.amount * 0.05).toFixed(2));
                   return (
                     <tr
                       key={item.id}
@@ -383,21 +595,34 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
                         </div>
                       </td>
 
-                      {/* Payment Rail */}
+                      {/* Payment Rail with Brand Logo */}
                       <td style={{ padding: '14px 18px' }}>
-                        <span
+                        <div
                           style={{
-                            background: item.paymentMethod === 'Telebirr' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(234, 179, 8, 0.15)',
-                            color: item.paymentMethod === 'Telebirr' ? '#0284c7' : '#b45309',
-                            border: '1px solid transparent',
-                            padding: '3px 8px',
-                            borderRadius: '6px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: item.paymentMethod === 'Telebirr'
+                              ? 'rgba(56, 189, 248, 0.12)'
+                              : item.paymentMethod === 'CBE'
+                              ? 'rgba(234, 179, 8, 0.12)'
+                              : 'rgba(16, 185, 129, 0.12)',
+                            color: item.paymentMethod === 'Telebirr'
+                              ? '#0284c7'
+                              : item.paymentMethod === 'CBE'
+                              ? '#b45309'
+                              : '#059669',
+                            padding: '4px 8px',
+                            borderRadius: '8px',
                             fontSize: '11px',
                             fontWeight: 800
                           }}
                         >
-                          {item.paymentMethod}
-                        </span>
+                          {item.paymentMethod === 'Telebirr' && <TelebirrLogo size={14} />}
+                          {item.paymentMethod === 'CBE' && <CBELogo size={14} />}
+                          {item.paymentMethod === 'M-Pesa' && <MpesaLogo size={14} />}
+                          <span>{item.paymentMethod === 'CBE' ? 'CBE Bank' : item.paymentMethod}</span>
+                        </div>
                       </td>
 
                       {/* Transaction Code */}
@@ -418,6 +643,22 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
                             <i className="fa-regular fa-copy"></i>
                           </button>
                         </div>
+                      </td>
+
+                      {/* Cashier Commission (+5%) */}
+                      <td style={{ padding: '14px 18px' }}>
+                        <span
+                          style={{
+                            background: '#dcfce7',
+                            color: '#15803d',
+                            fontWeight: 800,
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '11px'
+                          }}
+                        >
+                          +{comm.toFixed(2)} ETB (+5%)
+                        </span>
                       </td>
 
                       {/* Receipt Screenshot */}
@@ -517,7 +758,7 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
                             </button>
                           </div>
                         ) : (
-                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                          <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>
                             {item.status === 'approved' ? 'Settled' : 'Closed'}
                           </span>
                         )}
@@ -854,4 +1095,3 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
 };
 
 export default AgentDepositRequestsDesk;
-

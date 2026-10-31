@@ -4,7 +4,7 @@ import { useApp } from '../context/AppContext.tsx';
 import { useAdmin } from '../context/AdminContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useLanguage } from '../context/LanguageContext.tsx';
-import { TelebirrLogo, CBELogo } from '../components/wallet/PaymentLogos.tsx';
+import { TelebirrLogo, CBELogo, MpesaLogo } from '../components/wallet/PaymentLogos.tsx';
 import { LanguageDropdown } from '../components/common/LanguageDropdown.tsx';
 import { apiClient } from '../services/apiClient.ts';
 import { socketService } from '../services/socketService.ts';
@@ -42,15 +42,19 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
   const [submittedRef, setSubmittedRef] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Active Authorized Agents for In-Person / Online Deposit (Strict Agent Code Anonymity)
+  // Active Authorized Agents for In-Person / Online Deposit & Cashout (Dynamic Multi-Rail)
   const [activeAgents, setActiveAgents] = useState<Array<{
     id: string;
     agentCode: string;
     displayName: string;
     phone: string;
     telebirrPhone: string;
+    telebirrName?: string;
     cbeAccount: string;
+    cbeName?: string;
     mpesaPhone: string | null;
+    mpesaName?: string;
+    supportedRails?: string[];
     isOnline: boolean;
     avgApprovalMinutes: number;
   }>>([]);
@@ -62,31 +66,78 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
     displayName: string;
     phone: string;
     telebirrPhone: string;
+    telebirrName?: string;
     cbeAccount: string;
+    cbeName?: string;
     mpesaPhone: string | null;
+    mpesaName?: string;
+    supportedRails?: string[];
     isOnline: boolean;
     avgApprovalMinutes: number;
   } | null>(null);
   const [agentDepositAmount, setAgentDepositAmount] = useState<number>(100);
-  const [agentPaymentRail, setAgentPaymentRail] = useState<'Telebirr' | 'CBE'>('Telebirr');
+  const [agentPaymentRail, setAgentPaymentRail] = useState<'Telebirr' | 'CBE' | 'M-Pesa'>('Telebirr');
   const [agentSenderPhone, setAgentSenderPhone] = useState<string>(() => user?.phone || user?.nationalPhone || '');
   const [agentTxRef, setAgentTxRef] = useState<string>('');
   const [agentReceiptImage, setAgentReceiptImage] = useState<string | null>(null);
   const [isSubmittingAgentDeposit, setIsSubmittingAgentDeposit] = useState<boolean>(false);
   const [activeAgentRequest, setActiveAgentRequest] = useState<any | null>(null);
 
-  // --- Unified Agent Withdrawal State ---
+  // --- Unified Agent Withdrawal State (P2P Decentralized Cashier) ---
   const [withdrawAmount, setWithdrawAmount] = useState<number>(200);
-  const [withdrawMethod, setWithdrawMethod] = useState<'Telebirr' | 'CBE' | 'CBEBirr'>('Telebirr');
+  const [withdrawMethod, setWithdrawMethod] = useState<'Telebirr' | 'CBE' | 'M-Pesa'>('Telebirr');
   const [withdrawAccount, setWithdrawAccount] = useState<string>(() => {
     const attached = user?.attachedAccounts || [];
     const def = attached.find(a => a.type === 'Telebirr' && a.isDefault) || attached.find(a => a.type === 'Telebirr');
     return def?.accountNumber || user?.nationalPhone || user?.phone || '';
   });
   const [withdrawAccountName, setWithdrawAccountName] = useState<string>(() => user?.fullName || '');
-  const [selectedWithdrawAgent, setSelectedWithdrawAgent] = useState<any | null>(null);
+  const [selectedWithdrawAgent, setSelectedWithdrawAgent] = useState<{
+    id: string;
+    agentCode: string;
+    displayName: string;
+    phone: string;
+    telebirrPhone: string;
+    telebirrName?: string;
+    cbeAccount: string;
+    cbeName?: string;
+    mpesaPhone: string | null;
+    mpesaName?: string;
+    supportedRails?: string[];
+    isOnline: boolean;
+    avgApprovalMinutes: number;
+  } | null>(null);
   const [isSubmittingWithdraw, setIsSubmittingWithdraw] = useState<boolean>(false);
   const [activeWithdrawalRequest, setActiveWithdrawalRequest] = useState<any | null>(null);
+
+  // Dynamic selection handlers ensuring rail compatibility
+  const handleSelectDepositAgent = (ag: any) => {
+    setSelectedAgent(ag);
+    const supported: string[] = ag.supportedRails && ag.supportedRails.length > 0
+      ? ag.supportedRails
+      : [
+          ...(ag.telebirrPhone ? ['Telebirr'] : []),
+          ...(ag.cbeAccount ? ['CBE'] : []),
+          ...(ag.mpesaPhone ? ['M-Pesa'] : [])
+        ];
+    if (!supported.includes(agentPaymentRail)) {
+      setAgentPaymentRail((supported[0] as 'Telebirr' | 'CBE' | 'M-Pesa') || 'Telebirr');
+    }
+  };
+
+  const handleSelectWithdrawAgent = (ag: any) => {
+    setSelectedWithdrawAgent(ag);
+    const supported: string[] = ag.supportedRails && ag.supportedRails.length > 0
+      ? ag.supportedRails
+      : [
+          ...(ag.telebirrPhone ? ['Telebirr'] : []),
+          ...(ag.cbeAccount ? ['CBE'] : []),
+          ...(ag.mpesaPhone ? ['M-Pesa'] : [])
+        ];
+    if (!supported.includes(withdrawMethod)) {
+      setWithdrawMethod((supported[0] as 'Telebirr' | 'CBE' | 'M-Pesa') || 'Telebirr');
+    }
+  };
 
   // Load active agents & existing pending requests for both Deposit & Withdrawal
   const loadAgentData = async () => {
@@ -100,10 +151,10 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
       if (agentsRes.success && agentsRes.agents) {
         setActiveAgents(agentsRes.agents);
         if (agentsRes.agents.length > 0 && !selectedAgent) {
-          setSelectedAgent(agentsRes.agents[0]);
+          handleSelectDepositAgent(agentsRes.agents[0]);
         }
         if (agentsRes.agents.length > 0 && !selectedWithdrawAgent) {
-          setSelectedWithdrawAgent(agentsRes.agents[0]);
+          handleSelectWithdrawAgent(agentsRes.agents[0]);
         }
       }
 
@@ -215,6 +266,11 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
       if (match.name) setWithdrawAccountName(match.name);
     } else if (withdrawMethod === 'Telebirr' && (user?.nationalPhone || user?.phone)) {
       setWithdrawAccount(user.nationalPhone || user.phone);
+      if (user.fullName) setWithdrawAccountName(user.fullName);
+    } else if (withdrawMethod === 'M-Pesa' && (user?.nationalPhone || user?.phone)) {
+      if (user?.phone?.startsWith('07') || user?.nationalPhone?.startsWith('07')) {
+        setWithdrawAccount(user.nationalPhone || user.phone);
+      }
       if (user.fullName) setWithdrawAccountName(user.fullName);
     }
   }, [withdrawMethod, user]);
@@ -951,10 +1007,17 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px' }}>
                             {activeAgents.map(a => {
                               const isSelected = selectedAgent?.agentCode === a.agentCode;
+                              const rails = a.supportedRails && a.supportedRails.length > 0
+                                ? a.supportedRails
+                                : [
+                                    ...(a.telebirrPhone ? ['Telebirr'] : []),
+                                    ...(a.cbeAccount ? ['CBE'] : []),
+                                    ...(a.mpesaPhone ? ['M-Pesa'] : [])
+                                  ];
                               return (
                                 <div
                                   key={a.agentCode}
-                                  onClick={() => setSelectedAgent(a)}
+                                  onClick={() => handleSelectDepositAgent(a)}
                                   style={{
                                     background: isSelected ? 'rgba(245, 158, 11, 0.08)' : '#0f172a',
                                     border: isSelected ? '2px solid #f59e0b' : '1px solid #334155',
@@ -988,19 +1051,49 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                                     </span>
                                   </div>
 
-                                  {/* Payment Rails */}
-                                  <div style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                      <span>Telebirr:</span>
-                                      <span style={{ fontFamily: 'monospace', color: '#f1f5f9', fontWeight: 700 }}>
-                                        {a.telebirrPhone || a.phone}
+                                  {/* Active Rails Mini Badges */}
+                                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                                    {rails.map(r => (
+                                      <span
+                                        key={r}
+                                        style={{
+                                          fontSize: '10px',
+                                          fontWeight: 700,
+                                          padding: '2px 6px',
+                                          borderRadius: '6px',
+                                          background: r === 'Telebirr' ? 'rgba(56, 189, 248, 0.15)' : r === 'CBE' ? 'rgba(234, 179, 8, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                                          color: r === 'Telebirr' ? '#38bdf8' : r === 'CBE' ? '#eab308' : '#10b981',
+                                          border: `1px solid ${r === 'Telebirr' ? 'rgba(56, 189, 248, 0.3)' : r === 'CBE' ? 'rgba(234, 179, 8, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`
+                                        }}
+                                      >
+                                        {r === 'Telebirr' ? '📱 Telebirr' : r === 'CBE' ? '🏦 CBE Bank' : '🟢 M-Pesa'}
                                       </span>
-                                    </div>
+                                    ))}
+                                  </div>
+
+                                  {/* Payment Rails Details */}
+                                  <div style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    {a.telebirrPhone && (
+                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>Telebirr:</span>
+                                        <span style={{ fontFamily: 'monospace', color: '#f1f5f9', fontWeight: 700 }}>
+                                          {a.telebirrPhone} {a.telebirrName ? `(${a.telebirrName})` : ''}
+                                        </span>
+                                      </div>
+                                    )}
                                     {a.cbeAccount && (
                                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span>CBE Birr:</span>
+                                        <span>CBE Bank:</span>
                                         <span style={{ fontFamily: 'monospace', color: '#f1f5f9', fontWeight: 700 }}>
-                                          {a.cbeAccount}
+                                          {a.cbeAccount} {a.cbeName ? `(${a.cbeName})` : ''}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {a.mpesaPhone && (
+                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>M-Pesa:</span>
+                                        <span style={{ fontFamily: 'monospace', color: '#f1f5f9', fontWeight: 700 }}>
+                                          {a.mpesaPhone} {a.mpesaName ? `(${a.mpesaName})` : ''}
                                         </span>
                                       </div>
                                     )}
@@ -1100,42 +1193,80 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                             <span className="step-num">3</span> {lang === 'am' ? 'ክፍያውን ለኤጀንቱ ይላኩ' : 'Transfer Payment to Agent'}
                           </label>
 
-                          {/* Rail Toggle: Telebirr or CBE */}
+                          {/* Dynamic Rails for Selected Agent: Telebirr, CBE Bank, M-Pesa */}
                           <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                            <button
-                              type="button"
-                              onClick={() => setAgentPaymentRail('Telebirr')}
-                              style={{
-                                flex: 1,
-                                padding: '8px 12px',
-                                borderRadius: '8px',
-                                border: agentPaymentRail === 'Telebirr' ? '1px solid #38bdf8' : '1px solid #334155',
-                                background: agentPaymentRail === 'Telebirr' ? 'rgba(56, 189, 248, 0.15)' : '#0f172a',
-                                color: agentPaymentRail === 'Telebirr' ? '#38bdf8' : '#94a3b8',
-                                fontWeight: 800,
-                                fontSize: '12px',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Telebirr ({selectedAgent.telebirrPhone || selectedAgent.phone})
-                            </button>
-                            {selectedAgent.cbeAccount && (
+                            {Boolean(selectedAgent.telebirrPhone || selectedAgent.supportedRails?.includes('Telebirr')) && (
+                              <button
+                                type="button"
+                                onClick={() => setAgentPaymentRail('Telebirr')}
+                                style={{
+                                  flex: 1,
+                                  padding: '9px 12px',
+                                  borderRadius: '10px',
+                                  border: agentPaymentRail === 'Telebirr' ? '2px solid #38bdf8' : '1px solid #334155',
+                                  background: agentPaymentRail === 'Telebirr' ? 'rgba(56, 189, 248, 0.15)' : '#0f172a',
+                                  color: agentPaymentRail === 'Telebirr' ? '#38bdf8' : '#94a3b8',
+                                  fontWeight: 800,
+                                  fontSize: '12px',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '6px'
+                                }}
+                              >
+                                <TelebirrLogo size={18} />
+                                <span>Telebirr</span>
+                              </button>
+                            )}
+
+                            {Boolean(selectedAgent.cbeAccount || selectedAgent.supportedRails?.includes('CBE')) && (
                               <button
                                 type="button"
                                 onClick={() => setAgentPaymentRail('CBE')}
                                 style={{
                                   flex: 1,
-                                  padding: '8px 12px',
-                                  borderRadius: '8px',
-                                  border: agentPaymentRail === 'CBE' ? '1px solid #eab308' : '1px solid #334155',
+                                  padding: '9px 12px',
+                                  borderRadius: '10px',
+                                  border: agentPaymentRail === 'CBE' ? '2px solid #eab308' : '1px solid #334155',
                                   background: agentPaymentRail === 'CBE' ? 'rgba(234, 179, 8, 0.15)' : '#0f172a',
                                   color: agentPaymentRail === 'CBE' ? '#eab308' : '#94a3b8',
                                   fontWeight: 800,
                                   fontSize: '12px',
-                                  cursor: 'pointer'
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '6px'
                                 }}
                               >
-                                CBE Bank / Birr
+                                <CBELogo size={18} />
+                                <span>CBE Bank</span>
+                              </button>
+                            )}
+
+                            {Boolean(selectedAgent.mpesaPhone || selectedAgent.supportedRails?.includes('M-Pesa')) && (
+                              <button
+                                type="button"
+                                onClick={() => setAgentPaymentRail('M-Pesa')}
+                                style={{
+                                  flex: 1,
+                                  padding: '9px 12px',
+                                  borderRadius: '10px',
+                                  border: agentPaymentRail === 'M-Pesa' ? '2px solid #10b981' : '1px solid #334155',
+                                  background: agentPaymentRail === 'M-Pesa' ? 'rgba(16, 185, 129, 0.15)' : '#0f172a',
+                                  color: agentPaymentRail === 'M-Pesa' ? '#10b981' : '#94a3b8',
+                                  fontWeight: 800,
+                                  fontSize: '12px',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '6px'
+                                }}
+                              >
+                                <MpesaLogo size={18} />
+                                <span>M-Pesa</span>
                               </button>
                             )}
                           </div>
@@ -1143,19 +1274,19 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                           <div className="deposit-receiver-callout">
                             <div className="receiver-top-row">
                               <span className="receiver-provider-tag">
-                                👑 Sonic Agent #{selectedAgent.agentCode} • {agentPaymentRail}
+                                👑 Sonic Agent #{selectedAgent.agentCode} • {agentPaymentRail === 'CBE' ? 'CBE Bank' : agentPaymentRail}
                               </span>
                               <button
                                 type="button"
                                 className="btn-copy-receiver"
-                                onClick={() =>
-                                  handleCopy(
-                                    agentPaymentRail === 'Telebirr'
-                                      ? selectedAgent.telebirrPhone || selectedAgent.phone
-                                      : selectedAgent.cbeAccount,
-                                    `${agentPaymentRail} Number`
-                                  )
-                                }
+                                onClick={() => {
+                                  const num = agentPaymentRail === 'Telebirr'
+                                    ? (selectedAgent.telebirrPhone || selectedAgent.phone)
+                                    : agentPaymentRail === 'CBE'
+                                    ? selectedAgent.cbeAccount
+                                    : (selectedAgent.mpesaPhone || selectedAgent.phone);
+                                  handleCopy(num, `${agentPaymentRail} Number`);
+                                }}
                               >
                                 <i className="fa-regular fa-copy"></i> {t('common.copy')}
                               </button>
@@ -1164,14 +1295,69 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                             <div className="receiver-number-display">
                               <span className="receiver-number-val">
                                 {agentPaymentRail === 'Telebirr'
-                                  ? selectedAgent.telebirrPhone || selectedAgent.phone
-                                  : selectedAgent.cbeAccount}
+                                  ? (selectedAgent.telebirrPhone || selectedAgent.phone)
+                                  : agentPaymentRail === 'CBE'
+                                  ? selectedAgent.cbeAccount
+                                  : (selectedAgent.mpesaPhone || selectedAgent.phone)}
                               </span>
                             </div>
 
-                            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '6px' }}>
+                            {/* Display Registered Account Holder Name */}
+                            {Boolean(
+                              (agentPaymentRail === 'Telebirr' && selectedAgent.telebirrName) ||
+                              (agentPaymentRail === 'CBE' && selectedAgent.cbeName) ||
+                              (agentPaymentRail === 'M-Pesa' && selectedAgent.mpesaName)
+                            ) && (
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  marginTop: '8px',
+                                  padding: '6px 10px',
+                                  borderRadius: '8px',
+                                  background: 'rgba(255, 255, 255, 0.05)',
+                                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                                  fontSize: '12px'
+                                }}
+                              >
+                                <span style={{ color: '#cbd5e1' }}>
+                                  👤 {lang === 'am' ? 'የተመዘገበ ስም' : 'Registered Name'}:{' '}
+                                  <strong style={{ color: '#fbbf24' }}>
+                                    {agentPaymentRail === 'Telebirr'
+                                      ? selectedAgent.telebirrName
+                                      : agentPaymentRail === 'CBE'
+                                      ? selectedAgent.cbeName
+                                      : selectedAgent.mpesaName}
+                                  </strong>
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const name = agentPaymentRail === 'Telebirr'
+                                      ? selectedAgent.telebirrName
+                                      : agentPaymentRail === 'CBE'
+                                      ? selectedAgent.cbeName
+                                      : selectedAgent.mpesaName;
+                                    if (name) handleCopy(name, 'Account Name');
+                                  }}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#38bdf8',
+                                    fontSize: '11px',
+                                    cursor: 'pointer',
+                                    fontWeight: 700
+                                  }}
+                                >
+                                  <i className="fa-regular fa-copy"></i> {t('common.copy')}
+                                </button>
+                              </div>
+                            )}
+
+                            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '8px' }}>
                               {lang === 'am'
-                                ? `እባክዎ በትክክል ${agentDepositAmount} ብር ወደዚህ ቁጥር በቴሌብር ይላኩ።`
+                                ? `እባክዎ በትክክል ${agentDepositAmount} ብር ወደዚህ የተረጋገጠ የኤጀንት ሂሳብ ይላኩ።`
                                 : `Please transfer exactly ${agentDepositAmount} ETB to this verified agent account.`}
                             </div>
                           </div>
@@ -1790,10 +1976,17 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                       >
                         {activeAgents.map(ag => {
                           const isSelected = selectedWithdrawAgent?.id === ag.id;
+                          const rails = ag.supportedRails && ag.supportedRails.length > 0
+                            ? ag.supportedRails
+                            : [
+                                ...(ag.telebirrPhone ? ['Telebirr'] : []),
+                                ...(ag.cbeAccount ? ['CBE'] : []),
+                                ...(ag.mpesaPhone ? ['M-Pesa'] : [])
+                              ];
                           return (
                             <div
                               key={ag.id}
-                              onClick={() => setSelectedWithdrawAgent(ag)}
+                              onClick={() => handleSelectWithdrawAgent(ag)}
                               style={{
                                 border: isSelected ? '2px solid #3b82f6' : '1px solid #cbd5e1',
                                 background: isSelected ? 'rgba(59, 130, 246, 0.08)' : '#ffffff',
@@ -1838,6 +2031,26 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                                   </div>
                                 </div>
                               </div>
+
+                              {/* Rail Badges */}
+                              <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '8px' }}>
+                                {rails.map(r => (
+                                  <span
+                                    key={r}
+                                    style={{
+                                      fontSize: '10px',
+                                      fontWeight: 700,
+                                      padding: '2px 6px',
+                                      borderRadius: '4px',
+                                      background: r === 'Telebirr' ? 'rgba(56, 189, 248, 0.12)' : r === 'CBE' ? 'rgba(234, 179, 8, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+                                      color: r === 'Telebirr' ? '#0284c7' : r === 'CBE' ? '#b45309' : '#059669'
+                                    }}
+                                  >
+                                    {r === 'Telebirr' ? 'Telebirr' : r === 'CBE' ? 'CBE Bank' : 'M-Pesa'}
+                                  </span>
+                                ))}
+                              </div>
+
                               <div
                                 style={{
                                   display: 'flex',
@@ -1850,7 +2063,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                                 }}
                               >
                                 <span style={{ color: '#10b981', fontWeight: 700 }}>🟢 Online</span>
-                                <span style={{ color: '#2563eb', fontWeight: 600 }}>⚡ Instant</span>
+                                <span style={{ color: '#2563eb', fontWeight: 600 }}>⚡ ~{ag.avgApprovalMinutes || 2}m Payout</span>
                               </div>
                             </div>
                           );
@@ -1911,15 +2124,20 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                   <div className="form-section-block">
                     <div className="section-label-row">
                       <label className="form-section-label">
-                        <span className="step-num">3</span> {lang === 'am' ? 'የክፍያ መቀበያ ሂሳብ' : 'Destination Account'}
+                        <span className="step-num">3</span> {lang === 'am' ? 'የክፍያ መቀበያ መስመር እና ሂሳብ' : 'Destination Payout Rail & Account'}
                       </label>
                     </div>
 
+                    {/* Method Selector Tabs: Telebirr, CBE Bank, M-Pesa */}
                     <div className="method-selector-tabs" style={{ marginBottom: '12px' }}>
                       <button
                         type="button"
                         className={`method-tab-item ${withdrawMethod === 'Telebirr' ? 'active' : ''}`}
                         onClick={() => setWithdrawMethod('Telebirr')}
+                        disabled={Boolean(selectedWithdrawAgent && selectedWithdrawAgent.supportedRails && !selectedWithdrawAgent.supportedRails.includes('Telebirr') && !selectedWithdrawAgent.telebirrPhone)}
+                        style={{
+                          opacity: Boolean(selectedWithdrawAgent && selectedWithdrawAgent.supportedRails && !selectedWithdrawAgent.supportedRails.includes('Telebirr') && !selectedWithdrawAgent.telebirrPhone) ? 0.4 : 1
+                        }}
                       >
                         <TelebirrLogo size={20} />
                         <span>Telebirr</span>
@@ -1928,17 +2146,25 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                         type="button"
                         className={`method-tab-item ${withdrawMethod === 'CBE' ? 'active' : ''}`}
                         onClick={() => setWithdrawMethod('CBE')}
+                        disabled={Boolean(selectedWithdrawAgent && selectedWithdrawAgent.supportedRails && !selectedWithdrawAgent.supportedRails.includes('CBE') && !selectedWithdrawAgent.cbeAccount)}
+                        style={{
+                          opacity: Boolean(selectedWithdrawAgent && selectedWithdrawAgent.supportedRails && !selectedWithdrawAgent.supportedRails.includes('CBE') && !selectedWithdrawAgent.cbeAccount) ? 0.4 : 1
+                        }}
                       >
                         <CBELogo size={20} />
                         <span>CBE Bank</span>
                       </button>
                       <button
                         type="button"
-                        className={`method-tab-item ${withdrawMethod === 'CBEBirr' ? 'active' : ''}`}
-                        onClick={() => setWithdrawMethod('CBEBirr')}
+                        className={`method-tab-item ${withdrawMethod === 'M-Pesa' ? 'active' : ''}`}
+                        onClick={() => setWithdrawMethod('M-Pesa')}
+                        disabled={Boolean(selectedWithdrawAgent && selectedWithdrawAgent.supportedRails && !selectedWithdrawAgent.supportedRails.includes('M-Pesa') && !selectedWithdrawAgent.mpesaPhone)}
+                        style={{
+                          opacity: Boolean(selectedWithdrawAgent && selectedWithdrawAgent.supportedRails && !selectedWithdrawAgent.supportedRails.includes('M-Pesa') && !selectedWithdrawAgent.mpesaPhone) ? 0.4 : 1
+                        }}
                       >
-                        <CBELogo size={20} />
-                        <span>CBE Birr</span>
+                        <MpesaLogo size={20} />
+                        <span>M-Pesa</span>
                       </button>
                     </div>
 
@@ -1975,16 +2201,24 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                     <div className="input-field-group">
                       <label className="field-tiny-label">
                         {withdrawMethod === 'Telebirr'
-                          ? (lang === 'am' ? 'ገንዘቡ የሚላክበት የቴሌብር ስልክ ቁጥር' : 'Receiving Telebirr Phone')
-                          : (lang === 'am' ? 'ገንዘቡ የሚላክበት የባንክ ሂሳብ ቁጥር' : 'Receiving Account Number')}
+                          ? (lang === 'am' ? 'ገንዘቡ የሚላክበት የቴሌብር ስልክ ቁጥር' : 'Receiving Telebirr Phone (09... / 07...)')
+                          : withdrawMethod === 'CBE'
+                          ? (lang === 'am' ? 'ገንዘቡ የሚላክበት የኢትዮጵያ ንግድ ባንክ ሂሳብ ቁጥር' : 'Receiving CBE Bank Account (1000...)')
+                          : (lang === 'am' ? 'ገንዘቡ የሚላክበት የሳፋሪኮም ኤም-ፔሳ ስልክ ቁጥር' : 'Receiving Safaricom M-Pesa Phone (07...)')}
                       </label>
                       <div className="field-input-box">
-                        <i className="fa-solid fa-mobile-screen field-icon"></i>
+                        <i className={withdrawMethod === 'CBE' ? 'fa-solid fa-building-columns field-icon' : 'fa-solid fa-mobile-screen field-icon'}></i>
                         <input
                           type="text"
                           value={withdrawAccount}
                           onChange={e => setWithdrawAccount(e.target.value)}
-                          placeholder={withdrawMethod === 'Telebirr' ? '09...' : '1000...'}
+                          placeholder={
+                            withdrawMethod === 'Telebirr'
+                              ? '09... or 07...'
+                              : withdrawMethod === 'CBE'
+                              ? '1000...'
+                              : '07...'
+                          }
                           required
                         />
                       </div>
@@ -2001,6 +2235,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                           value={withdrawAccountName}
                           onChange={e => setWithdrawAccountName(e.target.value)}
                           placeholder="e.g. Abebe Kebede"
+                          required
                         />
                       </div>
                     </div>
@@ -2023,8 +2258,8 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                       <span style={{ fontSize: '16px' }}>🔒</span>
                       <span>
                         {lang === 'am'
-                          ? 'ገንዘብዎ በደህና Escrow ውስጥ ይቆያል፤ ኤጀንቱ ወደ ስልክዎ ገንዘብ እስከሚልክ ድረስ ሙሉ ጥበቃ አለው።'
-                          : 'Your funds are held safely in escrow until the agent verifies the mobile payout.'}
+                          ? 'ገንዘብዎ በደህና Escrow ውስጥ ይቆያል፤ ኤጀንቱ ወደ ሂሳብዎ እስኪያስተላልፍ ድረስ ሙሉ ጥበቃ አለው። በማንኛውም ሰዓት ሰርዘው ገንዘቡን መመለስ ይችላሉ።'
+                          : 'Your funds are held safely in escrow until the agent verifies the mobile payout. You can cancel at any time for an instant refund.'}
                       </span>
                     </div>
                   </div>
