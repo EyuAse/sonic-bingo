@@ -262,8 +262,8 @@ export const CashierDesk: React.FC = () => {
             const isApproved = tx.status === 'approved';
             const isRejected = tx.status === 'rejected';
 
-            // User Lifetime Deposit Mockup
-            const userLifetimeIn = (tx.amount * 2.4).toFixed(0);
+            // Real User Lifetime Deposit from PostgreSQL
+            const userLifetimeIn = ((tx.userLifetimeDeposits && tx.userLifetimeDeposits > 0) ? tx.userLifetimeDeposits : tx.amount).toFixed(0);
 
             return (
               <div key={tx.id} className="cashier-tx-white-card">

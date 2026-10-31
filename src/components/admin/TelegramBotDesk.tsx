@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext.tsx';
 import { getApiBase, LIVE_BACKEND_ORIGIN } from '../../config/env.ts';
+import { getAdminAuthHeader } from '../../services/apiClient.ts';
 
 interface BotStatus {
   isConnected: boolean;
@@ -201,16 +202,23 @@ export const TelegramBotDesk: React.FC = () => {
     }
   ];
 
-  // Resilient API Fetch Helper with live backend fallback
+  // Resilient API Fetch Helper with live backend fallback and Admin Bearer Auth
   const apiFetch = async (endpoint: string, init?: RequestInit): Promise<Response> => {
+    const adminHeaders = await getAdminAuthHeader();
+    const headers = {
+      ...adminHeaders,
+      ...(init?.headers || {})
+    };
+    const options: RequestInit = { ...init, headers };
+
     try {
-      const res = await fetch(`${getApiBase()}${endpoint}`, init);
+      const res = await fetch(`${getApiBase()}${endpoint}`, options);
       if (res.ok || res.status !== 404) {
         return res;
       }
     } catch (e) {}
 
-    return fetch(`${LIVE_BACKEND_ORIGIN}/api${endpoint}`, init);
+    return fetch(`${LIVE_BACKEND_ORIGIN}/api${endpoint}`, options);
   };
 
   // Load Status, Broadcast History, and Active In-Bot Promotion

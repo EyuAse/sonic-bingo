@@ -468,8 +468,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             accountNumber: d.playerPhone,
             status: d.status,
             riskScore: 'verified',
-            userLifetimeDeposits: parseFloat(d.amount),
-            userLifetimeWithdrawals: 0,
+            userLifetimeDeposits: parseFloat(d.userLifetimeDeposits ?? d.amount),
+            userLifetimeWithdrawals: parseFloat(d.userLifetimeWithdrawals ?? 0),
             receiptImage: d.receiptImage,
             createdAt: new Date(d.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }),
             processedAt: d.reviewedAt ? new Date(d.reviewedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : undefined,
@@ -492,8 +492,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             accountNumber: w.accountPhone,
             status: w.status,
             riskScore: 'verified',
-            userLifetimeDeposits: 0,
-            userLifetimeWithdrawals: parseFloat(w.amount),
+            userLifetimeDeposits: parseFloat(w.userLifetimeDeposits ?? 0),
+            userLifetimeWithdrawals: parseFloat(w.userLifetimeWithdrawals ?? w.amount),
             createdAt: new Date(w.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }),
             processedAt: w.reviewedAt ? new Date(w.reviewedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : undefined
           });

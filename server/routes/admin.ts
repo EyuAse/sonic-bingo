@@ -227,7 +227,9 @@ router.get('/deposits', requireAdmin, async (_req, res) => {
         (d.receipt_image IS NOT NULL AND d.receipt_image != '' AND d.receipt_image NOT LIKE '[ARCHIVED%') as has_receipt,
         u.full_name as user_name,
         u.phone as user_phone,
-        u.telegram_username
+        u.telegram_username,
+        COALESCE((SELECT SUM(amount) FROM deposit_requests WHERE user_id = d.user_id AND status = 'approved'), 0) as user_lifetime_deposits,
+        COALESCE((SELECT SUM(amount) FROM withdrawal_requests WHERE user_id = d.user_id AND status = 'approved'), 0) as user_lifetime_withdrawals
       FROM deposit_requests d
       JOIN users u ON d.user_id = u.id
       ORDER BY d.created_at DESC
@@ -248,7 +250,9 @@ router.get('/deposits', requireAdmin, async (_req, res) => {
       status: d.status,
       adminNotes: d.admin_notes,
       reviewedAt: d.reviewed_at,
-      createdAt: d.created_at
+      createdAt: d.created_at,
+      userLifetimeDeposits: parseFloat(d.user_lifetime_deposits || 0),
+      userLifetimeWithdrawals: parseFloat(d.user_lifetime_withdrawals || 0)
     }));
 
     return res.json({ success: true, deposits: formatted });
@@ -556,7 +560,13 @@ router.post('/deposits/:id/reject', requireAdmin, async (req: AuthenticatedReque
 router.get('/withdrawals', requireAdmin, async (_req, res) => {
   try {
     const withdrawRes = await query(`
-      SELECT w.*, u.full_name as user_name, u.phone as user_phone, u.telegram_username
+      SELECT 
+        w.*, 
+        u.full_name as user_name, 
+        u.phone as user_phone, 
+        u.telegram_username,
+        COALESCE((SELECT SUM(amount) FROM deposit_requests WHERE user_id = w.user_id AND status = 'approved'), 0) as user_lifetime_deposits,
+        COALESCE((SELECT SUM(amount) FROM withdrawal_requests WHERE user_id = w.user_id AND status = 'approved'), 0) as user_lifetime_withdrawals
       FROM withdrawal_requests w
       JOIN users u ON w.user_id = u.id
       ORDER BY w.created_at DESC
@@ -575,7 +585,9 @@ router.get('/withdrawals', requireAdmin, async (_req, res) => {
       accountName: w.account_name,
       status: w.status,
       reviewedAt: w.reviewed_at,
-      createdAt: w.created_at
+      createdAt: w.created_at,
+      userLifetimeDeposits: parseFloat(w.user_lifetime_deposits || 0),
+      userLifetimeWithdrawals: parseFloat(w.user_lifetime_withdrawals || 0)
     }));
 
     return res.json({ success: true, withdrawals: formatted });

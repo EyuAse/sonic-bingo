@@ -49,7 +49,7 @@ async function fetchWithRetry(url: string, options?: RequestInit, retries = 3, d
   return fetch(url, options);
 }
 
-async function getAdminAuthHeader(): Promise<Record<string, string>> {
+export async function getAdminAuthHeader(): Promise<Record<string, string>> {
   if (typeof window === 'undefined') return {};
   let token = localStorage.getItem('sonic_admin_token');
   if (!token) {
@@ -676,6 +676,15 @@ export const apiClient = {
         body: JSON.stringify({ adminNotes: adminNotes || 'Rejected by admin' })
       });
       return handleResponse<{ success: boolean; message?: string; error?: string }>(res);
+    },
+
+    // Network Health
+    async getNetworkHealth() {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/network-health`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; metrics: any }>(res);
     }
   }
 };
