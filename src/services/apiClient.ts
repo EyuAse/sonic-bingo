@@ -69,6 +69,12 @@ export async function getAdminAuthHeader(): Promise<Record<string, string>> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+export function getAgentAuthHeader(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  const token = localStorage.getItem('sonic_agent_token') || localStorage.getItem('sonic_auth_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export const apiClient = {
   // 1. Authentication Endpoints
   auth: {
@@ -353,6 +359,71 @@ export const apiClient = {
             isWinner: boolean;
             status: string;
           }>;
+        }>;
+      }>(res);
+    },
+
+    // Agent Cash-Out Voucher (Player Counter Payout)
+    async createAgentVoucher(amount: number) {
+      const res = await fetch(`${API_BASE}/wallet/agent-voucher/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify({ amount })
+      });
+      return handleResponse<{
+        success: boolean;
+        message: string;
+        voucher: {
+          id: string;
+          voucherCode: string;
+          amount: number;
+          status: string;
+          createdAt: string;
+          expiresAt: string;
+        };
+        newBalance: number;
+      }>(res);
+    },
+
+    async cancelAgentVoucher(voucherId?: string) {
+      const res = await fetch(`${API_BASE}/wallet/agent-voucher/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify({ voucherId })
+      });
+      return handleResponse<{
+        success: boolean;
+        message: string;
+        newBalance: number;
+      }>(res);
+    },
+
+    async getActiveAgentVoucher() {
+      const res = await fetch(`${API_BASE}/wallet/agent-voucher/active`, {
+        headers: { ...getAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        hasActiveVoucher: boolean;
+        voucher: {
+          id: string;
+          voucherCode: string;
+          amount: number;
+          status: string;
+          createdAt: string;
+          expiresAt: string;
+        } | null;
+      }>(res);
+    },
+
+    async getActiveAgents() {
+      const res = await fetch(`${API_BASE}/wallet/agents/active`);
+      return handleResponse<{
+        success: boolean;
+        agents: Array<{
+          agentCode: string;
+          fullName: string;
+          phone: string;
         }>;
       }>(res);
     }
@@ -685,6 +756,228 @@ export const apiClient = {
         headers: { ...adminHeaders }
       });
       return handleResponse<{ success: boolean; metrics: any }>(res);
+    }
+  },
+
+  // 4. Agent Portal Endpoints (Decentralized Cash-In / Cash-Out Agent Suite)
+  agent: {
+    async login(payload: { phone: string; password?: string; agentCode?: string }) {
+      const res = await fetch(`${API_BASE}/agent/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      return handleResponse<{
+        success: boolean;
+        token: string;
+        agent: {
+          id: string;
+          userId: string;
+          fullName: string;
+          phone: string;
+          agentCode: string;
+          walletBalance: number;
+          lowBalanceThreshold: number;
+          targetMonthly: number;
+          commissionRate: number;
+          refLink: string;
+        };
+      }>(res);
+    },
+
+    async getProfile() {
+      const res = await fetch(`${API_BASE}/agent/profile`, {
+        headers: { ...getAgentAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        profile: {
+          id: string;
+          agentCode: string;
+          fullName: string;
+          phone: string;
+          walletBalance: number;
+          initialDeposit: number;
+          lowBalanceThreshold: number;
+          isLowBalance: boolean;
+          targetMonthly: number;
+          commissionRate: number;
+          status: string;
+          inviteLink: string;
+        };
+      }>(res);
+    },
+
+    async getPerformance() {
+      const res = await fetch(`${API_BASE}/agent/performance`, {
+        headers: { ...getAgentAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        agentCode: string;
+        walletBalance: number;
+        lowBalanceThreshold: number;
+        isLowBalance: boolean;
+        metrics: {
+          totalPlayers: number;
+          activePlayers: number;
+          todayDeposited: number;
+          monthDeposited: number;
+          totalDepositedAllTime: number;
+          targetMonthly: number;
+          targetProgress: number;
+          commissionRate: number;
+          estimatedCommission: number;
+        };
+        recentDeposits: any[];
+      }>(res);
+    },
+
+    async searchPlayer(query: string) {
+      const res = await fetch(`${API_BASE}/agent/search-player?q=${encodeURIComponent(query)}`, {
+        headers: { ...getAgentAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        players: Array<{
+          id: string;
+          fullName: string;
+          phone: string;
+          username: string;
+          balance: number;
+        }>;
+      }>(res);
+    },
+
+    async depositForPlayer(payload: {
+      playerPhone: string;
+      amount: number;
+      paymentMethod?: string;
+    }) {
+      const res = await fetch(`${API_BASE}/agent/deposit-for-player`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAgentAuthHeader() },
+        body: JSON.stringify(payload)
+      });
+      return handleResponse<{
+        success: boolean;
+        message: string;
+        referenceCode: string;
+        playerName: string;
+        playerPhone: string;
+        amount: number;
+        newAgentBalance: number;
+        isLowBalance: boolean;
+        warning: string | null;
+      }>(res);
+    },
+
+    async verifyCashoutVoucher(voucherCode: string) {
+      const res = await fetch(`${API_BASE}/agent/cashout/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAgentAuthHeader() },
+        body: JSON.stringify({ voucherCode })
+      });
+      return handleResponse<{
+        success: boolean;
+        voucher: {
+          id: string;
+          voucherCode: string;
+          amount: number;
+          playerName: string;
+          playerPhone: string;
+          status: string;
+          createdAt: string;
+          expiresAt: string;
+        };
+      }>(res);
+    },
+
+    async redeemCashoutVoucher(voucherCode: string) {
+      const res = await fetch(`${API_BASE}/agent/cashout/redeem`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAgentAuthHeader() },
+        body: JSON.stringify({ voucherCode })
+      });
+      return handleResponse<{
+        success: boolean;
+        message: string;
+        referenceCode: string;
+        voucherCode: string;
+        payoutAmount: number;
+        commissionEarned: number;
+        newAgentBalance: number;
+        playerName: string;
+        playerPhone: string;
+      }>(res);
+    },
+
+    async requestRecharge(payload: {
+      amount: number;
+      paymentMethod: string;
+      transactionCode: string;
+      receiptImage?: string;
+    }) {
+      const res = await fetch(`${API_BASE}/agent/recharge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAgentAuthHeader() },
+        body: JSON.stringify(payload)
+      });
+      return handleResponse<{
+        success: boolean;
+        message: string;
+        request: any;
+      }>(res);
+    },
+
+    async getRecharges() {
+      const res = await fetch(`${API_BASE}/agent/recharges`, {
+        headers: { ...getAgentAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        recharges: any[];
+      }>(res);
+    },
+
+    async getPlayers() {
+      const res = await fetch(`${API_BASE}/agent/players`, {
+        headers: { ...getAgentAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        players: Array<{
+          id: string;
+          fullName: string;
+          phone: string;
+          username: string;
+          hasDeposited: boolean;
+          balance: number;
+          totalDepositedByAgent: number;
+          createdAt: string;
+        }>;
+      }>(res);
+    },
+
+    async getTransactions() {
+      const res = await fetch(`${API_BASE}/agent/transactions`, {
+        headers: { ...getAgentAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        transactions: Array<{
+          id: string;
+          type: 'cash_in' | 'cash_out';
+          amount: number;
+          payment_method: string;
+          reference_code: string;
+          agent_balance_after?: number;
+          agent_commission_earned?: number;
+          player_name: string;
+          player_phone: string;
+          created_at: string;
+        }>;
+      }>(res);
     }
   }
 };

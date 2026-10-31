@@ -15,7 +15,8 @@ export type PageId =
   | 'account-info'
   | 'help'
   | 'about'
-  | 'admin';
+  | 'admin'
+  | 'agent';
 
 interface AppContextType {
   currentPage: PageId;
@@ -34,6 +35,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (hash.includes('lomibingo-Admin-vBingo') || path.includes('lomibingo-Admin-vBingo') || hash.includes('admin')) {
         return 'admin';
       }
+      if (hash.includes('agent') || path.includes('agent')) {
+        return 'agent';
+      }
     }
     return 'landing';
   });
@@ -47,6 +51,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const path = window.location.pathname;
       if (hash.includes('lomibingo-Admin-vBingo') || path.includes('lomibingo-Admin-vBingo') || hash.includes('admin')) {
         setCurrentPage('admin');
+      } else if (hash.includes('agent') || path.includes('agent')) {
+        setCurrentPage('agent');
       }
     };
     window.addEventListener('hashchange', handleHashChange);
@@ -57,6 +63,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentPage(page);
     if (page === 'admin') {
       window.location.hash = '/lomibingo-Admin-vBingo';
+    } else if (page === 'agent') {
+      window.location.hash = '/agent-portal';
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };

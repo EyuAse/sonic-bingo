@@ -18,7 +18,7 @@ export const ProfilePage: React.FC = () => {
 
   return (
     <div className="page active page-profile-fresh" id="page-profile">
-      {/* 1. User Profile Banner Card (Image 1) */}
+      {/* 1. User Profile Banner Card */}
       <ProfileHeader onEditClick={() => switchPage('account-info')} />
 
       <div className="profile-settings-content-scroll">
@@ -73,6 +73,29 @@ export const ProfilePage: React.FC = () => {
                 </span>
                 <i className="fa-solid fa-chevron-right settings-chevron"></i>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ============================================================
+            CATEGORY: AGENT & PARTNER TERMINAL
+            ============================================================ */}
+        <div className="profile-category-group">
+          <span className="category-section-title">💼 Agent & Partner Operations</span>
+
+          <div className="profile-settings-card">
+            <div
+              className="settings-row-item"
+              onClick={() => switchPage('agent')}
+            >
+              <div className="settings-row-icon-circ" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>
+                <i className="fa-solid fa-briefcase"></i>
+              </div>
+              <div className="settings-row-text-col">
+                <strong className="settings-row-title" style={{ color: '#fbbf24' }}>Agent Terminal & Counter Cashier</strong>
+                <span className="settings-row-sub">Deposit for players, redeem vouchers & manage float</span>
+              </div>
+              <i className="fa-solid fa-chevron-right settings-chevron"></i>
             </div>
           </div>
         </div>

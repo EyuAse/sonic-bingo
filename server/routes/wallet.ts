@@ -775,5 +775,277 @@ router.post('/redeem-coins', requireAuth, async (req: AuthenticatedRequest, res)
   }
 });
 
+/**
+ * Generate Secure 6-Character Voucher Code Helper
+ */
+function generateVoucherCode(): string {
+  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  let code = 'CW-';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+/**
+ * POST /api/wallet/agent-voucher/create
+ * Player requests Cash-Out Voucher to withdraw at any authorized Agent Counter
+ */
+router.post('/agent-voucher/create', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const { amount } = req.body;
+
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount < 50 || numAmount > 5000) {
+      return res.status(400).json({ success: false, error: 'Withdrawal amount must be between 50 and 5,000 ETB.' });
+    }
+
+    // Check if player already has an active pending voucher
+    const existingVoucher = await query(
+      `SELECT id, voucher_code, amount, expires_at 
+       FROM agent_cashout_vouchers 
+       WHERE user_id = $1 AND status = 'pending' AND expires_at > NOW()`,
+      [userId]
+    );
+
+    if (existingVoucher.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'You already have an active cash-out voucher. Please redeem or cancel it first.',
+        activeVoucher: existingVoucher.rows[0]
+      });
+    }
+
+    const result = await withTransaction(async (client) => {
+      // 1. Lock wallet
+      const walletRes = await client.query(
+        'SELECT balance, locked_balance FROM wallets WHERE user_id = $1 FOR UPDATE',
+        [userId]
+      );
+
+      if (walletRes.rows.length === 0) {
+        throw new Error('Wallet not found');
+      }
+
+      const balance = parseFloat(walletRes.rows[0].balance || '0');
+      const locked = parseFloat(walletRes.rows[0].locked_balance || '0');
+
+      if (balance < numAmount) {
+        throw new Error(`Insufficient withdrawable cash balance (${balance.toFixed(2)} ETB).`);
+      }
+
+      // 2. Transfer funds to locked_balance (escrow)
+      const newBalance = balance - numAmount;
+      const newLocked = locked + numAmount;
+
+      await client.query(
+        'UPDATE wallets SET balance = $1, locked_balance = $2, updated_at = NOW() WHERE user_id = $3',
+        [newBalance, newLocked, userId]
+      );
+
+      // 3. Generate unique voucher code
+      let voucherCode = generateVoucherCode();
+      let isUnique = false;
+      let attempts = 0;
+
+      while (!isUnique && attempts < 5) {
+        const check = await client.query('SELECT id FROM agent_cashout_vouchers WHERE voucher_code = $1', [voucherCode]);
+        if (check.rows.length === 0) {
+          isUnique = true;
+        } else {
+          voucherCode = generateVoucherCode();
+          attempts++;
+        }
+      }
+
+      // 4. Create voucher record
+      const voucherRes = await client.query(
+        `INSERT INTO agent_cashout_vouchers (voucher_code, user_id, amount, status)
+         VALUES ($1, $2, $3, 'pending')
+         RETURNING *`,
+        [voucherCode, userId, numAmount]
+      );
+
+      return {
+        voucher: voucherRes.rows[0],
+        newBalance,
+        newLocked
+      };
+    });
+
+    // Notify user via Socket
+    io.emit(`user_${userId}_balance`, {
+      type: 'voucher_created',
+      amount: numAmount,
+      newBalance: result.newBalance,
+      lockedBalance: result.newLocked
+    });
+    io.emit('user_balance_updated', { userId });
+
+    return res.json({
+      success: true,
+      message: `Voucher ${result.voucher.voucher_code} created! Present this code to any agent to collect cash.`,
+      voucher: {
+        id: result.voucher.id,
+        voucherCode: result.voucher.voucher_code,
+        amount: parseFloat(result.voucher.amount),
+        status: result.voucher.status,
+        createdAt: result.voucher.created_at,
+        expiresAt: result.voucher.expires_at
+      },
+      newBalance: result.newBalance
+    });
+  } catch (error: any) {
+    console.error('❌ [Wallet Create Voucher Error]:', error);
+    return res.status(400).json({ success: false, error: error.message || 'Failed to create voucher' });
+  }
+});
+
+/**
+ * POST /api/wallet/agent-voucher/cancel
+ * Player cancels pending voucher before redemption and unlocks funds
+ */
+router.post('/agent-voucher/cancel', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const { voucherId } = req.body;
+
+    const result = await withTransaction(async (client) => {
+      // 1. Lock voucher
+      const voucherRes = await client.query(
+        `SELECT * FROM agent_cashout_vouchers 
+         WHERE user_id = $1 AND status = 'pending' AND ($2::uuid IS NULL OR id = $2::uuid)
+         FOR UPDATE`,
+        [userId, voucherId || null]
+      );
+
+      if (voucherRes.rows.length === 0) {
+        throw new Error('No pending voucher found to cancel.');
+      }
+
+      const voucher = voucherRes.rows[0];
+      const refundAmount = parseFloat(voucher.amount);
+
+      // 2. Mark voucher cancelled
+      await client.query(
+        `UPDATE agent_cashout_vouchers 
+         SET status = 'cancelled' 
+         WHERE id = $1`,
+        [voucher.id]
+      );
+
+      // 3. Unlock funds in player wallet
+      const walletRes = await client.query(
+        'SELECT balance, locked_balance FROM wallets WHERE user_id = $1 FOR UPDATE',
+        [userId]
+      );
+
+      const balance = parseFloat(walletRes.rows[0].balance || '0');
+      const locked = parseFloat(walletRes.rows[0].locked_balance || '0');
+
+      const newBalance = balance + refundAmount;
+      const newLocked = Math.max(0, locked - refundAmount);
+
+      await client.query(
+        'UPDATE wallets SET balance = $1, locked_balance = $2, updated_at = NOW() WHERE user_id = $3',
+        [newBalance, newLocked, userId]
+      );
+
+      return {
+        voucherCode: voucher.voucher_code,
+        refundAmount,
+        newBalance,
+        newLocked
+      };
+    });
+
+    // Notify user via Socket
+    io.emit(`user_${userId}_balance`, {
+      type: 'voucher_cancelled',
+      amount: result.refundAmount,
+      newBalance: result.newBalance,
+      lockedBalance: result.newLocked
+    });
+    io.emit('user_balance_updated', { userId });
+
+    return res.json({
+      success: true,
+      message: `Voucher ${result.voucherCode} cancelled. ${result.refundAmount.toFixed(2)} ETB returned to your balance.`,
+      newBalance: result.newBalance
+    });
+  } catch (error: any) {
+    console.error('❌ [Wallet Cancel Voucher Error]:', error);
+    return res.status(400).json({ success: false, error: error.message || 'Failed to cancel voucher' });
+  }
+});
+
+/**
+ * GET /api/wallet/agent-voucher/active
+ * Get Player's Active Cash-Out Voucher
+ */
+router.get('/agent-voucher/active', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const voucherRes = await query(
+      `SELECT * FROM agent_cashout_vouchers 
+       WHERE user_id = $1 AND status = 'pending' AND expires_at > NOW()
+       ORDER BY created_at DESC 
+       LIMIT 1`,
+      [userId]
+    );
+
+    if (voucherRes.rows.length === 0) {
+      return res.json({ success: true, hasActiveVoucher: false, voucher: null });
+    }
+
+    const v = voucherRes.rows[0];
+    return res.json({
+      success: true,
+      hasActiveVoucher: true,
+      voucher: {
+        id: v.id,
+        voucherCode: v.voucher_code,
+        amount: parseFloat(v.amount),
+        status: v.status,
+        createdAt: v.created_at,
+        expiresAt: v.expires_at
+      }
+    });
+  } catch (error: any) {
+    console.error('❌ [Wallet Active Voucher Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve active voucher' });
+  }
+});
+
+/**
+ * GET /api/wallet/agents/active
+ * Get Active Authorized Agents for Player Counter Deposits & Cash-Outs
+ */
+router.get('/agents/active', async (_req, res) => {
+  try {
+    const agentsRes = await query(
+      `SELECT ap.agent_code, u.full_name, u.phone, ap.status
+       FROM agent_profiles ap
+       JOIN users u ON ap.user_id = u.id
+       WHERE ap.status = 'active'
+       ORDER BY ap.created_at ASC
+       LIMIT 20`
+    );
+
+    return res.json({
+      success: true,
+      agents: agentsRes.rows.map(a => ({
+        agentCode: a.agent_code,
+        fullName: a.full_name,
+        phone: a.phone
+      }))
+    });
+  } catch (error: any) {
+    console.error('❌ [Wallet Active Agents Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve active agents' });
+  }
+});
+
 export default router;
 

@@ -27,6 +27,7 @@ import { AccountInfoPage } from './pages/AccountInfoPage.tsx';
 import { HelpCenterPage } from './pages/HelpCenterPage.tsx';
 import { AboutLomiPage } from './pages/AboutLomiPage.tsx';
 import { AdminPage } from './pages/AdminPage.tsx';
+import { AgentPortalPage } from './pages/AgentPortalPage.tsx';
 import { AppSplashScreen } from './components/common/AppSplashScreen.tsx';
 
 export const App: React.FC = () => {
@@ -72,6 +73,16 @@ export const App: React.FC = () => {
     return (
       <div className="admin-fullscreen-root">
         <AdminPage />
+        <Toast />
+      </div>
+    );
+  }
+
+  // If on Agent portal route, render full-screen bypassing 480px app-container
+  if (currentPage === 'agent') {
+    return (
+      <div className="agent-fullscreen-root">
+        <AgentPortalPage />
         <Toast />
       </div>
     );

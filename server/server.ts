@@ -349,6 +349,24 @@ if (process.env.NODE_ENV !== 'test') {
     console.log(`🚀 [Lomi Bingo Server] Running on http://localhost:${PORT}`);
     console.log(`📊 [Neon PostgreSQL] Connection Pool Active`);
     console.log(`🎮 [Bingo Engine] 4 Game Rooms Initialized`);
+    query(`
+      CREATE TABLE IF NOT EXISTS agent_cashout_vouchers (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        voucher_code VARCHAR(20) UNIQUE NOT NULL,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        amount NUMERIC(12, 2) NOT NULL CHECK (amount >= 50 AND amount <= 5000),
+        status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'redeemed', 'cancelled', 'expired')),
+        redeemed_by_agent_id UUID REFERENCES agent_profiles(id),
+        redeemed_at TIMESTAMPTZ,
+        agent_commission_earned NUMERIC(12, 2) DEFAULT 0.00,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMPTZ DEFAULT (CURRENT_TIMESTAMP + INTERVAL '24 hours')
+      );
+      CREATE INDEX IF NOT EXISTS idx_vouchers_code ON agent_cashout_vouchers(voucher_code);
+      CREATE INDEX IF NOT EXISTS idx_vouchers_user ON agent_cashout_vouchers(user_id);
+      CREATE INDEX IF NOT EXISTS idx_vouchers_status ON agent_cashout_vouchers(status);
+      ALTER TABLE agent_profiles ADD COLUMN IF NOT EXISTS cashout_commission_rate NUMERIC(5, 2) DEFAULT 1.50;
+    `).catch(err => console.warn('⚠️ [DB Schema] Agent vouchers auto-migration deferred:', err.message || err));
     telegramBotService.healBroadcastSequence().catch(err => {
       console.warn('⚠️ [TelegramBotService] Sequence auto-sync deferred:', err.message || err);
     });

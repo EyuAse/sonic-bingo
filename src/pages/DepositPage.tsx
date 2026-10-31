@@ -20,7 +20,7 @@ export const DepositPage: React.FC = () => {
   const { user, updateProfile } = useAuth();
   const { t, lang } = useLanguage();
 
-  const [selectedMethod, setSelectedMethod] = useState<'Telebirr' | 'CBE'>('Telebirr');
+  const [selectedMethod, setSelectedMethod] = useState<'Telebirr' | 'CBE' | 'Agent'>('Telebirr');
   const [telebirrReceiver, setTelebirrReceiver] = useState<PaymentReceiver>(() => getCurrentTelebirrReceiver());
   const [amount, setAmount] = useState<number>(100);
   const [playerPhone, setPlayerPhone] = useState<string>(() => {
@@ -34,8 +34,22 @@ export const DepositPage: React.FC = () => {
   const [submittedRef, setSubmittedRef] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  // Active Authorized Agents for In-Person Deposit
+  const [activeAgents, setActiveAgents] = useState<Array<{ agentCode: string; fullName: string; phone: string }>>([]);
+
+  useEffect(() => {
+    if (selectedMethod === 'Agent') {
+      apiClient.wallet.getActiveAgents().then(res => {
+        if (res.success && res.agents) {
+          setActiveAgents(res.agents);
+        }
+      }).catch(err => console.warn(err));
+    }
+  }, [selectedMethod]);
+
   // Auto-fill from user's attached accounts or profile when method changes
   useEffect(() => {
+    if (selectedMethod === 'Agent') return;
     const attached = user?.attachedAccounts || [];
     const matching = attached.find(a => a.type === selectedMethod && a.isDefault) ||
                      attached.find(a => a.type === selectedMethod);
@@ -69,30 +83,31 @@ export const DepositPage: React.FC = () => {
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
           let width = img.width;
           let height = img.height;
-          const maxDim = 1000;
-          if (width > maxDim || height > maxDim) {
-            if (width > height) {
-              height = Math.round((height * maxDim) / width);
-              width = maxDim;
-            } else {
-              width = Math.round((width * maxDim) / height);
-              height = maxDim;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
             }
           }
+
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, width, height);
-            const compressed = canvas.toDataURL('image/jpeg', 0.85);
-            setReceiptImage(compressed);
-            showToast('📸 Screenshot attached!');
-          } else {
-            setReceiptImage(rawResult);
-            showToast('📸 Screenshot attached!');
-          }
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          const compressed = canvas.toDataURL('image/jpeg', 0.6);
+          setReceiptImage(compressed);
+          showToast(lang === 'am' ? '📸 ደረሰኝ ተያይዟል' : '📸 Receipt screenshot attached');
         };
         img.src = rawResult;
       };
@@ -102,28 +117,26 @@ export const DepositPage: React.FC = () => {
 
   const handleDepositSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (amount < 50) {
-      showToast(lang === 'am' ? '⚠️ ዝቅተኛ ተቀማጭ 50 ብር ነው።' : '⚠️ Minimum deposit is 50 ETB.');
+      showToast(lang === 'am' ? '⚠️ ዝቅተኛ የተቀማጭ መጠን 50 ብር ነው።' : '⚠️ Minimum deposit amount is 50 ETB.');
       return;
     }
 
     if (!playerPhone || playerPhone.trim().length < 9) {
-      showToast(lang === 'am' ? '⚠️ እባክዎ ትክክለኛ ስልክ ቁጥር ያስገቡ።' : '⚠️ Please enter your valid mobile number.');
+      showToast(lang === 'am' ? '⚠️ እባክዎ ትክክለኛ ስልክ ቁጥር ያስገቡ።' : '⚠️ Please enter a valid phone number.');
       return;
     }
 
-    const assignedRef = transactionRef.trim()
-      ? transactionRef.trim().toUpperCase()
-      : `${selectedMethod === 'Telebirr' ? 'TX-TB-' : 'TX-CBE-'}${Math.floor(100000 + Math.random() * 900000)}`;
-
     setIsSubmitting(true);
     try {
-      // Call live Neon DB API with await and error handling
+      const cleanRef = transactionRef?.trim() || `TX-${selectedMethod === 'Telebirr' ? 'TB' : 'CBE'}-${Math.floor(100000 + Math.random() * 900000)}`;
+
       const res = await apiClient.wallet.deposit({
         amount,
-        paymentMethod: selectedMethod,
-        playerPhone,
-        transactionRef: assignedRef,
+        paymentMethod: selectedMethod as 'Telebirr' | 'CBE',
+        playerPhone: playerPhone.trim(),
+        transactionRef: cleanRef,
         receiptImage: receiptImage || undefined
       });
 
@@ -135,19 +148,17 @@ export const DepositPage: React.FC = () => {
       addDepositRequest(
         user?.id || 'usr-me',
         user?.fullName || 'Player',
-        playerPhone,
+        playerPhone.trim(),
         amount,
-        selectedMethod,
-        playerPhone,
-        receiptImage || undefined,
-        assignedRef
+        selectedMethod as any,
+        cleanRef,
+        receiptImage || undefined
       );
 
-      setSubmittedRef(assignedRef);
+      setSubmittedRef(cleanRef);
       setIsSubmitted(true);
 
-      // Auto-save phone to attached accounts if not already linked
-      if (playerPhone && playerPhone.trim().length >= 9) {
+      if (playerPhone && playerPhone.trim().length >= 9 && (selectedMethod === 'Telebirr' || selectedMethod === 'CBE')) {
         const clean = playerPhone.trim();
         const attached = user?.attachedAccounts || [];
         if (!attached.some(a => a.accountNumber === clean)) {
@@ -253,7 +264,7 @@ export const DepositPage: React.FC = () => {
             </div>
           ) : (
             /* Deposit Form */
-            <form className="payment-modal-form" onSubmit={handleDepositSubmit}>
+            <div className="payment-modal-form">
               {/* 1. Payment Method Selection */}
               <div className="form-section-block">
                 <label className="form-section-label">
@@ -294,228 +305,329 @@ export const DepositPage: React.FC = () => {
                       {selectedMethod === 'CBE' && <div className="radio-dot"></div>}
                     </div>
                   </button>
+
+                  {/* 3rd Method: Via Local Agent */}
+                  <button
+                    type="button"
+                    className={`btn-payment-method-card ${selectedMethod === 'Agent' ? 'active' : ''}`}
+                    onClick={() => setSelectedMethod('Agent')}
+                  >
+                    <div className="method-logo-wrap" style={{ background: '#f59e0b', color: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px' }}>
+                      <i className="fa-solid fa-user-tie" style={{ fontSize: '18px' }}></i>
+                    </div>
+                    <div className="method-text-col">
+                      <strong className="method-name">{lang === 'am' ? 'በኤጀንት በኩል' : 'Via Local Agent'}</strong>
+                      <span className="method-badge-fast" style={{ color: '#fbbf24' }}>
+                        {lang === 'am' ? 'በጥሬ ገንዘብ / ቴሌብር' : 'Cash / Telebirr Instant'}
+                      </span>
+                    </div>
+                    <div className="method-radio-circ">
+                      {selectedMethod === 'Agent' && <div className="radio-dot"></div>}
+                    </div>
+                  </button>
                 </div>
               </div>
 
-              {/* 2. Amount Selection */}
-              <div className="form-section-block">
-                <div className="section-label-row">
-                  <label className="form-section-label">
-                    <span className="step-num">2</span> {lang === 'am' ? 'የተቀማጭ መጠን' : 'Deposit Amount'}
-                  </label>
-                  <span className="min-limit-sub">{lang === 'am' ? 'ዝቅተኛ፡ 50 ብር' : 'Min: 50 ETB'}</span>
-                </div>
-
-                {/* Preset Chips */}
-                <div className="amount-preset-chips-grid">
-                  {quickAmounts.map(chip => (
+              {/* 2. AGENT DEPOSIT GUIDE VIEW */}
+              {selectedMethod === 'Agent' ? (
+                <div style={{ marginTop: '16px' }} className="space-y-4">
+                  {/* Your Phone Callout */}
+                  <div style={{ background: '#0f172a', border: '2px solid #f59e0b', borderRadius: '16px', padding: '18px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                      {lang === 'am' ? 'ለኤጀንቱ የሚሰጡት ስልክ ቁጥር' : 'PHONE NUMBER TO GIVE TO AGENT'}
+                    </div>
+                    <div style={{ fontSize: '26px', fontWeight: 900, fontFamily: 'monospace', color: '#f8fafc', margin: '10px 0' }}>
+                      {user?.phone || user?.nationalPhone || '09...'}
+                    </div>
                     <button
-                      key={chip}
                       type="button"
-                      className={`btn-amount-chip ${amount === chip ? 'active' : ''}`}
-                      onClick={() => setAmount(chip)}
+                      onClick={() => handleCopy(user?.phone || user?.nationalPhone || '', 'Phone Number')}
+                      style={{ background: '#334155', color: '#fbbf24', border: 'none', padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
                     >
-                      {chip} ETB
+                      <i className="fa-regular fa-copy" style={{ marginRight: '6px' }}></i>
+                      {lang === 'am' ? 'ስልክ ቁጥር ኮፒ አድርግ' : 'Copy Phone Number'}
                     </button>
-                  ))}
-                </div>
+                  </div>
 
-                {/* Numeric Input */}
-                <div className="amount-numeric-input-wrap">
-                  <span className="currency-tag">ETB</span>
-                  <input
-                    type="number"
-                    min="50"
-                    max="100000"
-                    value={amount || ''}
-                    onChange={e => setAmount(Number(e.target.value))}
-                    placeholder={lang === 'am' ? 'መጠን ያስገቡ' : 'Enter amount'}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* 3. Official Receiver Account Details */}
-              <div className="form-section-block">
-                <label className="form-section-label">
-                  <span className="step-num">3</span> {lang === 'am' ? 'ክፍያውን ወደዚህ ይላኩ' : 'Send Payment To'}
-                </label>
-
-                <div className="deposit-receiver-callout">
-                  <div className="receiver-top-row">
-                    <span className="receiver-provider-tag">
-                      {receiverServiceName} {activeReceiver.badge ? `• ${activeReceiver.badge}` : ''} {lang === 'am' ? 'ይፋዊ አካውንት' : 'Official Account'}
-                    </span>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      {selectedMethod === 'Telebirr' && (
-                        <button
-                          type="button"
-                          className="btn-swap-receiver"
-                          style={{
-                            background: 'rgba(56, 189, 248, 0.15)',
-                            border: '1px solid rgba(56, 189, 248, 0.4)',
-                            color: '#38bdf8',
-                            borderRadius: '6px',
-                            padding: '4px 8px',
-                            fontSize: '0.75rem',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            fontWeight: 700
-                          }}
-                          onClick={() => {
-                            const swapped = toggleTelebirrReceiver();
-                            setTelebirrReceiver(swapped);
-                            showToast(lang === 'am' ? `🔄 ወደ ${swapped.accountName} ተቀይሯል` : `🔄 Swapped to ${swapped.accountName}`);
-                          }}
-                          title="Swap between Telebirr accounts"
-                        >
-                          <i className="fa-solid fa-rotate"></i> {lang === 'am' ? 'ቀይር' : 'Swap'}
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className="btn-copy-receiver"
-                        onClick={() => handleCopy(activeReceiverNumber, receiverServiceName)}
-                      >
-                        <i className="fa-regular fa-copy"></i> {t('common.copy')}
-                      </button>
+                  {/* 1.5x Loyalty Reward Banner */}
+                  <div style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(16, 185, 129, 0.15))', border: '1px solid #f59e0b', borderRadius: '12px', padding: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ fontSize: '24px' }}>🪙</span>
+                    <div style={{ fontSize: '12px', color: '#f1f5f9' }}>
+                      <strong style={{ color: '#fbbf24', display: 'block' }}>
+                        {lang === 'am' ? '+1.5 እጥፍ የሎያሊቲ ሳንቲሞች ሽልማት!' : '+1.5x Loyalty Coins on Agent Deposits!'}
+                      </strong>
+                      <span>
+                        {lang === 'am' ? 'ለምሳሌ 100 ብር ሲያስገቡ 150 ሳንቲሞች በቅጽበት ይሸለማሉ!' : 'For example, deposit 100 ETB and get 150 Coins instantly!'}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="receiver-number-display">
-                    <span className="receiver-num-bold">{activeReceiver.formattedNumber}</span>
+                  {/* Step by Step Instructions */}
+                  <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '14px', fontSize: '12px', color: '#cbd5e1', lineHeight: '1.6' }}>
+                    <div style={{ fontWeight: 800, color: '#fbbf24', marginBottom: '8px' }}>
+                      {lang === 'am' ? 'የተቀማጭ ቅደም ተከተል፡' : 'How to Deposit via Agent:'}
+                    </div>
+                    <ol style={{ paddingLeft: '18px', margin: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <li>{lang === 'am' ? 'በአካባቢዎ የሚገኝ ፈቃድ ያለው የሎሚ ኤጀንት ያነጋግሩ።' : 'Contact or visit any certified Enqu / Sonic Agent.'}</li>
+                      <li>{lang === 'am' ? 'የሚፈልጉትን መጠን (ከ 50 ብር ጀምሮ) በጥሬ ገንዘብ ወይም በቴሌብር ይክፈሉ።' : 'Pay the desired amount (min 50 ETB) in cash or Telebirr/M-Pesa.'}</li>
+                      <li>{lang === 'am' ? 'የተመዘገቡበትን ስልክ ቁጥር ለኤጀንቱ ይስጡ።' : 'Provide your registered phone number to the agent.'}</li>
+                      <li>{lang === 'am' ? 'ኤጀንቱ በ10 ሰከንድ ውስጥ አካውንትዎን ይሞላል!' : 'The agent instantly credits your account in 10 seconds!'}</li>
+                    </ol>
                   </div>
 
-                  <div className="receiver-name-row">
-                    <span className="receiver-name-lbl">{lang === 'am' ? 'የአካውንት ስም፡' : 'Account Name:'}</span>
-                    <strong className="receiver-name-val">{receiverName}</strong>
-                  </div>
+                  {/* Active Agents Roster */}
+                  {activeAgents.length > 0 && (
+                    <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '14px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase', marginBottom: '10px' }}>
+                        {lang === 'am' ? 'የተረጋገጡ የሎሚ ኤጀንቶች' : 'Certified Active Agents'}
+                      </div>
+                      <div className="space-y-2">
+                        {activeAgents.map(a => (
+                          <div key={a.agentCode} style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: '13px', color: '#f8fafc' }}>{a.fullName}</div>
+                              <div style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace' }}>{a.phone} ({a.agentCode})</div>
+                            </div>
+                            <a
+                              href={`tel:${a.phone}`}
+                              style={{ background: '#10b981', color: '#0f172a', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 800, textDecoration: 'none' }}
+                            >
+                              📞 Call
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                  <p className="receiver-note-sub">
-                    {lang === 'am'
-                      ? `ትክክለኛውን መጠን ከ${receiverServiceName} መተግበሪያዎ ይላኩ፣ ከዚያም የግብይት ቁጥሩን ከታች ያስገቡ።`
-                      : `Transfer exact amount from your ${receiverServiceName} app, then enter the SMS reference below.`}
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => switchPage('games')}
+                    className="btn-submit-payment-gold"
+                  >
+                    <span>{lang === 'am' ? 'ወደ ጨዋታ ተመለስ' : 'Return to Games'}</span>
+                  </button>
                 </div>
-              </div>
+              ) : (
+                /* Standard Telebirr / CBE Deposit Form */
+                <form onSubmit={handleDepositSubmit}>
+                  {/* 2. Amount Selection */}
+                  <div className="form-section-block">
+                    <div className="section-label-row">
+                      <label className="form-section-label">
+                        <span className="step-num">2</span> {lang === 'am' ? 'የተቀማጭ መጠን' : 'Deposit Amount'}
+                      </label>
+                      <span className="min-limit-sub">{lang === 'am' ? 'ዝቅተኛ፡ 50 ብር' : 'Min: 50 ETB'}</span>
+                    </div>
 
-              {/* 4. Verification & Submission */}
-              <div className="form-section-block">
-                <label className="form-section-label">
-                  <span className="step-num">4</span> {lang === 'am' ? 'የማረጋገጫ ዝርዝሮች' : 'Verification Details'}
-                </label>
-
-                <div className="input-field-group">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <label className="field-tiny-label">
-                      {selectedMethod === 'Telebirr'
-                        ? (lang === 'am' ? 'የእርስዎ የቴሌብር ቁጥር' : 'Your Telebirr Phone Number')
-                        : (lang === 'am' ? 'የእርስዎ የሲቢኢ ቁጥር/ስልክ' : 'Your CBE Account / Phone')}
-                    </label>
-                    {matchingAttachedAccounts.length > 0 && (
-                      <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 600 }}>
-                        <i className="fa-solid fa-circle-check" style={{ marginRight: '3px' }}></i>
-                        {lang === 'am' ? 'የተያያዘ አካውንት' : 'Linked Account'}
-                      </span>
-                    )}
-                  </div>
-
-                  {matchingAttachedAccounts.length > 0 && (
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                      {matchingAttachedAccounts.map(acc => (
+                    <div className="amount-preset-chips-grid">
+                      {quickAmounts.map(chip => (
                         <button
-                          key={acc.id}
+                          key={chip}
                           type="button"
-                          onClick={() => setPlayerPhone(acc.accountNumber)}
-                          style={{
-                            padding: '4px 8px',
-                            borderRadius: '12px',
-                            fontSize: '0.72rem',
-                            fontWeight: playerPhone === acc.accountNumber ? 700 : 500,
-                            background: playerPhone === acc.accountNumber ? 'rgba(5, 150, 105, 0.12)' : '#f8fafc',
-                            border: playerPhone === acc.accountNumber ? '1px solid #10b981' : '1px solid #e2e8f0',
-                            color: playerPhone === acc.accountNumber ? '#047857' : '#64748b',
-                            cursor: 'pointer'
-                          }}
+                          className={`btn-amount-chip ${amount === chip ? 'active' : ''}`}
+                          onClick={() => setAmount(chip)}
                         >
-                          {acc.isDefault ? '⭐ ' : ''}{acc.accountNumber}
+                          {chip} ETB
                         </button>
                       ))}
                     </div>
-                  )}
 
-                  <div className="field-input-box">
-                    <i className="fa-solid fa-phone field-icon"></i>
-                    <input
-                      type="tel"
-                      value={playerPhone}
-                      onChange={e => setPlayerPhone(e.target.value)}
-                      placeholder={lang === 'am' ? 'ስልክ ቁጥር ያስገቡ (ምሳሌ፡ 09...)' : 'Enter phone number (e.g. 09...)'}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="input-field-group" style={{ marginTop: '8px' }}>
-                  <label className="field-tiny-label">
-                    {lang === 'am' ? 'የኤስኤምኤስ ግብይት መለያ ቁጥር' : 'SMS Transaction ID / Reference (Optional)'}
-                  </label>
-                  <div className="field-input-box">
-                    <i className="fa-solid fa-receipt field-icon"></i>
-                    <input
-                      type="text"
-                      value={transactionRef}
-                      onChange={e => setTransactionRef(e.target.value)}
-                      placeholder="e.g. TX-TB-123456 or FT24..."
-                    />
-                  </div>
-                </div>
-
-                {/* Optional Screenshot Attachment */}
-                <div className="proof-upload-pill" style={{ marginTop: '8px' }}>
-                  <input
-                    type="file"
-                    id="dedicated-deposit-receipt"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    style={{ display: 'none' }}
-                  />
-                  <label htmlFor="dedicated-deposit-receipt" className="btn-upload-label">
-                    <i className="fa-solid fa-camera"></i>
-                    <span>
-                      {receiptImage
-                        ? (lang === 'am' ? 'ምስሉን ቀይር' : 'Change Screenshot')
-                        : (lang === 'am' ? 'የደረሰኝ ምስል አያይዝ (አስገዳጅ አይደለም)' : 'Attach Receipt Screenshot (Optional)')}
-                    </span>
-                  </label>
-
-                  {receiptImage && (
-                    <div className="attached-preview-thumb">
-                      <img src={receiptImage} alt="Receipt Preview" />
-                      <button
-                        type="button"
-                        className="btn-remove-thumb"
-                        onClick={() => setReceiptImage(null)}
-                      >
-                        <i className="fa-solid fa-xmark"></i>
-                      </button>
+                    <div className="amount-numeric-input-wrap">
+                      <span className="currency-tag">ETB</span>
+                      <input
+                        type="number"
+                        min="50"
+                        max="100000"
+                        value={amount || ''}
+                        onChange={e => setAmount(Number(e.target.value))}
+                        placeholder={lang === 'am' ? 'መጠን ያስገቡ' : 'Enter amount'}
+                        required
+                      />
                     </div>
-                  )}
-                </div>
-              </div>
+                  </div>
 
-              {/* Submit Button */}
-              <button type="submit" className="btn-submit-payment-gold" disabled={isSubmitting}>
-                <i className={`fa-solid ${isSubmitting ? 'fa-spinner fa-spin' : 'fa-bolt'}`}></i>
-                <span>
-                  {isSubmitting
-                    ? (lang === 'am' ? 'እየተላከ ነው...' : 'Submitting...')
-                    : (lang === 'am' ? `አሁን ${amount > 0 ? `${amount} ብር` : ''} አስገባ` : `Deposit ${amount > 0 ? `${amount} ETB` : ''} Now`)}
-                </span>
-              </button>
-            </form>
+                  {/* 3. Official Receiver Account Details */}
+                  <div className="form-section-block">
+                    <label className="form-section-label">
+                      <span className="step-num">3</span> {lang === 'am' ? 'ክፍያውን ወደዚህ ይላኩ' : 'Send Payment To'}
+                    </label>
+
+                    <div className="deposit-receiver-callout">
+                      <div className="receiver-top-row">
+                        <span className="receiver-provider-tag">
+                          {receiverServiceName} {activeReceiver.badge ? `• ${activeReceiver.badge}` : ''} {lang === 'am' ? 'ይፋዊ አካውንት' : 'Official Account'}
+                        </span>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          {selectedMethod === 'Telebirr' && (
+                            <button
+                              type="button"
+                              className="btn-swap-receiver"
+                              style={{
+                                background: 'rgba(56, 189, 248, 0.15)',
+                                border: '1px solid rgba(56, 189, 248, 0.4)',
+                                color: '#38bdf8',
+                                borderRadius: '6px',
+                                padding: '4px 8px',
+                                fontSize: '0.75rem',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontWeight: 700
+                              }}
+                              onClick={() => {
+                                const swapped = toggleTelebirrReceiver();
+                                setTelebirrReceiver(swapped);
+                                showToast(lang === 'am' ? `🔄 ወደ ${swapped.accountName} ተቀይሯል` : `🔄 Swapped to ${swapped.accountName}`);
+                              }}
+                              title="Swap between Telebirr accounts"
+                            >
+                              <i className="fa-solid fa-rotate"></i> {lang === 'am' ? 'ቀይር' : 'Swap'}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className="btn-copy-receiver"
+                            onClick={() => handleCopy(activeReceiverNumber, receiverServiceName)}
+                          >
+                            <i className="fa-regular fa-copy"></i> {t('common.copy')}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="receiver-number-display">
+                        <span className="receiver-number-val">{activeReceiverNumber}</span>
+                      </div>
+
+                      <div className="receiver-meta-sub">
+                        <span className="receiver-acc-name">
+                          <i className="fa-solid fa-user-check" style={{ marginRight: '4px' }}></i>
+                          {receiverName}
+                        </span>
+                        <span className="receiver-verified-badge">
+                          <i className="fa-solid fa-shield-check"></i> {lang === 'am' ? 'የተረጋገጠ' : 'Verified'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 4. Confirmation Details */}
+                  <div className="form-section-block">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <label className="form-section-label" style={{ margin: 0 }}>
+                        <span className="step-num">4</span> {lang === 'am' ? 'የከፈሉበት ስልክ ቁጥር' : 'Your Sender Phone'}
+                      </label>
+                      {matchingAttachedAccounts.length > 0 && (
+                        <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>
+                          <i className="fa-solid fa-circle-check" style={{ marginRight: '3px' }}></i>
+                          {lang === 'am' ? 'የተያያዘ አካውንት' : 'Linked Account'}
+                        </span>
+                      )}
+                    </div>
+
+                    {matchingAttachedAccounts.length > 0 && (
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                        {matchingAttachedAccounts.map(acc => (
+                          <button
+                            key={acc.id}
+                            type="button"
+                            onClick={() => setPlayerPhone(acc.accountNumber)}
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: '12px',
+                              fontSize: '0.72rem',
+                              fontWeight: playerPhone === acc.accountNumber ? 700 : 500,
+                              background: playerPhone === acc.accountNumber ? 'rgba(5, 150, 105, 0.12)' : '#f8fafc',
+                              border: playerPhone === acc.accountNumber ? '1px solid #10b981' : '1px solid #e2e8f0',
+                              color: playerPhone === acc.accountNumber ? '#047857' : '#64748b',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {acc.isDefault ? '⭐ ' : ''}{acc.accountNumber} ({acc.name})
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="input-field-group">
+                      <label className="field-tiny-label">
+                        {selectedMethod === 'Telebirr'
+                          ? (lang === 'am' ? 'የእርስዎ የቴሌብር ስልክ ቁጥር' : 'Your Telebirr Phone Number')
+                          : (lang === 'am' ? 'የእርስዎ CBE ስልክ ወይም አካውንት ቁጥር' : 'Your CBE Phone or Account Number')}
+                      </label>
+                      <div className="field-input-box">
+                        <i className="fa-solid fa-phone field-icon"></i>
+                        <input
+                          type="tel"
+                          value={playerPhone}
+                          onChange={e => setPlayerPhone(e.target.value)}
+                          placeholder={lang === 'am' ? 'ስልክ ቁጥር ያስገቡ (ምሳሌ፡ 09...)' : 'Enter phone number (e.g. 09...)'}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="input-field-group" style={{ marginTop: '8px' }}>
+                      <label className="field-tiny-label">
+                        {lang === 'am' ? 'የኤስኤምኤስ ግብይት መለያ ቁጥር' : 'SMS Transaction ID / Reference (Optional)'}
+                      </label>
+                      <div className="field-input-box">
+                        <i className="fa-solid fa-receipt field-icon"></i>
+                        <input
+                          type="text"
+                          value={transactionRef}
+                          onChange={e => setTransactionRef(e.target.value)}
+                          placeholder="e.g. TX-TB-123456 or FT24..."
+                        />
+                      </div>
+                    </div>
+
+                    {/* Optional Screenshot Attachment */}
+                    <div className="proof-upload-pill" style={{ marginTop: '8px' }}>
+                      <input
+                        type="file"
+                        id="dedicated-deposit-receipt"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        style={{ display: 'none' }}
+                      />
+                      <label htmlFor="dedicated-deposit-receipt" className="btn-upload-label">
+                        <i className="fa-solid fa-camera"></i>
+                        <span>
+                          {receiptImage
+                            ? (lang === 'am' ? 'ምስሉን ቀይር' : 'Change Screenshot')
+                            : (lang === 'am' ? 'የደረሰኝ ምስል አያይዝ (አስገዳጅ አይደለም)' : 'Attach Receipt Screenshot (Optional)')}
+                        </span>
+                      </label>
+
+                      {receiptImage && (
+                        <div className="attached-preview-thumb">
+                          <img src={receiptImage} alt="Receipt Preview" />
+                          <button
+                            type="button"
+                            className="btn-remove-thumb"
+                            onClick={() => setReceiptImage(null)}
+                          >
+                            <i className="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <button type="submit" className="btn-submit-payment-gold" disabled={isSubmitting}>
+                    <i className={`fa-solid ${isSubmitting ? 'fa-spinner fa-spin' : 'fa-bolt'}`}></i>
+                    <span>
+                      {isSubmitting
+                        ? (lang === 'am' ? 'እየተላከ ነው...' : 'Submitting...')
+                        : (lang === 'am' ? `አሁን ${amount > 0 ? `${amount} ብር` : ''} አስገባ` : `Deposit ${amount > 0 ? `${amount} ETB` : ''} Now`)}
+                    </span>
+                  </button>
+                </form>
+              )}
+            </div>
           )}
         </div>
       </div>
