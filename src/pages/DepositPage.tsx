@@ -368,7 +368,7 @@ export const DepositPage: React.FC = () => {
                       {lang === 'am' ? 'የተቀማጭ ቅደም ተከተል፡' : 'How to Deposit via Agent:'}
                     </div>
                     <ol style={{ paddingLeft: '18px', margin: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <li>{lang === 'am' ? 'በአካባቢዎ የሚገኝ ፈቃድ ያለው የሎሚ ኤጀንት ያነጋግሩ።' : 'Contact or visit any certified Enqu / Sonic Agent.'}</li>
+                      <li>{lang === 'am' ? 'በአካባቢዎ የሚገኝ ፈቃድ ያለው የሶኒክ ቢንጎ ኤጀንት ያነጋግሩ።' : 'Contact or visit any certified Sonic Bingo Agent.'}</li>
                       <li>{lang === 'am' ? 'የሚፈልጉትን መጠን (ከ 50 ብር ጀምሮ) በጥሬ ገንዘብ ወይም በቴሌብር ይክፈሉ።' : 'Pay the desired amount (min 50 ETB) in cash or Telebirr/M-Pesa.'}</li>
                       <li>{lang === 'am' ? 'የተመዘገቡበትን ስልክ ቁጥር ለኤጀንቱ ይስጡ።' : 'Provide your registered phone number to the agent.'}</li>
                       <li>{lang === 'am' ? 'ኤጀንቱ በ10 ሰከንድ ውስጥ አካውንትዎን ይሞላል!' : 'The agent instantly credits your account in 10 seconds!'}</li>

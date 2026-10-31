@@ -182,7 +182,7 @@ router.post('/telegram', async (req, res) => {
           console.log(`🎁 [Referral Link] User ${newUser.id} attributed to referrer ${referrerId}`);
         }
 
-        // Create Wallet with 20 ETB Welcome Bonus (Enqu Requirements)
+        // Create Wallet with 20 ETB Welcome Bonus (Sonic Bingo Requirements)
         const newWalletRes = await client.query(
           `INSERT INTO wallets (user_id, balance, bonus, locked_balance)
            VALUES ($1, 0.00, 20.00, 0.00)

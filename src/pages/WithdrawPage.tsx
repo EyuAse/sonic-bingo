@@ -379,8 +379,8 @@ export const WithdrawPage: React.FC = () => {
 
                       <p style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: '1.5', margin: '12px 0' }}>
                         {lang === 'am'
-                          ? 'ይህን ኮድ ለየትኛውም ፈቃድ ላለው የሎሚ/ኤንቁ ኤጀንት በማሳየት ጥሬ ገንዘብዎን በቅጽበት ይቀበሉ።'
-                          : 'Present this 6-character voucher code to any certified Enqu Agent counter to collect your physical cash.'}
+                          ? 'ይህን ኮድ ለየትኛውም ፈቃድ ላለው የሶኒክ ቢንጎ ኤጀንት በማሳየት ጥሬ ገንዘብዎን በቅጽበት ይቀበሉ።'
+                          : 'Present this 6-character voucher code to any certified Sonic Bingo Agent counter to collect your physical cash.'}
                       </p>
 
                       <button
