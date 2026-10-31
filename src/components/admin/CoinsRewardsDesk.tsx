@@ -44,12 +44,55 @@ export const CoinsRewardsDesk: React.FC = () => {
   const [recentTx, setRecentTx] = useState<CoinTx[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Manual Adjust Modal
+  // Manual Adjust Modal & Live Player Search
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [adjustUserId, setAdjustUserId] = useState('');
   const [adjustAmount, setAdjustAmount] = useState('');
   const [adjustReason, setAdjustReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Live Real Player Autocomplete State
+  const [playerSearchQuery, setPlayerSearchQuery] = useState('');
+  const [playerSearchResults, setPlayerSearchResults] = useState<any[]>([]);
+  const [isSearchingPlayers, setIsSearchingPlayers] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState<any | null>(null);
+
+  // Debounced search against 100% real PostgreSQL users
+  useEffect(() => {
+    if (!playerSearchQuery.trim() || playerSearchQuery.trim().length < 2) {
+      setPlayerSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearchingPlayers(true);
+      try {
+        const res = await apiClient.admin.getUsers({ search: playerSearchQuery.trim(), limit: 8 });
+        if (res && res.users) {
+          setPlayerSearchResults(res.users);
+        }
+      } catch (err) {
+        console.error('Player search error:', err);
+      } finally {
+        setIsSearchingPlayers(false);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [playerSearchQuery]);
+
+  const openAdjustModal = (player?: any) => {
+    if (player) {
+      setSelectedPlayer(player);
+      setAdjustUserId(player.id || player.user_id);
+    } else {
+      setSelectedPlayer(null);
+      setAdjustUserId('');
+    }
+    setPlayerSearchQuery('');
+    setPlayerSearchResults([]);
+    setAdjustAmount('');
+    setAdjustReason('');
+    setShowAdjustModal(true);
+  };
 
   const fetchCoinData = async () => {
     try {
@@ -133,7 +176,7 @@ export const CoinsRewardsDesk: React.FC = () => {
 
         <button
           type="button"
-          onClick={() => setShowAdjustModal(true)}
+          onClick={() => openAdjustModal()}
           style={{
             backgroundColor: '#ffffff',
             color: '#b45309',
@@ -255,9 +298,9 @@ export const CoinsRewardsDesk: React.FC = () => {
                 <thead>
                   <tr style={{ borderBottom: '2px solid #e2e8f0', color: '#64748b', textAlign: 'left', textTransform: 'uppercase', fontSize: '0.6875rem' }}>
                     <th style={{ padding: '8px 10px' }}>Player</th>
-                    <th style={{ padding: '8px 10px' }}>Type</th>
-                    <th style={{ padding: '8px 10px' }}>Amount</th>
-                    <th style={{ padding: '8px 10px' }}>After</th>
+                    <th style={{ padding: '8px 10px' }}>Activity / Reward</th>
+                    <th style={{ padding: '8px 10px' }}>Coins (+/-)</th>
+                    <th style={{ padding: '8px 10px' }}>Coin Vault After</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -271,19 +314,19 @@ export const CoinsRewardsDesk: React.FC = () => {
                         <span style={{
                           backgroundColor: tx.type === 'earned_deposit' ? '#ecfdf5' : tx.type === 'redeemed_bonus' ? '#fef2f2' : '#f8fafc',
                           color: tx.type === 'earned_deposit' ? '#047857' : tx.type === 'redeemed_bonus' ? '#b91c1c' : '#475569',
-                          padding: '2px 8px',
+                          padding: '3px 9px',
                           borderRadius: '10px',
                           fontSize: '0.6875rem',
                           fontWeight: 700
                         }}>
-                          {tx.type === 'earned_deposit' ? 'Deposit' : tx.type === 'redeemed_bonus' ? 'Redeemed' : 'Admin'}
+                          {tx.type === 'earned_deposit' ? '🪙 +1.5x Deposit Reward' : tx.type === 'redeemed_bonus' ? '🎁 Redeemed for Bonus' : '🛠️ Manual Adjustment'}
                         </span>
                       </td>
                       <td style={{ padding: '8px 10px', fontWeight: 800, color: tx.amount > 0 ? '#059669' : '#dc2626' }}>
-                        {tx.amount > 0 ? `+${tx.amount}` : tx.amount}
+                        {tx.amount > 0 ? `+${tx.amount} 🪙` : `${tx.amount} 🪙`}
                       </td>
-                      <td style={{ padding: '8px 10px', color: '#475569' }}>
-                        {tx.balance_after}
+                      <td style={{ padding: '8px 10px', color: '#475569', fontWeight: 700 }}>
+                        {tx.balance_after} 🪙
                       </td>
                     </tr>
                   ))}
@@ -294,7 +337,7 @@ export const CoinsRewardsDesk: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. Manual Adjustment Modal */}
+      {/* 4. Manual Adjustment Modal with Live Player Autocomplete */}
       {showAdjustModal && (
         <div style={{
           position: 'fixed',
@@ -316,30 +359,154 @@ export const CoinsRewardsDesk: React.FC = () => {
               borderRadius: '16px',
               padding: '28px',
               width: '90%',
-              maxWidth: '440px',
+              maxWidth: '460px',
               boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
             }}
           >
             <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 8px 0', color: '#0f172a' }}>
               Manual Coin Adjustment
             </h3>
-            <p style={{ margin: '0 0 20px 0', color: '#64748b', fontSize: '0.875rem' }}>
-              Add coins (positive number, e.g. +500) or deduct coins (negative number, e.g. -200) for a player.
+            <p style={{ margin: '0 0 16px 0', color: '#64748b', fontSize: '0.875rem' }}>
+              Search for a player by name, phone, or username to award or deduct loyalty coins.
             </p>
 
-            <div style={{ marginBottom: '14px' }}>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                User UUID
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="User UUID (from Players Desk)"
-                value={adjustUserId}
-                onChange={e => setAdjustUserId(e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.875rem', boxSizing: 'border-box' }}
-              />
-            </div>
+            {/* Selected Player Card or Search Box */}
+            {selectedPlayer ? (
+              <div style={{
+                padding: '12px 14px',
+                borderRadius: '12px',
+                background: '#f8fafc',
+                border: '1.5px solid #e2e8f0',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '50%',
+                    background: '#fef3c7',
+                    color: '#b45309',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 800,
+                    fontSize: '0.9rem'
+                  }}>
+                    {selectedPlayer.name ? selectedPlayer.name.charAt(0).toUpperCase() : 'P'}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.875rem' }}>
+                      {selectedPlayer.name || 'Player'}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      📞 {selectedPlayer.phone || 'No phone'} {selectedPlayer.telegramUsername ? `• @${selectedPlayer.telegramUsername}` : ''}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedPlayer(null);
+                    setAdjustUserId('');
+                  }}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#dc2626',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Change Player
+                </button>
+              </div>
+            ) : (
+              <div style={{ marginBottom: '16px', position: 'relative' }}>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  Search Player (Name, Phone, or Telegram)
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    placeholder="Type name or phone (e.g. 0911...)"
+                    value={playerSearchQuery}
+                    onChange={e => setPlayerSearchQuery(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px 10px 36px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.875rem',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <i
+                    className="fa-solid fa-magnifying-glass"
+                    style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}
+                  ></i>
+                  {isSearchingPlayers && (
+                    <i
+                      className="fa-solid fa-spinner fa-spin"
+                      style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }}
+                    ></i>
+                  )}
+                </div>
+
+                {/* Autocomplete Results Dropdown */}
+                {playerSearchResults.length > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    marginTop: '4px',
+                    background: '#ffffff',
+                    borderRadius: '10px',
+                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.15)',
+                    border: '1px solid #e2e8f0',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    zIndex: 50
+                  }}>
+                    {playerSearchResults.map(p => (
+                      <div
+                        key={p.id}
+                        onClick={() => {
+                          setSelectedPlayer(p);
+                          setAdjustUserId(p.id);
+                          setPlayerSearchResults([]);
+                          setPlayerSearchQuery('');
+                        }}
+                        style={{
+                          padding: '10px 12px',
+                          borderBottom: '1px solid #f1f5f9',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                        onMouseLeave={e => e.currentTarget.style.background = '#ffffff'}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#0f172a' }}>{p.name || 'Player'}</div>
+                          <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>
+                            {p.phone || 'No phone'} {p.telegramUsername ? `• @${p.telegramUsername}` : ''}
+                          </div>
+                        </div>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#d97706', background: '#fef3c7', padding: '2px 8px', borderRadius: '8px' }}>
+                          Select
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div style={{ marginBottom: '14px' }}>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
@@ -361,7 +528,7 @@ export const CoinsRewardsDesk: React.FC = () => {
               </label>
               <input
                 type="text"
-                placeholder="e.g. Community promotion award"
+                placeholder="e.g. VIP player appreciation reward"
                 value={adjustReason}
                 onChange={e => setAdjustReason(e.target.value)}
                 style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.875rem', boxSizing: 'border-box' }}
@@ -371,15 +538,27 @@ export const CoinsRewardsDesk: React.FC = () => {
             <div style={{ display: 'flex', gap: '12px' }}>
               <button
                 type="button"
-                onClick={() => setShowAdjustModal(false)}
+                onClick={() => {
+                  setShowAdjustModal(false);
+                  setSelectedPlayer(null);
+                }}
                 style={{ flex: 1, padding: '12px', backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '10px', fontWeight: 700, color: '#475569', cursor: 'pointer' }}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting}
-                style={{ flex: 1, padding: '12px', backgroundColor: '#d97706', border: 'none', borderRadius: '10px', fontWeight: 700, color: '#ffffff', cursor: 'pointer' }}
+                disabled={isSubmitting || !adjustUserId}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  backgroundColor: adjustUserId ? '#d97706' : '#cbd5e1',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  cursor: adjustUserId ? 'pointer' : 'not-allowed'
+                }}
               >
                 {isSubmitting ? 'Adjusting...' : 'Confirm'}
               </button>

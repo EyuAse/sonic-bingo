@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
+import { useWallet } from '../context/WalletContext.tsx';
 import { useLanguage } from '../context/LanguageContext.tsx';
 import { telegramService } from '../services/telegramService.ts';
 import { apiClient } from '../services/apiClient.ts';
@@ -19,7 +20,10 @@ interface ReferredFriend {
 export const AffiliatePage: React.FC = () => {
   const { switchPage, showToast } = useApp();
   const { user } = useAuth();
+  const { balance, bonus, coins, redeemCoins } = useWallet();
   const { lang } = useLanguage();
+
+  const [isRedeemingCoins, setIsRedeemingCoins] = useState(false);
 
   const [referralData, setReferralData] = useState<{
     referralCode: string;
@@ -91,10 +95,28 @@ export const AffiliatePage: React.FC = () => {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  const handleRedeemCoins = async () => {
+    if (coins < 1000) {
+      showToast(lang === 'am' ? '⚠️ ኮይኖችን ለመቀየር ቢያንስ 1,000 ኮይኖች ያስፈልጋሉ።' : '⚠️ At least 1,000 coins are required to redeem for 10 ETB bonus.');
+      return;
+    }
+    setIsRedeemingCoins(true);
+    try {
+      const res = await redeemCoins();
+      if (res.success) {
+        showToast(`🎉 ${res.message}`);
+      } else {
+        showToast(`❌ ${res.message}`);
+      }
+    } finally {
+      setIsRedeemingCoins(false);
+    }
+  };
+
   const handleInviteTelegramFriends = () => {
     telegramService.triggerHaptic('medium');
     const shareText = encodeURIComponent(
-      `🍋 Join me on Lomi Bingo! Get 10 ETB Free Welcome Bonus to play live 75-Ball Express Bingo with instant Telebirr payouts! 🎁💰\n\nPlay here:`
+      `🍋 Join me on Lomi Bingo! Get 20 ETB Free Welcome Bonus to play live 75-Ball Express Bingo with instant Telebirr payouts! 🎁💰\n\nPlay here:`
     );
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${shareText}`;
     telegramService.openTelegramLink(shareUrl);
@@ -144,6 +166,96 @@ export const AffiliatePage: React.FC = () => {
           margin: '0 auto'
         }}
       >
+        {/* 1b. Executive 3-Wallet Suite (Cash, Play Bonus, Loyalty Coins) */}
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '20px',
+          padding: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.04)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <i className="fa-solid fa-wallet" style={{ color: '#d97706' }}></i>
+              {lang === 'am' ? 'የእርስዎ ቦርሳዎችና የሳንቲም ማዕከል' : 'Your Wallets & Rewards'}
+            </span>
+            <button
+              type="button"
+              onClick={() => switchPage('wallet')}
+              style={{ background: 'transparent', border: 'none', color: '#d97706', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+            >
+              {lang === 'am' ? 'ዝርዝር ይመልከቱ →' : 'Wallet Hub →'}
+            </button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            {/* Wallet 1: Withdrawable Cash */}
+            <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '10px 8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+              <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 700 }}>{lang === 'am' ? 'ዋና ሂሳብ' : 'Cash'}</div>
+              <div style={{ fontSize: '14px', fontWeight: 900, color: '#0f172a', margin: '3px 0' }}>{balance.toFixed(0)} <span style={{ fontSize: '10px' }}>ETB</span></div>
+              <button
+                type="button"
+                onClick={() => switchPage('deposit')}
+                style={{ width: '100%', background: '#059669', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '4px 0', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}
+              >
+                {lang === 'am' ? '+ አስገባ' : '+ Deposit'}
+              </button>
+            </div>
+
+            {/* Wallet 2: Game Bonus */}
+            <div style={{ background: '#ecfdf5', borderRadius: '14px', padding: '10px 8px', border: '1px solid #a7f3d0', textAlign: 'center' }}>
+              <div style={{ fontSize: '10px', color: '#065f46', fontWeight: 700 }}>{lang === 'am' ? 'ቦነስ' : 'Bonus'}</div>
+              <div style={{ fontSize: '14px', fontWeight: 900, color: '#059669', margin: '3px 0' }}>{bonus.toFixed(0)} <span style={{ fontSize: '10px' }}>ETB</span></div>
+              <button
+                type="button"
+                onClick={() => switchPage('games')}
+                style={{ width: '100%', background: '#047857', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '4px 0', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}
+              >
+                {lang === 'am' ? 'ተጫወት' : 'Play'}
+              </button>
+            </div>
+
+            {/* Wallet 3: Loyalty Coins */}
+            <div style={{ background: '#fffbeb', borderRadius: '14px', padding: '10px 8px', border: '1px solid #fde68a', textAlign: 'center' }}>
+              <div style={{ fontSize: '10px', color: '#92400e', fontWeight: 700 }}>{lang === 'am' ? 'ሳንቲሞች' : 'Coins'}</div>
+              <div style={{ fontSize: '14px', fontWeight: 900, color: '#d97706', margin: '3px 0' }}>{coins.toLocaleString()} <span style={{ fontSize: '11px' }}>🪙</span></div>
+              <button
+                type="button"
+                disabled={coins < 1000 || isRedeemingCoins}
+                onClick={handleRedeemCoins}
+                style={{
+                  width: '100%',
+                  background: coins >= 1000 ? '#d97706' : '#fcd34d',
+                  color: coins >= 1000 ? '#ffffff' : '#78350f',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '4px 0',
+                  fontSize: '9.5px',
+                  fontWeight: 800,
+                  cursor: coins >= 1000 ? 'pointer' : 'default'
+                }}
+              >
+                {isRedeemingCoins ? '...' : coins >= 1000 ? (lang === 'am' ? '10 ብር ቅያሬ' : 'Redeem 10') : `${coins}/1000`}
+              </button>
+            </div>
+          </div>
+
+          {/* Coin Progress Bar toward 1,000 Coin reward */}
+          <div style={{ marginTop: '10px', background: '#f1f5f9', borderRadius: '999px', height: '6px', overflow: 'hidden' }}>
+            <div style={{
+              width: `${Math.min(100, ((coins % 1000) / 1000) * 100)}%`,
+              height: '100%',
+              background: 'linear-gradient(90deg, #f59e0b, #10b981)',
+              borderRadius: '999px',
+              transition: 'width 0.3s ease'
+            }}></div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#64748b', marginTop: '4px' }}>
+            <span>{lang === 'am' ? '💡 1,000 ሳንቲም = 10 ብር የጨዋታ ቦነስ' : '💡 1,000 coins = 10 ETB game bonus'}</span>
+            <span style={{ fontWeight: 700, color: '#d97706' }}>{coins % 1000} / 1000 🪙</span>
+          </div>
+        </div>
+
         {/* 2. Top Hero Card: Warm Creamy Lemon Background with 3D Treasure Chest */}
         <div
           style={{
