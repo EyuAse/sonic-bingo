@@ -269,15 +269,18 @@
 .sonic-agent-main-viewport {
   flex: 1;
   margin-left: var(--sonic-sidebar-expanded);
+  width: calc(100% - var(--sonic-sidebar-expanded));
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   background-color: #f4f6f8 !important;
-  transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
 }
 
 .sonic-agent-main-viewport.sidebar-collapsed {
   margin-left: var(--sonic-sidebar-collapsed);
+  width: calc(100% - var(--sonic-sidebar-collapsed));
 }
 
 .sonic-agent-page-content {
@@ -285,6 +288,8 @@
   background-color: #f4f6f8 !important;
   color: #0f172a !important;
   flex: 1;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Sonic Agent Top Header Bar */

@@ -828,6 +828,19 @@ export const apiClient = {
           targetProgress: number;
           commissionRate: number;
           estimatedCommission: number;
+          commissionBreakdown?: {
+            depositCommission: number;
+            voucherCommission: number;
+            totalCommission: number;
+            fromPlayersPercent: number;
+            fromReferralsPercent: number;
+          };
+          dailyTrend?: Array<{
+            dayNum: number;
+            label: string;
+            count: number;
+            volume: number;
+          }>;
         };
         recentDeposits: any[];
       }>(res);
