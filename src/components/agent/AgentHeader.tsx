@@ -16,93 +16,187 @@ export const AgentHeader: React.FC<AgentHeaderProps> = ({
   onPlayBingo,
   onLogout
 }) => {
-  const getTabTitle = (tab: AgentDeskTab) => {
-    switch (tab) {
-      case 'overview': return 'Executive Dashboard & Float Liquidity';
-      case 'cash_in': return 'Player Cash-In Terminal (Instant Deposit)';
-      case 'cash_out': return 'Cash-Out Counter (Voucher Redemption)';
-      case 'recharge': return 'Float Replenishment Desk';
-      case 'players': return 'Referred Players CRM & Network';
-      case 'statements': return 'Financial Statement & Audit Ledger';
-      case 'profile': return 'Agency Profile & QR Deep Link';
-      default: return 'Agent Operations Terminal';
-    }
-  };
-
-  const floatBal = agentProfile ? Number(agentProfile.walletBalance) : 0;
-  const threshold = agentProfile ? Number(agentProfile.lowBalanceThreshold) : 1000;
-  const isLowFloat = floatBal <= threshold;
+  const agentName = agentProfile?.fullName || agentProfile?.agentCode || 'Agent001';
+  const initial = agentName.charAt(0).toUpperCase();
 
   return (
-    <header className="sonic-agent-header">
-      <div className="sonic-header-left">
-        {/* Mobile Hamburger Toggle */}
+    <header
+      className="sonic-agent-header"
+      style={{
+        background: '#ffffff',
+        borderBottom: '1px solid #e2e8f0',
+        padding: '12px 28px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        position: 'sticky',
+        top: 0,
+        zIndex: 30,
+        minHeight: '70px',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)'
+      }}
+    >
+      {/* Left: Mobile Menu Trigger + Search Bar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, maxWidth: '420px' }}>
         <button
           type="button"
           className="sonic-mobile-menu-btn"
           onClick={openMobile}
           title="Open Menu"
+          style={{
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            color: '#0f172a',
+            padding: '8px 12px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            cursor: 'pointer'
+          }}
         >
           <i className="fa-solid fa-bars"></i>
         </button>
 
-        <div className="sonic-header-title-box">
-          <h1>
-            <span>👑</span>
-            <span>{getTabTitle(activeTab)}</span>
-          </h1>
-          <p>Sonic Bingo Decentralized Agent Network</p>
+        {/* Search Bar matching Reference UI */}
+        <div style={{ position: 'relative', width: '100%' }}>
+          <i
+            className="fa-solid fa-magnifying-glass"
+            style={{
+              position: 'absolute',
+              left: '14px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: '#94a3b8',
+              fontSize: '13px'
+            }}
+          ></i>
+          <input
+            type="text"
+            placeholder="Search..."
+            style={{
+              width: '100%',
+              background: '#f1f5f9',
+              border: '1px solid transparent',
+              borderRadius: '9999px',
+              padding: '10px 16px 10px 38px',
+              fontSize: '13px',
+              color: '#0f172a',
+              outline: 'none',
+              boxSizing: 'border-box',
+              fontWeight: 500,
+              transition: 'all 0.15s ease'
+            }}
+            onFocus={e => (e.target.style.background = '#ffffff', e.target.style.borderColor = '#cbd5e1')}
+            onBlur={e => (e.target.style.background = '#f1f5f9', e.target.style.borderColor = 'transparent')}
+          />
         </div>
       </div>
 
-      <div className="sonic-header-actions">
-        {/* Reference Screenshot Style Glossy Pills */}
-        <div className="sonic-header-pills-row">
-          <div className="sonic-glossy-pill gold" title="Agent Code">
-            <i className="fa-solid fa-id-badge" style={{ color: '#f59e0b' }}></i>
-            <span>{agentProfile?.agentCode || 'AGENT'}</span>
-          </div>
-
-          <div
-            className={`sonic-glossy-pill ${isLowFloat ? 'crimson' : 'emerald'}`}
-            title="Live Agent Float Liquidity"
+      {/* Right: Notifications Bell + Profile Dropdown + Quick Actions */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        {/* Notification Bell with Red Badge "3" */}
+        <div
+          style={{
+            position: 'relative',
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#334155',
+            fontSize: '15px',
+            cursor: 'pointer'
+          }}
+          title="3 unread notifications"
+        >
+          <i className="fa-regular fa-bell"></i>
+          <span
+            style={{
+              position: 'absolute',
+              top: '2px',
+              right: '2px',
+              width: '18px',
+              height: '18px',
+              borderRadius: '50%',
+              background: '#ef4444',
+              color: '#ffffff',
+              fontSize: '10px',
+              fontWeight: 800,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '2px solid #ffffff'
+            }}
           >
-            <span
-              style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: isLowFloat ? '#ef4444' : '#10b981',
-                display: 'inline-block'
-              }}
-            />
-            <span>{floatBal.toLocaleString('en-US', { minimumFractionDigits: 2 })} ETB</span>
-          </div>
+            3
+          </span>
         </div>
 
-        {/* Action Buttons */}
+        {/* Profile Pill Badge matching Reference UI */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '4px 12px 4px 6px',
+            borderRadius: '9999px',
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            cursor: 'pointer',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+          }}
+          title={agentName}
+        >
+          {/* Avatar Circle with Initial "A" */}
+          <div
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              background: '#1e293b',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '14px',
+              fontWeight: 800
+            }}
+          >
+            {initial}
+          </div>
+
+          <span style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a' }}>
+            {agentName}
+          </span>
+
+          <i className="fa-solid fa-chevron-down" style={{ fontSize: '11px', color: '#94a3b8' }}></i>
+        </div>
+
+        {/* Quick Return to Player Bingo App */}
         <button
           type="button"
           onClick={onPlayBingo}
-          className="sonic-btn-header-action"
-          title="Switch to Player Gaming View"
+          style={{
+            background: '#ffffff',
+            border: '1px solid #cbd5e1',
+            borderRadius: '8px',
+            padding: '8px 14px',
+            fontSize: '12px',
+            fontWeight: 700,
+            color: '#334155',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+          title="Return to Player Gaming App"
         >
           <i className="fa-solid fa-gamepad" style={{ color: '#f59e0b' }}></i>
-          <span>Play Game</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={onLogout}
-          className="sonic-btn-header-action"
-          style={{ color: '#ef4444', borderColor: '#fecaca' }}
-          title="Sign Out of Agent Portal"
-        >
-          <i className="fa-solid fa-arrow-right-from-bracket"></i>
-          <span>Logout</span>
+          <span className="hidden sm:inline">Play Bingo</span>
         </button>
       </div>
     </header>
   );
 };
-

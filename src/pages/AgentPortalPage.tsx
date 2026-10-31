@@ -312,6 +312,7 @@ export const AgentPortalPage: React.FC = () => {
               onNavigateTab={setActiveTab}
               onRefresh={loadAgentData}
               isLoading={loading}
+              showToast={showToast}
             />
           )}
 
