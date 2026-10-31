@@ -193,15 +193,15 @@ Add typed helper methods under `apiClient.admin` that automatically invoke `getA
 
 ---
 
-## 🎯 Verification Criteria & Deliverables
+## 🎯 Verification Criteria & Deliverables (Status: ALL 100% COMPLETED ✅)
 
-- [ ] Admin `CartelasDesk` displays jump buttons up to 600 cards (`401–500`, `501–600`).
-- [ ] Admin `DashboardOverview` and `AdminSettings` reflect 600 cartelas.
-- [ ] `WinModal` allows winning cards up to #600 without clamping.
-- [ ] Progressive Jackpot trigger in `BingoGameEngine.ts` is strictly set to **$\le 15$ balls**.
-- [ ] The 4 new admin desks load live PostgreSQL data via `apiClient.admin` with zero 401 errors.
-- [ ] Cartelas occupy the Left Column of the bingo board.
-- [ ] The 1-75 flashboard is cleanly positioned in the Right Column.
-- [ ] The 4-card UI features interactive card tabs (`Card 1..4`, `View All`) with crisp, non-cramped styling.
-- [ ] All 35+ automated tests pass with 100% green status.
-- [ ] Production deployment on Render is verified live.
+- [x] Admin `CartelasDesk` displays jump buttons up to 600 cards (`401–500`, `501–600`).
+- [x] Admin `DashboardOverview` and `AdminSettings` reflect 600 cartelas.
+- [x] `WinModal` allows winning cards up to #600 without clamping.
+- [x] Progressive Jackpot trigger in `BingoGameEngine.ts` is strictly set to **$\le 15$ balls ("Speed 15 Golden Strike")**.
+- [x] The 4 new admin desks load live PostgreSQL data via `apiClient.admin` with zero 401 errors.
+- [x] Cartelas occupy the Left Column of the bingo board.
+- [x] The 1-75 flashboard is cleanly positioned in the Right Column.
+- [x] The 4-card UI features interactive card tabs (`Card 1..4`, `⊞ 4-Grid`) with crisp, non-cramped styling and real-time `🔥 1 TO GO` alerts.
+- [x] All 35+ automated tests pass with 100% green status (`test_phase2_probability_600.ts`, `test_70_10_20_pot_math.ts`, `test_600_cartelas.ts`).
+- [x] Production deployment on Render is verified live (Commit `7b028a4`, Deploy `dep-dbiopf942hec73b3cl4g`, Status: `live`).
