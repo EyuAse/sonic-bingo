@@ -42,14 +42,14 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
     icon: string;
   }> = [
     { id: 'overview', label: 'Dashboard', icon: 'fa-solid fa-table-cells-large' },
-    { id: 'deposit_requests', label: 'Deposit Requests', icon: 'fa-solid fa-inbox' },
-    { id: 'withdrawal_requests', label: 'Withdrawal Desk', icon: 'fa-solid fa-money-bill-transfer' },
+    { id: 'deposit_requests', label: 'Deposit Desk & History', icon: 'fa-solid fa-inbox' },
+    { id: 'withdrawal_requests', label: 'Withdrawal Desk & History', icon: 'fa-solid fa-money-bill-transfer' },
     { id: 'players', label: 'My Players', icon: 'fa-solid fa-users' },
     { id: 'cash_in', label: 'Direct Cash-In', icon: 'fa-solid fa-bolt' },
     { id: 'cash_out', label: 'Commission Desk', icon: 'fa-solid fa-coins' },
     { id: 'recharge', label: 'Recharge Float', icon: 'fa-solid fa-wallet' },
     { id: 'statements', label: 'Transactions', icon: 'fa-solid fa-clock-rotate-left' },
-    { id: 'profile', label: 'Settings', icon: 'fa-solid fa-gear' },
+    { id: 'profile', label: 'Payment Rails & Settings', icon: 'fa-solid fa-gear' },
   ];
 
   const handleTabClick = (tab: AgentDeskTab) => {

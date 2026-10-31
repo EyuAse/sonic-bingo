@@ -50,8 +50,33 @@ export const AgentPortalPage: React.FC = () => {
   const { switchPage, showToast } = useApp();
   const { user } = useAuth();
 
-  // Navigation & Layout State
-  const [activeTab, setActiveTab] = useState<AgentDeskTab>('overview');
+  // Navigation & Layout State (with URL hash / param support)
+  const getInitialTab = (): AgentDeskTab => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab') as AgentDeskTab;
+      const validTabs: AgentDeskTab[] = [
+        'overview', 'deposit_requests', 'withdrawal_requests',
+        'cash_in', 'cash_out', 'recharge', 'players', 'statements', 'profile'
+      ];
+      if (tabParam && validTabs.includes(tabParam)) return tabParam;
+      const hash = window.location.hash.replace('#', '') as AgentDeskTab;
+      if (hash && validTabs.includes(hash)) return hash;
+    }
+    return 'overview';
+  };
+
+  const [activeTab, setActiveTabState] = useState<AgentDeskTab>(getInitialTab);
+
+  const setActiveTab = (tab: AgentDeskTab) => {
+    setActiveTabState(tab);
+    if (typeof window !== 'undefined') {
+      try {
+        window.location.hash = tab;
+      } catch (_) {}
+    }
+  };
+
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [pendingRequestsCount, setPendingRequestsCount] = useState<number>(0);
@@ -352,11 +377,183 @@ export const AgentPortalPage: React.FC = () => {
           activeTab={activeTab}
           agentProfile={profile}
           pendingCount={pendingRequestsCount}
+          pendingWithdrawalsCount={pendingWithdrawalsCount}
           openMobile={() => setIsMobileOpen(true)}
           onPlayBingo={() => switchPage('games')}
           onLogout={handleLogout}
           onNavigateTab={setActiveTab}
         />
+
+        {/* Top Cashier Desks Strip (Always Visible on Mobile & Desktop) */}
+        <div
+          style={{
+            background: '#ffffff',
+            borderBottom: '1px solid #e2e8f0',
+            padding: '10px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            overflowX: 'auto',
+            whiteSpace: 'nowrap',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setActiveTab('overview')}
+            style={{
+              padding: '7px 14px',
+              borderRadius: '8px',
+              border: activeTab === 'overview' ? '1.5px solid #0f172a' : '1px solid #e2e8f0',
+              background: activeTab === 'overview' ? '#0f172a' : '#ffffff',
+              color: activeTab === 'overview' ? '#ffffff' : '#334155',
+              fontSize: '12px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <i className="fa-solid fa-table-cells-large"></i>
+            <span>Dashboard</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('deposit_requests')}
+            style={{
+              padding: '7px 16px',
+              borderRadius: '8px',
+              border: activeTab === 'deposit_requests' ? '1.5px solid #d97706' : '1px solid #fde68a',
+              background: activeTab === 'deposit_requests' ? '#f59e0b' : '#fffbeb',
+              color: activeTab === 'deposit_requests' ? '#000000' : '#92400e',
+              fontSize: '12px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: activeTab === 'deposit_requests' ? '0 2px 8px rgba(245, 158, 11, 0.35)' : 'none'
+            }}
+          >
+            <span>📥</span>
+            <span>Deposit Desk & History</span>
+            {pendingRequestsCount > 0 && (
+              <span
+                style={{
+                  background: '#ef4444',
+                  color: '#ffffff',
+                  borderRadius: '9999px',
+                  padding: '1px 6px',
+                  fontSize: '10px',
+                  fontWeight: 900
+                }}
+              >
+                {pendingRequestsCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('withdrawal_requests')}
+            style={{
+              padding: '7px 16px',
+              borderRadius: '8px',
+              border: activeTab === 'withdrawal_requests' ? '1.5px solid #7c3aed' : '1px solid #ddd6fe',
+              background: activeTab === 'withdrawal_requests' ? '#8b5cf6' : '#f5f3ff',
+              color: activeTab === 'withdrawal_requests' ? '#ffffff' : '#5b21b6',
+              fontSize: '12px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: activeTab === 'withdrawal_requests' ? '0 2px 8px rgba(139, 92, 246, 0.35)' : 'none'
+            }}
+          >
+            <span>📤</span>
+            <span>Withdrawal Desk & History</span>
+            {pendingWithdrawalsCount > 0 && (
+              <span
+                style={{
+                  background: '#ef4444',
+                  color: '#ffffff',
+                  borderRadius: '9999px',
+                  padding: '1px 6px',
+                  fontSize: '10px',
+                  fontWeight: 900
+                }}
+              >
+                {pendingWithdrawalsCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('players')}
+            style={{
+              padding: '7px 14px',
+              borderRadius: '8px',
+              border: activeTab === 'players' ? '1.5px solid #0f172a' : '1px solid #e2e8f0',
+              background: activeTab === 'players' ? '#0f172a' : '#ffffff',
+              color: activeTab === 'players' ? '#ffffff' : '#334155',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <i className="fa-solid fa-users"></i>
+            <span>My Players</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('cash_out')}
+            style={{
+              padding: '7px 14px',
+              borderRadius: '8px',
+              border: activeTab === 'cash_out' ? '1.5px solid #2563eb' : '1px solid #bfdbfe',
+              background: activeTab === 'cash_out' ? '#eff6ff' : '#ffffff',
+              color: activeTab === 'cash_out' ? '#1d4ed8' : '#334155',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <i className="fa-solid fa-coins" style={{ color: '#3b82f6' }}></i>
+            <span>Commission Desk</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('profile')}
+            style={{
+              padding: '7px 14px',
+              borderRadius: '8px',
+              border: activeTab === 'profile' ? '1.5px solid #0f172a' : '1px solid #e2e8f0',
+              background: activeTab === 'profile' ? '#0f172a' : '#ffffff',
+              color: activeTab === 'profile' ? '#ffffff' : '#334155',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <i className="fa-solid fa-gear"></i>
+            <span>Payment Rails & Settings</span>
+          </button>
+        </div>
 
         {/* Page Content Container */}
         <main className="sonic-agent-page-content" style={{ backgroundColor: '#f4f6f8' }}>

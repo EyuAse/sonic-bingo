@@ -26,19 +26,46 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
   const [realTransactions, setRealTransactions] = useState<any[]>([]);
   const [loadingFeeds, setLoadingFeeds] = useState(false);
 
-  // Fetch real database records for players and transactions
+  // Authoritative SQL Timeframe Analytics for Cashier Operations
+  const [depositAnalytics, setDepositAnalytics] = useState({
+    today: { amount: 0, count: 0, commission: 0 },
+    week: { amount: 0, count: 0, commission: 0 },
+    month: { amount: 0, count: 0, commission: 0 },
+    allTime: { amount: 0, count: 0, commission: 0 }
+  });
+  const [pendingDepositCount, setPendingDepositCount] = useState<number>(0);
+
+  const [withdrawalAnalytics, setWithdrawalAnalytics] = useState({
+    today: { amount: 0, count: 0, commission: 0 },
+    week: { amount: 0, count: 0, commission: 0 },
+    month: { amount: 0, count: 0, commission: 0 },
+    allTime: { amount: 0, count: 0, commission: 0 }
+  });
+  const [pendingWithdrawalCount, setPendingWithdrawalCount] = useState<number>(0);
+
+  // Fetch real database records for players, transactions, deposits & withdrawals
   const fetchFeeds = async () => {
     try {
       setLoadingFeeds(true);
-      const [pRes, tRes] = await Promise.all([
+      const [pRes, tRes, depRes, withRes] = await Promise.all([
         apiClient.agent.getPlayers(),
-        apiClient.agent.getTransactions()
+        apiClient.agent.getTransactions(),
+        apiClient.agent.getDepositRequests('pending').catch(() => null),
+        apiClient.agent.getWithdrawalRequests().catch(() => null)
       ]);
-      if (pRes.success && pRes.players) {
+      if (pRes?.success && pRes.players) {
         setRealPlayers(pRes.players);
       }
-      if (tRes.success && tRes.transactions) {
+      if (tRes?.success && tRes.transactions) {
         setRealTransactions(tRes.transactions);
+      }
+      if (depRes?.success) {
+        if (depRes.analytics) setDepositAnalytics(depRes.analytics);
+        if (typeof depRes.pendingCount === 'number') setPendingDepositCount(depRes.pendingCount);
+      }
+      if (withRes?.success) {
+        if (withRes.analytics) setWithdrawalAnalytics(withRes.analytics);
+        if (typeof withRes.pendingCount === 'number') setPendingWithdrawalCount(withRes.pendingCount);
       }
     } catch (err) {
       console.warn('Dashboard feeds error:', err);
@@ -274,7 +301,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
             </div>
 
             {/* Quick Actions */}
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
               <button
                 type="button"
                 onClick={() => onNavigateTab('deposit_requests')}
@@ -282,35 +309,86 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                   background: '#ffffff',
                   border: '1px solid #cbd5e1',
                   color: '#0f172a',
-                  padding: '10px 16px',
+                  padding: '9px 14px',
                   borderRadius: '12px',
                   fontSize: '13px',
                   fontWeight: 800,
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '6px',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
                 }}
               >
-                <i className="fa-solid fa-inbox" style={{ color: '#f59e0b' }}></i>
-                <span>Deposit Requests</span>
+                <span>📥</span>
+                <span>Deposit Desk</span>
+                {pendingDepositCount > 0 && (
+                  <span
+                    style={{
+                      background: '#ef4444',
+                      color: '#ffffff',
+                      borderRadius: '9999px',
+                      padding: '1px 6px',
+                      fontSize: '10px',
+                      fontWeight: 900
+                    }}
+                  >
+                    {pendingDepositCount}
+                  </span>
+                )}
               </button>
+
+              <button
+                type="button"
+                onClick={() => onNavigateTab('withdrawal_requests')}
+                style={{
+                  background: '#ffffff',
+                  border: '1px solid #cbd5e1',
+                  color: '#0f172a',
+                  padding: '9px 14px',
+                  borderRadius: '12px',
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
+                }}
+              >
+                <span>📤</span>
+                <span>Withdrawal Desk</span>
+                {pendingWithdrawalCount > 0 && (
+                  <span
+                    style={{
+                      background: '#ef4444',
+                      color: '#ffffff',
+                      borderRadius: '9999px',
+                      padding: '1px 6px',
+                      fontSize: '10px',
+                      fontWeight: 900
+                    }}
+                  >
+                    {pendingWithdrawalCount}
+                  </span>
+                )}
+              </button>
+
               <button
                 type="button"
                 onClick={() => onNavigateTab('recharge')}
                 style={{
                   background: isLowBalance ? '#dc2626' : '#f59e0b',
                   border: 'none',
-                  color: '#ffffff',
-                  padding: '10px 18px',
+                  color: isLowBalance ? '#ffffff' : '#000000',
+                  padding: '9px 16px',
                   borderRadius: '12px',
                   fontSize: '13px',
                   fontWeight: 900,
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '6px',
                   boxShadow: isLowBalance ? '0 4px 12px rgba(220, 38, 38, 0.3)' : '0 4px 12px rgba(245, 158, 11, 0.3)'
                 }}
               >
@@ -498,6 +576,288 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                 borderRadius: '9999px'
               }}
             />
+          </div>
+        </div>
+      </div>
+
+      {/* ===================================================================
+          2.5. EXECUTIVE CASHIER DESKS & TIMEFRAME PERFORMANCE HUB (PHASE 5 & 6)
+          =================================================================== */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '18px' }}>🏦</span>
+              <h2 style={{ fontSize: '18px', fontWeight: 900, color: '#0f172a', margin: 0 }}>
+                Cashier Desks & Timeframe Performance Hub
+              </h2>
+            </div>
+            <p style={{ fontSize: '12px', color: '#64748b', margin: '2px 0 0 0' }}>
+              Authoritative Neon DB metrics across Today, This Week, and This Month with 1-click desk access.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: '#10b981', background: '#ecfdf5', padding: '3px 10px', borderRadius: '9999px', border: '1px solid #a7f3d0' }}>
+              🟢 Live Neon DB Aggregates
+            </span>
+          </div>
+        </div>
+
+        {/* Two Rich Interactive Cashier Multi-Rail Desks */}
+        <div className="sonic-dashboard-activity-row">
+          {/* Desk 1: Deposit Cashier Desk (Phase 5) */}
+          <div
+            style={{
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '18px',
+              padding: '20px',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              gap: '16px'
+            }}
+          >
+            <div>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '20px' }}>📥</span>
+                    <h3 style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', margin: 0 }}>
+                      Deposit Cashier Desk
+                    </h3>
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#059669', fontWeight: 800, marginTop: '3px' }}>
+                    +5.00% Instant Cashier Commission
+                  </div>
+                </div>
+
+                {pendingDepositCount > 0 ? (
+                  <span
+                    style={{
+                      background: '#ef4444',
+                      color: '#ffffff',
+                      borderRadius: '9999px',
+                      padding: '3px 10px',
+                      fontSize: '11px',
+                      fontWeight: 900,
+                      boxShadow: '0 2px 6px rgba(239, 68, 68, 0.3)'
+                    }}
+                  >
+                    {pendingDepositCount} Pending Approval
+                  </span>
+                ) : (
+                  <span
+                    style={{
+                      background: '#ecfdf5',
+                      color: '#059669',
+                      border: '1px solid #a7f3d0',
+                      borderRadius: '9999px',
+                      padding: '3px 10px',
+                      fontSize: '11px',
+                      fontWeight: 700
+                    }}
+                  >
+                    ✅ All Settled
+                  </span>
+                )}
+              </div>
+
+              {/* 3-KPI Ribbon */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '10px 12px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+                    💳 Today
+                  </div>
+                  <div style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', marginTop: '2px' }}>
+                    {depositAnalytics.today.amount.toLocaleString()} <span style={{ fontSize: '10px', color: '#64748b' }}>ETB</span>
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#059669', fontWeight: 700, marginTop: '2px' }}>
+                    +{depositAnalytics.today.commission.toFixed(1)} ETB ({depositAnalytics.today.count})
+                  </div>
+                </div>
+
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '10px 12px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+                    📈 This Week
+                  </div>
+                  <div style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', marginTop: '2px' }}>
+                    {depositAnalytics.week.amount.toLocaleString()} <span style={{ fontSize: '10px', color: '#64748b' }}>ETB</span>
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#059669', fontWeight: 700, marginTop: '2px' }}>
+                    +{depositAnalytics.week.commission.toFixed(1)} ETB ({depositAnalytics.week.count})
+                  </div>
+                </div>
+
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '10px 12px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+                    🏆 This Month
+                  </div>
+                  <div style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', marginTop: '2px' }}>
+                    {depositAnalytics.month.amount.toLocaleString()} <span style={{ fontSize: '10px', color: '#64748b' }}>ETB</span>
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#059669', fontWeight: 700, marginTop: '2px' }}>
+                    +{depositAnalytics.month.commission.toFixed(1)} ETB ({depositAnalytics.month.count})
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Jump Button */}
+            <button
+              type="button"
+              onClick={() => onNavigateTab('deposit_requests')}
+              style={{
+                width: '100%',
+                background: '#fffbeb',
+                border: '1.5px solid #fde68a',
+                color: '#92400e',
+                borderRadius: '12px',
+                padding: '11px',
+                fontSize: '13px',
+                fontWeight: 900,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                boxShadow: '0 2px 6px rgba(245, 158, 11, 0.15)',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <span>📥 Open Deposit Desk & Settled History (Phase 5)</span>
+              <span>→</span>
+            </button>
+          </div>
+
+          {/* Desk 2: Withdrawal Cashier Desk (Phase 6) */}
+          <div
+            style={{
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '18px',
+              padding: '20px',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              gap: '16px'
+            }}
+          >
+            <div>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '20px' }}>📤</span>
+                    <h3 style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', margin: 0 }}>
+                      Withdrawal Cashier Desk
+                    </h3>
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#7c3aed', fontWeight: 800, marginTop: '3px' }}>
+                    +2.00% Instant Cashout Incentive Fee
+                  </div>
+                </div>
+
+                {pendingWithdrawalCount > 0 ? (
+                  <span
+                    style={{
+                      background: '#ef4444',
+                      color: '#ffffff',
+                      borderRadius: '9999px',
+                      padding: '3px 10px',
+                      fontSize: '11px',
+                      fontWeight: 900,
+                      boxShadow: '0 2px 6px rgba(239, 68, 68, 0.3)'
+                    }}
+                  >
+                    {pendingWithdrawalCount} Payouts Pending
+                  </span>
+                ) : (
+                  <span
+                    style={{
+                      background: '#ecfdf5',
+                      color: '#059669',
+                      border: '1px solid #a7f3d0',
+                      borderRadius: '9999px',
+                      padding: '3px 10px',
+                      fontSize: '11px',
+                      fontWeight: 700
+                    }}
+                  >
+                    ✅ All Paid Out
+                  </span>
+                )}
+              </div>
+
+              {/* 3-KPI Ribbon */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '10px 12px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+                    💸 Today
+                  </div>
+                  <div style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', marginTop: '2px' }}>
+                    {withdrawalAnalytics.today.amount.toLocaleString()} <span style={{ fontSize: '10px', color: '#64748b' }}>ETB</span>
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#7c3aed', fontWeight: 700, marginTop: '2px' }}>
+                    +{withdrawalAnalytics.today.commission.toFixed(1)} ETB ({withdrawalAnalytics.today.count})
+                  </div>
+                </div>
+
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '10px 12px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+                    📅 This Week
+                  </div>
+                  <div style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', marginTop: '2px' }}>
+                    {withdrawalAnalytics.week.amount.toLocaleString()} <span style={{ fontSize: '10px', color: '#64748b' }}>ETB</span>
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#7c3aed', fontWeight: 700, marginTop: '2px' }}>
+                    +{withdrawalAnalytics.week.commission.toFixed(1)} ETB ({withdrawalAnalytics.week.count})
+                  </div>
+                </div>
+
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '10px 12px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+                    🗓️ This Month
+                  </div>
+                  <div style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', marginTop: '2px' }}>
+                    {withdrawalAnalytics.month.amount.toLocaleString()} <span style={{ fontSize: '10px', color: '#64748b' }}>ETB</span>
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#7c3aed', fontWeight: 700, marginTop: '2px' }}>
+                    +{withdrawalAnalytics.month.commission.toFixed(1)} ETB ({withdrawalAnalytics.month.count})
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Jump Button */}
+            <button
+              type="button"
+              onClick={() => onNavigateTab('withdrawal_requests')}
+              style={{
+                width: '100%',
+                background: '#f5f3ff',
+                border: '1.5px solid #ddd6fe',
+                color: '#5b21b6',
+                borderRadius: '12px',
+                padding: '11px',
+                fontSize: '13px',
+                fontWeight: 900,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                boxShadow: '0 2px 6px rgba(139, 92, 246, 0.15)',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <span>📤 Open Withdrawal Desk & Settled History (Phase 6)</span>
+              <span>→</span>
+            </button>
           </div>
         </div>
       </div>

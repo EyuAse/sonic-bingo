@@ -5,6 +5,7 @@ interface AgentHeaderProps {
   activeTab: AgentDeskTab;
   agentProfile: any;
   pendingCount?: number;
+  pendingWithdrawalsCount?: number;
   openMobile: () => void;
   onPlayBingo: () => void;
   onLogout: () => void;
@@ -15,6 +16,7 @@ export const AgentHeader: React.FC<AgentHeaderProps> = ({
   activeTab,
   agentProfile,
   pendingCount = 0,
+  pendingWithdrawalsCount = 0,
   openMobile,
   onNavigateTab
 }) => {
@@ -38,7 +40,7 @@ export const AgentHeader: React.FC<AgentHeaderProps> = ({
       }}
     >
       {/* Left: Mobile Drawer Trigger + Search Bar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, maxWidth: '380px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, maxWidth: '320px' }}>
         <button
           type="button"
           className="sonic-mobile-menu-btn"
@@ -96,6 +98,110 @@ export const AgentHeader: React.FC<AgentHeaderProps> = ({
             }}
           />
         </div>
+      </div>
+
+      {/* Center: Direct Cashier Navigation Hub (Always Prominent on Header) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', margin: '0 12px' }}>
+        <button
+          type="button"
+          onClick={() => onNavigateTab?.('overview')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '6px 14px',
+            borderRadius: '9999px',
+            background: activeTab === 'overview' ? '#0f172a' : '#f8fafc',
+            border: activeTab === 'overview' ? '1px solid #0f172a' : '1px solid #e2e8f0',
+            color: activeTab === 'overview' ? '#ffffff' : '#475569',
+            fontSize: '12px',
+            fontWeight: activeTab === 'overview' ? 800 : 600,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease'
+          }}
+          title="Open Dashboard Overview"
+        >
+          <i className="fa-solid fa-table-cells-large" style={{ fontSize: '11px' }}></i>
+          <span>Dashboard</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onNavigateTab?.('deposit_requests')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '6px 14px',
+            borderRadius: '9999px',
+            background: activeTab === 'deposit_requests' ? '#f59e0b' : '#fffbeb',
+            border: activeTab === 'deposit_requests' ? '1.5px solid #d97706' : '1px solid #fde68a',
+            color: activeTab === 'deposit_requests' ? '#000000' : '#92400e',
+            fontSize: '12px',
+            fontWeight: 800,
+            cursor: 'pointer',
+            boxShadow: activeTab === 'deposit_requests' ? '0 2px 10px rgba(245, 158, 11, 0.4)' : 'none',
+            transition: 'all 0.15s ease'
+          }}
+          title="Open Deposit Desk (Verify player deposits & earn +5%)"
+        >
+          <span>📥</span>
+          <span>Deposit Desk</span>
+          {pendingCount > 0 && (
+            <span
+              style={{
+                background: '#ef4444',
+                color: '#ffffff',
+                borderRadius: '9999px',
+                padding: '1px 6px',
+                fontSize: '10px',
+                fontWeight: 900,
+                lineHeight: '13px'
+              }}
+            >
+              {pendingCount}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onNavigateTab?.('withdrawal_requests')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '6px 14px',
+            borderRadius: '9999px',
+            background: activeTab === 'withdrawal_requests' ? '#8b5cf6' : '#f5f3ff',
+            border: activeTab === 'withdrawal_requests' ? '1.5px solid #7c3aed' : '1px solid #ddd6fe',
+            color: activeTab === 'withdrawal_requests' ? '#ffffff' : '#5b21b6',
+            fontSize: '12px',
+            fontWeight: 800,
+            cursor: 'pointer',
+            boxShadow: activeTab === 'withdrawal_requests' ? '0 2px 10px rgba(139, 92, 246, 0.4)' : 'none',
+            transition: 'all 0.15s ease'
+          }}
+          title="Open Withdrawal Desk (Execute payouts & earn +2%)"
+        >
+          <span>📤</span>
+          <span>Withdrawal Desk</span>
+          {pendingWithdrawalsCount > 0 && (
+            <span
+              style={{
+                background: '#ef4444',
+                color: '#ffffff',
+                borderRadius: '9999px',
+                padding: '1px 6px',
+                fontSize: '10px',
+                fontWeight: 900,
+                lineHeight: '13px'
+              }}
+            >
+              {pendingWithdrawalsCount}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Right: Balance Pills + Notifications Bell + Profile Pill matching Reference UI */}
