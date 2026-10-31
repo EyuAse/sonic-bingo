@@ -327,7 +327,7 @@ export const AgentPortalPage: React.FC = () => {
 
   // 4. Authenticated Agent Terminal Layout
   return (
-    <div className="sonic-agent-layout-wrapper" style={{ backgroundColor: '#f4f6f8', minHeight: '100vh', width: '100%' }}>
+    <div className="sonic-agent-layout-wrapper" style={{ backgroundColor: '#f4f6f8', minHeight: '100vh', width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'flex-start' }}>
       {/* A. Collapsible Responsive Sidebar */}
       <AgentSidebar
         activeTab={activeTab}
@@ -438,6 +438,7 @@ export const AgentPortalPage: React.FC = () => {
               profile={profile}
               showToast={showToast}
               onRefreshProfile={loadAgentData}
+              onNavigateTab={setActiveTab}
             />
           )}
         </main>

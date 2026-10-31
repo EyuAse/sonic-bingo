@@ -1304,6 +1304,19 @@ export const apiClient = {
         amount: number;
         newCommissionBalance: number;
       }>(res);
+    },
+
+    async updatePin(payload: { currentPin: string; newPin: string }) {
+      const res = await fetch(`${API_BASE}/agent/update-pin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAgentAuthHeader() },
+        body: JSON.stringify(payload)
+      });
+      return handleResponse<{
+        success: boolean;
+        message?: string;
+        error?: string;
+      }>(res);
     }
   }
 };

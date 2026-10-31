@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { apiClient } from '../../services/apiClient.ts';
 import { TelebirrLogo, CBELogo, MpesaLogo } from '../wallet/PaymentLogos.tsx';
-import { TELEBIRR_RECEIVERS, CBE_BIRR_RECEIVER } from '../../config/paymentReceivers.ts';
+import { TELEBIRR_RECEIVERS } from '../../config/paymentReceivers.ts';
+import { compressImage, formatFileSize, CompressedImageResult } from '../../utils/imageCompressor.ts';
 
 interface AgentRechargeDeskProps {
   onRechargeSubmitted: () => void;
@@ -13,11 +14,18 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
   showToast
 }) => {
   const [amount, setAmount] = useState<number>(5000);
-  const [paymentMethod, setPaymentMethod] = useState<'Telebirr' | 'CBE' | 'CBEBirr' | 'M-Pesa'>('Telebirr');
+  const [paymentMethod, setPaymentMethod] = useState<'Telebirr' | 'CBE' | 'M-Pesa'>('Telebirr');
   const [transactionCode, setTransactionCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [recharges, setRecharges] = useState<any[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  // Receipt Screenshot Attachment State (Client-Side Compressed)
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [compressionStats, setCompressionStats] = useState<CompressedImageResult | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [viewingReceiptModal, setViewingReceiptModal] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchHistory = async () => {
     try {
@@ -44,6 +52,49 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
     showToast(`📋 Copied ${label}: ${text}`);
   };
 
+  const handleProcessFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      showToast('⚠️ Please upload an image file (PNG, JPG, or WEBP).');
+      return;
+    }
+    try {
+      const result = await compressImage(file, 1200, 0.75);
+      setReceiptPreview(result.base64);
+      setCompressionStats(result);
+      showToast(`📸 Receipt compressed: ${formatFileSize(result.originalSize)} ➔ ${formatFileSize(result.compressedSize)} (${result.savingsPercent}% saved)`);
+    } catch (err: any) {
+      showToast(`❌ Failed to process image: ${err.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleProcessFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleProcessFile(file);
+  };
+
+  const handleRemoveReceipt = () => {
+    setReceiptPreview(null);
+    setCompressionStats(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleSubmitRecharge = async (e: React.FormEvent) => {
     e.preventDefault();
     if (amount < 1000) {
@@ -59,13 +110,17 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
       setIsSubmitting(true);
       const res = await apiClient.agent.requestRecharge({
         amount,
-        paymentMethod: paymentMethod === 'CBEBirr' ? 'CBE' : paymentMethod,
-        transactionCode: transactionCode.trim().toUpperCase()
+        paymentMethod,
+        transactionCode: transactionCode.trim().toUpperCase(),
+        receiptImage: receiptPreview || undefined
       });
 
       if (res.success) {
         showToast('🎉 Recharge request submitted! Operations team will verify and credit your float.');
         setTransactionCode('');
+        setReceiptPreview(null);
+        setCompressionStats(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
         fetchHistory();
         onRechargeSubmitted();
       }
@@ -78,7 +133,7 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
 
   const quickAmounts = [1000, 2000, 5000, 10000, 20000, 50000];
 
-  // Official Sonic deposit accounts configuration
+  // Official Sonic deposit accounts configuration (Strictly Telebirr, CBE Bank, M-Pesa)
   const officialAccounts = [
     {
       id: 'telebirr',
@@ -107,17 +162,17 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
       logo: <CBELogo size={28} />
     },
     {
-      id: 'cbebirr',
-      rail: 'CBEBirr',
-      name: CBE_BIRR_RECEIVER.accountName || 'Yenegeta Atalay',
-      number: CBE_BIRR_RECEIVER.accountNumber || '0998983344',
-      formatted: CBE_BIRR_RECEIVER.formattedNumber || '09 98 98 33 44',
-      title: 'CBE BIRR MOBILE WALLET',
-      badge: '📱 Mobile Banking',
-      color: '#9333ea',
-      bg: 'rgba(147, 51, 234, 0.05)',
-      border: 'rgba(147, 51, 234, 0.25)',
-      logo: <CBELogo size={28} />
+      id: 'mpesa',
+      rail: 'M-Pesa',
+      name: 'Sonic Gaming Operations',
+      number: '0712345678',
+      formatted: '07 12 34 56 78',
+      title: 'SAFARICOM M-PESA',
+      badge: '📲 Instant Till / Paybill',
+      color: '#e11d48',
+      bg: 'rgba(225, 29, 72, 0.05)',
+      border: 'rgba(225, 29, 72, 0.25)',
+      logo: <MpesaLogo size={28} />
     }
   ];
 
@@ -192,13 +247,13 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
                 <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 700 }}>🟢 Verified Direct Rails</span>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                 {/* Rail 1: Telebirr */}
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('Telebirr')}
                   style={{
-                    padding: '12px',
+                    padding: '12px 10px',
                     borderRadius: '12px',
                     border: paymentMethod === 'Telebirr' ? '2px solid #0284c7' : '1px solid #e2e8f0',
                     background: paymentMethod === 'Telebirr' ? 'rgba(2, 132, 199, 0.08)' : '#f8fafc',
@@ -222,7 +277,7 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
                   type="button"
                   onClick={() => setPaymentMethod('CBE')}
                   style={{
-                    padding: '12px',
+                    padding: '12px 10px',
                     borderRadius: '12px',
                     border: paymentMethod === 'CBE' ? '2px solid #b45309' : '1px solid #e2e8f0',
                     background: paymentMethod === 'CBE' ? 'rgba(245, 158, 11, 0.08)' : '#f8fafc',
@@ -241,39 +296,15 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
                   </div>
                 </button>
 
-                {/* Rail 3: CBE Birr */}
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('CBEBirr')}
-                  style={{
-                    padding: '12px',
-                    borderRadius: '12px',
-                    border: paymentMethod === 'CBEBirr' ? '2px solid #9333ea' : '1px solid #e2e8f0',
-                    background: paymentMethod === 'CBEBirr' ? 'rgba(147, 51, 234, 0.08)' : '#f8fafc',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    textAlign: 'left',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <CBELogo size={26} />
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: '13px', color: '#0f172a' }}>CBE Birr</div>
-                    <div style={{ fontSize: '10px', color: '#9333ea', fontWeight: 700 }}>Mobile Wallet</div>
-                  </div>
-                </button>
-
-                {/* Rail 4: M-Pesa */}
+                {/* Rail 3: Safaricom M-Pesa */}
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('M-Pesa')}
                   style={{
-                    padding: '12px',
+                    padding: '12px 10px',
                     borderRadius: '12px',
-                    border: paymentMethod === 'M-Pesa' ? '2px solid #dc2626' : '1px solid #e2e8f0',
-                    background: paymentMethod === 'M-Pesa' ? 'rgba(220, 38, 38, 0.08)' : '#f8fafc',
+                    border: paymentMethod === 'M-Pesa' ? '2px solid #e11d48' : '1px solid #e2e8f0',
+                    background: paymentMethod === 'M-Pesa' ? 'rgba(225, 29, 72, 0.08)' : '#f8fafc',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
@@ -285,7 +316,7 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
                   <MpesaLogo size={26} />
                   <div>
                     <div style={{ fontWeight: 800, fontSize: '13px', color: '#0f172a' }}>M-Pesa</div>
-                    <div style={{ fontSize: '10px', color: '#dc2626', fontWeight: 700 }}>Safaricom</div>
+                    <div style={{ fontSize: '10px', color: '#e11d48', fontWeight: 700 }}>Safaricom</div>
                   </div>
                 </button>
               </div>
@@ -378,6 +409,136 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
                   boxSizing: 'border-box'
                 }}
               />
+            </div>
+
+            {/* Step 4: Receipt Screenshot (Compressed with 98%+ Bandwidth Optimization) */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <label style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#0f172a', color: '#ffffff', fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>4</span>
+                  <span>Attach Transfer Receipt Screenshot</span>
+                </label>
+                <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 700 }}>
+                  ⚡ Auto-Compressed (Zero Bandwidth)
+                </span>
+              </div>
+
+              {!receiptPreview ? (
+                /* Dropzone */
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    border: isDragging ? '2px dashed #f59e0b' : '2px dashed #cbd5e1',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    textAlign: 'center',
+                    background: isDragging ? '#fffbeb' : '#f8fafc',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    style={{ display: 'none' }}
+                  />
+                  <div style={{ fontSize: '28px', marginBottom: '6px', color: '#94a3b8' }}>
+                    <i className="fa-solid fa-cloud-arrow-up"></i>
+                  </div>
+                  <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a' }}>
+                    Click or drag & drop transfer receipt screenshot
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+                    Supports PNG, JPG, WEBP • Automatically downscaled & optimized for instant upload
+                  </div>
+                </div>
+              ) : (
+                /* Uploaded Preview Card */
+                <div
+                  style={{
+                    border: '1.5px solid #10b981',
+                    borderRadius: '12px',
+                    padding: '12px 14px',
+                    background: '#f0fdf4',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <img
+                      src={receiptPreview}
+                      alt="Receipt preview"
+                      style={{
+                        width: '52px',
+                        height: '52px',
+                        objectFit: 'cover',
+                        borderRadius: '8px',
+                        border: '1px solid #bbf7d0',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => setViewingReceiptModal(receiptPreview)}
+                      title="Click to zoom preview"
+                    />
+                    <div>
+                      <div style={{ fontSize: '12px', fontWeight: 800, color: '#065f46', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>✓ Receipt Attached & Compressed</span>
+                        {compressionStats && (
+                          <span style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #86efac', padding: '1px 6px', borderRadius: '9999px', fontSize: '10px' }}>
+                            -{compressionStats.savingsPercent}% saved
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#166534', marginTop: '2px' }}>
+                        {compressionStats
+                          ? `${formatFileSize(compressionStats.originalSize)} ➔ ${formatFileSize(compressionStats.compressedSize)} (${compressionStats.width}×${compressionStats.height}px)`
+                          : 'Optimized Image'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      onClick={() => setViewingReceiptModal(receiptPreview)}
+                      style={{
+                        background: '#ffffff',
+                        border: '1px solid #bbf7d0',
+                        color: '#065f46',
+                        padding: '6px 10px',
+                        borderRadius: '8px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <i className="fa-solid fa-magnifying-glass-plus"></i> View
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRemoveReceipt}
+                      style={{
+                        background: '#fee2e2',
+                        border: '1px solid #fca5a5',
+                        color: '#b91c1c',
+                        padding: '6px 10px',
+                        borderRadius: '8px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <i className="fa-solid fa-trash-can"></i> Remove
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Submit Button */}
@@ -577,6 +738,7 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
                   <th style={{ padding: '12px 20px', fontWeight: 700 }}>Amount</th>
                   <th style={{ padding: '12px 20px', fontWeight: 700 }}>Payment Rail</th>
                   <th style={{ padding: '12px 20px', fontWeight: 700 }}>Transaction Code</th>
+                  <th style={{ padding: '12px 20px', fontWeight: 700 }}>Receipt Screenshot</th>
                   <th style={{ padding: '12px 20px', fontWeight: 700 }}>Submitted At</th>
                 </tr>
               </thead>
@@ -615,6 +777,33 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
                     <td style={{ padding: '12px 20px', fontFamily: 'monospace', color: '#0f172a' }}>
                       {r.transaction_code}
                     </td>
+                    <td style={{ padding: '12px 20px' }}>
+                      {r.receipt_image ? (
+                        <button
+                          type="button"
+                          onClick={() => setViewingReceiptModal(r.receipt_image)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: '#eff6ff',
+                            border: '1px solid #bfdbfe',
+                            color: '#1d4ed8',
+                            padding: '4px 10px',
+                            borderRadius: '8px',
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            cursor: 'pointer'
+                          }}
+                          title="Click to view transfer receipt screenshot"
+                        >
+                          <i className="fa-solid fa-image"></i>
+                          <span>View Receipt</span>
+                        </button>
+                      ) : (
+                        <span style={{ color: '#94a3b8', fontSize: '12px' }}>—</span>
+                      )}
+                    </td>
                     <td style={{ padding: '12px 20px', color: '#94a3b8', fontSize: '12px' }}>
                       {new Date(r.created_at).toLocaleString()}
                     </td>
@@ -625,6 +814,98 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
           </div>
         )}
       </div>
+
+      {/* Lightbox Modal for Full-Size Receipt */}
+      {viewingReceiptModal && (
+        <div
+          onClick={() => setViewingReceiptModal(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#ffffff',
+              borderRadius: '20px',
+              padding: '24px',
+              maxWidth: '560px',
+              width: '100%',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+              position: 'relative'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '20px' }}>🧾</span>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 900, color: '#0f172a' }}>
+                  Transfer Receipt Screenshot
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewingReceiptModal(null)}
+                style={{
+                  background: '#f1f5f9',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#475569',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ flex: 1, overflow: 'auto', display: 'flex', justifyContent: 'center', background: '#0f172a', borderRadius: '12px', padding: '10px' }}>
+              <img
+                src={viewingReceiptModal}
+                alt="Full receipt screenshot"
+                style={{ maxWidth: '100%', maxHeight: '65vh', objectFit: 'contain', borderRadius: '8px' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
+              <span style={{ fontSize: '11px', color: '#64748b' }}>
+                🔒 Verified Escrow Settlement Record
+              </span>
+              <button
+                type="button"
+                onClick={() => setViewingReceiptModal(null)}
+                style={{
+                  background: '#0f172a',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  cursor: 'pointer'
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

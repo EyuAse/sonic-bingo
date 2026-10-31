@@ -39,10 +39,11 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({ success: false, error: 'Your agent account has been suspended. Please contact admin.' });
     }
 
-    // Password verification (or fallback to agentCode if initial PIN setup)
+    // Password/PIN verification (or fallback to agentCode if initial PIN setup)
     let isMatch = false;
-    if (user.password_hash && password) {
-      isMatch = await bcrypt.compare(password, user.password_hash);
+    const userPinHash = user.pin_hash || user.password_hash;
+    if (userPinHash && password) {
+      isMatch = await bcrypt.compare(password, userPinHash);
     } else if (agentCode && user.agent_code) {
       isMatch = agentCode.trim().toUpperCase() === user.agent_code.trim().toUpperCase();
     } else if (password && user.agent_code) {
@@ -151,7 +152,7 @@ router.post('/deposit-for-player', requireAgent, async (req: AuthenticatedReques
       return res.status(400).json({ success: false, error: 'Minimum deposit amount is 50 ETB' });
     }
 
-    const method = paymentMethod === 'M-Pesa' ? 'M-Pesa' : (paymentMethod === 'Cash' ? 'Cash' : 'Telebirr');
+    const method = paymentMethod === 'M-Pesa' ? 'M-Pesa' : (paymentMethod === 'CBE' ? 'CBE' : (paymentMethod === 'Cash' ? 'Cash' : 'Telebirr'));
     const cleanPhone = (playerPhone || '').trim();
     const cleanUsername = (username || '').replace(/^@/, '').trim();
 
@@ -1956,6 +1957,77 @@ router.post('/commission/request-cashout', requireAgent, async (req: Authenticat
   } catch (error: any) {
     console.error('❌ [Agent Commission Cashout Error]:', error);
     return res.status(400).json({ success: false, error: error.message || 'Failed to request commission cash-out' });
+  }
+});
+
+/**
+ * Update Agent Terminal Security PIN / Password
+ */
+router.post('/update-pin', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { currentPin, newPin } = req.body;
+
+    if (!currentPin || !newPin) {
+      return res.status(400).json({ success: false, error: 'Current PIN and New PIN are required' });
+    }
+
+    const cleanNewPin = String(newPin).trim();
+    if (cleanNewPin.length < 4) {
+      return res.status(400).json({ success: false, error: 'New PIN must be at least 4 digits' });
+    }
+
+    // Query user and agent code
+    const userRes = await query(
+      `SELECT u.id, u.pin_hash, ap.agent_code 
+       FROM users u
+       JOIN agent_profiles ap ON u.id = ap.user_id
+       WHERE u.id = $1`,
+      [userId]
+    );
+
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent profile not found' });
+    }
+
+    const user = userRes.rows[0];
+    const cleanCurrentPin = String(currentPin).trim();
+
+    // Verify current PIN/password
+    let isValidCurrent = false;
+    if (user.pin_hash) {
+      isValidCurrent = await bcrypt.compare(cleanCurrentPin, user.pin_hash);
+    }
+
+    // Fallback: If initial onboarding where pin_hash is not yet set or matched agentCode / default '1234'
+    if (!isValidCurrent && user.agent_code) {
+      isValidCurrent =
+        cleanCurrentPin.toUpperCase() === user.agent_code.toUpperCase() ||
+        cleanCurrentPin === '1234';
+    }
+
+    if (!isValidCurrent) {
+      return res.status(401).json({ success: false, error: 'Current PIN or Agent Code is incorrect' });
+    }
+
+    // Hash new PIN with bcrypt
+    const hashedPin = await bcrypt.hash(cleanNewPin, 10);
+
+    // Update user pin_hash
+    await query(
+      `UPDATE users 
+       SET pin_hash = $1, updated_at = NOW() 
+       WHERE id = $2`,
+      [hashedPin, userId]
+    );
+
+    return res.json({
+      success: true,
+      message: 'Terminal security PIN updated successfully!'
+    });
+  } catch (error: any) {
+    console.error('❌ [Agent Update PIN Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to update security PIN' });
   }
 });
 

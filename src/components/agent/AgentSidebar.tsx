@@ -69,6 +69,13 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
       <aside
         className={`sonic-agent-sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}
         style={{
+          position: 'sticky',
+          top: 0,
+          height: '100vh',
+          maxHeight: '100vh',
+          overflowY: 'auto',
+          flexShrink: 0,
+          zIndex: 40,
           background: '#0a0d14',
           borderRight: '1px solid rgba(255, 255, 255, 0.08)',
           boxShadow: '4px 0 24px rgba(0, 0, 0, 0.4)'
