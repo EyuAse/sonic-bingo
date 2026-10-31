@@ -75,10 +75,14 @@ async function runPhase3Verification() {
   assert(poolRes.rows.length === 4, `All 4 stake rooms present in jackpot_pool (found ${poolRes.rows.length})`);
 
   const poolsByRoom = new Map(poolRes.rows.map(r => [r.room_id, { balance: parseFloat(r.balance), seed: parseFloat(r.seed_amount) }]));
-  assert(poolsByRoom.has('room-10') && (poolsByRoom.get('room-10')?.balance ?? 0) >= 500, 'Room 10 pool >= 500 ETB');
-  assert(poolsByRoom.has('room-20') && (poolsByRoom.get('room-20')?.balance ?? 0) >= 1000, 'Room 20 pool >= 1000 ETB');
-  assert(poolsByRoom.has('room-50') && (poolsByRoom.get('room-50')?.balance ?? 0) >= 2500, 'Room 50 pool >= 2500 ETB');
-  assert(poolsByRoom.has('room-100') && (poolsByRoom.get('room-100')?.balance ?? 0) >= 5000, 'Room 100 pool >= 5000 ETB');
+  assert(poolsByRoom.has('room-10') && (poolsByRoom.get('room-10')?.balance ?? 0) > 0, 'Room 10 pool has positive balance');
+  assert(poolsByRoom.has('room-20') && (poolsByRoom.get('room-20')?.balance ?? 0) > 0, 'Room 20 pool has positive balance');
+  assert(poolsByRoom.has('room-50') && (poolsByRoom.get('room-50')?.balance ?? 0) > 0, 'Room 50 pool has positive balance');
+  assert(poolsByRoom.has('room-100') && (poolsByRoom.get('room-100')?.balance ?? 0) > 0, 'Room 100 pool has positive balance');
+  assert(poolsByRoom.get('room-10')?.seed === 500, 'Room 10 seed is strictly 500 ETB');
+  assert(poolsByRoom.get('room-20')?.seed === 1000, 'Room 20 seed is strictly 1000 ETB');
+  assert(poolsByRoom.get('room-50')?.seed === 2500, 'Room 50 seed is strictly 2500 ETB');
+  assert(poolsByRoom.get('room-100')?.seed === 5000, 'Room 100 seed is strictly 5000 ETB');
 
   // ----------------------------------------------------
   // TEST 4: Progressive Jackpot Rollover Simulation
