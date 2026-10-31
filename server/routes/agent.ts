@@ -528,10 +528,10 @@ router.get('/search-player', requireAgent, async (req: AuthenticatedRequest, res
 
     const searchParam = `%${rawQuery}%`;
     const searchRes = await query(
-      `SELECT u.id, u.full_name, u.phone, u.username, w.balance
+      `SELECT u.id, u.full_name, u.phone, u.telegram_username as username, w.balance
        FROM users u
        LEFT JOIN wallets w ON u.id = w.user_id
-       WHERE (u.phone ILIKE $1 OR u.full_name ILIKE $1 OR u.username ILIKE $1)
+       WHERE (u.phone ILIKE $1 OR u.full_name ILIKE $1 OR u.telegram_username ILIKE $1)
        ORDER BY u.created_at DESC
        LIMIT 10`,
       [searchParam]
@@ -778,7 +778,7 @@ router.get('/players', requireAgent, async (req: AuthenticatedRequest, res: Resp
     const agentId = agentRes.rows[0].id;
 
     const playersRes = await query(
-      `SELECT u.id, u.full_name, u.phone, u.username, u.has_deposited, u.created_at,
+      `SELECT u.id, u.full_name, u.phone, u.telegram_username as username, u.has_deposited, u.created_at,
               COALESCE(w.balance, 0) as balance,
               COALESCE((SELECT SUM(amount) FROM agent_player_deposits WHERE player_user_id = u.id AND agent_id = $1), 0) as total_deposited_by_agent
        FROM users u
