@@ -58,8 +58,30 @@ export const CurrentCallBanner: React.FC = () => {
             ? (lang === 'am' ? 'የተጠራ ቁጥር' : 'Current Call')
             : roundPhase === 'winner'
             ? (lang === 'am' ? 'የአሸናፊ ማስታወቂያ 🏆' : 'Round Concluded 🏆')
-            : (lang === 'am' ? 'የተጫዋች ጥሪ' : 'Lobby')}
+            : (lang === 'am' ? '🚀 ሎቢ' : '🚀 Lobby')}
         </div>
+
+        {/* Center: In lobby, show Starts in Xs! Get ready! (Matching Image!) */}
+        {roundPhase === 'lobby' && (
+          <div className="compact-call-center-status">
+            <span className="compact-center-primary">
+              {isCountdown
+                ? `🟢 ${lang === 'am' ? `በ ${lobbyCountdown}s ይጀምራል!` : `Starts in ${lobbyCountdown}s!`}`
+                : is1Ready
+                ? `🟡 ${lang === 'am' ? '1/2 ተጫዋች ዝግጁ' : '1/2 Players Ready'}`
+                : isMultipleInRoom
+                ? `👥 ${lang === 'am' ? `${activeUsersCount} ተጫዋቾች አሉ` : `${activeUsersCount} in Room`}`
+                : betAmount === 10
+                ? `👥 ${lang === 'am' ? `${playersCount} ዝግጁ` : `${playersCount} Players Ready`}`
+                : `⏳ ${lang === 'am' ? 'ተጫዋች በመጠበቅ...' : 'Waiting for players...'}`}
+            </span>
+            <span className="compact-center-sub">
+              {isCountdown
+                ? (lang === 'am' ? 'ይዘጋጁ!' : 'Get ready!')
+                : (lang === 'am' ? 'ካርቴላ ይግዙ!' : 'Buy ticket to play!')}
+            </span>
+          </div>
+        )}
 
         <div className="compact-call-badge-wrap">
           {roundPhase === 'winner' ? (
@@ -115,57 +137,31 @@ export const CurrentCallBanner: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Recent Balls Tray / Lobby Matchmaking Guide */}
-      <div className="compact-recent-balls-tray">
-        <div className="compact-recent-balls-inner">
-          {prevTrail.length > 0 ? (
-            prevTrail.map((num, idx) => {
-              const colClass = getColClass(num);
-              const colLetter = getColLetter(num);
-              return (
-                <div key={`${num}-${idx}`} className={`compact-recent-ball col-${colClass}`}>
-                  <span className="recent-ball-col">{colLetter}</span>
-                  <span className="recent-ball-num">{num}</span>
-                </div>
-              );
-            })
-          ) : roundPhase === 'lobby' ? (
-            <div className="compact-recent-matchmaking-note">
-              {isCountdown ? (
-                <div className="matchmaking-guide-lines text-green">
-                  <span className="guide-line-primary">🟢 {lang === 'am' ? `ጨዋታ በ ${lobbyCountdown}s ይጀምራል!` : `Starts in ${lobbyCountdown}s!`}</span>
-                  <span className="guide-line-secondary">{lang === 'am' ? 'ይዘጋጁ!' : 'Get ready!'}</span>
-                </div>
-              ) : is1Ready ? (
-                <div className="matchmaking-guide-lines text-amber">
-                  <span className="guide-line-primary">🟡 {lang === 'am' ? '1 ተጫዋች ዝግጁ' : '1/2 Players Ready'}</span>
-                  <span className="guide-line-secondary">{lang === 'am' ? 'ካርቴላ ይግዙ እና ይጀምሩ!' : 'Buy ticket to start match!'}</span>
-                </div>
-              ) : isMultipleInRoom ? (
-                <div className="matchmaking-guide-lines text-blue">
-                  <span className="guide-line-primary">👥 {lang === 'am' ? `${activeUsersCount} ተጫዋቾች አሉ` : `${activeUsersCount} in Room`}</span>
-                  <span className="guide-line-secondary">{lang === 'am' ? 'ካርቴላ ይግዙ!' : 'Buy ticket to play!'}</span>
-                </div>
-              ) : betAmount === 10 ? (
-                <div className="matchmaking-guide-lines text-amber">
-                  <span className="guide-line-primary">👥 {lang === 'am' ? `${playersCount} ተጫዋቾች ዝግጁ` : `${playersCount} Players Waiting`}</span>
-                  <span className="guide-line-secondary">{lang === 'am' ? 'ካርቴላ ይግዙ እና ይጀምሩ!' : 'Buy ticket to start match!'}</span>
-                </div>
-              ) : (
-                <div className="matchmaking-guide-lines text-muted">
-                  <span className="guide-line-primary">⏳ {lang === 'am' ? 'ተጫዋች በመጠበቅ ላይ...' : 'Waiting for players...'}</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="compact-recent-empty-dots">
-              <span className="recent-empty-ball">--</span>
-              <span className="recent-empty-ball">--</span>
-              <span className="recent-empty-ball">--</span>
-            </div>
-          )}
+      {/* 2. Recent Balls Tray (Visible during active playing) */}
+      {roundPhase !== 'lobby' && (
+        <div className="compact-recent-balls-tray">
+          <div className="compact-recent-balls-inner">
+            {prevTrail.length > 0 ? (
+              prevTrail.map((num, idx) => {
+                const colClass = getColClass(num);
+                const colLetter = getColLetter(num);
+                return (
+                  <div key={`${num}-${idx}`} className={`compact-recent-ball col-${colClass}`}>
+                    <span className="recent-ball-col">{colLetter}</span>
+                    <span className="recent-ball-num">{num}</span>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="compact-recent-empty-dots">
+                <span className="recent-empty-ball">--</span>
+                <span className="recent-empty-ball">--</span>
+                <span className="recent-empty-ball">--</span>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 3. In-line Sound & Auto-Daub Controls Strip */}
       <div className="compact-call-controls-row">

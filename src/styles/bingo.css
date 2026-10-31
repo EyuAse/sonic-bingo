@@ -4278,44 +4278,66 @@
   color: #ca8a04;
 }
 
-/* ── 2-Column Split Grid Container (Cartelas on LEFT, Flashboard 1-75 on RIGHT) ── */
-.bingo-split-layout-grid {
-  flex: 1;
+/* ── FULL-WIDTH CARTELAS ARENA (For 3-4 Cartelas: NO 1-75 flashboard, 100% focus on 2x2 cards!) ── */
+.bingo-fullwidth-cartelas-area {
+  flex: 1 1 0;
   min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  padding: 2px 0;
+}
+
+/* 2x2 Grid of Cartelas (Matching User Screenshot Exactly!) */
+.bingo-cartelas-2x2-grid {
   display: grid;
-  grid-template-columns: 1fr minmax(118px, 138px);
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: auto auto;
   gap: 6px;
   width: 100%;
-  height: calc(100% - 32px);
-  max-height: calc(100% - 32px);
+  box-sizing: border-box;
+}
+
+.bingo-cartelas-2x2-grid .new-cartela-card {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 0;
+}
+
+/* ── 2-Column Split Grid Container (For 1-2 Cartelas: Flashboard 1-75 on LEFT, Cartelas on RIGHT) ── */
+.bingo-split-layout-grid {
+  flex: 1 1 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(105px, 126px) 1fr;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
   align-items: stretch;
   margin: 0;
-  padding: 0 4px;
+  padding: 0 2px;
   box-sizing: border-box;
 }
 
 @media (min-width: 768px) {
   .bingo-split-layout-grid {
-    grid-template-columns: 1fr 220px;
+    grid-template-columns: 200px 1fr;
     gap: 12px;
     padding: 0 10px;
   }
 }
 
-/* ── LEFT COLUMN: Cartelas Play Area (Primary Wide Column) ── */
-.bingo-left-cartela-col,
-.bingo-left-playarea-col {
-  height: 100%;
-  max-height: 100%;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
-  min-width: 0;
-}
-
-/* Legacy alias for backwards compatibility */
+/* LEFT COLUMN: 1-75 Flashboard */
 .bingo-left-flashboard-col {
   height: 100%;
   max-height: 100%;
@@ -4325,8 +4347,8 @@
   overflow: hidden;
 }
 
-/* ── RIGHT COLUMN: Current Call, Flashboard 1-75, Action Bar ── */
-.bingo-right-flashboard-col,
+/* RIGHT COLUMN: 1-2 Cartelas */
+.bingo-right-cartelas-col,
 .bingo-right-playarea-col {
   position: relative;
   height: 100%;
@@ -4340,7 +4362,6 @@
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
-  padding-bottom: 4px;
 }
 
 .fresh-master-board-card {
@@ -4521,6 +4542,27 @@
   min-width: 0;
 }
 
+.compact-call-center-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.compact-center-primary {
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: #15803d;
+}
+
+.compact-center-sub {
+  font-size: 0.65rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
 .compact-current-ball-pill {
   background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
   color: #ffffff;
@@ -4571,8 +4613,14 @@
   background: linear-gradient(135deg, #a855f7 0%, #6b21a8 100%);
 }
 .compact-current-ball-pill.lobby-timer {
-  background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
-  color: #0f172a;
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border: 1px solid #334155 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+}
+
+.compact-current-ball-pill.lobby-timer .call-ball-col {
+  color: #facc15;
 }
 .compact-current-ball-pill.waiting {
   background: #e2e8f0;
@@ -4983,16 +5031,18 @@
 }
 
 .new-card-header {
-  height: 20px;
+  height: 24px;
+  background: linear-gradient(108deg, #090d16 0%, #111827 58%, #f59e0b 58.5%, #d97706 74%, #090d16 100%);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 4px;
+  padding: 0 8px;
   position: relative;
   flex-shrink: 0;
   white-space: nowrap;
   overflow: hidden;
   box-sizing: border-box;
+  border-radius: 11px 11px 0 0;
 }
 
 .new-card-header-left {
@@ -5003,24 +5053,39 @@
   overflow: hidden;
 }
 
-.new-card-header-label {
-  font-size: 0.72rem;
-  font-weight: 950;
-  color: #22c55e;
-  letter-spacing: 0.2px;
-  white-space: nowrap;
+.new-card-header-title {
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.74rem;
+  letter-spacing: 0.1px;
+}
+
+.new-card-id-sub {
+  font-size: 0.65rem;
+  color: #cbd5e1;
+  font-weight: 600;
 }
 
 .new-card-preview-badge {
-  font-size: 0.54rem;
-  font-weight: 850;
-  background: rgba(59, 130, 246, 0.12);
-  color: #2563eb;
-  padding: 1px 4px;
-  border-radius: 4px;
-  border: 1px solid rgba(59, 130, 246, 0.25);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 900;
+  font-size: 0.58rem;
+  padding: 1.5px 6px;
+  border-radius: 999px;
+  letter-spacing: 0.2px;
+}
+
+.btn-card-header-action {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 0.72rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
 }
 
 .new-card-status-pill {
@@ -5034,73 +5099,60 @@
 .new-card-body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0;
   width: 100%;
   min-height: fit-content;
 }
 
-/* Column Header Row: B I N G O */
+/* Column Header Row: B I N G O - Radiant Golden Bar across all 5 cols */
 .new-bingo-col-headers {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 2px;
-  height: 17px;
+  background: linear-gradient(180deg, #fde047 0%, #f59e0b 50%, #d97706 100%);
+  padding: 2px 2px;
+  height: 19px;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .new-bingo-col-hdr {
   height: 100%;
-  border-radius: 4px;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 950;
-  font-size: 0.68rem;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  font-size: 0.76rem;
+  color: #0f172a;
+  box-shadow: none;
+  background: transparent !important;
 }
 
-.new-bingo-col-hdr.col-b {
-  background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
-  color: #713f12;
-}
-.new-bingo-col-hdr.col-i {
-  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
-  color: #ffffff;
-}
-.new-bingo-col-hdr.col-n {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  color: #ffffff;
-}
-.new-bingo-col-hdr.col-g {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  color: #ffffff;
-}
-.new-bingo-col-hdr.col-o {
-  background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
-  color: #ffffff;
-}
-
-/* 5x5 Matrix: Proportional 5-row grid preventing stretched gaps or void space */
+/* 5x5 Matrix: Rounded white tiles on light backing */
 .new-cartela-5x5 {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   grid-template-rows: repeat(5, 1fr);
-  gap: 2px;
+  gap: 2.5px;
+  padding: 3px;
+  background: #f1f5f9;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .new-cartela-cell {
   width: 100%;
   height: 100%;
   min-height: 0;
-  border-radius: 4px;
+  border-radius: 5px;
   background: #ffffff;
   color: #0f172a;
   border: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(0.72rem, 2.3vw, 0.88rem);
+  font-size: clamp(0.70rem, 2.3vw, 0.90rem);
   font-weight: 950;
   line-height: 1;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -5153,7 +5205,8 @@
 
 /* Free cell: vibrant green background with center star (perfect alignment) */
 .new-cartela-cell.free-cell {
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+  background: #0f172a !important;
+  border: 1px solid #1e293b !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -5169,12 +5222,13 @@
 }
 
 .new-free-star {
-  font-size: clamp(0.72rem, 2.2vw, 0.92rem);
+  font-size: clamp(0.85rem, 2.5vw, 1.05rem);
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  filter: drop-shadow(0 0 3px rgba(250, 204, 21, 0.7));
+  color: #facc15;
+  filter: drop-shadow(0 0 4px rgba(250, 204, 21, 0.9));
 }
 
 /* Win glow cell */

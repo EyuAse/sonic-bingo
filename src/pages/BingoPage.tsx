@@ -21,7 +21,8 @@ export const BingoPage: React.FC = () => {
   const {
     hasTicket, showWinModal,
     roundPhase, waitingForPlayers, realPlayerCount, lobbyCountdown, cancelLobbyTicket,
-    autoPlay, hasWinningPattern, hasSleptPattern, claimBingo, claimInProgress
+    autoPlay, hasWinningPattern, hasSleptPattern, claimBingo, claimInProgress,
+    totalPlayableCards, cardQuantity
   } = useBingo();
   const { switchPage, showToast } = useApp();
   const [showLeaveModal, setShowLeaveModal] = useState<boolean>(false);
@@ -34,17 +35,11 @@ export const BingoPage: React.FC = () => {
     switchPage('games');
   };
 
-  // Derive hero title text based on game phase
-  const heroTitle = roundPhase === 'playing'
-    ? 'GAME IN PROGRESS'
-    : waitingForPlayers
-    ? 'WAITING FOR PLAYERS'
-    : `STARTS IN ${lobbyCountdown}s`;
-
-  // Split into base and highlight
-  const titleParts = heroTitle.split(' ');
-  const heroTitleBase = titleParts.slice(0, -1).join(' ') + ' ';
-  const heroTitleHighlight = titleParts[titleParts.length - 1];
+  // Active card count: in lobby before ticket bought, use cardQuantity; once bought/playing, use totalPlayableCards
+  const activeCardCount = (hasTicket || roundPhase !== 'lobby') ? totalPlayableCards : cardQuantity;
+  // Dynamic layout rule: 3 or 4 cards hide the 1-75 flashboard so users focus 100% on their 2x2 cards!
+  // 1 or 2 cards show the 1-75 flashboard on the left side!
+  const is3or4Cards = activeCardCount >= 3;
 
   return (
     <div className={`fresh-bingo-page ${isDesktop ? 'is-desktop-view' : ''}`}>
@@ -53,7 +48,7 @@ export const BingoPage: React.FC = () => {
 
       <div className={`bingo-page-content-wrapper ${isDesktop ? 'is-desktop-view' : ''}`}>
 
-        {/* 1. Ultra-Slim Top Action Bar matching Image 2 */}
+        {/* 1. Ultra-Slim Top Action Bar matching Image */}
         <div className="bingo-top-action-bar">
           <button
             type="button"
@@ -63,76 +58,83 @@ export const BingoPage: React.FC = () => {
           >
             <i className="fa-solid fa-chevron-left"></i>
           </button>
-
-          {/* 5-Box Game Status Strip from Image 2 */}
           <StatsStrip />
         </div>
 
         {/* Real-Time Network Resilience Alerts */}
         <NetworkStatusBanner />
 
-        {/* ── Main Split 2-Column Board & Cartela Layout (Cartelas on Left, Flashboard 1-75 on Right) ── */}
-        <div className="bingo-split-layout-grid">
-          {/* Left Column: Active Cartelas (BingoGrid) or Spectator View */}
-          <div className="bingo-left-cartela-col">
+        {/* 2. Top Banner: Current Call / Lobby Status Banner with Sound & Auto Toggles (Matching Image!) */}
+        <CurrentCallBanner />
+
+        {/* 3. Main Arena: Dynamic Layout Based on Card Count */}
+        {is3or4Cards ? (
+          /* 3-4 Cartelas: Full-Width 2x2 Grid (NO 1-75 flashboard, 100% focus on Cartelas!) */
+          <div className="bingo-fullwidth-cartelas-area">
             {hasTicket || roundPhase === 'lobby' ? (
               <ErrorBoundary componentName="BingoGrid" fallback={null}>
-                <BingoGrid />
+                <BingoGrid isFullWidth={true} />
               </ErrorBoundary>
             ) : (
               <SpectatorCard />
             )}
           </div>
+        ) : (
+          /* 1-2 Cartelas: 2-Column Split Layout (1-75 Flashboard on LEFT, Cartelas on RIGHT) */
+          <div className="bingo-split-layout-grid">
+            <div className="bingo-left-flashboard-col">
+              <MasterBoard75 />
+            </div>
+            <div className="bingo-right-cartelas-col">
+              {hasTicket || roundPhase === 'lobby' ? (
+                <ErrorBoundary componentName="BingoGrid" fallback={null}>
+                  <BingoGrid isFullWidth={false} />
+                </ErrorBoundary>
+              ) : (
+                <SpectatorCard />
+              )}
+            </div>
+          </div>
+        )}
 
-          {/* Right Column: Current Call Banner, Flashboard 1-75, and Controls */}
-          <div className="bingo-right-flashboard-col">
-            <CurrentCallBanner />
+        {/* 4. Bottom Controls (Lobby Betting Bar or In-Game Action Bar) */}
+        {roundPhase === 'lobby' ? (
+          <BettingBar />
+        ) : roundPhase === 'playing' ? (
+          <div className="in-game-bottom-action-bar">
+            <button
+              type="button"
+              className="btn-in-game-leave"
+              onClick={() => setShowLeaveModal(true)}
+              title="Leave this game round safely"
+            >
+              <i className="fa-solid fa-arrow-right-from-bracket"></i>
+              <span>Leave Game</span>
+            </button>
 
-            <MasterBoard75 />
-
-            {/* Stake Bar: Visible strictly during lobby matchmaking only */}
-            {roundPhase === 'lobby' && (
-              <BettingBar />
-            )}
-
-            {/* In-Game Bottom Action Bar: Visible during active game! */}
-            {roundPhase === 'playing' && (
-              <div className="in-game-bottom-action-bar">
-                <button
-                  type="button"
-                  className="btn-in-game-leave"
-                  onClick={() => setShowLeaveModal(true)}
-                  title="Leave this game round safely"
-                >
-                  <i className="fa-solid fa-arrow-right-from-bracket"></i>
-                  <span>Leave Game</span>
-                </button>
-
-                {!autoPlay && (
-                  <button
-                    type="button"
-                    disabled={claimInProgress}
-                    className={`btn-in-game-bingo ${claimInProgress ? 'claiming' : ''}`}
-                    onClick={() => {
-                      if (claimInProgress) return;
-                      if (hasWinningPattern) {
-                        claimBingo();
-                      } else if (hasSleptPattern) {
-                        showToast("⚠️ Missed Bingo! That pattern expired because the next number was called. Complete another 5-in-a-row line to call BINGO!");
-                      } else {
-                        showToast("Complete any 5-in-a-row line on your card to call BINGO!");
-                      }
-                    }}
-                    title={claimInProgress ? "Claiming your win..." : "Call BINGO to claim your win"}
-                  >
-                    <i className={claimInProgress ? "fa-solid fa-spinner fa-spin" : "fa-solid fa-trophy"}></i>
-                    <span>{claimInProgress ? 'CLAIMING...' : 'BINGO'}</span>
-                  </button>
-                )}
-              </div>
+            {!autoPlay && (
+              <button
+                type="button"
+                disabled={claimInProgress}
+                className={`btn-in-game-bingo ${claimInProgress ? 'claiming' : ''}`}
+                onClick={() => {
+                  if (claimInProgress) return;
+                  if (hasWinningPattern) {
+                    claimBingo();
+                  } else if (hasSleptPattern) {
+                    showToast("⚠️ Missed Bingo! That pattern expired because the next number was called. Complete another 5-in-a-row line to call BINGO!");
+                  } else {
+                    showToast("Complete any 5-in-a-row line on your card to call BINGO!");
+                  }
+                }}
+                title={claimInProgress ? "Claiming your win..." : "Call BINGO to claim your win"}
+              >
+                <i className={claimInProgress ? "fa-solid fa-spinner fa-spin" : "fa-solid fa-trophy"}></i>
+                <span>{claimInProgress ? 'CLAIMING...' : 'BINGO'}</span>
+              </button>
             )}
           </div>
-        </div>
+        ) : null}
       </div>
 
       {/* Leave Game Confirmation Modal */}
