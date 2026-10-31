@@ -421,9 +421,61 @@ export const apiClient = {
       return handleResponse<{
         success: boolean;
         agents: Array<{
+          id: string;
           agentCode: string;
-          fullName: string;
+          displayName: string;
           phone: string;
+          telebirrPhone: string;
+          cbeAccount: string;
+          mpesaPhone: string | null;
+          isOnline: boolean;
+          avgApprovalMinutes: number;
+        }>;
+      }>(res);
+    },
+
+    async depositViaAgent(payload: {
+      agentId?: string;
+      agentCode?: string;
+      amount: number;
+      paymentMethod: string;
+      playerPhone: string;
+      transactionCode: string;
+      screenshotUrl?: string;
+    }) {
+      const res = await fetch(`${API_BASE}/wallet/deposit-via-agent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify(payload)
+      });
+      return handleResponse<{
+        success: boolean;
+        message: string;
+        requestId: string;
+        agentCode: string;
+        agentDisplayName: string;
+        status: string;
+        estimatedWaitMinutes: number;
+      }>(res);
+    },
+
+    async getMyAgentDeposits() {
+      const res = await fetch(`${API_BASE}/wallet/my-agent-deposits`, {
+        headers: { ...getAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        requests: Array<{
+          id: string;
+          amount: number;
+          paymentMethod: string;
+          transactionCode: string;
+          status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+          rejectionReason?: string;
+          createdAt: string;
+          resolvedAt?: string;
+          agentCode: string;
+          agentDisplayName: string;
         }>;
       }>(res);
     }
@@ -990,6 +1042,75 @@ export const apiClient = {
           player_phone: string;
           created_at: string;
         }>;
+      }>(res);
+    },
+
+    // Agent Deposit Requests (Decentralized Player Deposit Flow)
+    async getDepositRequests(status?: string) {
+      const queryParam = status ? `?status=${encodeURIComponent(status)}` : '';
+      const res = await fetch(`${API_BASE}/agent/deposit-requests${queryParam}`, {
+        headers: { ...getAgentAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        pendingCount: number;
+        requests: Array<{
+          id: string;
+          amount: number;
+          paymentMethod: string;
+          playerPhone: string;
+          playerName?: string;
+          transactionCode: string;
+          screenshotUrl?: string;
+          status: 'pending' | 'approved' | 'rejected';
+          rejectionReason?: string;
+          createdAt: string;
+          resolvedAt?: string;
+        }>;
+      }>(res);
+    },
+
+    async approveDepositRequest(requestId: string) {
+      const res = await fetch(`${API_BASE}/agent/deposit-requests/${requestId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAgentAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        message: string;
+        details: {
+          depositAmount: number;
+          commissionEarned: number;
+          newAgentBalance: number;
+          coinsAwarded: number;
+        };
+      }>(res);
+    },
+
+    async rejectDepositRequest(requestId: string, reason: string) {
+      const res = await fetch(`${API_BASE}/agent/deposit-requests/${requestId}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAgentAuthHeader() },
+        body: JSON.stringify({ reason })
+      });
+      return handleResponse<{
+        success: boolean;
+        message: string;
+        rejectionReason: string;
+      }>(res);
+    },
+
+    async toggleOnlineStatus(isOnline: boolean) {
+      const res = await fetch(`${API_BASE}/agent/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAgentAuthHeader() },
+        body: JSON.stringify({ isOnline })
+      });
+      return handleResponse<{
+        success: boolean;
+        agentCode: string;
+        isOnline: boolean;
+        message: string;
       }>(res);
     }
   }

@@ -1019,31 +1019,192 @@ router.get('/agent-voucher/active', requireAuth, async (req: AuthenticatedReques
 });
 
 /**
- * GET /api/wallet/agents/active
+ * GET /api/wallet/agents/active (and /api/wallet/agents/available)
  * Get Active Authorized Agents for Player Counter Deposits & Cash-Outs
+ * STRICT PRIVACY: Agent real names are REDACTED. Only Unique Agent Codes and payment rails are returned.
  */
-router.get('/agents/active', async (_req, res) => {
+router.get(['/agents/active', '/agents/available'], async (_req, res) => {
   try {
     const agentsRes = await query(
-      `SELECT ap.agent_code, u.full_name, u.phone, ap.status
+      `SELECT ap.id, ap.agent_code, ap.status, ap.telebirr_phone, ap.cbe_account, ap.mpesa_phone, 
+              ap.is_online, ap.wallet_balance
        FROM agent_profiles ap
-       JOIN users u ON ap.user_id = u.id
        WHERE ap.status = 'active'
-       ORDER BY ap.created_at ASC
-       LIMIT 20`
+         AND COALESCE(ap.is_online, true) = true
+         AND ap.wallet_balance >= 50.00
+       ORDER BY ap.wallet_balance DESC, ap.created_at ASC
+       LIMIT 30`
     );
 
     return res.json({
       success: true,
       agents: agentsRes.rows.map(a => ({
+        id: a.id,
         agentCode: a.agent_code,
-        fullName: a.full_name,
-        phone: a.phone
+        displayName: `Sonic Agent #${a.agent_code}`,
+        phone: a.telebirr_phone || '0982624574',
+        telebirrPhone: a.telebirr_phone || '0982624574',
+        cbeAccount: a.cbe_account || '1000458291048',
+        mpesaPhone: a.mpesa_phone || null,
+        isOnline: a.is_online !== false,
+        avgApprovalMinutes: 2
       }))
     });
   } catch (error: any) {
     console.error('❌ [Wallet Active Agents Error]:', error);
     return res.status(500).json({ success: false, error: 'Failed to retrieve active agents' });
+  }
+});
+
+/**
+ * POST /api/wallet/deposit-via-agent
+ * Player submits a deposit request to a certified agent by unique agent code or ID.
+ */
+router.post('/deposit-via-agent', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const { agentId, agentCode, amount, paymentMethod, playerPhone, transactionCode, screenshotUrl } = req.body;
+
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount < 50) {
+      return res.status(400).json({ success: false, error: 'Minimum deposit is 50 ETB.' });
+    }
+
+    if (!paymentMethod || !['Telebirr', 'CBE', 'M-Pesa'].includes(paymentMethod)) {
+      return res.status(400).json({ success: false, error: 'Payment method must be Telebirr, CBE, or M-Pesa.' });
+    }
+
+    const cleanTxCode = (transactionCode || '').trim().toUpperCase();
+    if (!cleanTxCode || cleanTxCode.length < 4) {
+      return res.status(400).json({ success: false, error: 'Valid SMS Transaction Reference Code is required.' });
+    }
+
+    const cleanPhone = (playerPhone || '').trim();
+    if (!cleanPhone || cleanPhone.length < 8) {
+      return res.status(400).json({ success: false, error: 'Valid player phone number is required.' });
+    }
+
+    // 1. Locate Agent Profile (by ID or Unique Code)
+    let agentQuery = 'SELECT id, agent_code, wallet_balance, status, is_online FROM agent_profiles WHERE ';
+    let agentParam: any[] = [];
+    if (agentId) {
+      agentQuery += 'id = $1';
+      agentParam = [agentId];
+    } else if (agentCode) {
+      agentQuery += 'agent_code = $1';
+      agentParam = [agentCode.trim().toUpperCase()];
+    } else {
+      return res.status(400).json({ success: false, error: 'Agent ID or Unique Agent Code is required.' });
+    }
+
+    const agentRes = await query(agentQuery, agentParam);
+    if (agentRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Selected certified agent not found.' });
+    }
+
+    const agent = agentRes.rows[0];
+    if (agent.status !== 'active') {
+      return res.status(400).json({ success: false, error: 'Selected agent is currently inactive.' });
+    }
+    if (agent.is_online === false) {
+      return res.status(400).json({ success: false, error: 'Selected agent is currently offline. Please choose another agent.' });
+    }
+    if (parseFloat(agent.wallet_balance) < numAmount) {
+      return res.status(400).json({ 
+        success: false, 
+        error: `Agent #${agent.agent_code} does not have sufficient float for this amount right now. Please select another agent or try a lower amount.` 
+      });
+    }
+
+    // 2. Check for duplicate pending or approved transaction code
+    const duplicateCheck = await query(
+      `SELECT id, status FROM agent_deposit_requests WHERE transaction_code = $1 AND status IN ('pending', 'approved') LIMIT 1`,
+      [cleanTxCode]
+    );
+    if (duplicateCheck.rows.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: `Transaction Code "${cleanTxCode}" has already been submitted (${duplicateCheck.rows[0].status}). Duplicate requests are strictly blocked.` 
+      });
+    }
+
+    // 3. Insert deposit request
+    const insertRes = await query(
+      `INSERT INTO agent_deposit_requests 
+        (player_id, agent_id, amount, payment_method, player_phone, transaction_code, screenshot_url, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
+       RETURNING id, created_at, status`,
+      [userId, agent.id, numAmount, paymentMethod, cleanPhone, cleanTxCode, screenshotUrl || null]
+    );
+
+    const newRequest = insertRes.rows[0];
+
+    // 4. Broadcast real-time WebSocket event to the Agent
+    io.emit(`agent_${agent.id}_new_request`, {
+      requestId: newRequest.id,
+      amount: numAmount,
+      playerPhone: cleanPhone,
+      paymentMethod,
+      transactionCode: cleanTxCode,
+      createdAt: newRequest.created_at
+    });
+    io.emit('agent_new_deposit_request', {
+      agentId: agent.id,
+      requestId: newRequest.id
+    });
+
+    return res.json({
+      success: true,
+      message: `Deposit request for ${numAmount} ETB submitted to Sonic Agent #${agent.agent_code}.`,
+      requestId: newRequest.id,
+      agentCode: agent.agent_code,
+      agentDisplayName: `Sonic Agent #${agent.agent_code}`,
+      status: 'pending',
+      estimatedWaitMinutes: 2
+    });
+  } catch (error: any) {
+    console.error('❌ [Wallet Deposit via Agent Error]:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Failed to submit agent deposit request' });
+  }
+});
+
+/**
+ * GET /api/wallet/my-agent-deposits
+ * Retrieve Player's recent agent deposit requests with real-time status.
+ */
+router.get('/my-agent-deposits', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const requestsRes = await query(
+      `SELECT req.id, req.amount, req.payment_method, req.transaction_code, req.status, 
+              req.rejection_reason, req.created_at, req.resolved_at,
+              ap.agent_code, ap.telebirr_phone
+       FROM agent_deposit_requests req
+       JOIN agent_profiles ap ON req.agent_id = ap.id
+       WHERE req.player_id = $1
+       ORDER BY req.created_at DESC
+       LIMIT 20`,
+      [userId]
+    );
+
+    return res.json({
+      success: true,
+      requests: requestsRes.rows.map(r => ({
+        id: r.id,
+        amount: parseFloat(r.amount),
+        paymentMethod: r.payment_method,
+        transactionCode: r.transaction_code,
+        status: r.status,
+        rejectionReason: r.rejection_reason,
+        createdAt: r.created_at,
+        resolvedAt: r.resolved_at,
+        agentCode: r.agent_code,
+        agentDisplayName: `Sonic Agent #${r.agent_code}`
+      }))
+    });
+  } catch (error: any) {
+    console.error('❌ [Wallet My Agent Deposits Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve agent deposit requests' });
   }
 });
 

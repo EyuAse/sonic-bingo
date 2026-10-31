@@ -14,6 +14,7 @@
 
 .sonic-agent-layout-wrapper {
   display: flex;
+  flex-direction: row;
   min-height: 100vh;
   width: 100%;
   background-color: #f4f6f8 !important;
@@ -65,17 +66,17 @@
    ========================================================================== */
 .sonic-agent-sidebar {
   width: var(--sonic-sidebar-expanded);
-  background: #ffffff;
-  border-right: 1px solid var(--sonic-border-light);
+  background: #0a0d14 !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
-  position: fixed;
+  position: sticky;
   top: 0;
-  bottom: 0;
-  left: 0;
+  height: 100vh;
+  flex-shrink: 0;
   z-index: 40;
   transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.02);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
 }
 
 .sonic-agent-sidebar.collapsed {
@@ -268,8 +269,9 @@
    ========================================================================== */
 .sonic-agent-main-viewport {
   flex: 1;
-  margin-left: var(--sonic-sidebar-expanded);
-  width: calc(100% - var(--sonic-sidebar-expanded));
+  min-width: 0;
+  width: 100%;
+  margin-left: 0 !important;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -279,8 +281,8 @@
 }
 
 .sonic-agent-main-viewport.sidebar-collapsed {
-  margin-left: var(--sonic-sidebar-collapsed);
-  width: calc(100% - var(--sonic-sidebar-collapsed));
+  margin-left: 0 !important;
+  width: 100% !important;
 }
 
 .sonic-agent-page-content {
@@ -595,17 +597,35 @@
   background: #fafafa;
 }
 
+.sonic-dashboard-metric-cards-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .sonic-dashboard-analytics-row {
   display: grid;
   grid-template-columns: minmax(0, 1.85fr) minmax(0, 1fr);
   gap: 16px;
   align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .sonic-dashboard-activity-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1180px) {
+  .sonic-dashboard-metric-cards-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
 }
 
 @media (max-width: 1024px) {
@@ -615,11 +635,21 @@
   }
 }
 
+@media (max-width: 580px) {
+  .sonic-dashboard-metric-cards-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 /* ==========================================================================
    4. RESPONSIVE BREAKPOINTS
    ========================================================================== */
 @media (max-width: 992px) {
   .sonic-agent-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
     transform: translateX(-100%);
     width: 260px !important;
   }
@@ -632,6 +662,7 @@
   .sonic-agent-main-viewport,
   .sonic-agent-main-viewport.sidebar-collapsed {
     margin-left: 0 !important;
+    width: 100% !important;
   }
   .sonic-mobile-menu-btn {
     display: block;

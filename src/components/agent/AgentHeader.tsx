@@ -4,15 +4,19 @@ import { AgentDeskTab } from './AgentSidebar.tsx';
 interface AgentHeaderProps {
   activeTab: AgentDeskTab;
   agentProfile: any;
+  pendingCount?: number;
   openMobile: () => void;
   onPlayBingo: () => void;
   onLogout: () => void;
+  onNavigateTab?: (tab: AgentDeskTab) => void;
 }
 
 export const AgentHeader: React.FC<AgentHeaderProps> = ({
   activeTab,
   agentProfile,
-  openMobile
+  pendingCount = 0,
+  openMobile,
+  onNavigateTab
 }) => {
   const agentName = agentProfile?.fullName || agentProfile?.agentCode || 'Agent001';
   const initial = (agentProfile?.fullName || agentProfile?.agentCode || 'A').charAt(0).toUpperCase();
@@ -96,8 +100,9 @@ export const AgentHeader: React.FC<AgentHeaderProps> = ({
 
       {/* Right: Notifications Bell + Profile Pill matching Reference UI */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-        {/* Notification Bell with Red Badge "3" */}
+        {/* Notification Bell with Badge */}
         <div
+          onClick={() => onNavigateTab?.('deposit_requests')}
           style={{
             position: 'relative',
             width: '38px',
@@ -112,29 +117,31 @@ export const AgentHeader: React.FC<AgentHeaderProps> = ({
             fontSize: '14px',
             cursor: 'pointer'
           }}
-          title="3 unread notifications"
+          title={pendingCount > 0 ? `${pendingCount} pending deposit requests` : 'Notifications'}
         >
           <i className="fa-regular fa-bell"></i>
-          <span
-            style={{
-              position: 'absolute',
-              top: '-2px',
-              right: '-2px',
-              width: '18px',
-              height: '18px',
-              borderRadius: '50%',
-              background: '#ef4444',
-              color: '#ffffff',
-              fontSize: '10px',
-              fontWeight: 800,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '2px solid #ffffff'
-            }}
-          >
-            3
-          </span>
+          {pendingCount > 0 && (
+            <span
+              style={{
+                position: 'absolute',
+                top: '-2px',
+                right: '-2px',
+                width: '18px',
+                height: '18px',
+                borderRadius: '50%',
+                background: '#ef4444',
+                color: '#ffffff',
+                fontSize: '10px',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '2px solid #ffffff'
+              }}
+            >
+              {pendingCount}
+            </span>
+          )}
         </div>
 
         {/* Profile Pill Badge matching Reference UI */}

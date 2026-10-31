@@ -8,12 +8,14 @@ import '../styles/agent.css';
 import { AgentSidebar, AgentDeskTab } from '../components/agent/AgentSidebar.tsx';
 import { AgentHeader } from '../components/agent/AgentHeader.tsx';
 import { AgentDashboardDesk } from '../components/agent/AgentDashboardDesk.tsx';
+import { AgentDepositRequestsDesk } from '../components/agent/AgentDepositRequestsDesk.tsx';
 import { AgentCashInDesk } from '../components/agent/AgentCashInDesk.tsx';
 import { AgentCashOutDesk } from '../components/agent/AgentCashOutDesk.tsx';
 import { AgentRechargeDesk } from '../components/agent/AgentRechargeDesk.tsx';
 import { AgentPlayersDesk } from '../components/agent/AgentPlayersDesk.tsx';
 import { AgentStatementDesk } from '../components/agent/AgentStatementDesk.tsx';
 import { AgentProfileDesk } from '../components/agent/AgentProfileDesk.tsx';
+import { socketService } from '../services/socketService.ts';
 
 interface AgentProfile {
   id: string;
@@ -50,6 +52,7 @@ export const AgentPortalPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AgentDeskTab>('overview');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState<number>(0);
 
   // Agent Session & Data
   const [profile, setProfile] = useState<AgentProfile | null>(null);
@@ -70,9 +73,10 @@ export const AgentPortalPage: React.FC = () => {
   const loadAgentData = async () => {
     try {
       setLoading(true);
-      const [profileRes, perfRes] = await Promise.all([
+      const [profileRes, perfRes, reqsRes] = await Promise.all([
         apiClient.agent.getProfile(),
-        apiClient.agent.getPerformance()
+        apiClient.agent.getPerformance(),
+        apiClient.agent.getDepositRequests('pending').catch(() => ({ success: false, pendingCount: 0 }))
       ]);
 
       if (profileRes.success && profileRes.profile) {
@@ -81,6 +85,9 @@ export const AgentPortalPage: React.FC = () => {
       }
       if (perfRes.success && perfRes.metrics) {
         setMetrics(perfRes.metrics);
+      }
+      if (reqsRes.success && typeof reqsRes.pendingCount === 'number') {
+        setPendingRequestsCount(reqsRes.pendingCount);
       }
     } catch (err: any) {
       console.warn('Agent session not active:', err.message);
@@ -98,6 +105,34 @@ export const AgentPortalPage: React.FC = () => {
       setLoading(false);
     }
   }, []);
+
+  // Real-Time Socket Listener for Incoming Player Deposit Requests
+  useEffect(() => {
+    if (!profile?.id) return;
+
+    const unsubNewReq = socketService.on(`agent_${profile.id}_new_request`, (data: any) => {
+      showToast(`📥 New Deposit Request: +${data.amount} ETB from ${data.playerPhone}`);
+      setPendingRequestsCount(prev => prev + 1);
+      // Refresh profile & metrics
+      loadAgentData();
+    });
+
+    const unsubGlobalReq = socketService.on('agent_new_deposit_request', (data: any) => {
+      if (data?.agentId === profile.id) {
+        loadAgentData();
+      }
+    });
+
+    const unsubReqUpdated = socketService.on(`agent_${profile.id}_request_updated`, () => {
+      loadAgentData();
+    });
+
+    return () => {
+      unsubNewReq();
+      unsubGlobalReq();
+      unsubReqUpdated();
+    };
+  }, [profile?.id]);
 
   // 2. Agent Login Handler
   const handleAgentLogin = async (e: React.FormEvent) => {
@@ -288,6 +323,7 @@ export const AgentPortalPage: React.FC = () => {
         isMobileOpen={isMobileOpen}
         closeMobile={() => setIsMobileOpen(false)}
         agentProfile={profile}
+        pendingRequestsCount={pendingRequestsCount}
         onLogout={handleLogout}
       />
 
@@ -300,9 +336,11 @@ export const AgentPortalPage: React.FC = () => {
         <AgentHeader
           activeTab={activeTab}
           agentProfile={profile}
+          pendingCount={pendingRequestsCount}
           openMobile={() => setIsMobileOpen(true)}
           onPlayBingo={() => switchPage('games')}
           onLogout={handleLogout}
+          onNavigateTab={setActiveTab}
         />
 
         {/* Page Content Container */}
@@ -315,6 +353,15 @@ export const AgentPortalPage: React.FC = () => {
               onNavigateTab={setActiveTab}
               onRefresh={loadAgentData}
               isLoading={loading}
+              showToast={showToast}
+            />
+          )}
+
+          {/* Desk: Player Deposit Requests Queue */}
+          {activeTab === 'deposit_requests' && (
+            <AgentDepositRequestsDesk
+              agentProfile={profile}
+              onActionCompleted={loadAgentData}
               showToast={showToast}
             />
           )}

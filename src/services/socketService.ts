@@ -105,6 +105,13 @@ class SocketService {
   }
 
   /**
+   * Generic persistent event listener for custom events (e.g. user_deposit_approved, etc.)
+   */
+  public on(event: string, callback: (...args: any[]) => void): () => void {
+    return this.subscribeEvent(event, callback);
+  }
+
+  /**
    * Internal subscription manager ensuring listeners survive socket recreation
    */
   private subscribeEvent(event: string, callback: Function): () => void {

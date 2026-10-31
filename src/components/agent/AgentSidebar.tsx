@@ -2,6 +2,7 @@ import React from 'react';
 
 export type AgentDeskTab =
   | 'overview'
+  | 'deposit_requests'
   | 'cash_in'
   | 'cash_out'
   | 'recharge'
@@ -17,6 +18,7 @@ interface AgentSidebarProps {
   isMobileOpen: boolean;
   closeMobile: () => void;
   agentProfile: any;
+  pendingRequestsCount?: number;
   onLogout: () => void;
 }
 
@@ -28,6 +30,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
   isMobileOpen,
   closeMobile,
   agentProfile,
+  pendingRequestsCount = 0,
   onLogout
 }) => {
   const navItems: Array<{
@@ -36,6 +39,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
     icon: string;
   }> = [
     { id: 'overview', label: 'Dashboard', icon: 'fa-solid fa-table-cells-large' },
+    { id: 'deposit_requests', label: 'Deposit Requests', icon: 'fa-solid fa-inbox' },
     { id: 'players', label: 'My Players', icon: 'fa-solid fa-users' },
     { id: 'cash_in', label: 'Wallet', icon: 'fa-solid fa-wallet' },
     { id: 'cash_out', label: 'Commission', icon: 'fa-solid fa-percent' },
@@ -155,7 +159,8 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
                   transition: 'all 0.15s ease',
                   width: '100%',
                   textAlign: 'left',
-                  boxShadow: isActive ? '0 4px 14px rgba(245, 158, 11, 0.35)' : 'none'
+                  boxShadow: isActive ? '0 4px 14px rgba(245, 158, 11, 0.35)' : 'none',
+                  position: 'relative'
                 }}
               >
                 <i
@@ -167,7 +172,39 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
                     color: isActive ? '#000000' : '#94a3b8'
                   }}
                 ></i>
-                {!isCollapsed && <span>{item.label}</span>}
+                {!isCollapsed && (
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
+                    <span>{item.label}</span>
+                    {item.id === 'deposit_requests' && pendingRequestsCount > 0 && (
+                      <span
+                        style={{
+                          background: '#ef4444',
+                          color: '#ffffff',
+                          borderRadius: '9999px',
+                          padding: '1px 7px',
+                          fontSize: '10px',
+                          fontWeight: 900,
+                          lineHeight: '14px'
+                        }}
+                      >
+                        {pendingRequestsCount}
+                      </span>
+                    )}
+                  </span>
+                )}
+                {isCollapsed && item.id === 'deposit_requests' && pendingRequestsCount > 0 && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: '6px',
+                      right: '10px',
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      background: '#ef4444'
+                    }}
+                  />
+                )}
               </button>
             );
           })}

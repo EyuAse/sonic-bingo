@@ -81,8 +81,8 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
 
   // Real Commission Breakdown
   const commBreakdown = metrics?.commissionBreakdown;
-  const fromPlayersPercent = commBreakdown?.fromPlayersPercent ?? (commissionEarned > 0 ? 100 : 70);
-  const fromReferralsPercent = commBreakdown?.fromReferralsPercent ?? (commissionEarned > 0 ? 0 : 30);
+  const fromPlayersPercent = commBreakdown?.fromPlayersPercent ?? (commissionEarned > 0 ? 100 : 0);
+  const fromReferralsPercent = commBreakdown?.fromReferralsPercent ?? 0;
 
   // Real 30-Day Timeline Data from Database
   const dailyTrend: Array<{ dayNum: number; label: string; count: number; volume: number }> =
@@ -248,15 +248,127 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
       </div>
 
       {/* ===================================================================
+          1.5. LIVE FLOAT BALANCE & LIQUIDITY HERO CARD
+          =================================================================== */}
+      {(() => {
+        const walletBalance = Number(profile?.walletBalance ?? profile?.wallet_balance ?? 0);
+        const lowThreshold = Number(profile?.lowBalanceThreshold ?? 1000);
+        const isLowBalance = walletBalance < lowThreshold;
+
+        return (
+          <div
+            style={{
+              background: isLowBalance
+                ? 'linear-gradient(135deg, #fff1f2 0%, #fee2e2 100%)'
+                : 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+              border: isLowBalance ? '1.5px solid #f87171' : '1.5px solid #86efac',
+              borderRadius: '18px',
+              padding: '18px 24px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '16px',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.03)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div
+                style={{
+                  width: '52px',
+                  height: '52px',
+                  borderRadius: '14px',
+                  background: isLowBalance ? '#fee2e2' : '#dcfce7',
+                  color: isLowBalance ? '#dc2626' : '#16a34a',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '24px'
+                }}
+              >
+                {isLowBalance ? '⚠️' : '💼'}
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Available Float Liquidity
+                  </span>
+                  <span
+                    style={{
+                      background: isLowBalance ? '#fef2f2' : '#ffffff',
+                      color: isLowBalance ? '#b91c1c' : '#15803d',
+                      border: isLowBalance ? '1px solid #fca5a5' : '1px solid #bbf7d0',
+                      padding: '2px 8px',
+                      borderRadius: '9999px',
+                      fontSize: '11px',
+                      fontWeight: 800
+                    }}
+                  >
+                    {isLowBalance ? '⚠️ Low Float Warning (< 1,000 ETB)' : '🟢 Healthy Liquidity'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '26px', fontWeight: 900, color: isLowBalance ? '#dc2626' : '#0f172a', lineHeight: 1.2 }}>
+                  {walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ETB
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                  Agent Code: <strong style={{ color: '#0f172a' }}>{agentCode}</strong> • Warning Threshold: {lowThreshold.toLocaleString()} ETB
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={() => onNavigateTab('deposit_requests')}
+                style={{
+                  background: '#ffffff',
+                  border: '1px solid #cbd5e1',
+                  color: '#0f172a',
+                  padding: '10px 16px',
+                  borderRadius: '12px',
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
+                }}
+              >
+                <i className="fa-solid fa-inbox" style={{ color: '#f59e0b' }}></i>
+                <span>Deposit Requests</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigateTab('recharge')}
+                style={{
+                  background: isLowBalance ? '#dc2626' : '#f59e0b',
+                  border: 'none',
+                  color: '#ffffff',
+                  padding: '10px 18px',
+                  borderRadius: '12px',
+                  fontSize: '13px',
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: isLowBalance ? '0 4px 12px rgba(220, 38, 38, 0.3)' : '0 4px 12px rgba(245, 158, 11, 0.3)'
+                }}
+              >
+                <i className="fa-solid fa-bolt"></i>
+                <span>Recharge Float</span>
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ===================================================================
           2. FOUR KEY METRIC CARDS GRID (1 SINGLE ROW OF 4 CARDS)
           =================================================================== */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '16px'
-        }}
-      >
+      <div className="sonic-dashboard-metric-cards-row">
         {/* Metric 1: Active Players */}
         <div
           style={{
@@ -576,31 +688,45 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
             {/* Circular Donut Graphic */}
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '155px' }}>
               <svg width="150" height="150" viewBox="0 0 150 150">
-                {/* Dark Charcoal Arc (From Referrals / Vouchers) */}
+                {/* Background Track Circle */}
                 <circle
                   cx="75"
                   cy="75"
                   r="56"
                   fill="none"
-                  stroke="#18181b"
+                  stroke="#e2e8f0"
                   strokeWidth="18"
-                  strokeDasharray={referralsStrokeDash}
-                  strokeDashoffset={referralsOffset}
-                  strokeLinecap="round"
                 />
 
-                {/* Gold Arc (From Players / Deposits) */}
-                <circle
-                  cx="75"
-                  cy="75"
-                  r="56"
-                  fill="none"
-                  stroke="#f59e0b"
-                  strokeWidth="18"
-                  strokeDasharray={playersStrokeDash}
-                  strokeDashoffset="0"
-                  strokeLinecap="round"
-                />
+                {commissionEarned > 0 && (
+                  <>
+                    {/* Dark Charcoal Arc (From Referrals / Vouchers) */}
+                    <circle
+                      cx="75"
+                      cy="75"
+                      r="56"
+                      fill="none"
+                      stroke="#18181b"
+                      strokeWidth="18"
+                      strokeDasharray={referralsStrokeDash}
+                      strokeDashoffset={referralsOffset}
+                      strokeLinecap="round"
+                    />
+
+                    {/* Gold Arc (From Players / Deposits) */}
+                    <circle
+                      cx="75"
+                      cy="75"
+                      r="56"
+                      fill="none"
+                      stroke="#f59e0b"
+                      strokeWidth="18"
+                      strokeDasharray={playersStrokeDash}
+                      strokeDashoffset="0"
+                      strokeLinecap="round"
+                    />
+                  </>
+                )}
               </svg>
 
               {/* Center Donut Readout */}

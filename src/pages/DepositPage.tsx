@@ -6,6 +6,7 @@ import { useLanguage } from '../context/LanguageContext.tsx';
 import { TelebirrLogo, CBELogo } from '../components/wallet/PaymentLogos.tsx';
 import { LanguageDropdown } from '../components/common/LanguageDropdown.tsx';
 import { apiClient } from '../services/apiClient.ts';
+import { socketService } from '../services/socketService.ts';
 import {
   CBE_BIRR_RECEIVER,
   getCurrentTelebirrReceiver,
@@ -34,18 +35,119 @@ export const DepositPage: React.FC = () => {
   const [submittedRef, setSubmittedRef] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Active Authorized Agents for In-Person Deposit
-  const [activeAgents, setActiveAgents] = useState<Array<{ agentCode: string; fullName: string; phone: string }>>([]);
+  // Active Authorized Agents for In-Person / Online Deposit (Strict Agent Code Anonymity)
+  const [activeAgents, setActiveAgents] = useState<Array<{
+    id: string;
+    agentCode: string;
+    displayName: string;
+    phone: string;
+    telebirrPhone: string;
+    cbeAccount: string;
+    mpesaPhone: string | null;
+    isOnline: boolean;
+    avgApprovalMinutes: number;
+  }>>([]);
+
+  // Interactive Agent Deposit Flow State
+  const [selectedAgent, setSelectedAgent] = useState<{
+    id: string;
+    agentCode: string;
+    displayName: string;
+    phone: string;
+    telebirrPhone: string;
+    cbeAccount: string;
+    mpesaPhone: string | null;
+    isOnline: boolean;
+    avgApprovalMinutes: number;
+  } | null>(null);
+  const [agentDepositAmount, setAgentDepositAmount] = useState<number>(100);
+  const [agentPaymentRail, setAgentPaymentRail] = useState<'Telebirr' | 'CBE'>('Telebirr');
+  const [agentSenderPhone, setAgentSenderPhone] = useState<string>(() => user?.phone || user?.nationalPhone || '');
+  const [agentTxRef, setAgentTxRef] = useState<string>('');
+  const [agentReceiptImage, setAgentReceiptImage] = useState<string | null>(null);
+  const [isSubmittingAgentDeposit, setIsSubmittingAgentDeposit] = useState<boolean>(false);
+  const [activeAgentRequest, setActiveAgentRequest] = useState<any | null>(null);
+
+  // Load active agents & existing pending requests when Agent tab is active
+  const loadAgentData = async () => {
+    try {
+      const [agentsRes, myReqsRes] = await Promise.all([
+        apiClient.wallet.getActiveAgents(),
+        apiClient.wallet.getMyAgentDeposits()
+      ]);
+
+      if (agentsRes.success && agentsRes.agents) {
+        setActiveAgents(agentsRes.agents);
+        if (agentsRes.agents.length > 0 && !selectedAgent) {
+          setSelectedAgent(agentsRes.agents[0]);
+        }
+      }
+
+      if (myReqsRes.success && myReqsRes.requests && myReqsRes.requests.length > 0) {
+        const pending = myReqsRes.requests.find(r => r.status === 'pending');
+        if (pending) {
+          setActiveAgentRequest(pending);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load agent deposit data:', err);
+    }
+  };
 
   useEffect(() => {
     if (selectedMethod === 'Agent') {
-      apiClient.wallet.getActiveAgents().then(res => {
-        if (res.success && res.agents) {
-          setActiveAgents(res.agents);
-        }
-      }).catch(err => console.warn(err));
+      loadAgentData();
     }
   }, [selectedMethod]);
+
+  // Real-time WebSocket listener for instant approval/rejection
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const unsubApproved = socketService.on(`user_${user.id}_deposit_approved`, (data: any) => {
+      showToast(`🎉 ${lang === 'am' ? 'ተቀማጭዎ በኤጀንቱ ጸድቋል!' : 'Deposit Approved by Agent!'} +${data.amount} ETB`);
+      setActiveAgentRequest({
+        id: data.requestId,
+        amount: data.amount,
+        status: 'approved',
+        agentCode: data.agentDisplayName,
+        agentDisplayName: data.agentDisplayName,
+        transactionCode: data.transactionCode,
+        coinsAwarded: data.coinsEarned
+      });
+      // Trigger global balance sync
+      apiClient.wallet.getBalance().then(res => {
+        if (res.success) {
+          window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: res }));
+        }
+      }).catch(err => console.warn(err));
+    });
+
+    const unsubRejected = socketService.on(`user_${user.id}_deposit_rejected`, (data: any) => {
+      showToast(`❌ ${lang === 'am' ? 'ተቀማጭዎ አልተሳካም' : 'Deposit Rejected'}: ${data.reason}`);
+      setActiveAgentRequest((prev: any) => prev ? {
+        ...prev,
+        status: 'rejected',
+        rejectionReason: data.reason
+      } : null);
+    });
+
+    const unsubBalance = socketService.on('user_balance_updated', (data: any) => {
+      if (data?.userId === user.id) {
+        apiClient.wallet.getBalance().then(res => {
+          if (res.success) {
+            window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: res }));
+          }
+        }).catch(err => console.warn(err));
+      }
+    });
+
+    return () => {
+      unsubApproved();
+      unsubRejected();
+      unsubBalance();
+    };
+  }, [user?.id, lang]);
 
   // Auto-fill from user's attached accounts or profile when method changes
   useEffect(() => {
@@ -184,6 +286,91 @@ export const DepositPage: React.FC = () => {
       showToast(`❌ ${err.message || (lang === 'am' ? 'የተቀማጭ ጥያቄ አልተሳካም' : 'Deposit request failed')}`);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleAgentImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const rawResult = event.target?.result as string;
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              width = MAX_HEIGHT;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.6);
+          setAgentReceiptImage(compressed);
+          showToast(lang === 'am' ? '📸 ደረሰኝ ተያይዟል' : '📸 Receipt screenshot attached');
+        };
+        img.src = rawResult;
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAgentDepositSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAgent) {
+      showToast(lang === 'am' ? '⚠️ እባክዎ ኤጀንት ይምረጡ' : '⚠️ Please select a certified agent');
+      return;
+    }
+    if (agentDepositAmount < 50) {
+      showToast(lang === 'am' ? '⚠️ ዝቅተኛ የተቀማጭ መጠን 50 ብር ነው' : '⚠️ Minimum deposit is 50 ETB');
+      return;
+    }
+    if (!agentTxRef.trim() || agentTxRef.trim().length < 4) {
+      showToast(lang === 'am' ? '⚠️ እባክዎ የግብይት መለያ ቁጥር (SMS Code) ያስገቡ' : '⚠️ Please enter the SMS transaction reference code');
+      return;
+    }
+
+    try {
+      setIsSubmittingAgentDeposit(true);
+      const res = await apiClient.wallet.depositViaAgent({
+        agentId: selectedAgent.id,
+        agentCode: selectedAgent.agentCode,
+        amount: agentDepositAmount,
+        paymentMethod: agentPaymentRail,
+        playerPhone: agentSenderPhone.trim() || user?.phone || user?.nationalPhone || '',
+        transactionCode: agentTxRef.trim(),
+        screenshotUrl: agentReceiptImage || undefined
+      });
+
+      if (res.success) {
+        showToast(`✅ ${res.message}`);
+        setActiveAgentRequest({
+          id: res.requestId,
+          amount: agentDepositAmount,
+          paymentMethod: agentPaymentRail,
+          transactionCode: agentTxRef.trim().toUpperCase(),
+          status: 'pending',
+          agentCode: res.agentCode,
+          agentDisplayName: res.agentDisplayName,
+          createdAt: new Date().toISOString()
+        });
+      }
+    } catch (err: any) {
+      showToast(`❌ ${err.message || (lang === 'am' ? 'የተቀማጭ ጥያቄ አልተሳካም' : 'Failed to submit deposit request')}`);
+    } finally {
+      setIsSubmittingAgentDeposit(false);
     }
   };
 
@@ -328,85 +515,575 @@ export const DepositPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* 2. AGENT DEPOSIT GUIDE VIEW */}
+              {/* 2. INTERACTIVE DECENTRALIZED AGENT DEPOSIT VIEW */}
               {selectedMethod === 'Agent' ? (
                 <div style={{ marginTop: '16px' }} className="space-y-4">
-                  {/* Your Phone Callout */}
-                  <div style={{ background: '#0f172a', border: '2px solid #f59e0b', borderRadius: '16px', padding: '18px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                      {lang === 'am' ? 'ለኤጀንቱ የሚሰጡት ስልክ ቁጥር' : 'PHONE NUMBER TO GIVE TO AGENT'}
-                    </div>
-                    <div style={{ fontSize: '26px', fontWeight: 900, fontFamily: 'monospace', color: '#f8fafc', margin: '10px 0' }}>
-                      {user?.phone || user?.nationalPhone || '09...'}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(user?.phone || user?.nationalPhone || '', 'Phone Number')}
-                      style={{ background: '#334155', color: '#fbbf24', border: 'none', padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                  {/* CASE A: ACTIVE / PENDING / APPROVED / REJECTED REQUEST TRACKER */}
+                  {activeAgentRequest ? (
+                    <div
+                      style={{
+                        background: '#0f172a',
+                        border: activeAgentRequest.status === 'approved'
+                          ? '2px solid #10b981'
+                          : activeAgentRequest.status === 'rejected'
+                          ? '2px solid #ef4444'
+                          : '2px solid #f59e0b',
+                        borderRadius: '20px',
+                        padding: '24px 20px',
+                        textAlign: 'center',
+                        boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
+                        position: 'relative',
+                        overflow: 'hidden'
+                      }}
                     >
-                      <i className="fa-regular fa-copy" style={{ marginRight: '6px' }}></i>
-                      {lang === 'am' ? 'ስልክ ቁጥር ኮፒ አድርግ' : 'Copy Phone Number'}
-                    </button>
-                  </div>
-
-                  {/* 1.5x Loyalty Reward Banner */}
-                  <div style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(16, 185, 129, 0.15))', border: '1px solid #f59e0b', borderRadius: '12px', padding: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span style={{ fontSize: '24px' }}>🪙</span>
-                    <div style={{ fontSize: '12px', color: '#f1f5f9' }}>
-                      <strong style={{ color: '#fbbf24', display: 'block' }}>
-                        {lang === 'am' ? '+1.5 እጥፍ የሎያሊቲ ሳንቲሞች ሽልማት!' : '+1.5x Loyalty Coins on Agent Deposits!'}
-                      </strong>
-                      <span>
-                        {lang === 'am' ? 'ለምሳሌ 100 ብር ሲያስገቡ 150 ሳንቲሞች በቅጽበት ይሸለማሉ!' : 'For example, deposit 100 ETB and get 150 Coins instantly!'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Step by Step Instructions */}
-                  <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '14px', fontSize: '12px', color: '#cbd5e1', lineHeight: '1.6' }}>
-                    <div style={{ fontWeight: 800, color: '#fbbf24', marginBottom: '8px' }}>
-                      {lang === 'am' ? 'የተቀማጭ ቅደም ተከተል፡' : 'How to Deposit via Agent:'}
-                    </div>
-                    <ol style={{ paddingLeft: '18px', margin: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <li>{lang === 'am' ? 'በአካባቢዎ የሚገኝ ፈቃድ ያለው የሶኒክ ቢንጎ ኤጀንት ያነጋግሩ።' : 'Contact or visit any certified Sonic Bingo Agent.'}</li>
-                      <li>{lang === 'am' ? 'የሚፈልጉትን መጠን (ከ 50 ብር ጀምሮ) በጥሬ ገንዘብ ወይም በቴሌብር ይክፈሉ።' : 'Pay the desired amount (min 50 ETB) in cash or Telebirr/M-Pesa.'}</li>
-                      <li>{lang === 'am' ? 'የተመዘገቡበትን ስልክ ቁጥር ለኤጀንቱ ይስጡ።' : 'Provide your registered phone number to the agent.'}</li>
-                      <li>{lang === 'am' ? 'ኤጀንቱ በ10 ሰከንድ ውስጥ አካውንትዎን ይሞላል!' : 'The agent instantly credits your account in 10 seconds!'}</li>
-                    </ol>
-                  </div>
-
-                  {/* Active Agents Roster */}
-                  {activeAgents.length > 0 && (
-                    <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '14px' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase', marginBottom: '10px' }}>
-                        {lang === 'am' ? 'የተረጋገጡ የሎሚ ኤጀንቶች' : 'Certified Active Agents'}
-                      </div>
-                      <div className="space-y-2">
-                        {activeAgents.map(a => (
-                          <div key={a.agentCode} style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                              <div style={{ fontWeight: 700, fontSize: '13px', color: '#f8fafc' }}>{a.fullName}</div>
-                              <div style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace' }}>{a.phone} ({a.agentCode})</div>
-                            </div>
-                            <a
-                              href={`tel:${a.phone}`}
-                              style={{ background: '#10b981', color: '#0f172a', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 800, textDecoration: 'none' }}
-                            >
-                              📞 Call
-                            </a>
+                      {/* Status Icon & Header */}
+                      <div style={{ marginBottom: '16px' }}>
+                        {activeAgentRequest.status === 'approved' ? (
+                          <div
+                            style={{
+                              width: '70px',
+                              height: '70px',
+                              margin: '0 auto 12px',
+                              borderRadius: '50%',
+                              background: 'rgba(16, 185, 129, 0.15)',
+                              border: '2px solid #10b981',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '32px'
+                            }}
+                          >
+                            ✅
                           </div>
-                        ))}
+                        ) : activeAgentRequest.status === 'rejected' ? (
+                          <div
+                            style={{
+                              width: '70px',
+                              height: '70px',
+                              margin: '0 auto 12px',
+                              borderRadius: '50%',
+                              background: 'rgba(239, 68, 68, 0.15)',
+                              border: '2px solid #ef4444',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '32px'
+                            }}
+                          >
+                            ❌
+                          </div>
+                        ) : (
+                          <div
+                            style={{
+                              width: '70px',
+                              height: '70px',
+                              margin: '0 auto 12px',
+                              borderRadius: '50%',
+                              background: 'rgba(245, 158, 11, 0.15)',
+                              border: '2px solid #f59e0b',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '32px',
+                              animation: 'pulse 2s infinite'
+                            }}
+                          >
+                            ⏳
+                          </div>
+                        )}
+
+                        <h3
+                          style={{
+                            fontSize: '20px',
+                            fontWeight: 900,
+                            color: activeAgentRequest.status === 'approved'
+                              ? '#10b981'
+                              : activeAgentRequest.status === 'rejected'
+                              ? '#ef4444'
+                              : '#fbbf24',
+                            margin: 0
+                          }}
+                        >
+                          {activeAgentRequest.status === 'approved'
+                            ? (lang === 'am' ? 'ተቀማጭዎ ጸድቆ ገቢ ሆኗል!' : 'Deposit Verified & Credited!')
+                            : activeAgentRequest.status === 'rejected'
+                            ? (lang === 'am' ? 'ተቀማጭዎ አልጸደቀም' : 'Deposit Request Rejected')
+                            : (lang === 'am' ? 'የኤጀንቱን ማረጋገጫ በመጠበቅ ላይ...' : 'Awaiting Agent Approval...')}
+                        </h3>
+                        <p style={{ fontSize: '12px', color: '#94a3b8', margin: '4px 0 0 0' }}>
+                          {activeAgentRequest.status === 'approved'
+                            ? (lang === 'am' ? 'ገንዘቡ ወዲያውኑ ወደ ዋሌትዎ ገቢ ተደርጓል።' : 'Funds have been credited directly to your gaming wallet.')
+                            : activeAgentRequest.status === 'rejected'
+                            ? (activeAgentRequest.rejectionReason || (lang === 'am' ? 'ክፍያው በኤጀንቱ አልተረጋገጠም።' : 'Payment could not be verified by the agent.'))
+                            : (lang === 'am' ? 'ኤጀንቱ በሞባይል ተርሚናላቸው የኤስኤምኤስ ክፍያውን እያረጋገጡ ነው።' : 'The agent is checking the SMS receipt on their mobile terminal.')}
+                        </p>
+                      </div>
+
+                      {/* Transaction Summary Card */}
+                      <div
+                        style={{
+                          background: '#1e293b',
+                          border: '1px solid #334155',
+                          borderRadius: '14px',
+                          padding: '16px',
+                          marginBottom: '20px',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
+                          <span style={{ color: '#94a3b8' }}>{lang === 'am' ? 'የተመረጠው ኤጀንት፡' : 'Selected Agent:'}</span>
+                          <span style={{ fontWeight: 800, color: '#f8fafc' }}>
+                            👑 {activeAgentRequest.agentDisplayName || `Sonic Agent #${activeAgentRequest.agentCode || 'AGT'}`}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
+                          <span style={{ color: '#94a3b8' }}>{lang === 'am' ? 'የተቀማጭ መጠን፡' : 'Deposit Amount:'}</span>
+                          <span style={{ fontWeight: 900, color: '#10b981', fontSize: '15px' }}>
+                            +{activeAgentRequest.amount} ETB
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
+                          <span style={{ color: '#94a3b8' }}>{lang === 'am' ? 'የግብይት መለያ (SMS Code)፡' : 'Transaction Code:'}</span>
+                          <span style={{ fontWeight: 800, fontFamily: 'monospace', color: '#fbbf24' }}>
+                            {activeAgentRequest.transactionCode}
+                          </span>
+                        </div>
+                        {activeAgentRequest.status === 'approved' && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid #334155', fontSize: '13px' }}>
+                            <span style={{ color: '#94a3b8' }}>{lang === 'am' ? 'የተሸለሙት ሳንቲሞች፡' : 'Loyalty Coins Earned:'}</span>
+                            <span style={{ fontWeight: 900, color: '#fbbf24' }}>
+                              🪙 +{activeAgentRequest.coinsAwarded || Math.round(activeAgentRequest.amount * 1.5)} Coins
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {activeAgentRequest.status === 'approved' ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => switchPage('games')}
+                              className="btn-submit-payment-gold"
+                              style={{ width: '100%', padding: '14px', fontSize: '15px' }}
+                            >
+                              <span>🎮 {lang === 'am' ? 'ወደ ቢንጎ ጨዋታ ይሂዱ' : 'Play Sonic Bingo Now'}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setActiveAgentRequest(null)}
+                              style={{
+                                background: 'transparent',
+                                border: '1px solid #475569',
+                                color: '#94a3b8',
+                                padding: '10px',
+                                borderRadius: '10px',
+                                fontSize: '13px',
+                                fontWeight: 700,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {lang === 'am' ? 'አዲስ ተቀማጭ ያድርጉ' : 'Make Another Deposit'}
+                            </button>
+                          </>
+                        ) : activeAgentRequest.status === 'rejected' ? (
+                          <button
+                            type="button"
+                            onClick={() => setActiveAgentRequest(null)}
+                            className="btn-submit-payment-gold"
+                            style={{ width: '100%', padding: '14px', fontSize: '14px' }}
+                          >
+                            <span>🔄 {lang === 'am' ? 'እንደገና ይሞክሩ' : 'Try Again / Submit New Request'}</span>
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => loadAgentData()}
+                              style={{
+                                background: '#334155',
+                                border: '1px solid #475569',
+                                color: '#f8fafc',
+                                padding: '12px',
+                                borderRadius: '10px',
+                                fontSize: '13px',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px'
+                              }}
+                            >
+                              <i className="fa-solid fa-rotate"></i>
+                              {lang === 'am' ? 'ሁኔታውን ያድሱ' : 'Refresh Status'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setActiveAgentRequest(null)}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#64748b',
+                                fontSize: '12px',
+                                cursor: 'pointer',
+                                marginTop: '4px'
+                              }}
+                            >
+                              {lang === 'am' ? 'ይቅር / አዲስ ፎርም ክፈት' : 'Cancel / Open New Form'}
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
-                  )}
+                  ) : (
+                    /* CASE B: INTERACTIVE AGENT DEPOSIT FORM */
+                    <form onSubmit={handleAgentDepositSubmit} className="space-y-4">
+                      {/* Step 1: Agent Selection Grid (Strict Anonymity) */}
+                      <div className="form-section-block">
+                        <div className="section-label-row">
+                          <label className="form-section-label">
+                            <span className="step-num">1</span> {lang === 'am' ? 'የተረጋገጠ ኤጀንት ይምረጡ' : 'Select Certified Agent'}
+                          </label>
+                          <span className="min-limit-sub" style={{ color: '#10b981', fontWeight: 800 }}>
+                            🟢 {activeAgents.length} {lang === 'am' ? 'ኤጀንቶች በመስመር ላይ' : 'Agents Online'}
+                          </span>
+                        </div>
 
-                  <button
-                    type="button"
-                    onClick={() => switchPage('games')}
-                    className="btn-submit-payment-gold"
-                  >
-                    <span>{lang === 'am' ? 'ወደ ጨዋታ ተመለስ' : 'Return to Games'}</span>
-                  </button>
+                        {activeAgents.length === 0 ? (
+                          <div style={{ background: '#1e293b', border: '1px dashed #475569', borderRadius: '12px', padding: '18px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
+                            {lang === 'am' ? 'በአሁኑ ሰዓት በመስመር ላይ የሚገኝ ኤጀንት የለም። እባክዎ ከላይ በቀጥታ ቴሌብር ይጠቀሙ።' : 'No agents currently online. Please use Direct Telebirr / CBE above.'}
+                          </div>
+                        ) : (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px' }}>
+                            {activeAgents.map(a => {
+                              const isSelected = selectedAgent?.agentCode === a.agentCode;
+                              return (
+                                <div
+                                  key={a.agentCode}
+                                  onClick={() => setSelectedAgent(a)}
+                                  style={{
+                                    background: isSelected ? 'rgba(245, 158, 11, 0.08)' : '#0f172a',
+                                    border: isSelected ? '2px solid #f59e0b' : '1px solid #334155',
+                                    borderRadius: '14px',
+                                    padding: '14px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease',
+                                    position: 'relative'
+                                  }}
+                                >
+                                  {/* Top Row: Unique Code + Online Badge */}
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <span style={{ fontSize: '18px' }}>👑</span>
+                                      <strong style={{ fontSize: '14px', color: '#f8fafc', fontWeight: 800 }}>
+                                        Sonic Agent #{a.agentCode}
+                                      </strong>
+                                    </div>
+                                    <span
+                                      style={{
+                                        background: 'rgba(16, 185, 129, 0.15)',
+                                        color: '#10b981',
+                                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                                        padding: '2px 8px',
+                                        borderRadius: '9999px',
+                                        fontSize: '10px',
+                                        fontWeight: 800
+                                      }}
+                                    >
+                                      🟢 Online
+                                    </span>
+                                  </div>
+
+                                  {/* Payment Rails */}
+                                  <div style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                      <span>Telebirr:</span>
+                                      <span style={{ fontFamily: 'monospace', color: '#f1f5f9', fontWeight: 700 }}>
+                                        {a.telebirrPhone || a.phone}
+                                      </span>
+                                    </div>
+                                    {a.cbeAccount && (
+                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>CBE Birr:</span>
+                                        <span style={{ fontFamily: 'monospace', color: '#f1f5f9', fontWeight: 700 }}>
+                                          {a.cbeAccount}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Selected Checkmark */}
+                                  {isSelected && (
+                                    <div
+                                      style={{
+                                        position: 'absolute',
+                                        top: '10px',
+                                        right: '10px',
+                                        width: '18px',
+                                        height: '18px',
+                                        borderRadius: '50%',
+                                        background: '#f59e0b',
+                                        color: '#000000',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '11px',
+                                        fontWeight: 900
+                                      }}
+                                    >
+                                      ✓
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Step 2: Amount Selection & 1.5x Coins Preview */}
+                      <div className="form-section-block">
+                        <div className="section-label-row">
+                          <label className="form-section-label">
+                            <span className="step-num">2</span> {lang === 'am' ? 'የተቀማጭ መጠን' : 'Deposit Amount'}
+                          </label>
+                          <span className="min-limit-sub">{lang === 'am' ? 'ዝቅተኛ፡ 50 ብር' : 'Min: 50 ETB'}</span>
+                        </div>
+
+                        <div className="amount-preset-chips-grid">
+                          {quickAmounts.map(chip => (
+                            <button
+                              key={chip}
+                              type="button"
+                              className={`btn-amount-chip ${agentDepositAmount === chip ? 'active' : ''}`}
+                              onClick={() => setAgentDepositAmount(chip)}
+                            >
+                              {chip} ETB
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="amount-numeric-input-wrap">
+                          <span className="currency-tag">ETB</span>
+                          <input
+                            type="number"
+                            min="50"
+                            max="100000"
+                            value={agentDepositAmount || ''}
+                            onChange={e => setAgentDepositAmount(Number(e.target.value))}
+                            placeholder={lang === 'am' ? 'መጠን ያስገቡ' : 'Enter amount'}
+                            required
+                          />
+                        </div>
+
+                        {/* 1.5x Coin Reward Banner */}
+                        <div
+                          style={{
+                            marginTop: '10px',
+                            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(16, 185, 129, 0.15))',
+                            border: '1px solid #f59e0b',
+                            borderRadius: '12px',
+                            padding: '10px 14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px'
+                          }}
+                        >
+                          <span style={{ fontSize: '20px' }}>🪙</span>
+                          <span style={{ fontSize: '12px', color: '#f1f5f9' }}>
+                            <strong style={{ color: '#fbbf24' }}>
+                              +{Math.round((agentDepositAmount || 0) * 1.5)} {lang === 'am' ? 'የሎያሊቲ ሳንቲሞች' : 'Sonic Coins'}
+                            </strong>{' '}
+                            {lang === 'am' ? 'በቅጽበት ይሸለማሉ!' : 'will be awarded on verification!'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Step 3: Payment Instructions to Selected Agent */}
+                      {selectedAgent && (
+                        <div className="form-section-block">
+                          <label className="form-section-label">
+                            <span className="step-num">3</span> {lang === 'am' ? 'ክፍያውን ለኤጀንቱ ይላኩ' : 'Transfer Payment to Agent'}
+                          </label>
+
+                          {/* Rail Toggle: Telebirr or CBE */}
+                          <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                            <button
+                              type="button"
+                              onClick={() => setAgentPaymentRail('Telebirr')}
+                              style={{
+                                flex: 1,
+                                padding: '8px 12px',
+                                borderRadius: '8px',
+                                border: agentPaymentRail === 'Telebirr' ? '1px solid #38bdf8' : '1px solid #334155',
+                                background: agentPaymentRail === 'Telebirr' ? 'rgba(56, 189, 248, 0.15)' : '#0f172a',
+                                color: agentPaymentRail === 'Telebirr' ? '#38bdf8' : '#94a3b8',
+                                fontWeight: 800,
+                                fontSize: '12px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Telebirr ({selectedAgent.telebirrPhone || selectedAgent.phone})
+                            </button>
+                            {selectedAgent.cbeAccount && (
+                              <button
+                                type="button"
+                                onClick={() => setAgentPaymentRail('CBE')}
+                                style={{
+                                  flex: 1,
+                                  padding: '8px 12px',
+                                  borderRadius: '8px',
+                                  border: agentPaymentRail === 'CBE' ? '1px solid #eab308' : '1px solid #334155',
+                                  background: agentPaymentRail === 'CBE' ? 'rgba(234, 179, 8, 0.15)' : '#0f172a',
+                                  color: agentPaymentRail === 'CBE' ? '#eab308' : '#94a3b8',
+                                  fontWeight: 800,
+                                  fontSize: '12px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                CBE Bank / Birr
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="deposit-receiver-callout">
+                            <div className="receiver-top-row">
+                              <span className="receiver-provider-tag">
+                                👑 Sonic Agent #{selectedAgent.agentCode} • {agentPaymentRail}
+                              </span>
+                              <button
+                                type="button"
+                                className="btn-copy-receiver"
+                                onClick={() =>
+                                  handleCopy(
+                                    agentPaymentRail === 'Telebirr'
+                                      ? selectedAgent.telebirrPhone || selectedAgent.phone
+                                      : selectedAgent.cbeAccount,
+                                    `${agentPaymentRail} Number`
+                                  )
+                                }
+                              >
+                                <i className="fa-regular fa-copy"></i> {t('common.copy')}
+                              </button>
+                            </div>
+
+                            <div className="receiver-number-display">
+                              <span className="receiver-number-val">
+                                {agentPaymentRail === 'Telebirr'
+                                  ? selectedAgent.telebirrPhone || selectedAgent.phone
+                                  : selectedAgent.cbeAccount}
+                              </span>
+                            </div>
+
+                            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '6px' }}>
+                              {lang === 'am'
+                                ? `እባክዎ በትክክል ${agentDepositAmount} ብር ወደዚህ ቁጥር በቴሌብር ይላኩ።`
+                                : `Please transfer exactly ${agentDepositAmount} ETB to this verified agent account.`}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Step 4: Submit Proof Form */}
+                      <div className="form-section-block">
+                        <label className="form-section-label">
+                          <span className="step-num">4</span> {lang === 'am' ? 'የክፍያ ማረጋገጫ መረጃ' : 'Transaction Proof'}
+                        </label>
+
+                        {/* Sending Phone */}
+                        <div className="input-field-group">
+                          <label className="field-tiny-label">
+                            {lang === 'am' ? 'የላኩበት ስልክ ቁጥር' : 'Your Sending Phone Number'}
+                          </label>
+                          <div className="field-input-box">
+                            <i className="fa-solid fa-phone field-icon"></i>
+                            <input
+                              type="tel"
+                              value={agentSenderPhone}
+                              onChange={e => setAgentSenderPhone(e.target.value)}
+                              placeholder="09..."
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        {/* SMS Reference ID */}
+                        <div className="input-field-group" style={{ marginTop: '8px' }}>
+                          <label className="field-tiny-label">
+                            {lang === 'am' ? 'የኤስኤምኤስ ግብይት መለያ (SMS Transaction ID)' : 'SMS Transaction Reference Code (Required)'}
+                          </label>
+                          <div className="field-input-box">
+                            <i className="fa-solid fa-receipt field-icon"></i>
+                            <input
+                              type="text"
+                              value={agentTxRef}
+                              onChange={e => setAgentTxRef(e.target.value)}
+                              placeholder="e.g. TB-89214302 or FT24..."
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        {/* Screenshot Attachment */}
+                        <div className="proof-upload-pill" style={{ marginTop: '8px' }}>
+                          <input
+                            type="file"
+                            id="agent-deposit-receipt"
+                            accept="image/*"
+                            onChange={handleAgentImageUpload}
+                            style={{ display: 'none' }}
+                          />
+                          <label htmlFor="agent-deposit-receipt" className="btn-upload-label">
+                            <i className="fa-solid fa-camera"></i>
+                            <span>
+                              {agentReceiptImage
+                                ? (lang === 'am' ? 'ምስሉን ቀይር' : 'Change Screenshot')
+                                : (lang === 'am' ? 'የደረሰኝ ምስል አያይዝ (አስገዳጅ አይደለም)' : 'Attach Receipt Screenshot (Optional)')}
+                            </span>
+                          </label>
+
+                          {agentReceiptImage && (
+                            <div className="attached-preview-thumb">
+                              <img src={agentReceiptImage} alt="Receipt Preview" />
+                              <button
+                                type="button"
+                                className="btn-remove-thumb"
+                                onClick={() => setAgentReceiptImage(null)}
+                              >
+                                <i className="fa-solid fa-xmark"></i>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Submit Button */}
+                      <button
+                        type="submit"
+                        className="btn-submit-payment-gold"
+                        disabled={isSubmittingAgentDeposit || !selectedAgent}
+                        style={{ marginTop: '16px', width: '100%' }}
+                      >
+                        {isSubmittingAgentDeposit ? (
+                          <>
+                            <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '8px' }}></i>
+                            <span>{lang === 'am' ? 'በመላክ ላይ...' : 'Submitting to Agent...'}</span>
+                          </>
+                        ) : (
+                          <>
+                            <i className="fa-solid fa-paper-plane" style={{ marginRight: '8px' }}></i>
+                            <span>
+                              {lang === 'am'
+                                ? `ተቀማጩን ለኤጀንት #${selectedAgent?.agentCode || ''} ላክ`
+                                : `Submit Deposit to Sonic Agent #${selectedAgent?.agentCode || ''}`}
+                            </span>
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  )}
                 </div>
               ) : (
                 /* Standard Telebirr / CBE Deposit Form */
