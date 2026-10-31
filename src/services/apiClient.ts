@@ -1097,6 +1097,11 @@ export const apiClient = {
       });
       return handleResponse<{
         success: boolean;
+        summary?: {
+          totalCashIn: number;
+          totalCashOut: number;
+          totalCommission: number;
+        };
         transactions: Array<{
           id: string;
           type: 'cash_in' | 'cash_out';

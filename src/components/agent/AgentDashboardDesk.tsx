@@ -451,8 +451,9 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
           </div>
         </div>
 
-        {/* Metric 3: Commission Earned */}
+        {/* Metric 3: Commission Earned (Clickable shortcut to Commission Desk) */}
         <div
+          onClick={() => onNavigateTab('cash_out')}
           style={{
             background: '#ffffff',
             border: '1px solid #e2e8f0',
@@ -462,8 +463,11 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            textAlign: 'center'
+            textAlign: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease'
           }}
+          title="Click to open Commission Wallet Desk"
         >
           <div
             style={{
@@ -482,13 +486,13 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
             🪙
           </div>
           <div style={{ fontSize: '26px', fontWeight: 900, color: '#0f172a', lineHeight: 1.1 }}>
-            {commissionEarned.toLocaleString()} <span style={{ fontSize: '15px', fontWeight: 800 }}>ETB</span>
+            {commissionEarned.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style={{ fontSize: '15px', fontWeight: 800 }}>ETB</span>
           </div>
           <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', marginTop: '4px' }}>
             Commission Earned
           </div>
-          <div style={{ fontSize: '11px', fontWeight: 800, color: '#10b981', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '3px' }}>
-            <span>↑</span> +10%
+          <div style={{ fontSize: '11px', fontWeight: 800, color: '#2563eb', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px', background: '#eff6ff', padding: '2px 8px', borderRadius: '9999px' }}>
+            <span>Manage Desk</span> <i className="fa-solid fa-arrow-right" style={{ fontSize: '9px' }}></i>
           </div>
         </div>
 

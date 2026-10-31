@@ -20,6 +20,7 @@ interface StatementItem {
 
 export const AgentStatementDesk: React.FC<AgentStatementDeskProps> = ({ showToast }) => {
   const [transactions, setTransactions] = useState<StatementItem[]>([]);
+  const [summaryTotals, setSummaryTotals] = useState<{ totalCashIn: number; totalCashOut: number; totalCommission: number } | null>(null);
   const [filterType, setFilterType] = useState<'all' | 'cash_in' | 'cash_out'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -30,6 +31,9 @@ export const AgentStatementDesk: React.FC<AgentStatementDeskProps> = ({ showToas
       const res = await apiClient.agent.getTransactions();
       if (res.success && res.transactions) {
         setTransactions(res.transactions as StatementItem[]);
+        if (res.summary) {
+          setSummaryTotals(res.summary);
+        }
       }
     } catch (err) {
       console.error('Error fetching transactions:', err);
@@ -47,17 +51,16 @@ export const AgentStatementDesk: React.FC<AgentStatementDeskProps> = ({ showToas
     showToast(`📋 Copied ${label}: ${text}`);
   };
 
-  // Compute metrics
-  const totalCashIn = transactions
+  // Compute metrics (authoritative summary with fallback to live transactions)
+  const totalCashIn = summaryTotals?.totalCashIn ?? transactions
     .filter(t => t.type === 'cash_in')
     .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
-  const totalCashOut = transactions
+  const totalCashOut = summaryTotals?.totalCashOut ?? transactions
     .filter(t => t.type === 'cash_out')
     .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
-  const totalCommission = transactions
-    .filter(t => t.type === 'cash_out')
+  const totalCommission = summaryTotals?.totalCommission ?? transactions
     .reduce((sum, t) => sum + Number(t.agent_commission_earned || 0), 0);
 
   // Filtered transactions
@@ -134,10 +137,13 @@ export const AgentStatementDesk: React.FC<AgentStatementDeskProps> = ({ showToas
 
           <div style={{ background: '#ecfdf5', padding: '12px 14px', borderRadius: '10px', border: '1px solid #a7f3d0' }}>
             <div style={{ fontSize: '11px', color: '#065f46', fontWeight: 800, textTransform: 'uppercase' }}>
-              Counter Commission Earned (+1.5%)
+              Total Commission Earned
             </div>
             <div style={{ fontSize: '18px', fontWeight: 900, color: '#059669', marginTop: '2px' }}>
               +{totalCommission.toFixed(2)} <span style={{ fontSize: '12px' }}>ETB</span>
+            </div>
+            <div style={{ fontSize: '10px', color: '#047857', marginTop: '2px', fontWeight: 600 }}>
+              5% on Deposits • 2% on Withdrawals
             </div>
           </div>
         </div>
@@ -165,8 +171,8 @@ export const AgentStatementDesk: React.FC<AgentStatementDeskProps> = ({ showToas
             {(
               [
                 { id: 'all', label: `All (${transactions.length})` },
-                { id: 'cash_in', label: `Cash-In (${transactions.filter(t => t.type === 'cash_in').length})` },
-                { id: 'cash_out', label: `Cash-Out (${transactions.filter(t => t.type === 'cash_out').length})` }
+                { id: 'cash_in', label: `Cash-In Deposits (${transactions.filter(t => t.type === 'cash_in').length})` },
+                { id: 'cash_out', label: `Cash-Out Payouts (${transactions.filter(t => t.type === 'cash_out').length})` }
               ] as const
             ).map(tab => (
               <button
@@ -277,29 +283,51 @@ export const AgentStatementDesk: React.FC<AgentStatementDeskProps> = ({ showToas
                         </div>
                       </td>
 
-                      {/* Incentive / Balance */}
+                      {/* Incentive & Commission */}
                       <td>
-                        {isCashIn ? (
-                          t.agent_balance_after !== undefined ? (
-                            <span style={{ fontSize: '11px', color: '#64748b' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '11px',
+                              fontWeight: 800,
+                              color: '#065f46',
+                              background: '#ecfdf5',
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              border: '1px solid #a7f3d0',
+                              width: 'fit-content'
+                            }}
+                          >
+                            <span>+{Number(t.agent_commission_earned || (isCashIn ? t.amount * 0.05 : t.amount * 0.02)).toFixed(2)} ETB</span>
+                            <span style={{ fontSize: '9px', color: '#059669', fontWeight: 700 }}>
+                              ({isCashIn ? '5%' : '2%'})
+                            </span>
+                          </span>
+                          {t.agent_balance_after !== undefined && t.agent_balance_after !== null && (
+                            <span style={{ fontSize: '10px', color: '#64748b' }}>
                               Float: {Number(t.agent_balance_after).toFixed(2)} ETB
                             </span>
-                          ) : (
-                            <span style={{ fontSize: '11px', color: '#d97706', fontWeight: 700 }}>
-                              +{Math.round(t.amount * 1.5)} Coins
-                            </span>
-                          )
-                        ) : (
-                          <span style={{ fontSize: '11px', color: '#059669', fontWeight: 800, background: '#ecfdf5', padding: '2px 8px', borderRadius: '4px', border: '1px solid #a7f3d0' }}>
-                            +{Number(t.agent_commission_earned || 0).toFixed(2)} ETB Comm
-                          </span>
-                        )}
+                          )}
+                        </div>
                       </td>
 
                       {/* Payment Method */}
                       <td>
-                        <span style={{ fontSize: '12px', color: '#475569', fontWeight: 600 }}>
-                          {t.payment_method || 'Sonic Internal'}
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            color: t.payment_method?.toLowerCase().includes('telebirr') ? '#0284c7' : '#92400e',
+                            background: t.payment_method?.toLowerCase().includes('telebirr') ? 'rgba(2, 132, 199, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            border: `1px solid ${t.payment_method?.toLowerCase().includes('telebirr') ? 'rgba(2, 132, 199, 0.25)' : 'rgba(245, 158, 11, 0.25)'}`
+                          }}
+                        >
+                          {t.payment_method || 'Telebirr'}
                         </span>
                       </td>
 

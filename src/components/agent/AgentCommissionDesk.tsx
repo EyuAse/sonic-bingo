@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../services/apiClient.ts';
+import { TelebirrLogo, CBELogo } from '../wallet/PaymentLogos.tsx';
 
 interface AgentCommissionDeskProps {
   agentProfile: any;
@@ -44,6 +45,8 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
 
   useEffect(() => {
     fetchOverview();
+    const interval = setInterval(fetchOverview, 15000);
+    return () => clearInterval(interval);
   }, []);
 
   const currentCommission = overview?.commissionBalance ?? agentProfile?.commissionBalance ?? 0;
@@ -148,18 +151,91 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
             border: '1px solid rgba(255,255,255,0.15)',
             borderRadius: '16px',
             padding: '16px 24px',
-            textAlign: 'right'
+            textAlign: 'right',
+            minWidth: '220px'
           }}
         >
-          <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#6ee7b7', letterSpacing: '0.05em' }}>
-            Available Commission
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '4px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#6ee7b7', letterSpacing: '0.05em' }}>
+              Available Commission
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                fetchOverview();
+                onRefresh();
+              }}
+              disabled={isLoading}
+              style={{
+                background: 'rgba(255,255,255,0.15)',
+                border: 'none',
+                color: '#ffffff',
+                borderRadius: '6px',
+                padding: '3px 8px',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+              title="Refresh Commission Balance"
+            >
+              <i className={`fa-solid fa-arrows-rotate ${isLoading ? 'fa-spin' : ''}`}></i>
+              <span>Refresh</span>
+            </button>
           </div>
           <div style={{ fontSize: '32px', fontWeight: 900, color: '#fcd34d', margin: '4px 0' }}>
             {Number(currentCommission).toFixed(2)}{' '}
             <span style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>ETB</span>
           </div>
           <div style={{ fontSize: '11px', color: '#a7f3d0' }}>
-            🔒 Safe & Instant Withdrawal
+            🔒 Safe & Instant Settlement
+          </div>
+        </div>
+      </div>
+
+      {/* Commission Rules & Rate Explainer */}
+      <div
+        style={{
+          background: '#ffffff',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          padding: '16px 24px',
+          marginBottom: '24px',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gap: '16px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+            📥
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Cashier Deposit Fee</div>
+            <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>+5% on Player Cash-Ins</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+            📤
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Withdrawal Bonus</div>
+            <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>+2% on Player Cash-Outs</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+            ⚡
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Instant Conversion</div>
+            <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>Min 50 ETB to Float</div>
           </div>
         </div>
       </div>
@@ -211,32 +287,39 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setConvertAmount(Math.min(500, Math.floor(currentCommission)) || 50);
-              setIsConvertModalOpen(true);
-            }}
-            disabled={currentCommission < 50}
-            style={{
-              width: '100%',
-              padding: '13px',
-              borderRadius: '12px',
-              background: currentCommission >= 50 ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : '#e2e8f0',
-              color: currentCommission >= 50 ? '#000000' : '#94a3b8',
-              fontWeight: 800,
-              fontSize: '14px',
-              border: 'none',
-              cursor: currentCommission >= 50 ? 'pointer' : 'not-allowed',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              boxShadow: currentCommission >= 50 ? '0 4px 14px rgba(245, 158, 11, 0.3)' : 'none'
-            }}
-          >
-            <span>⚡ Instant Convert to Float</span>
-          </button>
+          <div>
+            <button
+              type="button"
+              onClick={() => {
+                setConvertAmount(Math.min(500, Math.floor(currentCommission)) || 50);
+                setIsConvertModalOpen(true);
+              }}
+              disabled={currentCommission < 50}
+              style={{
+                width: '100%',
+                padding: '13px',
+                borderRadius: '12px',
+                background: currentCommission >= 50 ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : '#e2e8f0',
+                color: currentCommission >= 50 ? '#000000' : '#94a3b8',
+                fontWeight: 800,
+                fontSize: '14px',
+                border: 'none',
+                cursor: currentCommission >= 50 ? 'pointer' : 'not-allowed',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                boxShadow: currentCommission >= 50 ? '0 4px 14px rgba(245, 158, 11, 0.3)' : 'none'
+              }}
+            >
+              <span>⚡ Instant Convert to Float</span>
+            </button>
+            <div style={{ marginTop: '8px', fontSize: '11px', textAlign: 'center', color: currentCommission >= 50 ? '#059669' : '#b45309', fontWeight: 700 }}>
+              {currentCommission >= 50
+                ? '✓ Ready to convert directly into working float'
+                : `⚠️ Min 50 ETB required (${(50 - currentCommission).toFixed(2)} ETB needed)`}
+            </div>
+          </div>
         </div>
 
         {/* OPTION B: Request Admin Payout */}
@@ -284,32 +367,39 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setPayoutAmount(Math.min(1000, Math.floor(currentCommission)) || 100);
-              setIsPayoutModalOpen(true);
-            }}
-            disabled={currentCommission < 100}
-            style={{
-              width: '100%',
-              padding: '13px',
-              borderRadius: '12px',
-              background: currentCommission >= 100 ? '#0284c7' : '#e2e8f0',
-              color: currentCommission >= 100 ? '#ffffff' : '#94a3b8',
-              fontWeight: 800,
-              fontSize: '14px',
-              border: 'none',
-              cursor: currentCommission >= 100 ? 'pointer' : 'not-allowed',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              boxShadow: currentCommission >= 100 ? '0 4px 14px rgba(2, 132, 199, 0.3)' : 'none'
-            }}
-          >
-            <span>🏦 Request Bank Payout</span>
-          </button>
+          <div>
+            <button
+              type="button"
+              onClick={() => {
+                setPayoutAmount(Math.min(1000, Math.floor(currentCommission)) || 100);
+                setIsPayoutModalOpen(true);
+              }}
+              disabled={currentCommission < 100}
+              style={{
+                width: '100%',
+                padding: '13px',
+                borderRadius: '12px',
+                background: currentCommission >= 100 ? '#0284c7' : '#e2e8f0',
+                color: currentCommission >= 100 ? '#ffffff' : '#94a3b8',
+                fontWeight: 800,
+                fontSize: '14px',
+                border: 'none',
+                cursor: currentCommission >= 100 ? 'pointer' : 'not-allowed',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                boxShadow: currentCommission >= 100 ? '0 4px 14px rgba(2, 132, 199, 0.3)' : 'none'
+              }}
+            >
+              <span>🏦 Request Bank Payout</span>
+            </button>
+            <div style={{ marginTop: '8px', fontSize: '11px', textAlign: 'center', color: currentCommission >= 100 ? '#0284c7' : '#64748b', fontWeight: 700 }}>
+              {currentCommission >= 100
+                ? '✓ Ready for direct Telebirr or CBE bank disbursement'
+                : `⚠️ Min 100 ETB required (${(100 - currentCommission).toFixed(2)} ETB needed)`}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -467,11 +557,11 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
 
               {/* Quick Pills */}
               <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-                {[100, 200, 500, 1000].map(val => (
+                {[50, 100, 200, 500].filter(val => val <= Math.floor(currentCommission)).map(val => (
                   <button
                     key={val}
                     type="button"
-                    onClick={() => setConvertAmount(Math.min(val, Math.floor(currentCommission)))}
+                    onClick={() => setConvertAmount(val)}
                     style={{
                       flex: 1,
                       padding: '8px',
@@ -484,9 +574,28 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
                       cursor: 'pointer'
                     }}
                   >
-                    +{val}
+                    {val} ETB
                   </button>
                 ))}
+                {Math.floor(currentCommission) >= 50 && (
+                  <button
+                    type="button"
+                    onClick={() => setConvertAmount(Math.floor(currentCommission))}
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      borderRadius: '8px',
+                      background: convertAmount === Math.floor(currentCommission) ? '#f59e0b' : '#f1f5f9',
+                      color: convertAmount === Math.floor(currentCommission) ? '#000000' : '#475569',
+                      border: 'none',
+                      fontWeight: 700,
+                      fontSize: '12px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Max ({Math.floor(currentCommission)})
+                  </button>
+                )}
               </div>
 
               <div style={{ display: 'flex', gap: '10px' }}>
@@ -622,17 +731,26 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
                       onClick={() => setPayoutMethod(method)}
                       style={{
                         flex: 1,
-                        padding: '9px 6px',
-                        borderRadius: '8px',
-                        background: payoutMethod === method ? '#0284c7' : '#f1f5f9',
+                        padding: '10px 8px',
+                        borderRadius: '10px',
+                        background: payoutMethod === method ? (method === 'Telebirr' ? '#0072ce' : '#d97706') : '#f1f5f9',
                         color: payoutMethod === method ? '#ffffff' : '#475569',
                         border: 'none',
-                        fontWeight: 700,
+                        fontWeight: 800,
                         fontSize: '12px',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
                       }}
                     >
-                      {method}
+                      {method === 'Telebirr' ? (
+                        <TelebirrLogo size={18} />
+                      ) : (
+                        <CBELogo size={18} />
+                      )}
+                      <span>{method === 'CBEBirr' ? 'CBE Birr' : method}</span>
                     </button>
                   ))}
                 </div>

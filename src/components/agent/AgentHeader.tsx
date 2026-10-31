@@ -98,8 +98,58 @@ export const AgentHeader: React.FC<AgentHeaderProps> = ({
         </div>
       </div>
 
-      {/* Right: Notifications Bell + Profile Pill matching Reference UI */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+      {/* Right: Balance Pills + Notifications Bell + Profile Pill matching Reference UI */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {/* Float Balance Pill */}
+        <button
+          type="button"
+          onClick={() => onNavigateTab?.('recharge')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '6px 14px',
+            borderRadius: '9999px',
+            background: '#ecfdf5',
+            border: '1px solid #a7f3d0',
+            color: '#065f46',
+            fontSize: '12px',
+            fontWeight: 800,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease'
+          }}
+          title="Click to recharge float balance"
+        >
+          <i className="fa-solid fa-wallet" style={{ color: '#10b981' }}></i>
+          <span>Float: <strong style={{ color: '#047857' }}>{Number(agentProfile?.walletBalance ?? agentProfile?.wallet_balance ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ETB</strong></span>
+          <span style={{ background: '#10b981', color: '#fff', borderRadius: '50%', width: '16px', height: '16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 900 }}>+</span>
+        </button>
+
+        {/* Commission Balance Pill */}
+        <button
+          type="button"
+          onClick={() => onNavigateTab?.('cash_out')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '6px 14px',
+            borderRadius: '9999px',
+            background: '#eff6ff',
+            border: '1px solid #bfdbfe',
+            color: '#1e40af',
+            fontSize: '12px',
+            fontWeight: 800,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease'
+          }}
+          title="Click to view and convert earned commission"
+        >
+          <i className="fa-solid fa-coins" style={{ color: '#3b82f6' }}></i>
+          <span>Comm: <strong style={{ color: '#1d4ed8' }}>{Number(agentProfile?.commissionBalance ?? agentProfile?.commission_balance ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ETB</strong></span>
+          <i className="fa-solid fa-arrow-right" style={{ fontSize: '10px', color: '#3b82f6' }}></i>
+        </button>
+
         {/* Notification Bell with Badge */}
         <div
           onClick={() => onNavigateTab?.('deposit_requests')}

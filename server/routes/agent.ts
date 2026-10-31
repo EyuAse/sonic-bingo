@@ -215,15 +215,26 @@ router.post('/deposit-for-player', requireAgent, async (req: AuthenticatedReques
       const oldPlayerBal = parseFloat(player.balance || '0');
       const newPlayerBal = oldPlayerBal + numAmount;
       const refCode = `AGT-DEP-${Date.now().toString().slice(-6)}`;
+      const commissionRate = parseFloat(agent.commission_rate || '5.0');
+      const commissionEarned = Math.round(numAmount * (commissionRate / 100) * 100) / 100;
 
-      // 3. Deduct from agent wallet
+      // 3. Deduct from agent wallet & credit 5% cashier commission
       await client.query(
         `UPDATE agent_profiles 
          SET wallet_balance = $1, 
+             commission_balance = COALESCE(commission_balance, 0.00) + $2,
              low_balance_alert_sent = (CASE WHEN $1 <= low_balance_threshold THEN TRUE ELSE FALSE END),
              updated_at = NOW() 
-         WHERE id = $2`,
-        [newAgentBal, agent.id]
+         WHERE id = $3`,
+        [newAgentBal, commissionEarned, agent.id]
+      );
+
+      // 3b. Record commission in audit ledger
+      await client.query(
+        `INSERT INTO agent_commissions 
+          (agent_id, source_type, source_id, amount, commission_rate, commission_earned)
+         VALUES ($1, 'cash_in', $2, $3, $4, $5)`,
+        [agent.id, refCode, numAmount, commissionRate, commissionEarned]
       );
 
       // 4. Atomically upsert player wallet
@@ -864,39 +875,90 @@ router.get('/transactions', requireAgent, async (req: AuthenticatedRequest, res:
 
     const agentId = agentRes.rows[0].id;
 
-    const [depositsRes, redemptionsRes] = await Promise.all([
+    const [depositsRes, withdrawalsRes, redemptionsRes] = await Promise.all([
       query(
         `SELECT apd.id, 'cash_in' as type, apd.amount, apd.payment_method, apd.reference_code,
+                ROUND(apd.amount * 0.05, 2) as agent_commission_earned,
                 apd.agent_balance_after, apd.created_at,
-                u.full_name as player_name, u.phone as player_phone
+                u.full_name as player_name, 
+                COALESCE(u.phone, u.telegram_username, 'Player') as player_phone
          FROM agent_player_deposits apd
          JOIN users u ON apd.player_user_id = u.id
          WHERE apd.agent_id = $1
          ORDER BY apd.created_at DESC
-         LIMIT 50`,
+         LIMIT 60`,
+        [agentId]
+      ),
+      query(
+        `SELECT awr.id, 'cash_out' as type, awr.amount, awr.payout_method as payment_method,
+                COALESCE(awr.agent_tx_ref, 'TX-WITH') as reference_code,
+                COALESCE(awr.agent_commission_earned, ROUND(awr.amount * 0.02, 2)) as agent_commission_earned,
+                awr.agent_balance_after,
+                COALESCE(awr.resolved_at, awr.created_at) as created_at,
+                u.full_name as player_name,
+                COALESCE(u.phone, u.telegram_username, 'Player') as player_phone
+         FROM agent_withdrawal_requests awr
+         JOIN users u ON awr.player_id = u.id
+         WHERE awr.agent_id = $1 AND awr.status = 'approved'
+         ORDER BY awr.created_at DESC
+         LIMIT 60`,
         [agentId]
       ),
       query(
         `SELECT v.id, 'cash_out' as type, v.amount, 'Cash Counter' as payment_method,
-                v.voucher_code as reference_code, v.agent_commission_earned,
+                v.voucher_code as reference_code, 
+                COALESCE(v.agent_commission_earned, ROUND(v.amount * 0.015, 2)) as agent_commission_earned,
+                NULL as agent_balance_after,
                 v.redeemed_at as created_at,
-                u.full_name as player_name, u.phone as player_phone
+                u.full_name as player_name, 
+                COALESCE(u.phone, u.telegram_username, 'Player') as player_phone
          FROM agent_cashout_vouchers v
          JOIN users u ON v.user_id = u.id
          WHERE v.redeemed_by_agent_id = $1 AND v.status = 'redeemed'
          ORDER BY v.redeemed_at DESC
-         LIMIT 50`,
+         LIMIT 60`,
         [agentId]
       )
     ]);
 
+    // Format numbers cleanly
+    const formattedDeposits = depositsRes.rows.map(r => ({
+      ...r,
+      amount: parseFloat(r.amount),
+      agent_commission_earned: parseFloat(r.agent_commission_earned || '0'),
+      agent_balance_after: r.agent_balance_after ? parseFloat(r.agent_balance_after) : null
+    }));
+
+    const formattedWithdrawals = withdrawalsRes.rows.map(r => ({
+      ...r,
+      amount: parseFloat(r.amount),
+      agent_commission_earned: parseFloat(r.agent_commission_earned || '0'),
+      agent_balance_after: r.agent_balance_after ? parseFloat(r.agent_balance_after) : null
+    }));
+
+    const formattedVouchers = redemptionsRes.rows.map(r => ({
+      ...r,
+      amount: parseFloat(r.amount),
+      agent_commission_earned: parseFloat(r.agent_commission_earned || '0'),
+      agent_balance_after: null
+    }));
+
     // Merge & sort descending
-    const combined = [...depositsRes.rows, ...redemptionsRes.rows].sort((a, b) => {
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    }).slice(0, 50);
+    const combined = [...formattedDeposits, ...formattedWithdrawals, ...formattedVouchers]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 100);
+
+    const totalCashIn = formattedDeposits.reduce((sum, t) => sum + t.amount, 0);
+    const totalCashOut = [...formattedWithdrawals, ...formattedVouchers].reduce((sum, t) => sum + t.amount, 0);
+    const totalCommission = combined.reduce((sum, t) => sum + (t.agent_commission_earned || 0), 0);
 
     return res.json({
       success: true,
+      summary: {
+        totalCashIn,
+        totalCashOut,
+        totalCommission
+      },
       transactions: combined
     });
   } catch (error: any) {
@@ -1083,10 +1145,14 @@ router.post('/deposit-requests/:id/approve', requireAgent, async (req: Authentic
       const commissionRate = parseFloat(agentProfile.commission_rate || '5.0');
       const commissionEarned = depositAmount * (commissionRate / 100);
 
-      // D. Deduct Agent Float
+      // D. Deduct Agent Float & Credit 5% Cashier Commission
       await client.query(
-        `UPDATE agent_profiles SET wallet_balance = $1, updated_at = NOW() WHERE id = $2`,
-        [agentBalAfter, agentId]
+        `UPDATE agent_profiles 
+         SET wallet_balance = $1, 
+             commission_balance = COALESCE(commission_balance, 0.00) + $2, 
+             updated_at = NOW() 
+         WHERE id = $3`,
+        [agentBalAfter, commissionEarned, agentId]
       );
 
       // E. Credit Player Balance
