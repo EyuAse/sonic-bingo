@@ -127,7 +127,7 @@ async function run50RoundSimulation() {
 
   for (let round = 1; round <= TOTAL_ROUNDS; round++) {
     // 1. Real player buys 1 ticket
-    const realCartelaId = 1 + Math.floor(Math.random() * 400);
+    const realCartelaId = 1 + Math.floor(Math.random() * 600);
     const realCard = generateCardFromId(realCartelaId);
 
     // 2. Sample 5 standby bots from the 200 roster
@@ -140,9 +140,9 @@ async function run50RoundSimulation() {
     // 3. Assign 5 distinct non-colliding cartela IDs for bots
     const assignedIds = new Set<number>([realCartelaId]);
     const botOpponents = sampledBots.map(bot => {
-      let botCartelaId = 1 + Math.floor(Math.random() * 400);
+      let botCartelaId = 1 + Math.floor(Math.random() * 600);
       while (assignedIds.has(botCartelaId)) {
-        botCartelaId = 1 + Math.floor(Math.random() * 400);
+        botCartelaId = 1 + Math.floor(Math.random() * 600);
       }
       assignedIds.add(botCartelaId);
       return {

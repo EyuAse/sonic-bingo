@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext.tsx';
 import { useApp } from '../../context/AppContext.tsx';
+import { apiClient } from '../../services/apiClient.ts';
 
 interface RechargeRequest {
   id: string;
@@ -29,18 +30,8 @@ export const AgentRechargesDesk: React.FC = () => {
   const fetchRecharges = async () => {
     try {
       setLoading(true);
-      const url = filter === 'all'
-        ? '/api/admin/agents/recharges'
-        : `/api/admin/agents/recharges?status=${filter}`;
-
-      const res = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${adminToken || localStorage.getItem('sonic_admin_token') || ''}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await res.json();
-      if (data.success) {
+      const data = await apiClient.admin.getAgentRecharges(filter === 'all' ? undefined : filter);
+      if (data && data.success) {
         setRecharges(data.recharges || []);
       }
     } catch (err) {
@@ -57,19 +48,12 @@ export const AgentRechargesDesk: React.FC = () => {
   const handleApprove = async (id: string, agentCode: string, amount: number | string) => {
     try {
       setProcessingId(id);
-      const res = await fetch(`/api/admin/agents/recharges/${id}/approve`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${adminToken || localStorage.getItem('sonic_admin_token') || ''}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await res.json();
-      if (data.success) {
+      const data = await apiClient.admin.approveAgentRecharge(id);
+      if (data && data.success) {
         showToast(`🎉 Approved ${amount} ETB recharge for agent ${agentCode}!`);
         fetchRecharges();
       } else {
-        showToast(`❌ ${data.error || 'Approval failed'}`);
+        showToast(`❌ ${data?.error || 'Approval failed'}`);
       }
     } catch (err: any) {
       showToast(`❌ Error: ${err.message}`);
@@ -84,20 +68,12 @@ export const AgentRechargesDesk: React.FC = () => {
 
     try {
       setProcessingId(id);
-      const res = await fetch(`/api/admin/agents/recharges/${id}/reject`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${adminToken || localStorage.getItem('sonic_admin_token') || ''}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ adminNotes: reason || 'Payment not verified' })
-      });
-      const data = await res.json();
-      if (data.success) {
+      const data = await apiClient.admin.rejectAgentRecharge(id, reason || 'Payment not verified');
+      if (data && data.success) {
         showToast('Recharge request rejected');
         fetchRecharges();
       } else {
-        showToast(`❌ ${data.error || 'Rejection failed'}`);
+        showToast(`❌ ${data?.error || 'Rejection failed'}`);
       }
     } catch (err: any) {
       showToast(`❌ Error: ${err.message}`);
@@ -280,3 +256,4 @@ export const AgentRechargesDesk: React.FC = () => {
     </div>
   );
 };
+

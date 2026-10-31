@@ -130,7 +130,7 @@ interface AdminContextType {
     realPlayerCount?: number;
   } | null;
 
-  // 400 Cartelas
+  // 600 Cartelas
   cartelaPool: CartelaCard[];
 
   // Users Management
@@ -221,7 +221,7 @@ const generateEthiopianBots = (): BotPlayer[] => {
   return bots;
 };
 
-// Generate 400 Unique Cartela Definitions
+// Generate 600 Unique Cartela Definitions
 const generate600Cartelas = (): CartelaCard[] => {
   const cards: CartelaCard[] = [];
   for (let c = 1; c <= 600; c++) {

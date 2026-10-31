@@ -289,3 +289,4 @@ export class CoinService {
 }
 
 export const coinService = CoinService.getInstance();
+

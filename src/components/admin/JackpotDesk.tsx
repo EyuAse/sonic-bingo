@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext.tsx';
 import { useApp } from '../../context/AppContext.tsx';
+import { apiClient } from '../../services/apiClient.ts';
 
 interface JackpotPoolItem {
   room_id: string;
@@ -40,16 +41,10 @@ export const JackpotDesk: React.FC = () => {
   const fetchJackpotData = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/admin/jackpots', {
-        headers: {
-          'Authorization': `Bearer ${adminToken || localStorage.getItem('sonic_admin_token') || ''}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await res.json();
-      if (data.success) {
-        setPools(data.pools || []);
-        setWinners(data.winners || []);
+      const res = await apiClient.admin.getJackpots();
+      if (res.success) {
+        setPools(res.pools || []);
+        setWinners(res.winners || []);
       }
     } catch (err) {
       console.error('Failed to fetch jackpot data:', err);
@@ -66,7 +61,7 @@ export const JackpotDesk: React.FC = () => {
 
   const handleOpenAdjust = (p: JackpotPoolItem) => {
     setSelectedPool(p);
-    setEditBalance(String(p.liveBalance ?? p.balance));
+    setEditBalance(String((p.liveBalance ?? p.balance) || 0));
     setEditSeed(String(p.seed_amount));
   };
 
@@ -82,25 +77,17 @@ export const JackpotDesk: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      const res = await fetch('/api/admin/jackpots/adjust', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${adminToken || localStorage.getItem('sonic_admin_token') || ''}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          roomId: selectedPool.room_id,
-          balance: balNum,
-          seedAmount: seedNum
-        })
+      const res = await apiClient.admin.adjustJackpot({
+        roomId: selectedPool.room_id,
+        balance: balNum,
+        seedAmount: seedNum
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         showToast(`🎉 ${selectedPool.room_id} Jackpot adjusted successfully!`);
         setSelectedPool(null);
         fetchJackpotData();
       } else {
-        showToast(`❌ ${data.error || 'Adjustment failed'}`);
+        showToast(`❌ ${res.error || 'Adjustment failed'}`);
       }
     } catch (err: any) {
       showToast(`❌ Error: ${err.message}`);
@@ -235,7 +222,7 @@ export const JackpotDesk: React.FC = () => {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
                   <span>Win Trigger:</span>
-                  <strong style={{ color: '#dc2626' }}>≤ 18 Balls</strong>
+                  <strong style={{ color: '#dc2626' }}>≤ 15 Balls (Speed 15)</strong>
                 </div>
               </div>
 
@@ -281,7 +268,7 @@ export const JackpotDesk: React.FC = () => {
               🏆 Recent Progressive Jackpot Winners
             </h3>
             <p style={{ margin: '2px 0 0 0', color: '#64748b', fontSize: '0.8125rem' }}>
-              Real players who completed a winning bingo pattern in ≤ 18 balls drawn
+              Real players who completed a winning bingo pattern in ≤ 15 balls drawn (Speed 15 Golden Strike)
             </p>
           </div>
           <button
@@ -307,7 +294,7 @@ export const JackpotDesk: React.FC = () => {
             <i className="fa-solid fa-trophy" style={{ fontSize: '2.5rem', marginBottom: '12px', color: '#cbd5e1' }}></i>
             <p style={{ margin: 0, fontWeight: 600 }}>No progressive jackpots have been hit yet.</p>
             <p style={{ margin: '4px 0 0 0', fontSize: '0.8125rem' }}>
-              When a player wins within 18 balls drawn, the payout is recorded here automatically.
+              When a real player wins on Ball 15 (Speed 15 Golden Strike), the payout is recorded here automatically.
             </p>
           </div>
         ) : (

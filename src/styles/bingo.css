@@ -4278,23 +4278,44 @@
   color: #ca8a04;
 }
 
-/* ── 2-Column Split Grid Container (Strict Zero-Scroll Fit) ── */
+/* ── 2-Column Split Grid Container (Cartelas on LEFT, Flashboard 1-75 on RIGHT) ── */
 .bingo-split-layout-grid {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(105px, 126px) 1fr;
-  gap: 5px;
+  grid-template-columns: 1fr minmax(118px, 138px);
+  gap: 6px;
   width: 100%;
   height: calc(100% - 32px);
   max-height: calc(100% - 32px);
   align-items: stretch;
   margin: 0;
-  padding: 0 2px;
+  padding: 0 4px;
   box-sizing: border-box;
 }
 
-/* ── LEFT COLUMN: Full 1-75 Main Master Board (Flashboard) ── */
+@media (min-width: 768px) {
+  .bingo-split-layout-grid {
+    grid-template-columns: 1fr 220px;
+    gap: 12px;
+    padding: 0 10px;
+  }
+}
+
+/* ── LEFT COLUMN: Cartelas Play Area (Primary Wide Column) ── */
+.bingo-left-cartela-col,
+.bingo-left-playarea-col {
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  min-width: 0;
+}
+
+/* Legacy alias for backwards compatibility */
 .bingo-left-flashboard-col {
   height: 100%;
   max-height: 100%;
@@ -4302,6 +4323,24 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* ── RIGHT COLUMN: Current Call, Flashboard 1-75, Action Bar ── */
+.bingo-right-flashboard-col,
+.bingo-right-playarea-col {
+  position: relative;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  padding-bottom: 4px;
 }
 
 .fresh-master-board-card {
@@ -4312,9 +4351,9 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 180px;
   max-height: 100%;
-  min-height: 0;
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -4713,6 +4752,212 @@
   opacity: 0.9;
 }
 
+/* ── BINGO CARTELAS CONTAINER & MULTI-CARD NAVIGATION ── */
+.bingo-cartelas-container {
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  gap: 3px;
+  box-sizing: border-box;
+}
+
+/* Multi-Card Navigation Tabs (Cards #1 to #4 + Grid Toggle) */
+.cartela-tabs-header-bar {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  flex-shrink: 0;
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 3px;
+  box-sizing: border-box;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.cartela-tabs-scroll-row {
+  display: flex;
+  gap: 3px;
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.cartela-tabs-scroll-row::-webkit-scrollbar {
+  display: none;
+}
+
+.cartela-nav-tab-pill {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 26px;
+  padding: 0 3px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  color: #94a3b8;
+  font-size: 0.68rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.cartela-nav-tab-pill:hover {
+  background: #273549;
+  color: #f1f5f9;
+}
+
+.cartela-nav-tab-pill.tab-active {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  border-color: #f59e0b;
+  font-weight: 900;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.45);
+}
+
+.cartela-nav-tab-pill.tab-alert-1-togo {
+  animation: pulse-1togo 1.2s infinite ease-in-out;
+  border-color: #ef4444;
+}
+
+@keyframes pulse-1togo {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+  50% { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2); }
+}
+
+.tab-pill-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab-pill-cartela-num {
+  font-size: 0.62rem;
+  opacity: 0.9;
+}
+
+.tab-pill-badge {
+  font-size: 0.6rem;
+  padding: 1px 3px;
+  border-radius: 4px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.tab-pill-badge.badge-1togo {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.tab-pill-badge.badge-2togo {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.tab-pill-badge.badge-win {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.tab-grid-toggle {
+  flex: 0 0 auto;
+  padding: 0 6px;
+  font-weight: 800;
+}
+
+/* Card Header Right & To-Go Badges */
+.new-card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.card-togo-pill {
+  font-size: 0.64rem;
+  font-weight: 900;
+  padding: 1.5px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.1px;
+  white-space: nowrap;
+}
+
+.card-togo-pill.togo-1 {
+  background: linear-gradient(135deg, #ef4444, #f59e0b);
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+  animation: flame-pulse 0.8s infinite alternate;
+}
+
+@keyframes flame-pulse {
+  from { transform: scale(0.97); }
+  to { transform: scale(1.05); }
+}
+
+.card-togo-pill.togo-2 {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.card-togo-pill.togo-win {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.card-has-1-togo {
+  border: 2px solid #f59e0b !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.45) !important;
+}
+
+/* Multi-Card Grid View (2x2 or 2-stack) */
+.cartelas-multi-grid {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  display: grid;
+  gap: 3px;
+  overflow-y: auto;
+  padding: 2px;
+  box-sizing: border-box;
+}
+
+.cartelas-multi-grid.count-2 {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+
+.cartelas-multi-grid.count-3,
+.cartelas-multi-grid.count-4 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+
+.grid-item-card {
+  cursor: pointer;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  padding: 2px !important;
+}
+
+.grid-item-card:hover {
+  border-color: #f59e0b;
+}
+
+.grid-item-zoom-hint {
+  font-size: 0.58rem;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 1px 3px;
+  border-radius: 3px;
+}
+
 /* ── STACKED CARTELA CARDS (Crisp 5x5 Matrix, Zero Squish) ── */
 .compact-cartelas-stack {
   display: flex;
@@ -4962,7 +5207,7 @@
   gap: 4px !important;
   width: 100% !important;
   overflow: hidden !important;
-  padding-top: 12px !important;
+  padding-top: 4px !important;
 }
 
 .new-cartela-card.single-card {

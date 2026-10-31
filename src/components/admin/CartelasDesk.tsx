@@ -170,7 +170,9 @@ export const CartelasDesk: React.FC = () => {
                 { label: '51–100', start: 51 },
                 { label: '101–200', start: 101 },
                 { label: '201–300', start: 201 },
-                { label: '301–400', start: 301 }
+                { label: '301–400', start: 301 },
+                { label: '401–500', start: 401 },
+                { label: '501–600', start: 501 }
               ].map(r => (
                 <button
                   key={r.label}

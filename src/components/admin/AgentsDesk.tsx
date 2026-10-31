@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext.tsx';
 import { useApp } from '../../context/AppContext.tsx';
+import { apiClient } from '../../services/apiClient.ts';
 
 interface AgentRecord {
   id: string;
@@ -41,14 +42,8 @@ export const AgentsDesk: React.FC = () => {
   const fetchAgents = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/admin/agents', {
-        headers: {
-          'Authorization': `Bearer ${adminToken || localStorage.getItem('sonic_admin_token') || ''}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await res.json();
-      if (data.success) {
+      const data = await apiClient.admin.getAgents();
+      if (data && data.success) {
         setAgents(data.agents || []);
       }
     } catch (err) {
@@ -71,31 +66,23 @@ export const AgentsDesk: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      const res = await fetch('/api/admin/agents/create', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${adminToken || localStorage.getItem('sonic_admin_token') || ''}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          fullName: newName.trim(),
-          phone: newPhone.trim(),
-          initialDeposit: parseFloat(newDeposit) || 10000,
-          targetMonthly: parseFloat(newTarget) || 50000,
-          commissionRate: parseFloat(newCommission) || 5,
-          customCode: newCustomCode.trim() || undefined
-        })
+      const data = await apiClient.admin.createAgent({
+        fullName: newName.trim(),
+        phone: newPhone.trim(),
+        initialDeposit: parseFloat(newDeposit) || 10000,
+        targetMonthly: parseFloat(newTarget) || 50000,
+        commissionRate: parseFloat(newCommission) || 5,
+        customCode: newCustomCode.trim() || undefined
       });
-      const data = await res.json();
-      if (data.success) {
-        showToast(`🎉 Agent ${data.agent.agent_code} created successfully!`);
+      if (data && data.success) {
+        showToast(`🎉 Agent ${data.agent?.agent_code || ''} created successfully!`);
         setShowCreateModal(false);
         setNewName('');
         setNewPhone('');
         setNewCustomCode('');
         fetchAgents();
       } else {
-        showToast(`❌ ${data.error || 'Failed to create agent'}`);
+        showToast(`❌ ${data?.error || 'Failed to create agent'}`);
       }
     } catch (err: any) {
       showToast(`❌ Error: ${err.message}`);
@@ -107,20 +94,12 @@ export const AgentsDesk: React.FC = () => {
   const handleToggleStatus = async (agent: AgentRecord) => {
     const nextStatus = agent.status === 'active' ? 'suspended' : 'active';
     try {
-      const res = await fetch(`/api/admin/agents/${agent.id}/status`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${adminToken || localStorage.getItem('sonic_admin_token') || ''}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status: nextStatus })
-      });
-      const data = await res.json();
-      if (data.success) {
+      const data = await apiClient.admin.setAgentStatus(agent.id, nextStatus);
+      if (data && data.success) {
         showToast(`Agent ${agent.agent_code} is now ${nextStatus}`);
         fetchAgents();
       } else {
-        showToast(`❌ ${data.error || 'Status update failed'}`);
+        showToast(`❌ ${data?.error || 'Status update failed'}`);
       }
     } catch (err: any) {
       showToast(`❌ Error: ${err.message}`);
@@ -494,3 +473,4 @@ export const AgentsDesk: React.FC = () => {
     </div>
   );
 };
+

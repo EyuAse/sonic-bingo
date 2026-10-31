@@ -917,7 +917,7 @@ class BingoGameEngine {
       room.opponentCards.forEach(o => assignedIds.add(o.cartelaId));
     }
 
-    // Validate and honor requested Cartela IDs (1-400) chosen by user
+    // Validate and honor requested Cartela IDs (1-600) chosen by user
     const drawnIds: number[] = [];
     const getNextUniqueCartelaId = (): number => {
       let attempts = 0;
@@ -2953,9 +2953,9 @@ class BingoGameEngine {
       const isRoom10 = room.id === 'room-10' || room.id === ARENA_ROOM_ID || room.id === 'default';
       const dbRoomId = isRoom10 ? 'room-10' : room.id;
 
-      // Phase 3: Progressive Jackpot Hit Detection (Real player wins in <= 18 balls drawn)
+      // Phase 3: Progressive Jackpot Hit Detection (Real player wins in <= 15 balls drawn - "Speed 15 Golden Strike")
       const ballsDrawn = room.drawnNumbers.length;
-      const isJackpotHit = realWinners.length > 0 && ballsDrawn <= 18 && (room.jackpotPoolBalance || 0) > 0;
+      const isJackpotHit = realWinners.length > 0 && ballsDrawn <= 15 && (room.jackpotPoolBalance || 0) > 0;
       const totalJackpotAwarded = isJackpotHit ? (room.jackpotPoolBalance || 0) : 0;
       const jackpotSharePerRealUser = (isJackpotHit && realWinnersByUser.size > 0)
         ? Math.floor(totalJackpotAwarded / realWinnersByUser.size)

@@ -28,3 +28,4 @@ CREATE TABLE IF NOT EXISTS agent_player_deposits (
 CREATE INDEX IF NOT EXISTS idx_agent_deposits_agent ON agent_player_deposits(agent_id);
 CREATE INDEX IF NOT EXISTS idx_agent_deposits_player ON agent_player_deposits(player_user_id);
 CREATE INDEX IF NOT EXISTS idx_agent_deposits_created ON agent_player_deposits(created_at DESC);
+

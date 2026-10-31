@@ -560,6 +560,122 @@ export const apiClient = {
         body: JSON.stringify(cfg)
       });
       return handleResponse<{ success: boolean; botConfig: any; telemetry: any }>(res);
+    },
+
+    // Progressive Jackpots
+    async getJackpots() {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/jackpots`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; pools: any[]; winners: any[] }>(res);
+    },
+
+    async adjustJackpot(payload: { roomId: string; balance?: number; seedAmount?: number }) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/jackpots/adjust`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify(payload)
+      });
+      return handleResponse<{ success: boolean; pool?: any; message?: string; error?: string }>(res);
+    },
+
+    // Coins & Loyalty Rewards
+    async getCoins() {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/coins`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; stats: any; topHolders?: any[]; holders?: any[]; recentTransactions: any[] }>(res);
+    },
+
+    async adjustCoins(payload: { userId: string; amount: number; reason?: string; description?: string }) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/coins/adjust`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify({
+          userId: payload.userId,
+          amount: payload.amount,
+          reason: payload.reason || payload.description || 'Admin manual adjustment'
+        })
+      });
+      return handleResponse<{ success: boolean; newBalance?: number; balance?: number; message?: string; error?: string }>(res);
+    },
+
+    // Decentralized Agents
+    async getAgents() {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agents`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; agents: any[] }>(res);
+    },
+
+    async createAgent(payload: {
+      fullName: string;
+      phone: string;
+      initialDeposit?: number;
+      targetMonthly?: number;
+      commissionRate?: number;
+      customCode?: string;
+      initialFloat?: number;
+      agentCode?: string;
+    }) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agents/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify({
+          fullName: payload.fullName,
+          phone: payload.phone,
+          initialDeposit: payload.initialDeposit ?? payload.initialFloat ?? 10000,
+          targetMonthly: payload.targetMonthly ?? 50000,
+          commissionRate: payload.commissionRate ?? 5,
+          customCode: payload.customCode || payload.agentCode || undefined
+        })
+      });
+      return handleResponse<{ success: boolean; agent?: any; message?: string; error?: string }>(res);
+    },
+
+    async setAgentStatus(id: string, status: 'active' | 'suspended') {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agents/${id}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify({ status })
+      });
+      return handleResponse<{ success: boolean; agent?: any; message?: string; error?: string }>(res);
+    },
+
+    // Agent Float Recharges
+    async getAgentRecharges(status?: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+      const res = await fetch(`${API_BASE}/admin/agents/recharges${qs}`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; recharges: any[] }>(res);
+    },
+
+    async approveAgentRecharge(id: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agents/recharges/${id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; message?: string; error?: string }>(res);
+    },
+
+    async rejectAgentRecharge(id: string, adminNotes?: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agents/recharges/${id}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify({ adminNotes: adminNotes || 'Rejected by admin' })
+      });
+      return handleResponse<{ success: boolean; message?: string; error?: string }>(res);
     }
   }
 };

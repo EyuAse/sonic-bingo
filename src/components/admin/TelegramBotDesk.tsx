@@ -93,7 +93,7 @@ export const TelegramBotDesk: React.FC = () => {
 
   // Bot Profile & Welcome Greeting State
   const [botDescription, setBotDescription] = useState<string>(
-    "🍋 Welcome to Lomi Bingo! Ethiopia's #1 Live Real-Time Multiplayer Bingo in Telegram. 10 ETB Welcome Gift, 400 Cartelas, Instant Cashier Payouts!"
+    "🍋 Welcome to Lomi Bingo! Ethiopia's #1 Live Real-Time Multiplayer Bingo in Telegram. 20 ETB Welcome Gift, 600 Cartelas, Instant Cashier Payouts!"
   );
   const [botShortDescription, setBotShortDescription] = useState<string>(
     "🍋 Lomi Bingo: Live multiplayer bingo with instant payouts!"
@@ -102,7 +102,7 @@ export const TelegramBotDesk: React.FC = () => {
     '👋 <b>እንኳን ወደ ሎሚ ቢንጎ በደህና መጡ!</b> 🍋🎯\n' +
     '<b>Welcome to Lomi / Betika Bingo!</b>\n\n' +
     '🇪🇹 Ethiopia\'s #1 Real-Time Multiplayer Live Bingo in Telegram!\n\n' +
-    '🎁 <b>10 ETB Welcome Bonus</b> for new players\n' +
+    '🎁 <b>20 ETB Welcome Bonus</b> for new players\n' +
     '⚡ <b>Instant Cashier Withdrawals & Deposits</b>\n' +
     '🎙️ <b>Authentic Voice Caller</b> in Amharic and English!\n' +
     '🛡️ <b>Disconnect Protection:</b> Never lose a win even on network drops!\n\n' +
@@ -193,7 +193,7 @@ export const TelegramBotDesk: React.FC = () => {
       text:
         '🌙 <b>የደስታ ሰዓት (Happy Hour) የ2 እጥፍ ክፍያ!</b> 🍋✨\n\n' +
         '🔥 በሚቀጥሉት 2 ሰዓታት ውስጥ በሁሉም ክፍሎች የሚገኙ አሸናፊዎች <b>2 እጥፍ ድል</b> ያገኛሉ!\n' +
-        '🎲 400 ካርቴላዎች ዝግጁ ሆነዋል\n' +
+        '🎲 600 ካርቴላዎች ዝግጁ ሆነዋል\n' +
         '⚡ የቀጥታ ፈጣን ክፍያዎች\n\n' +
         'እድልዎን አሁኑኑ ይሞክሩ! 👇',
       photo: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=800&auto=format&fit=crop&q=80',

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useBingo, BingoCell } from '../../context/BingoContext.tsx';
 import { useLanguage } from '../../context/LanguageContext.tsx';
 
@@ -10,6 +10,44 @@ const CARD_COLUMNS = [
   { letter: 'G', colClass: 'col-g' },
   { letter: 'O', colClass: 'col-o' },
 ];
+
+// 13 Winning patterns to calculate "To Go" status
+const WIN_PATTERNS: number[][] = [
+  // 5 Rows
+  [0, 1, 2, 3, 4],
+  [5, 6, 7, 8, 9],
+  [10, 11, 12, 13, 14],
+  [15, 16, 17, 18, 19],
+  [20, 21, 22, 23, 24],
+  // 5 Columns
+  [0, 5, 10, 15, 20],
+  [1, 6, 11, 16, 21],
+  [2, 7, 12, 17, 22],
+  [3, 8, 13, 18, 23],
+  [4, 9, 14, 19, 24],
+  // 2 Diagonals
+  [0, 6, 12, 18, 24],
+  [4, 8, 12, 16, 20],
+  // 4 Corners
+  [0, 4, 20, 24]
+];
+
+export const calculateCardToGo = (cells: BingoCell[]): number => {
+  if (!cells || cells.length < 25) return 5;
+  let minToGo = 5;
+  for (const line of WIN_PATTERNS) {
+    let uncompleted = 0;
+    for (const idx of line) {
+      if (!cells[idx]?.marked && !cells[idx]?.isFree) {
+        uncompleted++;
+      }
+    }
+    if (uncompleted < minToGo) {
+      minToGo = uncompleted;
+    }
+  }
+  return minToGo;
+};
 
 const NewCard5x5: React.FC<{
   cells: BingoCell[];
@@ -23,10 +61,14 @@ const NewCard5x5: React.FC<{
   isSingleCard?: boolean;
   isPreview?: boolean;
   onOpenPicker?: () => void;
+  toGo?: number;
+  isGridItem?: boolean;
+  onCardClick?: () => void;
 }> = ({
   cells, cardIndex, cartelaId, label,
   isWinningCard, winningLine, autoPlay, onDaub,
-  isSingleCard, isPreview, onOpenPicker
+  isSingleCard, isPreview, onOpenPicker,
+  toGo, isGridItem, onCardClick
 }) => {
   const { lang } = useLanguage();
 
@@ -34,8 +76,8 @@ const NewCard5x5: React.FC<{
   if (isPreview && (!cartelaId || cartelaId === 0 || !cells || cells.length === 0)) {
     return (
       <div
-        className={`new-cartela-card empty-cartela-placeholder ${isSingleCard ? 'single-card' : ''}`}
-        onClick={onOpenPicker}
+        className={`new-cartela-card empty-cartela-placeholder ${isSingleCard ? 'single-card' : ''} ${isGridItem ? 'grid-item-card' : ''}`}
+        onClick={onCardClick || onOpenPicker}
         title="Tap to choose your cartela from 600 available boards"
       >
         <div className="empty-cartela-inner">
@@ -69,8 +111,11 @@ const NewCard5x5: React.FC<{
   }
 
   return (
-    <div className={`new-cartela-card ${isSingleCard ? 'single-card' : ''}`}>
-      {/* ── Card Header Bar: Cartela #202 (Single-line, no overlap) ── */}
+    <div
+      className={`new-cartela-card ${isSingleCard ? 'single-card' : ''} ${isGridItem ? 'grid-item-card' : ''} ${toGo === 1 ? 'card-has-1-togo' : ''}`}
+      onClick={isGridItem && onCardClick ? onCardClick : undefined}
+    >
+      {/* ── Card Header Bar: Cartela #202 + To Go Badge ── */}
       <div className="new-card-header">
         <div
           className="new-card-header-left"
@@ -81,19 +126,39 @@ const NewCard5x5: React.FC<{
           <span className="new-card-header-label">{label}</span>
           {isPreview && <span className="new-card-preview-badge">PREVIEW</span>}
         </div>
-        {isPreview && onOpenPicker && (
-          <button
-            type="button"
-            className="btn-card-preview-shuffle"
-            onClick={e => {
-              e.stopPropagation();
-              onOpenPicker();
-            }}
-            title="Choose from 600 cartelas"
-          >
-            🎟️ Pick
-          </button>
-        )}
+
+        <div className="new-card-header-right">
+          {/* Real-Time To Go Status during live game */}
+          {!isPreview && typeof toGo === 'number' && (
+            toGo === 0 ? (
+              <span className="card-togo-pill togo-win">🏆 BINGO</span>
+            ) : toGo === 1 ? (
+              <span className="card-togo-pill togo-1">🔥 1 TO GO</span>
+            ) : toGo === 2 ? (
+              <span className="card-togo-pill togo-2">⚡ 2 TO GO</span>
+            ) : null
+          )}
+
+          {isPreview && onOpenPicker && (
+            <button
+              type="button"
+              className="btn-card-preview-shuffle"
+              onClick={e => {
+                e.stopPropagation();
+                onOpenPicker();
+              }}
+              title="Choose from 600 cartelas"
+            >
+              🎟️ Pick
+            </button>
+          )}
+
+          {isGridItem && (
+            <span className="grid-item-zoom-hint" title="Click to zoom in">
+              🔍 Zoom
+            </span>
+          )}
+        </div>
       </div>
 
       {/* ── Card Body: B I N G O letters + 5×5 grid ── */}
@@ -123,7 +188,15 @@ const NewCard5x5: React.FC<{
                   isWinningCell ? 'win-glow' : '',
                   !autoPlay && !cell.marked ? 'interactive-tap' : '',
                 ].filter(Boolean).join(' ')}
-                onClick={() => !autoPlay && onDaub(cardIndex, cell.index)}
+                onClick={(e) => {
+                  if (isGridItem && onCardClick) {
+                    // In grid view, click zooms into focused card mode
+                    onCardClick();
+                  } else if (!autoPlay) {
+                    e.stopPropagation();
+                    onDaub(cardIndex, cell.index);
+                  }
+                }}
               >
                 {cell.isFree ? (
                   /* FREE center cell with golden star */
@@ -162,7 +235,17 @@ export const BingoGrid: React.FC = () => {
     openCartelaPicker,
   } = useBingo();
 
-  const isSingleCard = totalPlayableCards === 1;
+  // Tab state: 0, 1, 2, 3 for single card focus; -1 for 4-grid view
+  const [activeTab, setActiveTab] = useState<number>(0);
+
+  // Keep active tab valid if totalPlayableCards decreases
+  useEffect(() => {
+    if (activeTab >= totalPlayableCards) {
+      setActiveTab(0);
+    }
+  }, [totalPlayableCards, activeTab]);
+
+  const isSingleCardTotal = totalPlayableCards === 1;
 
   const currentCards = [
     {
@@ -191,24 +274,106 @@ export const BingoGrid: React.FC = () => {
     },
   ].slice(0, totalPlayableCards);
 
+  // Calculate To-Go for each card
+  const cardsWithToGo = currentCards.map(c => ({
+    ...c,
+    toGo: calculateCardToGo(c.data)
+  }));
+
+  // Auto-switch notice: If user is on a card and another card reaches 1-To-Go
+  const anyCardHas1ToGo = cardsWithToGo.some(c => c.toGo === 1);
+
   return (
-    <div className={`compact-cartelas-stack ${isSingleCard ? 'single-cartela' : 'dual-cartela'}`}>
-      {currentCards.map(card => (
-        <NewCard5x5
-          key={card.cardIndex}
-          cells={card.data}
-          cardIndex={card.cardIndex}
-          cartelaId={card.id}
-          label={card.label}
-          isWinningCard={roundPhase !== 'lobby' && winResult !== null && winResult.winningCartelaNumber === card.id}
-          winningLine={Array.isArray(winResult?.winningLine) ? winResult.winningLine : []}
-          autoPlay={autoPlay}
-          onDaub={handleManualDaub}
-          isSingleCard={isSingleCard}
-          isPreview={roundPhase === 'lobby' && !hasTicket}
-          onOpenPicker={openCartelaPicker}
-        />
-      ))}
+    <div className="bingo-cartelas-container">
+      {/* Multi-Card Navigation Tabs (Shown whenever player has 2, 3, or 4 cards) */}
+      {!isSingleCardTotal && (
+        <div className="cartela-tabs-header-bar">
+          <div className="cartela-tabs-scroll-row">
+            {cardsWithToGo.map((card, idx) => {
+              const isActive = activeTab === idx;
+              return (
+                <button
+                  key={card.cardIndex}
+                  type="button"
+                  className={`cartela-nav-tab-pill ${isActive ? 'tab-active' : ''} ${card.toGo === 1 ? 'tab-alert-1-togo' : ''}`}
+                  onClick={() => setActiveTab(idx)}
+                >
+                  <span className="tab-pill-label">Card #{idx + 1}</span>
+                  {card.id > 0 && <span className="tab-pill-cartela-num">#{card.id}</span>}
+                  {roundPhase === 'playing' && (
+                    card.toGo === 0 ? (
+                      <span className="tab-pill-badge badge-win">🏆</span>
+                    ) : card.toGo === 1 ? (
+                      <span className="tab-pill-badge badge-1togo">🔥 1</span>
+                    ) : card.toGo === 2 ? (
+                      <span className="tab-pill-badge badge-2togo">⚡ 2</span>
+                    ) : null
+                  )}
+                </button>
+              );
+            })}
+
+            {/* Grid / All View toggle button */}
+            <button
+              type="button"
+              className={`cartela-nav-tab-pill tab-grid-toggle ${activeTab === -1 ? 'tab-active' : ''}`}
+              onClick={() => setActiveTab(-1)}
+              title="View all cards side-by-side"
+            >
+              <span>⊞ {totalPlayableCards === 4 ? '4-Grid' : 'All'}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── CARD DISPLAY AREA ── */}
+      {/* Mode A: Focused Single Card (activeTab >= 0 or isSingleCardTotal) */}
+      {(isSingleCardTotal || activeTab >= 0) && (
+        <div className="compact-cartelas-stack single-cartela">
+          {cardsWithToGo[activeTab >= 0 && activeTab < cardsWithToGo.length ? activeTab : 0] && (
+            <NewCard5x5
+              key={cardsWithToGo[activeTab >= 0 && activeTab < cardsWithToGo.length ? activeTab : 0].cardIndex}
+              cells={cardsWithToGo[activeTab >= 0 && activeTab < cardsWithToGo.length ? activeTab : 0].data}
+              cardIndex={cardsWithToGo[activeTab >= 0 && activeTab < cardsWithToGo.length ? activeTab : 0].cardIndex}
+              cartelaId={cardsWithToGo[activeTab >= 0 && activeTab < cardsWithToGo.length ? activeTab : 0].id}
+              label={cardsWithToGo[activeTab >= 0 && activeTab < cardsWithToGo.length ? activeTab : 0].label}
+              isWinningCard={roundPhase !== 'lobby' && winResult !== null && winResult.winningCartelaNumber === cardsWithToGo[activeTab >= 0 && activeTab < cardsWithToGo.length ? activeTab : 0].id}
+              winningLine={Array.isArray(winResult?.winningLine) ? winResult.winningLine : []}
+              autoPlay={autoPlay}
+              onDaub={handleManualDaub}
+              isSingleCard={true}
+              isPreview={roundPhase === 'lobby' && !hasTicket}
+              onOpenPicker={openCartelaPicker}
+              toGo={cardsWithToGo[activeTab >= 0 && activeTab < cardsWithToGo.length ? activeTab : 0].toGo}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Mode B: All Cards Grid View (activeTab === -1) */}
+      {!isSingleCardTotal && activeTab === -1 && (
+        <div className={`cartelas-multi-grid count-${totalPlayableCards}`}>
+          {cardsWithToGo.map(card => (
+            <NewCard5x5
+              key={card.cardIndex}
+              cells={card.data}
+              cardIndex={card.cardIndex}
+              cartelaId={card.id}
+              label={card.id ? `C#${card.id}` : `Card #${card.cardIndex + 1}`}
+              isWinningCard={roundPhase !== 'lobby' && winResult !== null && winResult.winningCartelaNumber === card.id}
+              winningLine={Array.isArray(winResult?.winningLine) ? winResult.winningLine : []}
+              autoPlay={autoPlay}
+              onDaub={handleManualDaub}
+              isSingleCard={false}
+              isGridItem={true}
+              onCardClick={() => setActiveTab(card.cardIndex)}
+              isPreview={roundPhase === 'lobby' && !hasTicket}
+              onOpenPicker={openCartelaPicker}
+              toGo={card.toGo}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

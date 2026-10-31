@@ -107,113 +107,113 @@ export const CartelaPickerModal: React.FC = () => {
         <div className="afro-picker-modal-scrollable-body">
           {/* ── Range Filter Tabs & Search Row (Strictly No Shuffle Button) ── */}
           <div className="afro-picker-controls-row">
-          <div className="afro-range-tabs">
-            {CARD_RANGES.map((range, idx) => (
-              <button
-                key={range.label}
-                type="button"
-                className={`btn-afro-range-tab ${activeRangeIdx === idx && !searchTerm ? 'active' : ''}`}
-                onClick={() => {
-                  setActiveRangeIdx(idx);
-                  setSearchTerm('');
-                }}
-              >
-                {range.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="afro-search-wrap">
-            <i className="fa-solid fa-magnifying-glass search-ico"></i>
-            <input
-              type="number"
-              min="1"
-              max="600"
-              placeholder="Search #..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="afro-search-input"
-            />
-            {searchTerm && (
-              <button
-                type="button"
-                className="btn-clear-search"
-                onClick={() => setSearchTerm('')}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* ── 9-Column Number Pill Grid (Reference Screenshot Structure, Brand Colors) ── */}
-        <div className="afro-9col-scroll-area">
-          <div className="afro-9col-grid">
-            {visibleNumbers.map(num => {
-              const isSelected = activeSelected.includes(num);
-              const isTaken = occupiedCartelaIds.includes(num);
-              const isPreviewed = currentPreviewId === num;
-
-              let cellClass = 'afro-num-pill';
-              if (isSelected) cellClass += ' selected';
-              else if (isTaken) cellClass += ' taken';
-              else if (isPreviewed) cellClass += ' preview-focus';
-
-              return (
+            <div className="afro-range-tabs">
+              {CARD_RANGES.map((range, idx) => (
                 <button
-                  key={num}
+                  key={range.label}
                   type="button"
-                  className={cellClass}
+                  className={`btn-afro-range-tab ${activeRangeIdx === idx && !searchTerm ? 'active' : ''}`}
                   onClick={() => {
-                    if (!isTaken) {
-                      setPreviewCartelaId(num);
-                      toggleCartelaSelection(num);
-                    }
+                    setActiveRangeIdx(idx);
+                    setSearchTerm('');
                   }}
-                  onMouseEnter={() => setPreviewCartelaId(num)}
-                  disabled={isTaken}
-                  title={isTaken ? `Cartela #${num} is already taken in this arena` : `Click to select Cartela #${num}`}
                 >
-                  <span className="pill-num">{num}</span>
-                  {isSelected && <span className="pill-check">✓</span>}
-                  {isTaken && <span className="pill-lock">🔒</span>}
+                  {range.label}
                 </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── Collapsible Live 5x5 Card Inspection Preview ── */}
-        <div className="afro-card-preview-drawer">
-          <div className="preview-drawer-hdr">
-            <span className="preview-title">
-              👀 {lang === 'am' ? 'የካርቴላ ይዘት' : 'Card Preview'}: <strong>Cartela #{currentPreviewId}</strong>
-            </span>
-            <span className="preview-indicator">
-              {activeSelected.includes(currentPreviewId) ? '✓ Selected' : 'Tap number to select'}
-            </span>
-          </div>
-
-          <div className="mini-cartela-5x5-grid">
-            <div className="mini-col-headers">
-              <span className="col-hdr col-b">B</span>
-              <span className="col-hdr col-i">I</span>
-              <span className="col-hdr col-n">N</span>
-              <span className="col-hdr col-g">G</span>
-              <span className="col-hdr col-o">O</span>
-            </div>
-            <div className="mini-cells-matrix">
-              {previewCells.map(cell => (
-                <div
-                  key={cell.index}
-                  className={`mini-cell ${cell.isFree ? 'free' : ''}`}
-                >
-                  {cell.isFree ? '⭐' : cell.val}
-                </div>
               ))}
             </div>
+
+            <div className="afro-search-wrap">
+              <i className="fa-solid fa-magnifying-glass search-ico"></i>
+              <input
+                type="number"
+                min="1"
+                max="600"
+                placeholder="Search #..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="afro-search-input"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  className="btn-clear-search"
+                  onClick={() => setSearchTerm('')}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+
+          {/* ── 9-Column Number Pill Grid (Reference Screenshot Structure, Brand Colors) ── */}
+          <div className="afro-9col-scroll-area">
+            <div className="afro-9col-grid">
+              {visibleNumbers.map(num => {
+                const isSelected = activeSelected.includes(num);
+                const isTaken = occupiedCartelaIds.includes(num);
+                const isPreviewed = currentPreviewId === num;
+
+                let cellClass = 'afro-num-pill';
+                if (isSelected) cellClass += ' selected';
+                else if (isTaken) cellClass += ' taken';
+                else if (isPreviewed) cellClass += ' preview-focus';
+
+                return (
+                  <button
+                    key={num}
+                    type="button"
+                    className={cellClass}
+                    onClick={() => {
+                      if (!isTaken) {
+                        setPreviewCartelaId(num);
+                        toggleCartelaSelection(num);
+                      }
+                    }}
+                    onMouseEnter={() => setPreviewCartelaId(num)}
+                    disabled={isTaken}
+                    title={isTaken ? `Cartela #${num} is already taken in this arena` : `Click to select Cartela #${num}`}
+                  >
+                    <span className="pill-num">{num}</span>
+                    {isSelected && <span className="pill-check">✓</span>}
+                    {isTaken && <span className="pill-lock">🔒</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Collapsible Live 5x5 Card Inspection Preview ── */}
+          <div className="afro-card-preview-drawer">
+            <div className="preview-drawer-hdr">
+              <span className="preview-title">
+                👀 {lang === 'am' ? 'የካርቴላ ይዘት' : 'Card Preview'}: <strong>Cartela #{currentPreviewId}</strong>
+              </span>
+              <span className="preview-indicator">
+                {activeSelected.includes(currentPreviewId) ? '✓ Selected' : 'Tap number to select'}
+              </span>
+            </div>
+
+            <div className="mini-cartela-5x5-grid">
+              <div className="mini-col-headers">
+                <span className="col-hdr col-b">B</span>
+                <span className="col-hdr col-i">I</span>
+                <span className="col-hdr col-n">N</span>
+                <span className="col-hdr col-g">G</span>
+                <span className="col-hdr col-o">O</span>
+              </div>
+              <div className="mini-cells-matrix">
+                {previewCells.map(cell => (
+                  <div
+                    key={cell.index}
+                    className={`mini-cell ${cell.isFree ? 'free' : ''}`}
+                  >
+                    {cell.isFree ? '⭐' : cell.val}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* ── Footer Bar: Confirm & Buy / Play ── */}
@@ -254,8 +254,8 @@ export const CartelaPickerModal: React.FC = () => {
               {hasTicket
                 ? (lang === 'am' ? `ምርጫ አረጋግጥ (${boardsText})` : `Confirm Cartelas (${boardsText})`)
                 : (lang === 'am'
-                    ? `ካርቴላ ይግዙ · ${cardQuantity * betAmount} ብር (${boardsText})`
-                    : `Confirm & Buy Ticket · ${cardQuantity * betAmount} ETB (${boardsText})`)}
+                  ? `ካርቴላ ይግዙ · ${cardQuantity * betAmount} ብር (${boardsText})`
+                  : `Confirm & Buy Ticket · ${cardQuantity * betAmount} ETB (${boardsText})`)}
             </span>
           </button>
         </div>

@@ -187,7 +187,7 @@ export const BotsSimulatorDesk: React.FC = () => {
               />
               <div className="slider-presets-row">
                 <span className="preset-label">Presets:</span>
-                {[50, 100, 185, 250, 350, 400].map(val => (
+                {[50, 100, 200, 350, 500, 600].map(val => (
                   <button
                     key={val}
                     type="button"

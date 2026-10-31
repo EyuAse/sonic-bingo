@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext.tsx';
 import { useApp } from '../../context/AppContext.tsx';
+import { apiClient } from '../../services/apiClient.ts';
 
 interface CoinStats {
   totalCirculation: number;
@@ -53,16 +54,10 @@ export const CoinsRewardsDesk: React.FC = () => {
   const fetchCoinData = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/admin/coins', {
-        headers: {
-          'Authorization': `Bearer ${adminToken || localStorage.getItem('sonic_admin_token') || ''}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await res.json();
-      if (data.success) {
+      const data = await apiClient.admin.getCoins();
+      if (data && data.success) {
         setStats(data.stats);
-        setTopHolders(data.topHolders || []);
+        setTopHolders(data.topHolders || data.holders || []);
         setRecentTx(data.recentTransactions || []);
       }
     } catch (err) {
@@ -86,28 +81,20 @@ export const CoinsRewardsDesk: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      const res = await fetch('/api/admin/coins/adjust', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${adminToken || localStorage.getItem('sonic_admin_token') || ''}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId: adjustUserId,
-          amount: amountNum,
-          reason: adjustReason || 'Admin Manual Adjustment'
-        })
+      const data = await apiClient.admin.adjustCoins({
+        userId: adjustUserId,
+        amount: amountNum,
+        reason: adjustReason || 'Admin Manual Adjustment'
       });
-      const data = await res.json();
-      if (data.success) {
-        showToast(`🎉 Coins adjusted successfully (New Balance: ${data.newBalance})`);
+      if (data && data.success) {
+        showToast(`🎉 Coins adjusted successfully (New Balance: ${data.newBalance ?? data.balance ?? 'Updated'})`);
         setShowAdjustModal(false);
         setAdjustUserId('');
         setAdjustAmount('');
         setAdjustReason('');
         fetchCoinData();
       } else {
-        showToast(`❌ ${data.error || 'Adjustment failed'}`);
+        showToast(`❌ ${data?.error || 'Adjustment failed'}`);
       }
     } catch (err: any) {
       showToast(`❌ Error: ${err.message}`);
@@ -403,3 +390,4 @@ export const CoinsRewardsDesk: React.FC = () => {
     </div>
   );
 };
+

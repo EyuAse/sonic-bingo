@@ -297,7 +297,7 @@ export const AdminSettings: React.FC = () => {
                 <p className="settings-card-sub-title">Card bonus promotions, board orientation, and stake chips</p>
               </div>
             </div>
-            <span className="settings-card-tag green">400 Cartela Pool</span>
+            <span className="settings-card-tag green">600 Cartela Pool</span>
           </div>
 
           <div className="settings-controls-stack">

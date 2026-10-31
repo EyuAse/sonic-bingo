@@ -71,17 +71,10 @@ export const BingoPage: React.FC = () => {
         {/* Real-Time Network Resilience Alerts */}
         <NetworkStatusBanner />
 
-        {/* ── Main Split 2-Column Board & Cartela Layout ── */}
+        {/* ── Main Split 2-Column Board & Cartela Layout (Cartelas on Left, Flashboard 1-75 on Right) ── */}
         <div className="bingo-split-layout-grid">
-          {/* Left Column: Full 1-75 Main Master Board (Flashboard) */}
-          <div className="bingo-left-flashboard-col">
-            <MasterBoard75 />
-          </div>
-
-          {/* Right Column: Call Banner, Controls, Active Cartelas, Betting Bar */}
-          <div className="bingo-right-playarea-col">
-            <CurrentCallBanner />
-
+          {/* Left Column: Active Cartelas (BingoGrid) or Spectator View */}
+          <div className="bingo-left-cartela-col">
             {hasTicket || roundPhase === 'lobby' ? (
               <ErrorBoundary componentName="BingoGrid" fallback={null}>
                 <BingoGrid />
@@ -89,6 +82,13 @@ export const BingoPage: React.FC = () => {
             ) : (
               <SpectatorCard />
             )}
+          </div>
+
+          {/* Right Column: Current Call Banner, Flashboard 1-75, and Controls */}
+          <div className="bingo-right-flashboard-col">
+            <CurrentCallBanner />
+
+            <MasterBoard75 />
 
             {/* Stake Bar: Visible strictly during lobby matchmaking only */}
             {roundPhase === 'lobby' && (
@@ -145,7 +145,7 @@ export const BingoPage: React.FC = () => {
         onCancel={() => setShowLeaveModal(false)}
       />
 
-      {/* 400 Cartela Selection Modal */}
+      {/* 600 Cartela Selection Modal */}
       <CartelaPickerModal />
 
       {/* Victory Celebration Modal — Guaranteed zero-error display */}

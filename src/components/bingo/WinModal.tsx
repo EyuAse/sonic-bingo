@@ -192,9 +192,9 @@ export const WinModal: React.FC = () => {
 
     const stakeAmt = Number(safeWinResult.stakeAmount) || 10;
 
-    // Clamped valid Cartela ID (1-400)
+    // Clamped valid Cartela ID (1-600)
     const rawCartela = Number(safeWinResult.winningCartelaNumber || (safeWinResult as any).winningCartela || 1);
-    const cartelaNum = (!isNaN(rawCartela) && rawCartela >= 1 && rawCartela <= 400) ? Math.floor(rawCartela) : 1;
+    const cartelaNum = (!isNaN(rawCartela) && rawCartela >= 1 && rawCartela <= 600) ? Math.floor(rawCartela) : 1;
 
     // Guaranteed safe winner name
     const rawName = safeWinResult.winnerName;

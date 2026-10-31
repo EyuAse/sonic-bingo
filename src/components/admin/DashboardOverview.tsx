@@ -258,7 +258,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
             </div>
             <div className="arena-spec-tile">
               <span className="spec-label">Total Cartela Pool</span>
-              <strong className="spec-value gold">400 Serial Cards</strong>
+              <strong className="spec-value gold">600 Serial Cards</strong>
             </div>
             <div className="arena-spec-tile">
               <span className="spec-label">Multi-Winner Rule</span>
@@ -266,7 +266,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
             </div>
             <div className="arena-spec-tile">
               <span className="spec-label">Max Cartelas</span>
-              <strong className="spec-value purple">2 Cards Max</strong>
+              <strong className="spec-value purple">4 Cards Max</strong>
             </div>
           </div>
         </div>
