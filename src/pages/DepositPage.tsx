@@ -186,6 +186,12 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
         transactionCode: data.transactionCode,
         coinsAwarded: data.coinsEarned
       });
+      // Immediately reflect new balance without waiting for network
+      if (typeof data.newBalance === 'number') {
+        window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: { balance: data.newBalance } }));
+      } else if (typeof data.amount === 'number') {
+        window.dispatchEvent(new CustomEvent('lb_deposit_approved', { detail: { amount: data.amount } }));
+      }
       apiClient.wallet.getBalance().then(res => {
         if (res.success) {
           window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: res }));
@@ -200,6 +206,11 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
         status: 'rejected',
         rejectionReason: data.reason
       } : null);
+      apiClient.wallet.getBalance().then(res => {
+        if (res.success) {
+          window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: res }));
+        }
+      }).catch(err => console.warn(err));
     });
 
     const unsubWithApproved = socketService.on(`user_${user.id}_withdrawal_approved`, (data: any) => {
@@ -211,6 +222,9 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
         agentTxRef: data.agentTxRef,
         agentDisplayName: data.agentDisplayName
       });
+      if (typeof data.newBalance === 'number') {
+        window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: { balance: data.newBalance } }));
+      }
       apiClient.wallet.getBalance().then(res => {
         if (res.success) {
           window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: res }));
@@ -221,6 +235,9 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
     const unsubWithRejected = socketService.on(`user_${user.id}_withdrawal_rejected`, (data: any) => {
       showToast(`❌ ${lang === 'am' ? 'የማውጣት ጥያቄ አልተሳካም' : 'Withdrawal Rejected'}: ${data.reason}`);
       setActiveWithdrawalRequest(null);
+      if (typeof data.newBalance === 'number') {
+        window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: { balance: data.newBalance } }));
+      }
       apiClient.wallet.getBalance().then(res => {
         if (res.success) {
           window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: res }));
@@ -1285,26 +1302,33 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                               className="sonic-agent-obsidian-card"
                               onClick={() => handleSelectWithdrawAgent(ag)}
                             >
-                              <div className="sonic-obsidian-left">
+                              <div className="sonic-agent-card-left">
                                 <SonicCrownLogo size={36} />
-                                <div className="sonic-obsidian-info">
-                                  <h4>👑 {ag.displayName || `Sonic Agent #${ag.agentCode}`}</h4>
-                                  <p>Telebirr: {ag.telebirrPhone || '—'}</p>
-                                  <p>CBE Birr: {ag.cbeAccount || '—'}</p>
+                                <div className="sonic-agent-card-details">
+                                  <span className="sonic-agent-name-obsidian">
+                                    👑 Sonic Agent #{ag.agentCode}
+                                  </span>
+                                  <span className="sonic-agent-rails-obsidian">
+                                    {ag.telebirrPhone ? `Telebirr: ${ag.telebirrPhone}` : ''}
+                                  </span>
+                                  <span className="sonic-agent-rails-obsidian">
+                                    {ag.cbeAccount ? `CBE Birr: ${ag.cbeAccount}` : ''}
+                                  </span>
                                 </div>
                               </div>
-                              <div className="sonic-obsidian-right">
+                              <div className="sonic-agent-card-right">
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px' }}>
-                                  <span className="sonic-obsidian-online-badge">
-                                    <span className="sonic-obsidian-green-dot"></span> Online
+                                  <span className="sonic-status-pill-emerald">
+                                    <span className="sonic-pulse-dot" style={{ width: 6, height: 6 }}></span>
+                                    Online
                                   </span>
                                   <span style={{ fontSize: '10px', color: '#38bdf8', fontWeight: 800 }}>
                                     ⚡ ~{ag.avgApprovalMinutes || 2}m
                                   </span>
                                 </div>
-                                <i className="fa-solid fa-chevron-right sonic-obsidian-chevron"></i>
+                                <div className="sonic-amber-circle-chevron">›</div>
                               </div>
-                              <LiquidGoldCornerSwoosh />
+                              <LiquidGoldCornerSwoosh opacity={0.95} />
                             </div>
                           );
                         }
@@ -1315,18 +1339,23 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                             className="sonic-agent-light-card"
                             onClick={() => handleSelectWithdrawAgent(ag)}
                           >
-                            <div className="sonic-agent-light-left">
-                              <SonicCrownLogo size={36} />
-                              <div className="sonic-agent-light-info">
-                                <h4>Sonic Agent #{ag.agentCode}</h4>
-                                <p>Telebirr: {ag.telebirrPhone || '—'}</p>
-                                <p>CBE Birr: {ag.cbeAccount || '—'}</p>
+                            <div className="sonic-agent-card-left">
+                              <SonicCrownLogo size={34} />
+                              <div className="sonic-agent-card-details">
+                                <span className="sonic-agent-name-light">Sonic Agent #{ag.agentCode}</span>
+                                <span className="sonic-agent-rails-light">
+                                  {ag.telebirrPhone ? `Telebirr: ${ag.telebirrPhone}` : ''}
+                                </span>
+                                <span className="sonic-agent-rails-light">
+                                  {ag.cbeAccount ? `CBE Birr: ${ag.cbeAccount}` : ''}
+                                </span>
                               </div>
                             </div>
-                            <div className="sonic-agent-light-right">
+                            <div className="sonic-agent-card-right">
                               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px' }}>
-                                <span className="sonic-light-online-badge">
-                                  <span className="sonic-light-green-dot"></span> Online
+                                <span className="sonic-status-pill-green">
+                                  <span className="sonic-pulse-dot" style={{ width: 6, height: 6 }}></span>
+                                  Online
                                 </span>
                                 <span style={{ fontSize: '10px', color: '#0284c7', fontWeight: 700 }}>
                                   ⚡ ~{ag.avgApprovalMinutes || 2}m
@@ -1425,41 +1454,75 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                   </div>
 
                   {/* Rails Selector Grid */}
-                  <div className="sonic-rails-grid">
+                  <div className="sonic-rails-selector-grid">
                     {/* Telebirr Tab */}
                     <div
-                      className={`sonic-rail-btn ${withdrawMethod === 'Telebirr' ? 'active-light-rail' : ''}`}
+                      className={withdrawMethod === 'Telebirr' ? 'sonic-rail-obsidian-tab' : 'sonic-rail-light-tab'}
                       onClick={() => setWithdrawMethod('Telebirr')}
                     >
-                      <TelebirrLogo size={28} />
-                      <div className="sonic-rail-text">
-                        <span className="sonic-rail-title">Telebirr</span>
-                        <span className="sonic-rail-sub">Instant</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <TelebirrLogo size={28} />
+                        <div>
+                          <div className={withdrawMethod === 'Telebirr' ? 'sonic-rail-title-white' : 'sonic-rail-title-dark'}>
+                            Telebirr
+                          </div>
+                          <div className={withdrawMethod === 'Telebirr' ? 'sonic-rail-sub-gold' : 'sonic-rail-sub-muted'}>
+                            ⚡ Instant
+                          </div>
+                        </div>
                       </div>
+                      {withdrawMethod === 'Telebirr' ? (
+                        <div className="sonic-amber-circle-chevron" style={{ width: 22, height: 22, fontSize: 13 }}>›</div>
+                      ) : (
+                        <i className="fa-solid fa-chevron-right" style={{ color: '#cbd5e1', fontSize: '11px' }}></i>
+                      )}
                     </div>
 
                     {/* CBE Bank Tab */}
                     <div
-                      className={`sonic-rail-btn ${withdrawMethod === 'CBE' ? 'active-obsidian-rail' : ''}`}
+                      className={withdrawMethod === 'CBE' ? 'sonic-rail-obsidian-tab' : 'sonic-rail-light-tab'}
                       onClick={() => setWithdrawMethod('CBE')}
                     >
-                      <div className="sonic-cbe-rail-left">
-                        <GoldBankColumnsIcon size={24} />
-                        <span className="sonic-cbe-title">CBE Bank / Birr</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <GoldBankColumnsIcon size={26} />
+                        <div>
+                          <div className={withdrawMethod === 'CBE' ? 'sonic-rail-title-white' : 'sonic-rail-title-dark'}>
+                            CBE Bank / Birr
+                          </div>
+                          <div className={withdrawMethod === 'CBE' ? 'sonic-rail-sub-gold' : 'sonic-rail-sub-muted'}>
+                            ⚡ Fast Transfer
+                          </div>
+                        </div>
                       </div>
-                      <i className="fa-solid fa-chevron-right sonic-obsidian-chevron"></i>
+                      {withdrawMethod === 'CBE' ? (
+                        <div className="sonic-amber-circle-chevron" style={{ width: 22, height: 22, fontSize: 13 }}>›</div>
+                      ) : (
+                        <i className="fa-solid fa-chevron-right" style={{ color: '#cbd5e1', fontSize: '11px' }}></i>
+                      )}
                     </div>
 
-                    {/* M-Pesa Tab */}
+                    {/* M-Pesa Tab (Full Width Across Grid) */}
                     <div
-                      className={`sonic-rail-btn ${withdrawMethod === 'M-Pesa' ? 'active-light-rail' : ''}`}
+                      className={withdrawMethod === 'M-Pesa' ? 'sonic-rail-obsidian-tab' : 'sonic-rail-light-tab'}
                       onClick={() => setWithdrawMethod('M-Pesa')}
+                      style={{ gridColumn: 'span 2' }}
                     >
-                      <MpesaLogo size={28} />
-                      <div className="sonic-rail-text">
-                        <span className="sonic-rail-title">M-Pesa</span>
-                        <span className="sonic-rail-sub">Instant</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <MpesaLogo size={28} />
+                        <div>
+                          <div className={withdrawMethod === 'M-Pesa' ? 'sonic-rail-title-white' : 'sonic-rail-title-dark'}>
+                            Safaricom M-Pesa
+                          </div>
+                          <div className={withdrawMethod === 'M-Pesa' ? 'sonic-rail-sub-gold' : 'sonic-rail-sub-muted'}>
+                            ⚡ Instant Mobile Money
+                          </div>
+                        </div>
                       </div>
+                      {withdrawMethod === 'M-Pesa' ? (
+                        <div className="sonic-amber-circle-chevron" style={{ width: 22, height: 22, fontSize: 13 }}>›</div>
+                      ) : (
+                        <i className="fa-solid fa-chevron-right" style={{ color: '#cbd5e1', fontSize: '11px' }}></i>
+                      )}
                     </div>
                   </div>
 

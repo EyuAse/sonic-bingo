@@ -499,7 +499,7 @@
   gap: 10px;
 }
 
-/* Telebirr Tab Card (Default/Light) */
+/* Telebirr & Mobile Money Tab Card (Default/Light) */
 .sonic-rail-light-tab {
   background: #ffffff;
   border: 1.5px solid #e2e8f0;
@@ -507,6 +507,7 @@
   padding: 12px 14px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -516,21 +517,25 @@
 
 .sonic-rail-light-tab:hover {
   border-color: #cbd5e1;
+  background: #fafaf9;
 }
 
-/* Active Obsidian Rail Tab (CBE Bank / Birr) */
+/* Active Obsidian Rail Tab */
 .sonic-rail-obsidian-tab {
   background: linear-gradient(135deg, #0b0f19 0%, #030712 100%);
-  border: 1.5px solid rgba(245, 158, 11, 0.65);
+  border: 1.5px solid rgba(245, 158, 11, 0.75);
   border-radius: 16px;
   padding: 12px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   cursor: pointer;
   transition: all 0.15s ease;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 12px rgba(245, 158, 11, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 14px rgba(245, 158, 11, 0.25);
   text-align: left;
+  position: relative;
+  overflow: hidden;
 }
 
 .sonic-rail-title-dark {
@@ -540,9 +545,10 @@
 }
 
 .sonic-rail-sub-muted {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #64748b;
+  margin-top: 1px;
 }
 
 .sonic-rail-title-white {
@@ -552,6 +558,13 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.sonic-rail-sub-gold {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fbbf24;
+  margin-top: 1px;
 }
 
 /* 8. Bottom Account Copy Bar */

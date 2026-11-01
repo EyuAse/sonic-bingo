@@ -116,27 +116,47 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       }
       console.log('⚡ [Live Real Balance Event Received]:', data);
       // Optimistically update both balance and bonus from push event payload
-      if (typeof data.newBalance === 'number') {
+      if (typeof data?.newBalance === 'number') {
         setBalance(data.newBalance);
-      } else if (typeof data.balance === 'number') {
+        localStorage.setItem('sonic_live_balance', data.newBalance.toFixed(2));
+      } else if (typeof data?.balance === 'number') {
         setBalance(data.balance);
-      } else if (typeof data.amount === 'number') {
+        localStorage.setItem('sonic_live_balance', data.balance.toFixed(2));
+      } else if (typeof data?.amount === 'number') {
         setBalance(prev => prev + data.amount);
       }
-      if (typeof data.bonus === 'number') {
+      if (typeof data?.bonus === 'number') {
         setBonus(data.bonus);
       }
       // Always follow up with authoritative DB fetch
       fetchLiveBalance();
     };
 
-    socket.on('user_balance_updated', handleBalanceEvent);
-    socket.on('deposit_status_updated', () => fetchLiveBalance());
-    socket.on('withdrawal_status_updated', () => fetchLiveBalance());
+    // Use persistent socketService.on listeners (preserves callbacks across reconnects)
+    const unsubGlobalBalance = socketService.on('user_balance_updated', handleBalanceEvent);
+    const unsubDepStatus = socketService.on('deposit_status_updated', () => fetchLiveBalance());
+    const unsubWithStatus = socketService.on('withdrawal_status_updated', () => fetchLiveBalance());
 
     let unsubUserBalance: (() => void) | null = null;
+    let unsubUserDepositApproved: (() => void) | null = null;
+    let unsubUserWithdrawalApproved: (() => void) | null = null;
+
     if (user?.id) {
-      unsubUserBalance = socketService.onUserBalanceUpdate(user.id, handleBalanceEvent);
+      unsubUserBalance = socketService.on(`user_${user.id}_balance`, handleBalanceEvent);
+      unsubUserDepositApproved = socketService.on(`user_${user.id}_deposit_approved`, (data: any) => {
+        console.log('⚡ [WalletContext] User Deposit Approved Push:', data);
+        if (typeof data?.newBalance === 'number') {
+          setBalance(data.newBalance);
+          localStorage.setItem('sonic_live_balance', data.newBalance.toFixed(2));
+        } else if (typeof data?.amount === 'number') {
+          setBalance(prev => prev + data.amount);
+        }
+        fetchLiveBalance();
+      });
+      unsubUserWithdrawalApproved = socketService.on(`user_${user.id}_withdrawal_approved`, (data: any) => {
+        console.log('⚡ [WalletContext] User Withdrawal Approved Push:', data);
+        fetchLiveBalance();
+      });
     }
 
     // Reactive-First Architecture: Rely on WebSocket push events.
@@ -158,10 +178,12 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       window.removeEventListener('lb_deposit_approved' as any, handleDepositApproved);
       window.removeEventListener('lb_wallet_updated' as any, handleWalletUpdated);
       window.removeEventListener('storage', handleStorage);
-      socket.off('user_balance_updated', handleBalanceEvent);
-      socket.off('deposit_status_updated');
-      socket.off('withdrawal_status_updated');
+      unsubGlobalBalance();
+      unsubDepStatus();
+      unsubWithStatus();
       if (unsubUserBalance) unsubUserBalance();
+      if (unsubUserDepositApproved) unsubUserDepositApproved();
+      if (unsubUserWithdrawalApproved) unsubUserWithdrawalApproved();
     };
   }, [user, fetchLiveBalance]);
 

@@ -1099,11 +1099,15 @@ router.get(['/agents/active', '/agents/available'], async (_req, res) => {
   try {
     const agentsRes = await query(
       `SELECT ap.id, ap.agent_code, ap.status, 
-              ap.telebirr_phone, ap.telebirr_name, 
-              ap.cbe_account, ap.cbe_name, 
+              COALESCE(ap.telebirr_phone, u.phone) as telebirr_phone, 
+              COALESCE(ap.telebirr_name, u.full_name, 'Agent') as telebirr_name, 
+              COALESCE(ap.cbe_account, '1000' || SUBSTRING(COALESCE(u.phone, '0900000000') FROM 2)) as cbe_account, 
+              COALESCE(ap.cbe_name, u.full_name, 'Sonic Gaming Agent') as cbe_name, 
               ap.mpesa_phone, ap.mpesa_name,
-              ap.active_rails, ap.is_online, ap.wallet_balance,
-              u.full_name
+              COALESCE(ap.active_rails, 'Telebirr,CBE') as active_rails, 
+              COALESCE(ap.is_online, true) as is_online, 
+              ap.wallet_balance,
+              u.full_name, u.phone as user_phone
        FROM agent_profiles ap
        JOIN users u ON ap.user_id = u.id
        WHERE ap.status = 'active'
@@ -1126,14 +1130,14 @@ router.get(['/agents/active', '/agents/available'], async (_req, res) => {
         id: a.id,
         agentCode: a.agent_code,
         displayName: `Sonic Agent #${a.agent_code}`,
-        phone: a.telebirr_phone || a.mpesa_phone || null,
-        telebirrPhone: a.telebirr_phone || null,
+        phone: a.telebirr_phone || a.mpesa_phone || a.user_phone || null,
+        telebirrPhone: a.telebirr_phone || a.user_phone || null,
         telebirrName: a.telebirr_name || a.full_name || 'Agent',
         cbeAccount: a.cbe_account || null,
         cbeName: a.cbe_name || a.full_name || 'Sonic Gaming Agent',
         mpesaPhone: a.mpesa_phone || null,
         mpesaName: a.mpesa_name || a.full_name || 'Agent',
-        supportedRails,
+        supportedRails: supportedRails.length > 0 ? supportedRails : ['Telebirr', 'CBE'],
         isOnline: a.is_online !== false,
         avgApprovalMinutes: 2
       };

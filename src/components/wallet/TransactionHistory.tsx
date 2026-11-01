@@ -48,20 +48,20 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     // Real-time WebSocket listeners for instant decentralized cashier updates
     const unsubDepAppr = user ? socketService.on(`user_${user.id}_deposit_approved`, () => fetchTransactions()) : null;
     const unsubDepRej = user ? socketService.on(`user_${user.id}_deposit_rejected`, () => fetchTransactions()) : null;
-    const unsubWithComp = user ? socketService.on('agent_withdrawal_completed', (data: any) => {
-      if (!data || !user || data.playerId === user.id) fetchTransactions();
-    }) : null;
-    const unsubWithRej = user ? socketService.on('agent_withdrawal_rejected', (data: any) => {
-      if (!data || !user || data.playerId === user.id) fetchTransactions();
-    }) : null;
+    const unsubWithAppr = user ? socketService.on(`user_${user.id}_withdrawal_approved`, () => fetchTransactions()) : null;
+    const unsubWithRej = user ? socketService.on(`user_${user.id}_withdrawal_rejected`, () => fetchTransactions()) : null;
+    const unsubDepStatus = socketService.on('deposit_status_updated', () => fetchTransactions());
+    const unsubWithStatus = socketService.on('withdrawal_status_updated', () => fetchTransactions());
 
     return () => {
       window.removeEventListener('lb_wallet_updated', handleUpdate);
       window.removeEventListener('lb_deposit_approved', handleUpdate);
       if (unsubDepAppr) unsubDepAppr();
       if (unsubDepRej) unsubDepRej();
-      if (unsubWithComp) unsubWithComp();
+      if (unsubWithAppr) unsubWithAppr();
       if (unsubWithRej) unsubWithRej();
+      if (unsubDepStatus) unsubDepStatus();
+      if (unsubWithStatus) unsubWithStatus();
     };
   }, [fetchTransactions, user]);
 
