@@ -101,7 +101,9 @@ export const App: React.FC = () => {
   const isSubpage =
     currentPage === 'account-info' ||
     currentPage === 'help' ||
-    currentPage === 'about';
+    currentPage === 'about' ||
+    currentPage === 'deposit' ||
+    currentPage === 'withdraw';
 
   const isDedicatedGamePage = currentPage === 'bingo';
   const isDesktop = telegramService.isDesktopPlatform();

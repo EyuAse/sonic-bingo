@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext.tsx';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { useLanguage } from '../../context/LanguageContext.tsx';
-import { TelebirrLogo, CBELogo } from './PaymentLogos.tsx';
+import { TelebirrLogo, CBELogo, MpesaLogo } from './PaymentLogos.tsx';
+import { socketService } from '../../services/socketService.ts';
 
 import { apiClient } from '../../services/apiClient.ts';
 
@@ -43,11 +44,26 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
 
     window.addEventListener('lb_wallet_updated', handleUpdate);
     window.addEventListener('lb_deposit_approved', handleUpdate);
+
+    // Real-time WebSocket listeners for instant decentralized cashier updates
+    const unsubDepAppr = user ? socketService.on(`user_${user.id}_deposit_approved`, () => fetchTransactions()) : null;
+    const unsubDepRej = user ? socketService.on(`user_${user.id}_deposit_rejected`, () => fetchTransactions()) : null;
+    const unsubWithComp = user ? socketService.on('agent_withdrawal_completed', (data: any) => {
+      if (!data || !user || data.playerId === user.id) fetchTransactions();
+    }) : null;
+    const unsubWithRej = user ? socketService.on('agent_withdrawal_rejected', (data: any) => {
+      if (!data || !user || data.playerId === user.id) fetchTransactions();
+    }) : null;
+
     return () => {
       window.removeEventListener('lb_wallet_updated', handleUpdate);
       window.removeEventListener('lb_deposit_approved', handleUpdate);
+      if (unsubDepAppr) unsubDepAppr();
+      if (unsubDepRej) unsubDepRej();
+      if (unsubWithComp) unsubWithComp();
+      if (unsubWithRej) unsubWithRej();
     };
-  }, [fetchTransactions]);
+  }, [fetchTransactions, user]);
 
   const deposits = liveTransactions.filter(tx => tx.type === 'deposit');
   const withdrawals = liveTransactions.filter(tx => tx.type === 'withdrawal');
@@ -123,10 +139,18 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                 <div className="tx-card-header-row">
                   <div className="tx-provider-group">
                     <div className="tx-provider-logo-box">
-                      {tx.method === 'Telebirr' ? <TelebirrLogo size={24} /> : <CBELogo size={24} />}
+                      {tx.method === 'Telebirr' ? (
+                        <TelebirrLogo size={24} />
+                      ) : tx.method === 'M-Pesa' ? (
+                        <MpesaLogo size={24} />
+                      ) : (
+                        <CBELogo size={24} />
+                      )}
                     </div>
                     <div className="tx-provider-meta">
-                      <strong className="tx-provider-name">{tx.method}</strong>
+                      <strong className="tx-provider-name">
+                        {tx.method} {tx.agentCode ? `• Agent #${tx.agentCode}` : ''}
+                      </strong>
                       <span className="tx-type-lbl">
                         {isDeposit ? t('common.deposit') : t('common.withdraw')}
                       </span>
@@ -171,7 +195,16 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                     </div>
                     <div className="tx-timestamp">
                       <i className="fa-regular fa-clock"></i>
-                      <span>{tx.createdAt || (lang === 'am' ? 'ዛሬ፣ 11:33' : 'Today, 11:33 PM')}</span>
+                      <span>
+                        {tx.createdAt
+                          ? new Date(tx.createdAt).toLocaleString(lang === 'am' ? 'am-ET' : 'en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
+                          : 'Just now'}
+                      </span>
                     </div>
                   </div>
 

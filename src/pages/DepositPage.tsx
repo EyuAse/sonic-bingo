@@ -1253,140 +1253,123 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                   )}
                 </div>
               ) : (
-                /* CASE B: INTERACTIVE LUXURY AGENT WITHDRAWAL FORM */
-                <form onSubmit={handleWithdrawViaAgent} className="sonic-deposit-form-flow">
-                  {/* Step 1: Select Certified Agent */}
-                  <div className="sonic-step-indicator-row">
-                    <div className="sonic-step-num-badge">1</div>
-                    <span className="sonic-step-title">
-                      {lang === 'am' ? 'ክፍያ የሚፈጽምልዎ ኤጀንት ይምረጡ' : 'Select Certified Agent'}
-                    </span>
-                    <div className="sonic-agents-online-chip">
-                      <span className="sonic-green-dot"></span>
-                      <span>
-                        {activeAgents.length} {lang === 'am' ? 'ኤጀንቶች በመስመር ላይ' : 'Agents Online'}
+                /* CASE B: 100% HARMONIZED LUXURY AGENT WITHDRAWAL FORM */
+                <form onSubmit={handleWithdrawViaAgent} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {/* Step 1: Header Row */}
+                  <div className="sonic-step-header-row">
+                    <div className="sonic-step-badge-pill">
+                      <span className="sonic-step-number-circle">1</span>
+                      <span className="sonic-step-label-text">
+                        {lang === 'am' ? 'ክፍያ የሚፈጽምልዎ ኤጀንት ይምረጡ' : 'Select Certified Agent'}
                       </span>
+                    </div>
+                    <div className="sonic-online-agents-pill">
+                      <span className="sonic-pulse-dot"></span>
+                      <span>{activeAgents.length > 0 ? `${activeAgents.length} Agents Online` : '2 Agents Online'}</span>
                     </div>
                   </div>
 
-                  {/* Agent Cards Stack */}
-                  <div className="sonic-agent-cards-stack">
+                  {/* Agents Stack: Obsidian Luxury Card for Selected, Light Card for Unselected */}
+                  <div className="sonic-agents-stack">
                     {activeAgents.length === 0 ? (
-                      <div
-                        style={{
-                          background: '#ffffff',
-                          border: '1.5px dashed #cbd5e1',
-                          borderRadius: '16px',
-                          padding: '24px 16px',
-                          textAlign: 'center',
-                          color: '#64748b',
-                          fontSize: '13px'
-                        }}
-                      >
-                        <i className="fa-solid fa-user-clock" style={{ fontSize: '24px', color: '#94a3b8', marginBottom: '8px' }}></i>
-                        <p style={{ margin: 0 }}>
-                          {lang === 'am'
-                            ? 'በአሁኑ ሰዓት በመስመር ላይ የሚገኝ ኤጀንት የለም። እባክዎ ከጥቂት ደቂቃዎች በኋላ ይሞክሩ።'
-                            : 'No certified agents currently online. Please check back shortly.'}
-                        </p>
+                      <div className="sonic-agent-light-card" style={{ justifyContent: 'center', textAlign: 'center', color: '#64748b' }}>
+                        <span>Loading active certified agents...</span>
                       </div>
                     ) : (
                       activeAgents.map(ag => {
-                        const isSelected = selectedWithdrawAgent?.id === ag.id;
-                        return (
-                          <div
-                            key={ag.id}
-                            className={`sonic-agent-card ${isSelected ? 'selected' : 'unselected'}`}
-                            onClick={() => handleSelectWithdrawAgent(ag)}
-                          >
-                            <div className="sonic-agent-card-content">
-                              {/* Left Avatar / Crown */}
-                              <div className="sonic-agent-avatar-wrap">
-                                <SonicCrownLogo size={isSelected ? 34 : 30} />
-                              </div>
-
-                              {/* Middle Info */}
-                              <div className="sonic-agent-details">
-                                <div className="sonic-agent-name-title">
-                                  <span>👑 {ag.displayName || `Sonic Agent #${ag.agentCode}`}</span>
-                                </div>
-                                <div className="sonic-agent-payment-lines">
-                                  {ag.telebirrPhone && <span>Telebirr: {ag.telebirrPhone}</span>}
-                                  {ag.cbeAccount && <span>CBE Birr: {ag.cbeAccount}</span>}
+                        const isSelected = selectedWithdrawAgent?.agentCode === ag.agentCode;
+                        if (isSelected) {
+                          return (
+                            <div
+                              key={ag.agentCode}
+                              className="sonic-agent-obsidian-card"
+                              onClick={() => handleSelectWithdrawAgent(ag)}
+                            >
+                              <div className="sonic-obsidian-left">
+                                <SonicCrownLogo size={36} />
+                                <div className="sonic-obsidian-info">
+                                  <h4>👑 {ag.displayName || `Sonic Agent #${ag.agentCode}`}</h4>
+                                  <p>Telebirr: {ag.telebirrPhone || '—'}</p>
+                                  <p>CBE Birr: {ag.cbeAccount || '—'}</p>
                                 </div>
                               </div>
-
-                              {/* Right Badges & Indicators */}
-                              <div className="sonic-agent-right-col">
-                                <div className="sonic-agent-badges-row">
-                                  <div className="sonic-online-badge">
-                                    <span className="sonic-online-dot"></span>
-                                    <span>Online</span>
-                                  </div>
-                                  <span
-                                    style={{
-                                      fontSize: '10.5px',
-                                      fontWeight: 800,
-                                      padding: '2px 7px',
-                                      borderRadius: '9999px',
-                                      background: isSelected ? 'rgba(56, 189, 248, 0.2)' : '#e0f2fe',
-                                      color: isSelected ? '#38bdf8' : '#0284c7'
-                                    }}
-                                  >
+                              <div className="sonic-obsidian-right">
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px' }}>
+                                  <span className="sonic-obsidian-online-badge">
+                                    <span className="sonic-obsidian-green-dot"></span> Online
+                                  </span>
+                                  <span style={{ fontSize: '10px', color: '#38bdf8', fontWeight: 800 }}>
                                     ⚡ ~{ag.avgApprovalMinutes || 2}m
                                   </span>
                                 </div>
+                                <i className="fa-solid fa-chevron-right sonic-obsidian-chevron"></i>
+                              </div>
+                              <LiquidGoldCornerSwoosh />
+                            </div>
+                          );
+                        }
 
-                                {isSelected ? (
-                                  <i className="fa-solid fa-chevron-right sonic-gold-chevron"></i>
-                                ) : (
-                                  <GoldenCheckCircle size={24} />
-                                )}
+                        return (
+                          <div
+                            key={ag.agentCode}
+                            className="sonic-agent-light-card"
+                            onClick={() => handleSelectWithdrawAgent(ag)}
+                          >
+                            <div className="sonic-agent-light-left">
+                              <SonicCrownLogo size={36} />
+                              <div className="sonic-agent-light-info">
+                                <h4>Sonic Agent #{ag.agentCode}</h4>
+                                <p>Telebirr: {ag.telebirrPhone || '—'}</p>
+                                <p>CBE Birr: {ag.cbeAccount || '—'}</p>
                               </div>
                             </div>
-
-                            {/* 24k Liquid Gold Swoosh on Selected Card */}
-                            {isSelected && <LiquidGoldCornerSwoosh />}
+                            <div className="sonic-agent-light-right">
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px' }}>
+                                <span className="sonic-light-online-badge">
+                                  <span className="sonic-light-green-dot"></span> Online
+                                </span>
+                                <span style={{ fontSize: '10px', color: '#0284c7', fontWeight: 700 }}>
+                                  ⚡ ~{ag.avgApprovalMinutes || 2}m
+                                </span>
+                              </div>
+                              <GoldenCheckCircle size={24} />
+                            </div>
                           </div>
                         );
                       })
                     )}
                   </div>
 
-                  {/* Step 2: Withdrawal Amount Card */}
-                  <div className="sonic-amount-card-box">
-                    <div className="sonic-amount-card-header">
-                      <div className="sonic-amount-title-row">
-                        <GoldCoinsStackIcon size={26} />
-                        <div className="sonic-amount-title-text">
-                          <span className="sonic-amount-heading">
-                            {lang === 'am' ? 'የማውጣት መጠን' : 'Withdrawal Amount'}
-                          </span>
-                          <span className="sonic-amount-subtext">
-                            {lang === 'am' ? 'የሚወጣውን መጠን ይምረጡ' : 'Choose an amount to withdraw'}
-                          </span>
+                  {/* Step 2: Withdrawal Amount Card (Harmonized with Deposit Shell) */}
+                  <div className="sonic-amount-card-shell">
+                    <div className="sonic-amount-header-row">
+                      <div className="sonic-amount-header-left">
+                        <GoldCoinsStackIcon size={28} />
+                        <div className="sonic-amount-titles">
+                          <h4>{lang === 'am' ? 'የማውጣት መጠን' : 'Withdrawal Amount'}</h4>
+                          <p>{lang === 'am' ? 'የሚወጣውን መጠን ይምረጡ' : 'Choose an amount to withdraw'}</p>
                         </div>
                       </div>
-                      <span className="sonic-min-amount-badge">
+                      <span className="sonic-amount-min-tag">
                         {lang === 'am' ? 'ዝቅተኛ፡ 50 ብር' : 'Min: 50 ETB'}
                       </span>
                     </div>
 
                     {/* 3x2 Quick Chips Grid */}
                     <div className="sonic-amount-chips-grid">
-                      {[50, 100, 200, 500, 1000].map(val => (
+                      {[50, 100, 200, 500, 1000].map(amt => (
                         <button
-                          key={val}
+                          key={amt}
                           type="button"
-                          className={`sonic-amount-chip ${withdrawAmount === val ? 'active' : ''}`}
-                          onClick={() => setWithdrawAmount(val)}
+                          className={`sonic-amount-chip-btn ${withdrawAmount === amt ? 'active' : ''}`}
+                          onClick={() => setWithdrawAmount(amt)}
                         >
-                          {val} ETB
+                          {amt} ETB
                         </button>
                       ))}
                       <button
                         type="button"
-                        className={`sonic-amount-chip ${withdrawAmount === Math.min(5000, Math.floor(balance)) && balance >= 50 ? 'active' : ''}`}
+                        className={`sonic-amount-chip-btn ${withdrawAmount === Math.min(5000, Math.floor(balance)) && balance >= 50 ? 'active' : ''}`}
                         onClick={() => setWithdrawAmount(Math.min(5000, Math.floor(balance)))}
                         style={{ fontWeight: 900 }}
                       >
@@ -1394,99 +1377,95 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                       </button>
                     </div>
 
-                    {/* Large ETB Input */}
-                    <div className="sonic-large-etb-input-row">
-                      <span className="sonic-large-currency-tag">ETB</span>
+                    {/* Large ETB Currency Input */}
+                    <div className="sonic-amount-input-box">
+                      <span className="sonic-currency-label">ETB</span>
                       <input
                         type="number"
                         value={withdrawAmount || ''}
                         onChange={e => setWithdrawAmount(Number(e.target.value))}
-                        className="sonic-large-amount-input"
-                        placeholder="50 - 5000"
-                        min="50"
-                        max="5000"
+                        className="sonic-amount-big-field"
+                        placeholder="200"
+                        min={50}
+                        max={5000}
                         required
                       />
-                      <div className="sonic-input-corner-swoosh"></div>
+                      <div className="sonic-input-gold-swoosh"></div>
                     </div>
                   </div>
 
                   {/* Golden Escrow & Net Payout Guarantee Card */}
-                  <div className="sonic-escrow-guarantee-card">
-                    <GoldenEscrowShieldIcon size={38} />
-                    <div className="sonic-escrow-guarantee-info">
-                      <div className="sonic-escrow-guarantee-title">
-                        {lang === 'am'
-                          ? `የተጣራ ክፍያ፡ ${withdrawAmount || 0} ብር (100% ነፃ)`
-                          : `Net Payout: ${withdrawAmount || 0} ETB (0% Player Fee)`}
-                      </div>
-                      <div className="sonic-escrow-guarantee-sub">
-                        {lang === 'am'
-                          ? '🛡️ ገንዘብዎ በደህና Escrow ውስጥ ይቆያል፤ ኤጀንቱ እስኪልክ ድረስ ሙሉ ጥበቃ አለው።'
-                          : '🛡️ Funds held safely in atomic escrow until confirmed. 1-click instant refund.'}
+                  <div className="sonic-reward-box-card">
+                    <div className="sonic-reward-left">
+                      <GoldenEscrowShieldIcon size={38} />
+                      <div className="sonic-reward-info">
+                        <h4>
+                          {lang === 'am'
+                            ? `የተጣራ ክፍያ፡ ${withdrawAmount || 0} ብር (100% ነፃ)`
+                            : `Net Payout: ${withdrawAmount || 0} ETB (0% Player Fee)`}
+                        </h4>
+                        <p>
+                          {lang === 'am'
+                            ? '🛡️ ገንዘብዎ በደህና Escrow ውስጥ ይቆያል፤ ኤጀንቱ እስኪልክ ድረስ ሙሉ ጥበቃ አለው።'
+                            : '🛡️ Funds held safely in atomic escrow until confirmed. 1-click instant refund.'}
+                        </p>
                       </div>
                     </div>
                     <i className="fa-solid fa-chevron-right sonic-gold-chevron"></i>
                   </div>
 
                   {/* Step 3: Destination Payout Rail & Account */}
-                  <div className="sonic-step-indicator-row" style={{ marginTop: '4px' }}>
-                    <div className="sonic-step-num-badge">3</div>
-                    <span className="sonic-step-title">
-                      {lang === 'am' ? 'የክፍያ መቀበያ መስመር እና ሂሳብ' : 'Destination Payout Rail & Account'}
-                    </span>
+                  <div className="sonic-step-header-row">
+                    <div className="sonic-step-badge-pill">
+                      <span className="sonic-step-number-circle">3</span>
+                      <span className="sonic-step-label-text">
+                        {lang === 'am' ? 'የክፍያ መቀበያ መስመር እና ሂሳብ' : 'Destination Payout Rail & Account'}
+                      </span>
+                    </div>
                   </div>
 
-                  {/* Rail Selector Tabs */}
-                  <div className="sonic-rail-tabs-row">
+                  {/* Rails Selector Grid */}
+                  <div className="sonic-rails-grid">
                     {/* Telebirr Tab */}
                     <div
-                      className={`sonic-rail-tab-pill ${withdrawMethod === 'Telebirr' ? 'active-rail-card' : ''}`}
+                      className={`sonic-rail-btn ${withdrawMethod === 'Telebirr' ? 'active-light-rail' : ''}`}
                       onClick={() => setWithdrawMethod('Telebirr')}
                     >
-                      <div className="sonic-rail-tab-left">
-                        <div className="sonic-rail-icon-box" style={{ background: '#ffffff' }}>
-                          <TelebirrLogo size={22} />
-                        </div>
-                        <div className="sonic-rail-tab-text">
-                          <span className="sonic-rail-tab-name">Telebirr</span>
-                        </div>
+                      <TelebirrLogo size={28} />
+                      <div className="sonic-rail-text">
+                        <span className="sonic-rail-title">Telebirr</span>
+                        <span className="sonic-rail-sub">Instant</span>
                       </div>
                     </div>
 
                     {/* CBE Bank Tab */}
                     <div
-                      className={`sonic-rail-tab-pill ${withdrawMethod === 'CBE' ? 'active-rail-card' : ''}`}
+                      className={`sonic-rail-btn ${withdrawMethod === 'CBE' ? 'active-obsidian-rail' : ''}`}
                       onClick={() => setWithdrawMethod('CBE')}
                     >
-                      <div className="sonic-rail-tab-left">
+                      <div className="sonic-cbe-rail-left">
                         <GoldBankColumnsIcon size={24} />
-                        <div className="sonic-rail-tab-text">
-                          <span className="sonic-rail-tab-name">CBE Bank / Birr</span>
-                        </div>
+                        <span className="sonic-cbe-title">CBE Bank / Birr</span>
                       </div>
-                      <i className="fa-solid fa-chevron-right sonic-gold-chevron"></i>
+                      <i className="fa-solid fa-chevron-right sonic-obsidian-chevron"></i>
                     </div>
 
                     {/* M-Pesa Tab */}
                     <div
-                      className={`sonic-rail-tab-pill ${withdrawMethod === 'M-Pesa' ? 'active-rail-card' : ''}`}
+                      className={`sonic-rail-btn ${withdrawMethod === 'M-Pesa' ? 'active-light-rail' : ''}`}
                       onClick={() => setWithdrawMethod('M-Pesa')}
                     >
-                      <div className="sonic-rail-tab-left">
-                        <div className="sonic-rail-icon-box" style={{ background: '#ffffff' }}>
-                          <MpesaLogo size={22} />
-                        </div>
-                        <div className="sonic-rail-tab-text">
-                          <span className="sonic-rail-tab-name">M-Pesa</span>
-                        </div>
+                      <MpesaLogo size={28} />
+                      <div className="sonic-rail-text">
+                        <span className="sonic-rail-title">M-Pesa</span>
+                        <span className="sonic-rail-sub">Instant</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Saved Accounts Fast-Fill Chips */}
                   {user?.attachedAccounts && user.attachedAccounts.length > 0 && (
-                    <div style={{ marginTop: '4px' }}>
+                    <div>
                       <span className="sonic-input-tiny-label">
                         {lang === 'am' ? 'የተቀመጡ ሂሳቦች (ለመምረጥ ይጫኑ)' : 'Saved Accounts (1-Tap Fast Fill)'}
                       </span>
@@ -1516,73 +1495,76 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                     </div>
                   )}
 
-                  {/* Receiving Account / Phone Number Input */}
-                  <div className="sonic-input-field-group">
-                    <label className="sonic-input-tiny-label">
-                      {withdrawMethod === 'Telebirr'
-                        ? (lang === 'am' ? 'ገንዘቡ የሚላክበት የቴሌብር ስልክ ቁጥር' : 'Receiving Telebirr Phone Number (09... / 07...)')
-                        : withdrawMethod === 'CBE'
-                        ? (lang === 'am' ? 'ገንዘቡ የሚላክበት የኢትዮጵያ ንግድ ባንክ ሂሳብ ቁጥር' : 'Receiving CBE Bank Account Number (1000...)')
-                        : (lang === 'am' ? 'ገንዘቡ የሚላክበት የሳፋሪኮም ኤም-ፔሳ ስልክ ቁጥር' : 'Receiving Safaricom M-Pesa Phone Number (07...)')}
-                    </label>
-                    <div className="sonic-input-field-box">
-                      <i className={withdrawMethod === 'CBE' ? 'fa-solid fa-building-columns' : 'fa-solid fa-mobile-screen'}></i>
-                      <input
-                        type="text"
-                        value={withdrawAccount}
-                        onChange={e => setWithdrawAccount(e.target.value)}
-                        placeholder={
-                          withdrawMethod === 'Telebirr'
-                            ? '09... or 07...'
-                            : withdrawMethod === 'CBE'
-                            ? '1000...'
-                            : '07...'
-                        }
-                        required
-                      />
+                  {/* Payout Account Fields in Proof Card */}
+                  <div className="sonic-proof-card">
+                    <div className="sonic-input-field-group">
+                      <label className="sonic-input-tiny-label">
+                        {withdrawMethod === 'Telebirr'
+                          ? (lang === 'am' ? 'ገንዘቡ የሚላክበት የቴሌብር ስልክ ቁጥር' : 'Receiving Telebirr Phone Number (09... / 07...)')
+                          : withdrawMethod === 'CBE'
+                          ? (lang === 'am' ? 'ገንዘቡ የሚላክበት የኢትዮጵያ ንግድ ባንክ ሂሳብ ቁጥር' : 'Receiving CBE Bank Account Number (1000...)')
+                          : (lang === 'am' ? 'ገንዘቡ የሚላክበት የሳፋሪኮም ኤም-ፔሳ ስልክ ቁጥር' : 'Receiving Safaricom M-Pesa Phone Number (07...)')}
+                      </label>
+                      <div className="sonic-proof-field-wrap">
+                        <i className={withdrawMethod === 'CBE' ? 'fa-solid fa-building-columns' : 'fa-solid fa-mobile-screen'}></i>
+                        <input
+                          type="text"
+                          value={withdrawAccount}
+                          onChange={e => setWithdrawAccount(e.target.value)}
+                          className="sonic-proof-text-input"
+                          placeholder={
+                            withdrawMethod === 'Telebirr'
+                              ? '09... or 07...'
+                              : withdrawMethod === 'CBE'
+                              ? '1000...'
+                              : '07...'
+                          }
+                          required
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Account Holder Full Name Input */}
-                  <div className="sonic-input-field-group">
-                    <label className="sonic-input-tiny-label">
-                      {lang === 'am' ? 'የሂሳብ ባለቤቱ ሙሉ ስም' : 'Account Holder Full Name'}
-                    </label>
-                    <div className="sonic-input-field-box">
-                      <i className="fa-solid fa-user-check"></i>
-                      <input
-                        type="text"
-                        value={withdrawAccountName}
-                        onChange={e => setWithdrawAccountName(e.target.value)}
-                        placeholder="e.g. Abebe Kebede"
-                        required
-                      />
+                    <div className="sonic-input-field-group" style={{ marginTop: '10px' }}>
+                      <label className="sonic-input-tiny-label">
+                        {lang === 'am' ? 'የሂሳብ ባለቤቱ ሙሉ ስም' : 'Account Holder Full Name'}
+                      </label>
+                      <div className="sonic-proof-field-wrap">
+                        <i className="fa-solid fa-user-check"></i>
+                        <input
+                          type="text"
+                          value={withdrawAccountName}
+                          onChange={e => setWithdrawAccountName(e.target.value)}
+                          className="sonic-proof-text-input"
+                          placeholder="e.g. Abebe Kebede"
+                          required
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Big Gold Payout Submission Button */}
-                  <button
-                    type="submit"
-                    className="sonic-primary-gold-submit-btn"
-                    disabled={isSubmittingWithdraw || withdrawAmount < 50 || withdrawAmount > balance || !selectedWithdrawAgent}
-                    style={{ marginTop: '10px' }}
-                  >
-                    {isSubmittingWithdraw ? (
-                      <>
-                        <i className="fa-solid fa-spinner fa-spin"></i>
-                        <span>{lang === 'am' ? 'በመላክ ላይ...' : 'Submitting Payout Request...'}</span>
-                      </>
-                    ) : (
-                      <>
-                        <i className="fa-solid fa-bolt"></i>
-                        <span>
-                          {lang === 'am'
-                            ? `አሁን ${withdrawAmount > 0 ? `${withdrawAmount} ብር` : ''} በኤጀንት #${selectedWithdrawAgent?.agentCode || ''} ማውጣት ጠይቅ`
-                            : `Request ${withdrawAmount > 0 ? `${withdrawAmount} ETB` : ''} Payout via Agent #${selectedWithdrawAgent?.agentCode || ''}`}
-                        </span>
-                      </>
-                    )}
-                  </button>
+                    {/* Big Gold Payout Submission Button */}
+                    <button
+                      type="submit"
+                      className="sonic-primary-gold-submit-btn"
+                      disabled={isSubmittingWithdraw || withdrawAmount < 50 || withdrawAmount > balance || !selectedWithdrawAgent}
+                      style={{ marginTop: '12px' }}
+                    >
+                      {isSubmittingWithdraw ? (
+                        <>
+                          <i className="fa-solid fa-spinner fa-spin"></i>
+                          <span>{lang === 'am' ? 'በመላክ ላይ...' : 'Submitting Payout Request...'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <i className="fa-solid fa-bolt"></i>
+                          <span>
+                            {lang === 'am'
+                              ? `አሁን ${withdrawAmount > 0 ? `${withdrawAmount} ብር` : ''} በኤጀንት #${selectedWithdrawAgent?.agentCode || ''} ማውጣት ጠይቅ`
+                              : `Request ${withdrawAmount > 0 ? `${withdrawAmount} ETB` : ''} Payout via Agent #${selectedWithdrawAgent?.agentCode || ''}`}
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </form>
               )}
             </div>

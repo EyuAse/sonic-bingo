@@ -204,13 +204,41 @@ router.post('/withdraw', requireAuth, async (req: AuthenticatedRequest, res) => 
 });
 
 /**
- * Get User Transaction History (Unified Deposits, Withdrawals & Ledger)
+ * Get User Transaction History (Unified Decentralized Agent Deposits, Withdrawals & Ledger)
  */
 router.get('/transactions', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user!.id;
 
-    // 1. Fetch deposit requests (lightweight metadata: omit heavy receipt_image)
+    // 1. Fetch agent deposit requests (new decentralized cashier)
+    const agentDepRes = await query(
+      `SELECT adr.id, adr.amount, adr.payment_method, adr.player_phone, adr.transaction_code,
+              adr.screenshot_url, adr.status, adr.rejection_reason, adr.created_at, adr.resolved_at,
+              ap.agent_code, COALESCE(u.full_name, ap.telebirr_name, CONCAT('Sonic Agent #', ap.agent_code)) as agent_name
+       FROM agent_deposit_requests adr
+       LEFT JOIN agent_profiles ap ON adr.agent_id = ap.id
+       LEFT JOIN users u ON ap.user_id = u.id
+       WHERE adr.player_id = $1
+       ORDER BY adr.created_at DESC
+       LIMIT 50`,
+      [userId]
+    );
+
+    // 2. Fetch agent withdrawal requests (new decentralized cashier)
+    const agentWithRes = await query(
+      `SELECT awr.id, awr.amount, awr.payout_method, awr.payout_account, awr.payout_account_name,
+              awr.agent_tx_ref, awr.status, awr.rejection_reason, awr.created_at, awr.resolved_at,
+              ap.agent_code, COALESCE(u.full_name, ap.telebirr_name, CONCAT('Sonic Agent #', ap.agent_code)) as agent_name
+       FROM agent_withdrawal_requests awr
+       LEFT JOIN agent_profiles ap ON awr.agent_id = ap.id
+       LEFT JOIN users u ON ap.user_id = u.id
+       WHERE awr.player_id = $1
+       ORDER BY awr.created_at DESC
+       LIMIT 50`,
+      [userId]
+    );
+
+    // 3. Fetch legacy deposit requests
     const depRes = await query(
       `SELECT id, amount, payment_method, player_phone, transaction_ref, 
               (receipt_image IS NOT NULL AND receipt_image != '' AND receipt_image NOT LIKE '[ARCHIVED%') as has_receipt,
@@ -222,7 +250,7 @@ router.get('/transactions', requireAuth, async (req: AuthenticatedRequest, res) 
       [userId]
     );
 
-    // 2. Fetch withdrawal requests
+    // 4. Fetch legacy withdrawal requests
     const withRes = await query(
       `SELECT id, amount, payment_method, account_phone, account_name, status, created_at, reviewed_at
        FROM withdrawal_requests
@@ -232,7 +260,7 @@ router.get('/transactions', requireAuth, async (req: AuthenticatedRequest, res) 
       [userId]
     );
 
-    // 3. Fetch completed wallet ledger entries
+    // 5. Fetch completed wallet ledger entries
     const txRes = await query(
       `SELECT id, type, amount, balance_after, reference_code, status, payment_method, description, created_at
        FROM wallet_transactions 
@@ -242,7 +270,50 @@ router.get('/transactions', requireAuth, async (req: AuthenticatedRequest, res) 
       [userId]
     );
 
-    const deposits = depRes.rows.map(d => ({
+    // Format Agent Deposits
+    const agentDeposits = agentDepRes.rows.map(d => ({
+      id: d.id,
+      userId,
+      userName: req.user!.fullName,
+      phone: d.player_phone,
+      accountNumber: d.player_phone,
+      type: 'deposit' as const,
+      amount: parseFloat(d.amount),
+      method: d.payment_method,
+      referenceNumber: d.transaction_code,
+      receiptImage: d.screenshot_url || undefined,
+      status: (d.status === 'completed' ? 'approved' : d.status) as 'pending' | 'approved' | 'rejected',
+      adminNote: d.status === 'rejected' ? d.rejection_reason : (d.agent_name ? `Via ${d.agent_name}` : undefined),
+      agentCode: d.agent_code,
+      agentName: d.agent_name,
+      createdAt: d.created_at,
+      timestamp: d.created_at
+    }));
+
+    // Format Agent Withdrawals
+    const agentWithdrawals = agentWithRes.rows.map(w => ({
+      id: w.id,
+      userId,
+      userName: w.payout_account_name || req.user!.fullName,
+      phone: w.payout_account,
+      accountNumber: w.payout_account,
+      type: 'withdrawal' as const,
+      amount: parseFloat(w.amount),
+      method: w.payout_method,
+      referenceNumber: w.agent_tx_ref || `WD-AGT-${w.id.slice(0, 8)}`,
+      receiptImage: undefined,
+      status: (w.status === 'completed' || w.status === 'approved' ? 'approved' : w.status === 'cancelled' ? 'rejected' : w.status) as 'pending' | 'approved' | 'rejected',
+      adminNote: w.status === 'rejected' || w.status === 'cancelled'
+        ? (w.rejection_reason || 'Request cancelled')
+        : (w.agent_name ? `Via ${w.agent_name}` : undefined),
+      agentCode: w.agent_code,
+      agentName: w.agent_name,
+      createdAt: w.created_at,
+      timestamp: w.created_at
+    }));
+
+    // Format Legacy Deposits
+    const legacyDeposits = depRes.rows.map(d => ({
       id: d.id,
       userId,
       userName: req.user!.fullName,
@@ -258,7 +329,8 @@ router.get('/transactions', requireAuth, async (req: AuthenticatedRequest, res) 
       timestamp: d.created_at
     }));
 
-    const withdrawals = withRes.rows.map(w => ({
+    // Format Legacy Withdrawals
+    const legacyWithdrawals = withRes.rows.map(w => ({
       id: w.id,
       userId,
       userName: w.account_name || req.user!.fullName,
@@ -291,7 +363,7 @@ router.get('/transactions', requireAuth, async (req: AuthenticatedRequest, res) 
     }));
 
     // Combine and sort by createdAt DESC
-    const all = [...deposits, ...withdrawals].sort(
+    const all = [...agentDeposits, ...agentWithdrawals, ...legacyDeposits, ...legacyWithdrawals].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
