@@ -35,7 +35,7 @@ export const translations = {
     landing: {
       pretitle: 'The best place to play and win',
       title: 'Play Bingo',
-      tagline: 'More numbers, more fun, more wins! 🍋',
+      tagline: 'More numbers, more fun, more wins! 🔥',
       firstDepositBonus: 'First Deposit Bonus',
       bonus200: '200% BONUS',
       freeTickets: '+ 30 Free Tickets',
@@ -315,7 +315,7 @@ export const translations = {
     landing: {
       pretitle: 'የሚጫወቱበትና የሚያሸንፉበት ምርጥ ስፍራ',
       title: 'ቢንጎ ይጫወቱ',
-      tagline: 'ተጨማሪ ቁጥሮች፣ ተጨማሪ ደስታ፣ ተጨማሪ አሸናፊነት! 🍋',
+      tagline: 'ተጨማሪ ቁጥሮች፣ ተጨማሪ ደስታ፣ ተጨማሪ አሸናፊነት! 🔥',
       firstDepositBonus: 'የመጀመሪያ ተቀማጭ ቦነስ',
       bonus200: '200% ቦነስ',
       freeTickets: '+ 30 ነፃ ቲኬቶች',

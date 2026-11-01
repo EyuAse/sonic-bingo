@@ -7,7 +7,6 @@ import { useLanguage } from '../context/LanguageContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useAdmin } from '../context/AdminContext.tsx';
 import { useWallet } from '../context/WalletContext.tsx';
-import { authService } from '../services/authService.ts';
 import { TelegramRegisterModal } from '../components/auth/TelegramRegisterModal.tsx';
 import { NewPlayerWelcomeModal } from '../components/auth/NewPlayerWelcomeModal.tsx';
 import { User } from '../types/auth.ts';
@@ -67,7 +66,7 @@ export const LandingPage: React.FC = () => {
     setIsExistingAccount(false);
   }, [user, telegramUser]);
 
-  // When new user taps "Claim 10 ETB Bonus" on Slide 3 -> Open clean registration modal
+  // When new user taps "Claim 20 ETB Bonus" on Slide 3 -> Open clean registration modal
   const handleOpenRegisterModal = () => {
     setShowRegisterModal(true);
   };
@@ -110,7 +109,7 @@ export const LandingPage: React.FC = () => {
     }
   };
 
-  // When existing user clicks "Continue as [Name]"
+  // When existing user clicks "Sign in as [Name]"
   const handleExistingUserLogin = async () => {
     setIsLoading(true);
     try {
@@ -135,16 +134,13 @@ export const LandingPage: React.FC = () => {
     : (user?.fullName || 'Telegram Player');
 
   return (
-    <div className="page active page-landing-fresh" id="page-landing">
+    <div className="page active page-landing-fresh vip-casino-theme" id="page-landing">
       {/* 1. Brand Logo & Language Switcher at Top */}
       <LandingNavbar />
 
-      {/* Floating Background Lemon Slices & Fresh Leaves */}
-      <div className="bg-floating-lemon-slice lemon-top-left"></div>
-      <div className="bg-floating-lemon-slice lemon-top-right"></div>
-      <div className="bg-floating-leaf leaf-mid-left"></div>
-      <div className="bg-floating-lemon-slice lemon-bottom-left"></div>
-      <div className="bg-floating-leaf leaf-bottom-right"></div>
+      {/* VIP Luxury Gold Light Atmosphere */}
+      <div className="bg-vip-gold-glow top-left-glow"></div>
+      <div className="bg-vip-gold-glow center-right-glow"></div>
 
       {/* 2. Main Content Area: Onboarding Carousel for New Users VS Iconic Hero for Existing Users */}
       <main className="landing-fresh-hero-container">
@@ -158,63 +154,82 @@ export const LandingPage: React.FC = () => {
             />
           </div>
         ) : (
-          /* B. EXISTING USERS: Iconic 3D Casino Layout matching Screenshot */
+          /* B. EXISTING USERS: Iconic 3D VIP Casino Layout matching Reference Image 2 */
           <>
             {/* Pretitle */}
             <p className="hero-fresh-pretitle">{t('landing.pretitle')}</p>
 
-            {/* Main Title: Play Bingo with floating lemon */}
-            <h1 className="hero-fresh-title">
-              {t('landing.title')}
-              <span className="hero-lemon-icon">🍋</span>
-            </h1>
+            {/* Main Title: Play Bingo with 3D Crown on top of Play */}
+            <div className="hero-title-crowned-wrap">
+              <span className="hero-vip-title-crown">👑</span>
+              <h1 className="hero-fresh-title">{t('landing.title')}</h1>
+            </div>
 
             {/* Tagline */}
             <p className="hero-fresh-tagline">{t('landing.tagline')}</p>
 
-            {/* Promo 10 ETB Welcome Bonus Block */}
-            <div className="hero-promo-block">
-              <span className="promo-lbl">{lang === 'am' ? 'የነፃ መመዝገቢያ ስጦታ' : 'FREE SIGN UP BONUS'}</span>
-              <div className="promo-bonus-huge">+10.00 ETB BONUS</div>
-              <div className="promo-bonus-sub">{lang === 'am' ? 'ምንም ቅድመ ክፍያ አያስፈልግም • ፈጣን የቴሌብር ክፍያ' : '+ 1 Free Cartela • 0 Deposit Needed'}</div>
+            {/* Promo 20 ETB Welcome Bonus Box (Matching Reference Image 2) */}
+            <div className="hero-vip-bonus-card">
+              <div className="vip-bonus-gift-box">
+                <img
+                  src="/assets/images/sonic-gift-box-3d.jpg"
+                  alt="3D Gold Gift Box"
+                  className="vip-gift-img"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                    if (e.currentTarget.parentElement) {
+                      e.currentTarget.parentElement.innerHTML = '<span style="font-size: 2.4rem;">🎁</span>';
+                    }
+                  }}
+                />
+              </div>
+              <div className="vip-bonus-text-content">
+                <span className="vip-promo-lbl">{lang === 'am' ? 'የነፃ መመዝገቢያ ስጦታ' : 'FREE SIGN UP BONUS'}</span>
+                <div className="vip-bonus-huge">+20.00 ETB</div>
+                <div className="vip-bonus-divider">
+                  <span className="vip-divider-line"></span>
+                  <span className="vip-divider-text">{lang === 'am' ? 'ቦነስ' : 'BONUS'}</span>
+                  <span className="vip-divider-line"></span>
+                </div>
+              </div>
             </div>
 
-            {/* Glowing 1-Click Action Button */}
+            {/* Under-Bonus Free Cartela Subtext */}
+            <div className="hero-vip-cartela-sub">
+              <span className="vip-ticket-emoji">🎟️</span>
+              <span>{lang === 'am' ? '+ 1 ነፃ ካርቴላ • 0 ተቀማጭ ያስፈልጋል' : '+ 1 Free Cartela • 0 Deposit Needed'}</span>
+            </div>
+
+            {/* Glowing 24k Gold 1-Click Action Button */}
             <button
               type="button"
-              className="btn-hero-fresh-cta"
+              className="btn-hero-vip-cta"
               id="landing-continue-btn"
               onClick={handleExistingUserLogin}
               disabled={isLoading}
-              style={{
-                background: 'linear-gradient(135deg, #facc15 0%, #eab308 50%, #ca8a04 100%)',
-                boxShadow: '0 8px 25px rgba(234, 179, 8, 0.45)',
-                color: '#0f172a',
-                fontWeight: 900
-              }}
             >
-              <span className="cta-gift-icon">⚡</span>
-              <span>
+              <i className="fa-solid fa-user vip-btn-user-icon"></i>
+              <span className="vip-btn-label">
                 {isLoading
-                  ? lang === 'am'
-                    ? 'በመግባት ላይ...'
-                    : 'Connecting...'
-                  : lang === 'am'
-                  ? `⚡ እንደ ${displayName} ግባ`
-                  : `⚡ Sign in as ${displayName}`}
+                  ? (lang === 'am' ? 'በመግባት ላይ...' : 'Connecting...')
+                  : (lang === 'am' ? `እንደ ${displayName} ግባ` : `Sign in as ${displayName}`)}
               </span>
+              <i className="fa-solid fa-chevron-right vip-btn-chevron-icon"></i>
             </button>
 
-            {/* 3. Hero 3D Artwork Card (75-Ball & Cartelas) */}
-            <div className="hero-fresh-artwork-card">
+            {/* 3. Hero 3D Artwork Card (Crowned 75-Ball on Gold Podium & Cartelas) */}
+            <div className="hero-fresh-artwork-card vip-artwork-card">
               <img
-                src="/assets/images/lomi-hero-75.jpg"
-                alt="75-Ball Sonic Bingo 3D Cards and Balls"
+                src="/assets/images/sonic-hero-75-vip.jpg"
+                alt="75-Ball Sonic Bingo VIP 3D Podium"
                 className="hero-artwork-img"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/assets/images/lomi-hero-75.jpg';
+                }}
               />
             </div>
 
-            {/* 4. Exact 3-Pillar Trust Footer */}
+            {/* 4. Exact 4-Pillar Dark Obsidian Glass Trust Footer */}
             <TrustFooter />
           </>
         )}

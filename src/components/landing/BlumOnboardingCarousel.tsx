@@ -80,18 +80,18 @@ export const BlumOnboardingCarousel: React.FC<BlumOnboardingCarouselProps> = ({
     {
       id: 2,
       badge: lang === 'am' ? '🎁 👑 የነፃ መመዝገቢያ ስጦታ' : '🎁 👑 STARTER REWARD PACK',
-      title1: lang === 'am' ? 'በ10 ብር ቦነስ ይጀምሩ' : 'Start With 10 ETB',
+      title1: lang === 'am' ? 'በ20 ብር ቦነስ ይጀምሩ' : 'Start With 20 ETB',
       title2: lang === 'am' ? 'ያለ ምንም ቅድመ ክፍያ' : 'Zero Deposit Needed',
       sub: lang === 'am'
-        ? 'በቴሌግራም በአንድ ንክኪ ይመዝገቡና የ10 ብር ነፃ ቦነስዎን ወዲያውኑ ተቀብለው ይጫወቱ!'
-        : 'Create account in 1-tap via Telegram and claim 10 ETB welcome bonus now.',
+        ? 'በቴሌግራም በአንድ ንክኪ ይመዝገቡና የ20 ብር ነፃ ቦነስዎን ወዲያውኑ ተቀብለው ይጫወቱ!'
+        : 'Create account in 1-tap via Telegram and claim 20 ETB welcome bonus now.',
       art: '/assets/images/lomi-hero-75.jpg',
       features: [
         {
           icon: '🎁',
           iconBg: '#fef9c3',
-          title: lang === 'am' ? 'የ10 ብር ነፃ ስጦታ' : 'Free Starter Pack',
-          desc: lang === 'am' ? '+10.00 ብር ቦነስ ወደ ቦርሳዎ ገቢ ይሆናል' : '+10.00 ETB added directly to wallet'
+          title: lang === 'am' ? 'የ20 ብር ነፃ ስጦታ' : 'Free Starter Pack',
+          desc: lang === 'am' ? '+20.00 ብር ቦነስ ወደ ቦርሳዎ ገቢ ይሆናል' : '+20.00 ETB added directly to wallet'
         },
         {
           icon: '⚡',
@@ -369,8 +369,8 @@ export const BlumOnboardingCarousel: React.FC<BlumOnboardingCarouselProps> = ({
                   ? 'በመግባት ላይ...'
                   : 'Connecting...'
                 : lang === 'am'
-                ? '🎁 የ10 ብር ቦነስዎን ተቀብለው ይጫወቱ ➔'
-                : '🎁 Claim 10 ETB Bonus & Play ➔'}
+                ? '🎁 የ20 ብር ቦነስዎን ተቀብለው ይጫወቱ ➔'
+                : '🎁 Claim 20 ETB Bonus & Play ➔'}
             </span>
           ) : (
             <>

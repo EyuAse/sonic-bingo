@@ -1099,3 +1099,348 @@
     padding: 6px 4px;
   }
 }
+
+/* ============================================================
+   VIP CASINO THEME (100% Exact Clone matching Reference Image 2)
+   ============================================================ */
+.page-landing-fresh.vip-casino-theme {
+  background: radial-gradient(ellipse at 50% 20%, #ffffff 0%, #fffdf0 50%, #fef3c7 85%, #fde047 100%) !important;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.bg-vip-gold-glow {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(40px);
+  opacity: 0.25;
+  z-index: 1;
+}
+
+.top-left-glow {
+  top: -30px;
+  left: -40px;
+  width: 180px;
+  height: 180px;
+  background: #facc15;
+}
+
+.center-right-glow {
+  top: 240px;
+  right: -50px;
+  width: 220px;
+  height: 220px;
+  background: #eab308;
+}
+
+/* 1. VIP Top Navbar */
+.landing-fresh-navbar {
+  background: #090d16 !important;
+  border-bottom: 1.5px solid rgba(234, 179, 8, 0.4) !important;
+  padding: 8px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+  position: relative !important;
+  z-index: 20 !important;
+}
+
+.landing-nav-left {
+  display: flex;
+  align-items: center;
+}
+
+.sonic-vip-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sonic-vip-crown {
+  font-size: 1.5rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(234, 179, 8, 0.5));
+}
+
+.sonic-vip-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.sonic-brand-primary {
+  color: #ffffff;
+  font-size: 1.15rem;
+  font-weight: 950;
+  letter-spacing: 0.3px;
+  font-family: var(--font-display), 'Outfit', sans-serif;
+}
+
+.sonic-brand-sub {
+  color: #facc15;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.sonic-vip-nav-divider {
+  width: 1px;
+  height: 22px;
+  background: rgba(234, 179, 8, 0.35);
+  margin-left: 10px;
+}
+
+/* Dark Luxury Language Pill in Navbar */
+.landing-fresh-navbar .btn-custom-lang-pill {
+  background: #0f172a !important;
+  border: 1.5px solid rgba(234, 179, 8, 0.45) !important;
+  color: #ffffff !important;
+  padding: 4px 10px !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+}
+
+.landing-fresh-navbar .btn-custom-lang-pill .lang-code-bold {
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  font-size: 0.78rem !important;
+}
+
+.landing-fresh-navbar .btn-custom-lang-pill .pill-chevron-mini {
+  color: #facc15 !important;
+  font-size: 0.65rem !important;
+}
+
+/* 2. Crown on Title */
+.hero-title-crowned-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-top: 2px;
+  margin-bottom: 4px;
+}
+
+.hero-vip-title-crown {
+  font-size: 1.7rem;
+  line-height: 1;
+  margin-bottom: -6px;
+  filter: drop-shadow(0 2px 6px rgba(234, 179, 8, 0.5));
+  animation: gentleCrownPulse 2.5s infinite alternate ease-in-out;
+}
+
+@keyframes gentleCrownPulse {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-3px) scale(1.05); }
+}
+
+/* 3. Bonus Card & Under-text */
+.hero-vip-bonus-card {
+  width: 100%;
+  max-width: 440px;
+  background: #0a0f1d;
+  border: 1.5px solid #d97706;
+  border-radius: 20px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 12px rgba(217, 119, 6, 0.25);
+  margin-bottom: 6px;
+  box-sizing: border-box;
+}
+
+.vip-bonus-gift-box {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000000;
+}
+
+.vip-gift-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vip-bonus-text-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  flex: 1;
+}
+
+.vip-promo-lbl {
+  font-size: 0.72rem;
+  font-weight: 850;
+  color: #ffffff;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.vip-bonus-huge {
+  font-size: clamp(1.8rem, 5.5vw, 2.3rem);
+  font-weight: 950;
+  color: #fde047;
+  line-height: 1.05;
+  text-shadow: 0 0 12px rgba(253, 224, 71, 0.4);
+  font-family: var(--font-display), 'Outfit', sans-serif;
+  letter-spacing: -0.5px;
+}
+
+.vip-bonus-divider {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.vip-divider-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(234, 179, 8, 0.45);
+}
+
+.vip-divider-text {
+  font-size: 0.65rem;
+  font-weight: 900;
+  color: #ca8a04;
+  letter-spacing: 2px;
+}
+
+.hero-vip-cartela-sub {
+  font-size: 0.82rem;
+  font-weight: 850;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+
+.vip-ticket-emoji {
+  font-size: 0.95rem;
+}
+
+/* 4. 24k Gold Action Button */
+.btn-hero-vip-cta {
+  width: 100%;
+  max-width: 440px;
+  background: linear-gradient(135deg, #facc15 0%, #eab308 50%, #ca8a04 100%);
+  border: none;
+  border-radius: 9999px;
+  height: 48px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 8px 24px rgba(234, 179, 8, 0.45);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+}
+
+.btn-hero-vip-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(234, 179, 8, 0.6);
+}
+
+.btn-hero-vip-cta:active {
+  transform: scale(0.98);
+}
+
+.vip-btn-user-icon {
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+
+.vip-btn-label {
+  font-size: 1.05rem;
+  font-weight: 950;
+  color: #0f172a;
+  flex: 1;
+  text-align: center;
+}
+
+.vip-btn-chevron-icon {
+  font-size: 0.95rem;
+  color: #0f172a;
+  font-weight: 900;
+}
+
+/* 5. 3D Artwork Podium Card */
+.hero-fresh-artwork-card.vip-artwork-card {
+  width: 100%;
+  max-width: 440px;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
+  border: 2px solid rgba(234, 179, 8, 0.3);
+  margin-bottom: 16px;
+  background: #000000;
+}
+
+/* 6. Dark Obsidian Glass Trust Bar (4-Pillars) */
+.vip-dark-trust-bar {
+  background: #090d16 !important;
+  border: 1px solid rgba(234, 179, 8, 0.35) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35) !important;
+  padding: 8px 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  max-width: 440px !important;
+  margin-top: 10px !important;
+  box-sizing: border-box !important;
+}
+
+.vip-dark-trust-bar .trust-pillar-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vip-dark-trust-bar .pillar-gold-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.vip-dark-trust-bar .pillar-text-group {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  text-align: left;
+}
+
+.vip-dark-trust-bar .pillar-title {
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.vip-dark-trust-bar .pillar-sub {
+  color: #facc15;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.vip-dark-trust-bar .trust-pillar-sep {
+  width: 1px;
+  height: 22px;
+  background: rgba(234, 179, 8, 0.35);
+}

@@ -366,7 +366,7 @@ export const TelegramRegisterModal: React.FC<TelegramRegisterModalProps> = ({
             </span>
           ) : (
             <span>
-              ⚡ {lang === 'am' ? 'መለያ ፍጠርና 10 ብር ተቀበል 🚀' : 'CREATE ACCOUNT & CLAIM +10 ETB 🚀'}
+              ⚡ {lang === 'am' ? 'መለያ ፍጠርና 20 ብር ተቀበል 🚀' : 'CREATE ACCOUNT & CLAIM +20 ETB 🚀'}
             </span>
           )}
         </button>
