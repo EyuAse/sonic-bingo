@@ -2,13 +2,13 @@ import React from 'react';
 import { useBingo, BingoCell } from '../../context/BingoContext.tsx';
 import { useLanguage } from '../../context/LanguageContext.tsx';
 
-// ── Column headers with alternating Luxury Palette (Gold, Black, Black, Gold, Black) ──
+// ── Column headers ─────────────────────────────────────────
 const CARD_COLUMNS = [
-  { letter: 'B', isGold: true },
-  { letter: 'I', isGold: false },
-  { letter: 'N', isGold: false },
-  { letter: 'G', isGold: true },
-  { letter: 'O', isGold: false },
+  { letter: 'B', colClass: 'col-b' },
+  { letter: 'I', colClass: 'col-i' },
+  { letter: 'N', colClass: 'col-n' },
+  { letter: 'G', colClass: 'col-g' },
+  { letter: 'O', colClass: 'col-o' },
 ];
 
 // 13 Winning patterns to calculate "To Go" status
@@ -74,7 +74,7 @@ const NewCard5x5: React.FC<{
   if (isPreview && (!cartelaId || cartelaId === 0 || !cells || cells.length === 0)) {
     return (
       <div
-        className={`new-cartela-card sonic-cartela-card empty-cartela-placeholder ${isSingleCard ? 'single-card' : ''}`}
+        className={`new-cartela-card empty-cartela-placeholder ${isSingleCard ? 'single-card' : ''}`}
         onClick={onOpenPicker}
         title="Tap to choose your cartela from 600 available boards"
       >
@@ -106,28 +106,27 @@ const NewCard5x5: React.FC<{
   }
 
   return (
-    <div className={`new-cartela-card sonic-cartela-card ${isSingleCard ? 'single-card' : ''} ${toGo === 1 ? 'card-has-1-togo' : ''}`}>
-      {/* ── Card Header matching Image 8: Obsidian with diagonal gold ribbon swoosh, Cartela #, PREVIEW pill with eye icon ── */}
-      <div className="sonic-card-header">
-        <div className="sonic-card-gold-ribbon" aria-hidden="true"></div>
-        <div className="sonic-card-header-left">
-          <span className="sonic-card-header-title">Cartela #{cardIndex + 1}</span>
-          {cartelaId > 0 && <span className="sonic-card-id-sub">#{cartelaId}</span>}
+    <div className={`new-cartela-card ${isSingleCard ? 'single-card' : ''} ${toGo === 1 ? 'card-has-1-togo' : ''}`}>
+      {/* ── Card Header matching Image: Black with diagonal gold transition, Cartela #, PREVIEW badge, eye icon ── */}
+      <div className="new-card-header">
+        <div className="new-card-header-left">
+          <span className="new-card-header-title">Cartela #{cardIndex + 1}</span>
+          {cartelaId > 0 && <span className="new-card-id-sub">#{cartelaId}</span>}
         </div>
 
-        <div className="sonic-card-header-right">
+        <div className="new-card-header-right">
           {isPreview ? (
             <button
               type="button"
-              className="btn-sonic-preview-pill"
+              className="new-card-preview-pill"
               onClick={e => {
                 e.stopPropagation();
                 onOpenPicker?.();
               }}
               title="Choose from 600 cartelas"
             >
-              <span>PREVIEW</span>
-              <i className="fa-regular fa-eye"></i>
+              <span className="new-card-preview-text">PREVIEW</span>
+              <i className="fa-solid fa-eye new-card-preview-eye"></i>
             </button>
           ) : (
             typeof toGo === 'number' && (
@@ -143,22 +142,19 @@ const NewCard5x5: React.FC<{
         </div>
       </div>
 
-      {/* ── Card Body: Alternating B-I-N-G-O Columns + 5×5 Matrix ── */}
-      <div className="sonic-card-body">
-        {/* B I N G O column header row - Alternating Gold / Black / Black / Gold / Black */}
-        <div className="sonic-bingo-col-headers">
+      {/* ── Card Body: Radiant Golden B I N G O Header + 5×5 Matrix ── */}
+      <div className="new-card-body">
+        {/* B I N G O column header row - 5 Distinct Radiant Colors */}
+        <div className="new-bingo-col-headers">
           {CARD_COLUMNS.map(c => (
-            <div
-              key={c.letter}
-              className={`sonic-bingo-col-hdr ${c.isGold ? 'hdr-gold' : 'hdr-obsidian'}`}
-            >
+            <div key={c.letter} className={`new-bingo-col-hdr ${c.colClass}`}>
               {c.letter}
             </div>
           ))}
         </div>
 
-        {/* 5×5 grid cells with rounded white squircles & ultra-bold black numbers */}
-        <div className="sonic-cartela-5x5">
+        {/* 5×5 grid cells */}
+        <div className="new-cartela-5x5">
           {(Array.isArray(cells) ? cells : []).map(cell => {
             if (!cell || typeof cell.index !== 'number') return null;
             const safeWinningLine = Array.isArray(winningLine) ? winningLine : [];
@@ -167,22 +163,22 @@ const NewCard5x5: React.FC<{
               <div
                 key={`${cardIndex}-${cell.index}`}
                 className={[
-                  'sonic-cartela-cell',
+                  'new-cartela-cell',
                   cell.marked ? 'daubed' : '',
-                  cell.isFree ? 'free-center-squircle' : '',
+                  cell.isFree ? 'free-cell' : '',
                   isWinningCell ? 'win-glow' : '',
                   !autoPlay && !cell.marked && !cell.isFree ? 'interactive-tap' : '',
                 ].filter(Boolean).join(' ')}
                 onClick={() => !autoPlay && !cell.isFree && onDaub(cardIndex, cell.index)}
               >
                 {cell.isFree ? (
-                  /* FREE center squircle with shining 24k gold star ★ */
-                  <div className="sonic-free-star-wrap">
-                    <span className="sonic-gold-star">★</span>
+                  /* FREE center cell with golden star */
+                  <div className="new-free-content">
+                    <span className="new-free-star">⭐</span>
                   </div>
                 ) : (
-                  /* Number cell (ultra-bold black typography, white when daubed) */
-                  <span className={cell.marked ? 'daubed-number' : 'sonic-cell-number'}>
+                  /* Number cell (black text normally, white if daubed) */
+                  <span className={cell.marked ? 'daubed-number' : 'cell-number'}>
                     {cell.val}
                   </span>
                 )}

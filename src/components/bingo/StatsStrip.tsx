@@ -45,10 +45,10 @@ export const StatsStrip: React.FC = () => {
     ? '0'
     : (currentPrize >= 1000 ? `${(currentPrize / 1000).toFixed(1)}K` : `${currentPrize}`);
 
-  // Short round game code matching Image 1: KI-10
+  // Short round game code
   const gameId = `KI-${betAmount}`;
 
-  // Matchmaking player display for clarity
+  // Matchmaking player display for clarity: never show misleading "0/2" or "2/2 ⏳" when waiting for opponent
   const isLobbyWaiting = roundPhase === 'lobby' && waitingForPlayers;
   const effectiveInRoom = Math.max(activeUsersCount, currentPlayers, hasTicket ? (cardQuantity || 1) : 0);
   const playersDisplay = isLobbyWaiting
@@ -57,10 +57,10 @@ export const StatsStrip: React.FC = () => {
         : (effectivePlayerCount >= 1 || hasTicket
             ? '1/2 ⏳'
             : (effectiveInRoom >= 2
-                ? (lang === 'am' ? `${effectiveInRoom}` : `${effectiveInRoom}`)
-                : (lang === 'am' ? '1' : '1'))))
+                ? (lang === 'am' ? `${effectiveInRoom} ተጫዋች` : `${effectiveInRoom} in Room`)
+                : (lang === 'am' ? 'ይጠብቁ ⏳' : 'Waiting ⏳'))))
     : (isSpectatingHouse && roundPhase === 'playing'
-        ? (lang === 'am' ? 'እይታ 👁️' : 'Spec 👁️')
+        ? (lang === 'am' ? 'እይታ 👁️' : 'Spectate 👁️')
         : `${betAmount === 10 ? effectivePlayerCount : Math.max(currentPlayers, hasTicket ? (cardQuantity || 1) : 0)}`);
 
   const canSwitchStake = roundPhase === 'lobby' || !hasTicket;
@@ -76,73 +76,55 @@ export const StatsStrip: React.FC = () => {
         }}
       />
 
-      <div className="sonic-stats-pill-strip">
-        {/* 1. GAME ID Pill */}
-        <div className="sonic-stat-pill pill-game-id">
-          <span className="sonic-pill-meta-lbl">GAME ID</span>
-          <span className="sonic-pill-main-val val-game-id">{gameId}</span>
+      <div className="bingo-top-status-strip">
+        {/* 1. Game ID */}
+        <div className="status-strip-box gameid-strip-box">
+          <span className="status-strip-lbl">GAME ID</span>
+          <span className="status-strip-val text-dark-val">{gameId}</span>
         </div>
 
-        {/* 2. DERASH (70%) Pill */}
-        <div className="sonic-stat-pill pill-derash">
-          <span className="sonic-pill-meta-lbl">
-            {lang === 'am' ? 'ደራሽ (70%)' : 'DERASH (70%)'}
-          </span>
-          <span className="sonic-pill-main-val val-derash">{prizeDisplay}</span>
+        {/* 2. Derash (ደራሽ / Prize Pool 70%) */}
+        <div className="status-strip-box derash-box">
+          <span className="status-strip-lbl">{lang === 'am' ? 'ደራሽ (70%)' : 'DERASH (70%)'}</span>
+          <span className="status-strip-val text-green">{prizeDisplay}</span>
         </div>
 
-        {/* 3. 👑 JACKPOT Radiant Gold Pill */}
-        <div
-          className="sonic-stat-pill pill-jackpot-radiant-gold"
-          title="Progressive 10% Jackpot Vault (Won in <= 18 balls)"
-        >
-          <div className="sonic-pill-jackpot-header">
-            <span className="jackpot-crown-icon" aria-hidden="true">👑</span>
-            <span className="jackpot-title-txt">JACKPOT</span>
+        {/* 3. Progressive Jackpot Vault (10% Pool) */}
+        <div className="status-strip-box jackpot-strip-box" title="Progressive Jackpot">
+          <div className="jackpot-hdr-row">
+            <span className="jackpot-crown-emblem">👑</span>
+            <span className="status-strip-lbl jackpot-lbl">{lang === 'am' ? 'ጃክፖት' : 'JACKPOT'}</span>
           </div>
-          <span className="sonic-pill-main-val val-jackpot">
-            {jackpotPool >= 1000 ? `${(jackpotPool / 1000).toFixed(1)}K` : jackpotPool}
+          <span className="status-strip-val jackpot-val">
+            {jackpotPool >= 1000 ? `${(jackpotPool / 1000).toFixed(1)}K` : `${jackpotPool || 526}`}
           </span>
         </div>
 
-        {/* 4. PLAYERS Pill with users icon */}
-        <div className={`sonic-stat-pill pill-players ${isLobbyWaiting ? 'waiting-mode' : ''}`}>
-          <i className="fa-solid fa-users sonic-pill-leading-icon" aria-hidden="true"></i>
-          <div className="sonic-pill-col">
-            <span className="sonic-pill-meta-lbl">
-              {lang === 'am' ? 'ተጫዋች' : 'PLAYERS'}
-            </span>
-            <span className="sonic-pill-main-val val-players">{playersDisplay}</span>
+        {/* 4. Players */}
+        <div className={`status-strip-box players-strip-box ${isLobbyWaiting ? 'waiting-match' : ''}`}>
+          <div className="players-hdr-row">
+            <i className="fa-solid fa-users players-hdr-icon"></i>
+            <span className="status-strip-lbl">{lang === 'am' ? 'ተጫዋቾች' : 'PLAYERS'}</span>
           </div>
+          <span className={`status-strip-val ${isLobbyWaiting ? 'text-gold' : 'text-dark-val'}`}>{playersDisplay}</span>
         </div>
 
-        {/* 5. STAKE Pill with golden B coin badge and dropdown chevron */}
+        {/* 5. Stake */}
         <div
-          className={`sonic-stat-pill pill-stake ${canSwitchStake ? 'is-clickable' : ''}`}
+          className={`status-strip-box stake-strip-box ${canSwitchStake ? 'clickable-stake-pill' : ''}`}
           onClick={canSwitchStake ? () => setShowStakeModal(true) : undefined}
           title={canSwitchStake ? "Tap to change stake room" : undefined}
+          style={{ cursor: canSwitchStake ? 'pointer' : 'default' }}
         >
-          <span className="sonic-b-coin-badge" aria-hidden="true">B</span>
-          <div className="sonic-pill-col">
-            <span className="sonic-pill-meta-lbl">
-              {lang === 'am' ? 'መደብ' : 'STAKE'}
-            </span>
-            <span className="sonic-pill-main-val val-stake">{betAmount}</span>
+          <div className="stake-hdr-row">
+            <span className="stake-b-medallion">Ⓑ</span>
+            <span className="status-strip-lbl">{lang === 'am' ? 'መደብ' : 'STAKE'}</span>
           </div>
-          {canSwitchStake && (
-            <i className="fa-solid fa-chevron-down sonic-pill-trailing-chevron" aria-hidden="true"></i>
-          )}
+          <span className="status-strip-val text-dark-val">
+            {betAmount}
+            {canSwitchStake && <span className="stake-down-chevron">⌵</span>}
+          </span>
         </div>
-
-        {/* 6. Called balls count during active gameplay */}
-        {roundPhase === 'playing' && calledNumbers.length > 0 && (
-          <div className="sonic-stat-pill pill-called">
-            <span className="sonic-pill-meta-lbl">
-              {lang === 'am' ? 'የተጠራ' : 'CALLED'}
-            </span>
-            <span className="sonic-pill-main-val val-called">{calledNumbers.length}</span>
-          </div>
-        )}
       </div>
     </>
   );

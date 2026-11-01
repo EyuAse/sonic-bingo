@@ -7,7 +7,7 @@ export const FooterBanner: React.FC = () => {
   return (
     <div className="promo-banner">
       <div className="promo-left">
-        <span className="promo-tag">👑 SONIC VIP</span>
+        <span className="promo-tag">🍋 LOMI VIP</span>
         <h4 className="promo-title">{t('games.moreFunBanner')}</h4>
       </div>
       <div className="promo-right">

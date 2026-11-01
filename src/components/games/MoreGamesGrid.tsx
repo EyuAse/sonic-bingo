@@ -57,7 +57,7 @@ export const MoreGamesGrid: React.FC = () => {
       {/* Section Header: All Games | View All ➔ */}
       <div className="fresh-games-section-header">
         <div className="section-title-left">
-          <span className="lemon-emoji-title">👑</span>
+          <span className="lemon-emoji-title">🍋</span>
           <h2 className="title-text-bold">More Games</h2>
         </div>
 
