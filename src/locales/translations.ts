@@ -229,7 +229,7 @@ export const translations = {
       supportAbout: 'SUPPORT & ABOUT',
       helpCenter: 'Help Center',
       helpCenterSub: '24/7 Telegram support & FAQs',
-      aboutLomi: 'About Lomii Bingo',
+      aboutLomi: 'About Sonic Bingo',
       aboutLomiSub: 'NLA license, RNG fairness & version',
       logout: 'Logout',
       logoutSub: 'Sign out from your account'
@@ -264,12 +264,12 @@ export const translations = {
       faqsTitle: 'FREQUENTLY ASKED QUESTIONS'
     },
     about: {
-      title: 'About Lomii Bingo',
+      title: 'About Sonic Bingo',
       version: 'Version 3.4.0 (Production Build 2026.08)',
       tagline: "Ethiopia's #1 Real-Time 75-Ball Express Bingo Platform",
       regulatory: 'REGULATORY & LICENSING',
       nlaTitle: 'National Lottery Administration of Ethiopia',
-      nlaSub: 'Operated under official remote gaming permit NLA/ET/2026-882 by Lomi Entertainment PLC, Addis Ababa, Ethiopia.',
+      nlaSub: 'Operated under official remote gaming permit NLA/ET/2026-882 by Sonic Entertainment PLC, Addis Ababa, Ethiopia.',
       rngTitle: 'Certified Provably Fair RNG',
       rngSub: 'Our 75-ball draw engine utilizes certified cryptographic SHA-256 random number generation, guaranteeing 100% unbiased, tamper-proof draws.',
       specsTitle: 'GAME ENGINE SPECIFICATIONS',
@@ -509,7 +509,7 @@ export const translations = {
       supportAbout: 'እርዳታ እና መረጃ',
       helpCenter: 'የእርዳታ ማዕከል',
       helpCenterSub: '24/7 የቴሌግራም ድጋፍ እና ጥያቄዎች',
-      aboutLomi: 'ስለ ሎሚ ቢንጎ',
+      aboutLomi: 'ስለ ሶኒክ ቢንጎ',
       aboutLomiSub: 'የብሔራዊ ሎተሪ ፈቃድ እና ህጎች',
       logout: 'ውጣ',
       logoutSub: 'ከመለያዎ ይውጡ'

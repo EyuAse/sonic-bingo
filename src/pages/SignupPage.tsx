@@ -314,7 +314,7 @@ export const SignupPage: React.FC = () => {
                     type="text"
                     value={referralCode}
                     onChange={e => setReferralCode(e.target.value)}
-                    placeholder="e.g. LOMI-7842"
+                    placeholder="e.g. SONIC-7842"
                   />
                 </div>
               </div>

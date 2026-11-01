@@ -209,7 +209,7 @@ export const LandingPage: React.FC = () => {
             <div className="hero-fresh-artwork-card">
               <img
                 src="/assets/images/lomi-hero-75.jpg"
-                alt="75-Ball Lomi Bingo 3D Cards and Balls"
+                alt="75-Ball Sonic Bingo 3D Cards and Balls"
                 className="hero-artwork-img"
               />
             </div>

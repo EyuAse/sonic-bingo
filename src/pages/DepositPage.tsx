@@ -1424,15 +1424,15 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                   </div>
 
                   {/* Golden Escrow & Net Payout Guarantee Card */}
-                  <div className="sonic-reward-box-card">
-                    <div className="sonic-reward-left">
-                      <GoldenEscrowShieldIcon size={38} />
-                      <div className="sonic-reward-info">
-                        <h4>
+                  <div className="sonic-coins-reward-card">
+                    <div className="sonic-coins-reward-left">
+                      <GoldenEscrowShieldIcon size={36} />
+                      <div className="sonic-coins-reward-titles">
+                        <h5>
                           {lang === 'am'
                             ? `የተጣራ ክፍያ፡ ${withdrawAmount || 0} ብር (100% ነፃ)`
                             : `Net Payout: ${withdrawAmount || 0} ETB (0% Player Fee)`}
-                        </h4>
+                        </h5>
                         <p>
                           {lang === 'am'
                             ? '🛡️ ገንዘብዎ በደህና Escrow ውስጥ ይቆያል፤ ኤጀንቱ እስኪልክ ድረስ ሙሉ ጥበቃ አለው።'
@@ -1440,7 +1440,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                         </p>
                       </div>
                     </div>
-                    <i className="fa-solid fa-chevron-right sonic-gold-chevron"></i>
+                    <span className="sonic-coins-reward-arrow">›</span>
                   </div>
 
                   {/* Step 3: Destination Payout Rail & Account */}

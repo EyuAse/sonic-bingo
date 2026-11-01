@@ -63,18 +63,18 @@ export const HelpCenterPage: React.FC = () => {
       qEn: 'Are my wallet balance and transactions safe?',
       qAm: 'የዋሌት ቀሪ ሂሳቤ እና የገንዘብ ዝውውሮቼ አስተማማኝ ናቸው?',
       aEn:
-        'Yes. Lomii Bingo is licensed and regulated by the National Lottery Administration of Ethiopia (NLA). All games utilize certified cryptographic Random Number Generation (RNG), and funds are secured in segregated Ethiopian escrow accounts.',
+        'Yes. Sonic Bingo is licensed and regulated by the National Lottery Administration of Ethiopia (NLA). All games utilize certified cryptographic Random Number Generation (RNG), and funds are secured in segregated Ethiopian escrow accounts.',
       aAm:
-        'አዎ! ሎሚ ቢንጎ በኢትዮጵያ ብሔራዊ ሎተሪ አስተዳደር (NLA) ፈቃድ ያለው እና ቁጥጥር የሚደረግበት ሲሆን፣ ጨዋታዎች በ100% ፍትሃዊ የRNG ቴክኖሎጂ የሚመሩ ናቸው።'
+        'አዎ! ሶኒክ ቢንጎ በኢትዮጵያ ብሔራዊ ሎተሪ አስተዳደር (NLA) ፈቃድ ያለው እና ቁጥጥር የሚደረግበት ሲሆን፣ ጨዋታዎች በ100% ፍትሃዊ የRNG ቴክኖሎጂ የሚመሩ ናቸው።'
     }
   ];
 
   const handleOpenTelegramSupport = () => {
-    window.open('https://t.me/Lomibingo', '_blank');
+    window.open('https://t.me/SonicGameBot', '_blank');
   };
 
   const handleOpenCommunity = () => {
-    window.open('https://t.me/Lomibingo', '_blank');
+    window.open('https://t.me/SonicGameBot', '_blank');
   };
 
   const toggleFaq = (id: string) => {
@@ -105,7 +105,7 @@ export const HelpCenterPage: React.FC = () => {
           </div>
           <div className="support-hero-text-col">
             <strong className="support-hero-title">{t('help.liveSupport')}</strong>
-            <span className="support-hero-sub">{t('help.responseEta')} • @Lomibingo</span>
+            <span className="support-hero-sub">{t('help.responseEta')} • @SonicGameBot</span>
           </div>
           <button
             type="button"
@@ -126,7 +126,7 @@ export const HelpCenterPage: React.FC = () => {
             <i className="fa-brands fa-telegram channel-icon" style={{ color: '#229ED9' }}></i>
             <div className="channel-txt-col">
               <span className="channel-lbl">Telegram Support</span>
-              <strong className="channel-val">@Lomibingo</strong>
+              <strong className="channel-val">@SonicGameBot</strong>
             </div>
           </div>
 
@@ -147,14 +147,14 @@ export const HelpCenterPage: React.FC = () => {
           <div
             className="channel-contact-card"
             onClick={() => {
-              navigator.clipboard.writeText('support@lomibingo.com');
-              showToast('📋 Copied Email: support@lomibingo.com');
+              navigator.clipboard.writeText('support@sonicbingo.com');
+              showToast('📋 Copied Email: support@sonicbingo.com');
             }}
           >
             <i className="fa-regular fa-envelope channel-icon blue"></i>
             <div className="channel-txt-col">
               <span className="channel-lbl">{t('help.emailHelpdesk')}</span>
-              <strong className="channel-val">support@lomibingo.com</strong>
+              <strong className="channel-val">support@sonicbingo.com</strong>
             </div>
           </div>
         </div>

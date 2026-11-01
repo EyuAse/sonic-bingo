@@ -38,8 +38,8 @@ export class SmsGatewayService {
   ): Promise<SmsSendResult> {
     const messageText =
       lang === 'am'
-        ? `የሎሚ ቢንጎ ማረጋገጫ ኮድዎ ${otpCode} ነው። ይህን ኮድ ለማንም አያጋሩ። (Lomi Bingo OTP)`
-        : `Your Lomi Bingo verification code is ${otpCode}. Valid for 5 minutes. Do not share.`;
+        ? `የሶኒክ ቢንጎ ማረጋገጫ ኮድዎ ${otpCode} ነው። ይህን ኮድ ለማንም አያጋሩ። (Sonic Bingo OTP)`
+        : `Your Sonic Bingo verification code is ${otpCode}. Valid for 5 minutes. Do not share.`;
 
     const cleanPhone = canonicalPhone.replace('+', '');
 

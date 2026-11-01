@@ -285,7 +285,7 @@ class AuthService {
       user = newUser;
     } else {
       user.lastLogin = new Date().toISOString();
-      if (fullName && (user.fullName === 'Lomi Player' || user.fullName.startsWith('tg_'))) {
+      if (fullName && (user.fullName === 'Sonic Player' || user.fullName.startsWith('tg_'))) {
         user.fullName = fullName;
       }
       if (customPhone) {

@@ -78,29 +78,6 @@ export const ProfilePage: React.FC = () => {
         </div>
 
         {/* ============================================================
-            CATEGORY: AGENT & PARTNER TERMINAL
-            ============================================================ */}
-        <div className="profile-category-group">
-          <span className="category-section-title">💼 Agent & Partner Operations</span>
-
-          <div className="profile-settings-card">
-            <div
-              className="settings-row-item"
-              onClick={() => switchPage('agent')}
-            >
-              <div className="settings-row-icon-circ" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>
-                <i className="fa-solid fa-briefcase"></i>
-              </div>
-              <div className="settings-row-text-col">
-                <strong className="settings-row-title" style={{ color: '#fbbf24' }}>Agent Terminal & Counter Cashier</strong>
-                <span className="settings-row-sub">Deposit for players, process withdrawals & manage float</span>
-              </div>
-              <i className="fa-solid fa-chevron-right settings-chevron"></i>
-            </div>
-          </div>
-        </div>
-
-        {/* ============================================================
             CATEGORY 3: SUPPORT & ABOUT
             ============================================================ */}
         <div className="profile-category-group">
@@ -122,7 +99,7 @@ export const ProfilePage: React.FC = () => {
               <i className="fa-solid fa-chevron-right settings-chevron"></i>
             </div>
 
-            {/* About Lomii Bingo -> Dedicated Page */}
+            {/* About Sonic Bingo -> Dedicated Page */}
             <div
               className="settings-row-item"
               onClick={() => switchPage('about')}

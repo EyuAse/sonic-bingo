@@ -140,6 +140,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     let unsubUserBalance: (() => void) | null = null;
     let unsubUserDepositApproved: (() => void) | null = null;
     let unsubUserWithdrawalApproved: (() => void) | null = null;
+    let unsubUserWithdrawalRejected: (() => void) | null = null;
 
     if (user?.id) {
       unsubUserBalance = socketService.on(`user_${user.id}_balance`, handleBalanceEvent);
@@ -155,6 +156,16 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       });
       unsubUserWithdrawalApproved = socketService.on(`user_${user.id}_withdrawal_approved`, (data: any) => {
         console.log('⚡ [WalletContext] User Withdrawal Approved Push:', data);
+        fetchLiveBalance();
+      });
+      unsubUserWithdrawalRejected = socketService.on(`user_${user.id}_withdrawal_rejected`, (data: any) => {
+        console.log('⚡ [WalletContext] User Withdrawal Rejected Push:', data);
+        if (typeof data?.newBalance === 'number') {
+          setBalance(data.newBalance);
+          localStorage.setItem('sonic_live_balance', data.newBalance.toFixed(2));
+        } else if (typeof data?.amount === 'number') {
+          setBalance(prev => prev + data.amount);
+        }
         fetchLiveBalance();
       });
     }
@@ -184,6 +195,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       if (unsubUserBalance) unsubUserBalance();
       if (unsubUserDepositApproved) unsubUserDepositApproved();
       if (unsubUserWithdrawalApproved) unsubUserWithdrawalApproved();
+      if (unsubUserWithdrawalRejected) unsubUserWithdrawalRejected();
     };
   }, [user, fetchLiveBalance]);
 

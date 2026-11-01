@@ -1902,14 +1902,29 @@ router.post('/withdrawal-requests/:id/reject', requireAgent, async (req: Authent
         [rejectionReason, requestId]
       );
 
-      // 4. Update ledger
+      // 4. Update ledger and insert explicit escrow refund entry
       await client.query(
         `UPDATE wallet_transactions 
          SET status = 'rejected',
              description = description || ' (Rejected by agent: ' || $1 || ')'
          WHERE user_id = $2 AND type = 'withdrawal' AND status = 'pending' 
-           AND amount = $3 AND created_at >= $4`,
-        [rejectionReason, withReq.player_id, refundAmount, withReq.created_at]
+           AND amount = $3`,
+        [rejectionReason, withReq.player_id, refundAmount]
+      );
+
+      await client.query(
+        `INSERT INTO wallet_transactions (
+          user_id, type, amount, balance_after, reference_code,
+          status, payment_method, description
+        )
+        VALUES ($1, 'deposit', $2, $3, $4, 'completed', 'Escrow Refund', $5)`,
+        [
+          withReq.player_id,
+          refundAmount,
+          refundedBal,
+          `REFUND-${Date.now().toString().slice(-6)}`,
+          `Withdrawal Refund: Escrow released back to wallet (${rejectionReason})`
+        ]
       );
 
       return {
@@ -1932,11 +1947,15 @@ router.post('/withdrawal-requests/:id/reject', requireAgent, async (req: Authent
     io.emit(`player_${result.playerId}_withdrawal_rejected`, {
       requestId: result.requestId,
       reason: rejectionReason,
+      newBalance: result.refundedBal,
+      amount: result.refundAmount,
       agentDisplayName: `Sonic Agent #${agentCode}`
     });
     io.emit(`user_${result.playerId}_withdrawal_rejected`, {
       requestId: result.requestId,
       reason: rejectionReason,
+      newBalance: result.refundedBal,
+      amount: result.refundAmount,
       agentDisplayName: `Sonic Agent #${agentCode}`
     });
     io.emit('withdrawal_status_updated', {

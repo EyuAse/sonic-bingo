@@ -7,7 +7,7 @@ export const AboutLomiPage: React.FC = () => {
   const { t, lang } = useLanguage();
 
   return (
-    <div className="page active page-subpage-dedicated" id="page-about-lomi">
+    <div className="page active page-subpage-dedicated" id="page-about-sonic">
       {/* Top Back Navigation Bar */}
       <div className="subpage-back-header">
         <button
@@ -25,11 +25,9 @@ export const AboutLomiPage: React.FC = () => {
       <div className="subpage-content-scroll">
         {/* Brand Logo & Version Hero */}
         <div className="about-brand-hero-card">
-          <div className="about-logo-row">
-            <span className="logo-letter">L</span>
-            <span className="logo-lemon-emoji">🍋</span>
-            <span className="logo-letter">MII</span>
-            <span className="logo-bingo-gold">BINGO</span>
+          <div className="about-logo-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <span className="logo-letter" style={{ fontSize: '24px', fontWeight: 900, color: '#38bdf8' }}>SONIC</span>
+            <span className="logo-bingo-gold" style={{ fontSize: '24px', fontWeight: 900, color: '#f59e0b' }}>BINGO</span>
           </div>
           <span className="about-app-version">{t('about.version')}</span>
           <span className="about-tagline">{t('about.tagline')}</span>

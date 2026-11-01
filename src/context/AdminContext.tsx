@@ -265,7 +265,7 @@ const generate600Cartelas = (): CartelaCard[] => {
 };
 
 export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [brandName, setBrandName] = useState<string>('Lomi Bingo');
+  const [brandName, setBrandName] = useState<string>('Sonic Bingo');
   const [adminPin, setAdminPin] = useState<string>('1234');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {

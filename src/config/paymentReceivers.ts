@@ -90,9 +90,9 @@ export function toggleTelebirrReceiver(): PaymentReceiver {
  * Official Support Telegram Configuration
  */
 export const SUPPORT_CONFIG = {
-  telegramUsername: 'Lomibingo',
-  telegramHandle: '@Lomibingo',
-  telegramUrl: 'https://t.me/Lomibingo',
-  email: 'support@lomibingo.com',
+  telegramUsername: 'SonicGameBot',
+  telegramHandle: '@SonicGameBot',
+  telegramUrl: 'https://t.me/SonicGameBot',
+  email: 'support@sonicbingo.com',
   phoneHotline: '+251 911 00 00 00'
 };

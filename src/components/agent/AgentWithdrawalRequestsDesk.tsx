@@ -757,11 +757,11 @@ export const AgentWithdrawalRequestsDesk: React.FC<AgentWithdrawalRequestsDeskPr
                             borderRadius: '20px',
                             fontSize: '11px',
                             fontWeight: 800,
-                            background: req.status === 'completed' ? '#dcfce7' : '#fee2e2',
-                            color: req.status === 'completed' ? '#15803d' : '#b91c1c'
+                            background: (req.status === 'approved' || req.status === 'completed') ? '#dcfce7' : '#fee2e2',
+                            color: (req.status === 'approved' || req.status === 'completed') ? '#15803d' : '#b91c1c'
                           }}
                         >
-                          {req.status === 'completed' ? '✓ Completed' : '✕ Rejected'}
+                          {(req.status === 'approved' || req.status === 'completed') ? '✓ Paid & Settled' : '✕ Rejected'}
                         </span>
                       </td>
                       <td style={{ padding: '14px 18px', fontWeight: 700, color: '#0f172a' }}>
@@ -772,7 +772,7 @@ export const AgentWithdrawalRequestsDesk: React.FC<AgentWithdrawalRequestsDeskPr
                         {Number(req.amount).toFixed(2)} ETB
                       </td>
                       <td style={{ padding: '14px 18px', fontWeight: 800, color: '#059669' }}>
-                        {req.status === 'completed' ? `+${(Number(req.amount) * 0.02).toFixed(2)} ETB` : '—'}
+                        {(req.status === 'approved' || req.status === 'completed') ? `+${(Number(req.amount) * 0.02).toFixed(2)} ETB` : '—'}
                       </td>
                       <td style={{ padding: '14px 18px', color: '#475569' }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>

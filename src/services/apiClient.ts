@@ -1,5 +1,5 @@
 /**
- * Lomi Bingo Centralized API Client (Connected to Neon PostgreSQL Backend)
+ * Sonic Bingo Centralized API Client (Connected to Neon PostgreSQL Backend)
  */
 
 import { getApiBase, getBackendOrigin } from '../config/env.ts';

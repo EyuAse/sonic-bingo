@@ -74,10 +74,10 @@ export const AffiliatePage: React.FC = () => {
   const referralCode =
     referralData?.referralCode ||
     user?.referralCode ||
-    (user?.id ? user.id.replace(/^UID-TG-/, 'LOMI-') : 'LOMI-7842');
+    (user?.id ? user.id.replace(/^UID-TG-/, 'SONIC-') : 'SONIC-7842');
   const referralLink =
     referralData?.referralLink ||
-    `https://t.me/LomiBingobot/play?startapp=ref_${referralCode}`;
+    `https://t.me/SonicGameBot/play?startapp=ref_${referralCode}`;
 
   const totalInvited = referralData ? referralData.totalInvited : 0;
   const totalEarned = referralData ? referralData.totalEarned : 0;
@@ -116,7 +116,7 @@ export const AffiliatePage: React.FC = () => {
   const handleInviteTelegramFriends = () => {
     telegramService.triggerHaptic('medium');
     const shareText = encodeURIComponent(
-      `🍋 Join me on Lomi Bingo! Get 20 ETB Free Welcome Bonus to play live 75-Ball Express Bingo with instant Telebirr payouts! 🎁💰\n\nPlay here:`
+      `⚡ Join me on Sonic Bingo! Get 20 ETB Free Welcome Bonus to play live 75-Ball Express Bingo with instant Telebirr payouts! 🎁💰\n\nPlay here:`
     );
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${shareText}`;
     telegramService.openTelegramLink(shareUrl);
