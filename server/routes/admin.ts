@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import bcrypt from 'bcryptjs';
 import { query, withTransaction, getDatabaseStorageStats } from '../db.ts';
 import { requireAdmin, AuthenticatedRequest } from '../middleware/auth.ts';
 import { io } from '../io.ts';
@@ -1477,7 +1478,7 @@ router.get('/agents', requireAdmin, async (_req, res) => {
  */
 router.post('/agents/create', requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const { fullName, phone, initialDeposit, targetMonthly, commissionRate, customCode } = req.body;
+    const { fullName, phone, initialDeposit, targetMonthly, commissionRate, customCode, password } = req.body;
 
     if (!fullName || !phone) {
       return res.status(400).json({ success: false, error: 'Full name and phone number are required' });
@@ -1488,6 +1489,12 @@ router.post('/agents/create', requireAdmin, async (req: AuthenticatedRequest, re
     const initDeposit = typeof initialDeposit === 'number' && initialDeposit >= 1000 ? initialDeposit : 10000.00;
     const target = typeof targetMonthly === 'number' && targetMonthly > 0 ? targetMonthly : 50000.00;
     const commission = typeof commissionRate === 'number' && commissionRate > 0 ? commissionRate : 5.00;
+
+    // Use admin-supplied password or generate secure default
+    const rawPassword = (typeof password === 'string' && password.trim().length >= 4)
+      ? password.trim()
+      : `Sonic@${Math.floor(1000 + Math.random() * 9000)}`;
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
 
     const agentCode = customCode
       ? customCode.trim().toUpperCase()
@@ -1500,11 +1507,14 @@ router.post('/agents/create', requireAdmin, async (req: AuthenticatedRequest, re
 
       if (userCheck.rows.length > 0) {
         userId = userCheck.rows[0].id;
-        await client.query("UPDATE users SET role = 'agent', full_name = $1 WHERE id = $2", [cleanName, userId]);
+        await client.query(
+          "UPDATE users SET role = 'agent', full_name = $1, password_hash = $2, pin_hash = $2, updated_at = NOW() WHERE id = $3",
+          [cleanName, hashedPassword, userId]
+        );
       } else {
         const newUserRes = await client.query(
-          "INSERT INTO users (phone, full_name, role) VALUES ($1, $2, 'agent') RETURNING id",
-          [cleanPhone, cleanName]
+          "INSERT INTO users (phone, full_name, role, password_hash, pin_hash) VALUES ($1, $2, 'agent', $3, $3) RETURNING id",
+          [cleanPhone, cleanName, hashedPassword]
         );
         userId = newUserRes.rows[0].id;
         // Seed player wallet with welcome bonus
@@ -1536,6 +1546,9 @@ router.post('/agents/create', requireAdmin, async (req: AuthenticatedRequest, re
       message: `Agent registered successfully with code ${result.profile.agent_code}`,
       agent: {
         ...result.profile,
+        fullName: cleanName,
+        phone: cleanPhone,
+        initialPassword: rawPassword,
         refLink: `https://t.me/SonicGameOfficialBot?start=agent_${result.profile.agent_code}`
       }
     });
@@ -1545,6 +1558,149 @@ router.post('/agents/create', requireAdmin, async (req: AuthenticatedRequest, re
     }
     console.error('❌ [Admin Create Agent Error]:', error);
     return res.status(500).json({ success: false, error: error.message || 'Failed to create agent' });
+  }
+});
+
+/**
+ * Agents Desk: Full Control Edit Agent
+ */
+router.put('/agents/:id', requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      fullName,
+      phone,
+      commissionRate,
+      targetMonthly,
+      lowBalanceThreshold,
+      walletBalance,
+      password,
+      status
+    } = req.body;
+
+    const agentRes = await query('SELECT * FROM agent_profiles WHERE id = $1', [id]);
+    if (agentRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent profile not found' });
+    }
+    const agent = agentRes.rows[0];
+    const userId = agent.user_id;
+
+    await withTransaction(async (client) => {
+      // 1. Update user fields
+      const userUpdates: string[] = [];
+      const userValues: any[] = [];
+      let uIdx = 1;
+
+      if (typeof fullName === 'string' && fullName.trim()) {
+        userUpdates.push(`full_name = $${uIdx++}`);
+        userValues.push(fullName.trim());
+      }
+      if (typeof phone === 'string' && phone.trim()) {
+        userUpdates.push(`phone = $${uIdx++}`);
+        userValues.push(phone.trim());
+      }
+      if (typeof password === 'string' && password.trim().length >= 4) {
+        const hash = await bcrypt.hash(password.trim(), 10);
+        userUpdates.push(`password_hash = $${uIdx++}`);
+        userValues.push(hash);
+        userUpdates.push(`pin_hash = $${uIdx++}`);
+        userValues.push(hash);
+      }
+
+      if (userUpdates.length > 0) {
+        userUpdates.push(`updated_at = NOW()`);
+        userValues.push(userId);
+        await client.query(
+          `UPDATE users SET ${userUpdates.join(', ')} WHERE id = $${uIdx}`,
+          userValues
+        );
+      }
+
+      // 2. Update agent profile fields
+      const profUpdates: string[] = [];
+      const profValues: any[] = [];
+      let pIdx = 1;
+
+      if (typeof commissionRate === 'number' && commissionRate >= 0) {
+        profUpdates.push(`commission_rate = $${pIdx++}`);
+        profValues.push(commissionRate);
+      }
+      if (typeof targetMonthly === 'number' && targetMonthly >= 0) {
+        profUpdates.push(`target_monthly = $${pIdx++}`);
+        profValues.push(targetMonthly);
+      }
+      if (typeof lowBalanceThreshold === 'number' && lowBalanceThreshold >= 0) {
+        profUpdates.push(`low_balance_threshold = $${pIdx++}`);
+        profValues.push(lowBalanceThreshold);
+      }
+      if (typeof walletBalance === 'number' && walletBalance >= 0) {
+        profUpdates.push(`wallet_balance = $${pIdx++}`);
+        profValues.push(walletBalance);
+      }
+      if (typeof status === 'string' && ['active', 'suspended', 'pending'].includes(status)) {
+        profUpdates.push(`status = $${pIdx++}`);
+        profValues.push(status);
+      }
+
+      if (profUpdates.length > 0) {
+        profUpdates.push(`updated_at = NOW()`);
+        profValues.push(id);
+        await client.query(
+          `UPDATE agent_profiles SET ${profUpdates.join(', ')} WHERE id = $${pIdx}`,
+          profValues
+        );
+      }
+    });
+
+    const updatedRes = await query(
+      `SELECT ap.*, u.full_name, u.phone 
+       FROM agent_profiles ap 
+       JOIN users u ON ap.user_id = u.id 
+       WHERE ap.id = $1`,
+      [id]
+    );
+
+    return res.json({
+      success: true,
+      message: 'Agent information updated successfully',
+      agent: updatedRes.rows[0]
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Update Agent Error]:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Failed to update agent' });
+  }
+});
+
+/**
+ * Agents Desk: Delete Agent (Safe Revocation)
+ */
+router.delete('/agents/:id', requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+
+    const agentRes = await query('SELECT * FROM agent_profiles WHERE id = $1', [id]);
+    if (agentRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent profile not found' });
+    }
+    const agent = agentRes.rows[0];
+    const userId = agent.user_id;
+
+    await withTransaction(async (client) => {
+      // 1. Delete pending recharge requests
+      await client.query("DELETE FROM agent_recharge_requests WHERE agent_id = $1 AND status = 'pending'", [id]);
+      // 2. Delete agent profile
+      await client.query('DELETE FROM agent_profiles WHERE id = $1', [id]);
+      // 3. Downgrade user role back to player to preserve history
+      await client.query("UPDATE users SET role = 'player', updated_at = NOW() WHERE id = $1", [userId]);
+    });
+
+    return res.json({
+      success: true,
+      message: `Agent ${agent.agent_code} deleted successfully. Account downgraded to player.`
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Delete Agent Error]:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Failed to delete agent' });
   }
 });
 

@@ -122,15 +122,15 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
     const trimmedCurrent = currentPin.trim();
 
     if (!trimmedCurrent) {
-      showToast('❌ Please enter your current PIN or agent code');
+      showToast('❌ Please enter your current Password/PIN or agent code');
       return;
     }
-    if (!trimmedNew || trimmedNew.length < 4 || trimmedNew.length > 8) {
-      showToast('❌ New PIN must be between 4 and 8 digits');
+    if (!trimmedNew || trimmedNew.length < 4 || trimmedNew.length > 32) {
+      showToast('❌ New Password/PIN must be between 4 and 32 characters');
       return;
     }
     if (trimmedNew !== trimmedConfirm) {
-      showToast('❌ New PIN and confirmation do not match');
+      showToast('❌ New Password/PIN and confirmation do not match');
       return;
     }
 
@@ -578,21 +578,21 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
             </div>
 
             <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.5, margin: '0 0 18px 0' }}>
-              Protect your cash-in float by setting a secure 4-digit PIN for session authorization and cash-out counter payouts.
+              Protect your agent account by setting a secure Password or 4-digit PIN for session authorization and cash-out counter payouts.
             </p>
 
-            {/* Real PIN Update Form */}
+            {/* Real PIN/Password Update Form */}
             <form onSubmit={handlePinUpdate}>
-              {/* Field 1: Current PIN */}
+              {/* Field 1: Current Password / PIN */}
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: '#334155', marginBottom: '6px' }}>
-                  Current PIN or Agent Code
+                  Current Password, PIN or Agent Code
                 </label>
                 <div style={{ position: 'relative' }}>
                   <input
                     type={showCurrentPin ? 'text' : 'password'}
                     className="sonic-input-field"
-                    placeholder="Enter current PIN or agent code"
+                    placeholder="Enter current password, PIN or agent code"
                     value={currentPin}
                     onChange={e => setCurrentPin(e.target.value)}
                     required
@@ -613,22 +613,22 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
                       fontSize: '14px'
                     }}
                   >
-                    <i className={showCurrentPin ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'}></i>
+                    <i className={showCurrentPin ? 'fa-solid fa-eye-slash' : 'fa-eye'}></i>
                   </button>
                 </div>
               </div>
 
-              {/* Field 2: New 4-Digit PIN */}
+              {/* Field 2: New Password / PIN */}
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: '#334155', marginBottom: '6px' }}>
-                  New 4-Digit Security PIN
+                  New Password or Security PIN
                 </label>
                 <div style={{ position: 'relative' }}>
                   <input
                     type={showNewPin ? 'text' : 'password'}
-                    maxLength={8}
+                    maxLength={32}
                     className="sonic-input-field"
-                    placeholder="e.g. 5892"
+                    placeholder="Enter new password or PIN (min 4 chars)"
                     value={newPin}
                     onChange={e => setNewPin(e.target.value)}
                     required
@@ -654,17 +654,17 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
                 </div>
               </div>
 
-              {/* Field 3: Confirm PIN */}
+              {/* Field 3: Confirm PIN / Password */}
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: '#334155', marginBottom: '6px' }}>
-                  Confirm New PIN
+                  Confirm New Password or PIN
                 </label>
                 <div style={{ position: 'relative' }}>
                   <input
                     type={showConfirmPin ? 'text' : 'password'}
-                    maxLength={8}
+                    maxLength={32}
                     className="sonic-input-field"
-                    placeholder="Re-enter new PIN"
+                    placeholder="Re-enter new password or PIN"
                     value={confirmPin}
                     onChange={e => setConfirmPin(e.target.value)}
                     required

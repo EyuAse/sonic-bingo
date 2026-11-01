@@ -370,9 +370,27 @@ export const JackpotDesk: React.FC = () => {
             </p>
 
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                Active Pool Balance (ETB)
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#334155' }}>
+                  Active Pool Balance (ETB)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setEditBalance(editSeed)}
+                  style={{
+                    background: '#eef2ff',
+                    color: '#4f46e5',
+                    border: '1px solid #c7d2fe',
+                    borderRadius: '6px',
+                    padding: '2px 8px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  ⚡ Set Equal to Seed
+                </button>
+              </div>
               <input
                 type="number"
                 value={editBalance}

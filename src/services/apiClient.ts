@@ -859,6 +859,7 @@ export const apiClient = {
       customCode?: string;
       initialFloat?: number;
       agentCode?: string;
+      password?: string;
     }) {
       const adminHeaders = await getAdminAuthHeader();
       const res = await fetch(`${API_BASE}/admin/agents/create`, {
@@ -870,10 +871,39 @@ export const apiClient = {
           initialDeposit: payload.initialDeposit ?? payload.initialFloat ?? 10000,
           targetMonthly: payload.targetMonthly ?? 50000,
           commissionRate: payload.commissionRate ?? 5,
-          customCode: payload.customCode || payload.agentCode || undefined
+          customCode: payload.customCode || payload.agentCode || undefined,
+          password: payload.password
         })
       });
       return handleResponse<{ success: boolean; agent?: any; message?: string; error?: string }>(res);
+    },
+
+    async updateAgent(id: string, payload: {
+      fullName?: string;
+      phone?: string;
+      commissionRate?: number;
+      targetMonthly?: number;
+      lowBalanceThreshold?: number;
+      walletBalance?: number;
+      password?: string;
+      status?: string;
+    }) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agents/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify(payload)
+      });
+      return handleResponse<{ success: boolean; agent?: any; message?: string; error?: string }>(res);
+    },
+
+    async deleteAgent(id: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agents/${id}`, {
+        method: 'DELETE',
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; message?: string; error?: string }>(res);
     },
 
     async setAgentStatus(id: string, status: 'active' | 'suspended') {

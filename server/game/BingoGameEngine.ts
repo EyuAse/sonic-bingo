@@ -364,7 +364,7 @@ class BingoGameEngine {
       winnerPayout: 0,
       houseFee: 0,
       jackpotFee: 0,
-      jackpotPoolBalance: (id === 'room-10' || id === ARENA_ROOM_ID || id === 'default') ? 500 : id === 'room-20' ? 1000 : id === 'room-50' ? 2500 : 5000,
+      jackpotPoolBalance: 0,
       tickets: new Map(),
       nextRoundTickets: new Map(),
       activeSockets: new Set(),
@@ -1167,8 +1167,8 @@ class BingoGameEngine {
 
     room.totalPot = pot > 0 ? pot : 0;
     room.houseFee = room.commissionEnabled ? Math.floor(room.totalPot * 0.20) : 0;
-    room.jackpotFee = 0;
-    room.winnerPayout = room.totalPot - room.houseFee;
+    room.jackpotFee = room.commissionEnabled ? Math.floor(room.totalPot * 0.10) : 0;
+    room.winnerPayout = room.totalPot - room.houseFee - room.jackpotFee;
   }
 
   /**

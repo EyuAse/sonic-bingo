@@ -2242,23 +2242,24 @@ router.post('/commission/request-cashout', requireAgent, async (req: Authenticat
 /**
  * Update Agent Terminal Security PIN / Password
  */
-router.post('/update-pin', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
+const handlePasswordUpdate = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
-    const { currentPin, newPin } = req.body;
+    const currentPass = req.body.currentPin || req.body.currentPassword;
+    const newPass = req.body.newPin || req.body.newPassword;
 
-    if (!currentPin || !newPin) {
-      return res.status(400).json({ success: false, error: 'Current PIN and New PIN are required' });
+    if (!currentPass || !newPass) {
+      return res.status(400).json({ success: false, error: 'Current Password/PIN and New Password/PIN are required' });
     }
 
-    const cleanNewPin = String(newPin).trim();
-    if (cleanNewPin.length < 4) {
-      return res.status(400).json({ success: false, error: 'New PIN must be at least 4 digits' });
+    const cleanNewPass = String(newPass).trim();
+    if (cleanNewPass.length < 4) {
+      return res.status(400).json({ success: false, error: 'New Password/PIN must be at least 4 characters' });
     }
 
     // Query user and agent code
     const userRes = await query(
-      `SELECT u.id, u.pin_hash, ap.agent_code 
+      `SELECT u.id, u.pin_hash, u.password_hash, ap.agent_code 
        FROM users u
        JOIN agent_profiles ap ON u.id = ap.user_id
        WHERE u.id = $1`,
@@ -2270,45 +2271,49 @@ router.post('/update-pin', requireAgent, async (req: AuthenticatedRequest, res: 
     }
 
     const user = userRes.rows[0];
-    const cleanCurrentPin = String(currentPin).trim();
+    const cleanCurrentPass = String(currentPass).trim();
 
     // Verify current PIN/password
     let isValidCurrent = false;
-    if (user.pin_hash) {
-      isValidCurrent = await bcrypt.compare(cleanCurrentPin, user.pin_hash);
+    const existingHash = user.pin_hash || user.password_hash;
+    if (existingHash) {
+      isValidCurrent = await bcrypt.compare(cleanCurrentPass, existingHash);
     }
 
     // Fallback: If initial onboarding where pin_hash is not yet set or matched agentCode / default '1234'
     if (!isValidCurrent && user.agent_code) {
       isValidCurrent =
-        cleanCurrentPin.toUpperCase() === user.agent_code.toUpperCase() ||
-        cleanCurrentPin === '1234';
+        cleanCurrentPass.toUpperCase() === user.agent_code.toUpperCase() ||
+        cleanCurrentPass === '1234';
     }
 
     if (!isValidCurrent) {
-      return res.status(401).json({ success: false, error: 'Current PIN or Agent Code is incorrect' });
+      return res.status(401).json({ success: false, error: 'Current Password/PIN or Agent Code is incorrect' });
     }
 
-    // Hash new PIN with bcrypt
-    const hashedPin = await bcrypt.hash(cleanNewPin, 10);
+    // Hash new password with bcrypt
+    const hashedPassword = await bcrypt.hash(cleanNewPass, 10);
 
-    // Update user pin_hash
+    // Update user pin_hash AND password_hash
     await query(
       `UPDATE users 
-       SET pin_hash = $1, updated_at = NOW() 
+       SET pin_hash = $1, password_hash = $1, updated_at = NOW() 
        WHERE id = $2`,
-      [hashedPin, userId]
+      [hashedPassword, userId]
     );
 
     return res.json({
       success: true,
-      message: 'Terminal security PIN updated successfully!'
+      message: 'Terminal password/PIN updated successfully!'
     });
   } catch (error: any) {
-    console.error('❌ [Agent Update PIN Error]:', error);
-    return res.status(500).json({ success: false, error: 'Failed to update security PIN' });
+    console.error('❌ [Agent Update Password Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to update security password' });
   }
-});
+};
+
+router.post('/update-pin', requireAgent, handlePasswordUpdate);
+router.post('/change-password', requireAgent, handlePasswordUpdate);
 
 export default router;
 
