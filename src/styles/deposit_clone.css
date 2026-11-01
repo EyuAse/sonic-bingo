@@ -1,0 +1,742 @@
+/* ==========================================================================
+   SONIC BINGO DEPOSIT PAGE - 100% PIXEL-PERFECT REFERENCE CLONE STYLING
+   Ultra-luxury ivory canvas, obsidian-gold cards, 24k metallic accents & glow
+   ========================================================================== */
+
+/* Canvas & Viewport Shell */
+.sonic-deposit-canvas {
+  min-height: 100vh;
+  background: #f8f9fa;
+  background-image: radial-gradient(ellipse at 50% 0%, rgba(254, 240, 138, 0.28) 0%, rgba(248, 249, 250, 0) 65%);
+  padding: 12px 14px 40px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', 'Inter', Roboto, sans-serif;
+  color: #0f172a;
+  box-sizing: border-box;
+}
+
+.sonic-deposit-container {
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* 1. Top App Bar */
+.sonic-top-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 4px 10px;
+}
+
+.sonic-nav-icon-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #1e293b;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.15s ease;
+}
+
+.sonic-nav-icon-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.sonic-brand-center-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.sonic-brand-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sonic-brand-name-text {
+  font-size: 26px;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.sonic-brand-bingo-word {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  font-weight: 900;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 2px rgba(217, 119, 6, 0.3));
+}
+
+.sonic-brand-underline-glow {
+  width: 140px;
+  height: 2px;
+  margin-top: 2px;
+  background: radial-gradient(ellipse at center, rgba(245, 158, 11, 0.6) 0%, rgba(245, 158, 11, 0) 100%);
+  border-radius: 9999px;
+}
+
+.sonic-nav-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* 2. Top "Via Local Agent" Banner Card */
+.sonic-local-agent-banner-card {
+  background: #ffffff;
+  background-image: linear-gradient(135deg, #ffffff 0%, #fffdfa 60%, rgba(254, 240, 138, 0.12) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  border-radius: 20px;
+  padding: 14px 18px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(245, 158, 11, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.sonic-local-agent-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.sonic-local-agent-info h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.2px;
+}
+
+.sonic-local-agent-info p {
+  margin: 2px 0 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+/* 3. Step Header Row */
+.sonic-step-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.sonic-step-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fffbeb;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 9999px;
+  padding: 6px 14px;
+  box-shadow: 0 1px 4px rgba(245, 158, 11, 0.06);
+}
+
+.sonic-step-number-circle {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(217, 119, 6, 0.3);
+}
+
+.sonic-step-label-text {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.sonic-online-agents-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0fdf4;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 9999px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #16a34a;
+  box-shadow: 0 1px 4px rgba(34, 197, 94, 0.08);
+}
+
+.sonic-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
+  animation: sonicPulse 1.8s infinite;
+}
+
+@keyframes sonicPulse {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
+  70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+/* 4. Agent Cards */
+.sonic-agents-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Unselected Light Agent Card */
+.sonic-agent-light-card {
+  background: linear-gradient(135deg, #fffdf7 0%, #fef3c7 40%, #ffffff 100%);
+  border: 1.5px solid #fcd34d;
+  border-radius: 18px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 3px 12px rgba(245, 158, 11, 0.1);
+  position: relative;
+  box-sizing: border-box;
+}
+
+.sonic-agent-light-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(245, 158, 11, 0.18);
+}
+
+/* Selected Obsidian Black Luxury Agent Card */
+.sonic-agent-obsidian-card {
+  background: linear-gradient(135deg, #0b0f19 0%, #030712 100%);
+  border: 1.5px solid rgba(245, 158, 11, 0.6);
+  border-radius: 18px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 16px rgba(245, 158, 11, 0.2);
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.sonic-agent-obsidian-card:hover {
+  transform: translateY(-1px);
+}
+
+.sonic-agent-card-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+  z-index: 2;
+}
+
+.sonic-agent-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sonic-agent-name-light {
+  font-size: 15px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.sonic-agent-name-obsidian {
+  font-size: 15px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: -0.2px;
+}
+
+.sonic-agent-rails-light {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  line-height: 1.35;
+}
+
+.sonic-agent-rails-obsidian {
+  font-size: 12px;
+  font-weight: 600;
+  color: #cbd5e1;
+  line-height: 1.35;
+}
+
+.sonic-agent-card-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 2;
+}
+
+.sonic-status-pill-green {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #dcfce7;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  border-radius: 9999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #15803d;
+}
+
+.sonic-status-pill-emerald {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(34, 197, 94, 0.45);
+  border-radius: 9999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #4ade80;
+}
+
+.sonic-amber-circle-chevron {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  color: #f59e0b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+/* 5. Deposit Amount Card */
+.sonic-amount-card-shell {
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 22px;
+  padding: 18px 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sonic-amount-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sonic-amount-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sonic-amount-titles h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.sonic-amount-titles p {
+  margin: 2px 0 0 0;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.sonic-amount-min-tag {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+/* 3x2 Quick Amount Grid */
+.sonic-amount-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.sonic-amount-chip-btn {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px 6px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  text-align: center;
+}
+
+.sonic-amount-chip-btn:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+/* Active Quick Amount Chip (Obsidian Gold Pill) */
+.sonic-amount-chip-btn.active {
+  background: linear-gradient(135deg, #0b0f19 0%, #1e293b 100%);
+  border: 1.5px solid rgba(245, 158, 11, 0.75);
+  color: #fef08a;
+  font-weight: 900;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+  transform: translateY(-1px);
+}
+
+/* Large Custom Amount Input Box */
+.sonic-amount-input-box {
+  background: #fffdf7;
+  border: 1.5px solid rgba(245, 158, 11, 0.4);
+  border-radius: 16px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(245, 158, 11, 0.08);
+}
+
+.sonic-currency-prefix {
+  font-size: 19px;
+  font-weight: 900;
+  color: #d97706;
+  letter-spacing: 0.5px;
+}
+
+.sonic-amount-big-field {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 26px;
+  font-weight: 900;
+  color: #0f172a;
+  font-family: inherit;
+  z-index: 2;
+}
+
+/* 6. Sonic Coins Reward Incentive Card */
+.sonic-coins-reward-card {
+  background: linear-gradient(135deg, #fffdf7 0%, #fef9c3 100%);
+  border: 1px solid rgba(245, 158, 11, 0.32);
+  border-radius: 18px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.08);
+  cursor: pointer;
+}
+
+.sonic-coins-reward-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sonic-coins-reward-titles h5 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 900;
+  color: #b45309;
+}
+
+.sonic-coins-reward-titles p {
+  margin: 2px 0 0 0;
+  font-size: 12px;
+  color: #78716c;
+  font-weight: 500;
+}
+
+.sonic-coins-reward-arrow {
+  font-size: 14px;
+  color: #78716c;
+  font-weight: 800;
+}
+
+/* 7. Step 3: Payment Rails Selector */
+.sonic-rails-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+/* Telebirr Tab Card (Default/Light) */
+.sonic-rail-light-tab {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  text-align: left;
+}
+
+.sonic-rail-light-tab:hover {
+  border-color: #cbd5e1;
+}
+
+/* Active Obsidian Rail Tab (CBE Bank / Birr) */
+.sonic-rail-obsidian-tab {
+  background: linear-gradient(135deg, #0b0f19 0%, #030712 100%);
+  border: 1.5px solid rgba(245, 158, 11, 0.65);
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 12px rgba(245, 158, 11, 0.2);
+  text-align: left;
+}
+
+.sonic-rail-title-dark {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.sonic-rail-sub-muted {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.sonic-rail-title-white {
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 8. Bottom Account Copy Bar */
+.sonic-account-copy-bar {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1.5px solid rgba(245, 158, 11, 0.4);
+  border-radius: 22px;
+  padding: 8px 10px 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.14);
+}
+
+.sonic-copy-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.sonic-copy-link-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #b45309;
+  flex-shrink: 0;
+}
+
+.sonic-copy-account-text {
+  font-size: 13px;
+  font-weight: 800;
+  color: #1e293b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sonic-copy-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(245, 158, 11, 0.4);
+  flex-shrink: 0;
+}
+
+.sonic-gold-copy-btn {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+  border: none;
+  border-radius: 14px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 900;
+  color: #0f172a;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.4);
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.sonic-gold-copy-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.5);
+}
+
+.sonic-gold-copy-btn:active {
+  transform: translateY(0);
+}
+
+/* 9. Step 4: Transaction Proof Form */
+.sonic-proof-card-shell {
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sonic-proof-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sonic-proof-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sonic-proof-field-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.sonic-proof-field-wrap i {
+  position: absolute;
+  left: 14px;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.sonic-proof-text-input {
+  width: 100%;
+  padding: 11px 14px 11px 38px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  box-sizing: border-box;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.sonic-proof-text-input:focus {
+  border-color: #f59e0b;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+.sonic-upload-slip-btn {
+  background: #fffbeb;
+  border: 1.5px dashed #f59e0b;
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #b45309;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sonic-upload-slip-btn:hover {
+  background: #fef3c7;
+}
+
+/* Submit Action Button */
+.sonic-primary-gold-submit-btn {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(217, 119, 6, 0.45);
+  transition: all 0.15s ease;
+}
+
+.sonic-primary-gold-submit-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(217, 119, 6, 0.55);
+}
+
+.sonic-primary-gold-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
