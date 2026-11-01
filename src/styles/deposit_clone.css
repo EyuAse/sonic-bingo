@@ -740,3 +740,281 @@
   cursor: not-allowed;
   box-shadow: none;
 }
+
+/* ==========================================================================
+   SONIC BINGO WITHDRAW PAGE - LUXURY OBSIDIAN-GOLD EXTENSIONS
+   ========================================================================== */
+
+/* 1. Hero Withdrawable Balance Banner */
+.sonic-balance-hero-banner {
+  background: linear-gradient(135deg, #fffbeb 0%, #fffdf5 50%, #fef3c7 100%);
+  border: 1.5px solid rgba(245, 158, 11, 0.4);
+  border-radius: 20px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 16px rgba(217, 119, 6, 0.08);
+}
+
+.sonic-balance-hero-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sonic-balance-hero-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.sonic-balance-hero-eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #059669;
+}
+
+.sonic-balance-hero-val {
+  font-size: 24px;
+  font-weight: 900;
+  color: #0f172a;
+  line-height: 1.15;
+}
+
+.sonic-balance-hero-curr {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #b45309;
+  margin-left: 3px;
+}
+
+.sonic-fee-free-pill {
+  padding: 6px 12px;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #047857;
+  font-size: 11.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.1);
+  white-space: nowrap;
+}
+
+/* 2. Golden Escrow & Net Payout Guarantee Card */
+.sonic-escrow-guarantee-card {
+  background: linear-gradient(135deg, #fffdf2 0%, #fffbeb 50%, #fef3c7 100%);
+  border: 1.5px solid #fde68a;
+  border-radius: 18px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.1);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sonic-escrow-guarantee-card:hover {
+  transform: translateY(-1px);
+  border-color: #f59e0b;
+  box-shadow: 0 6px 18px rgba(245, 158, 11, 0.18);
+}
+
+.sonic-escrow-guarantee-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sonic-escrow-guarantee-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.sonic-escrow-guarantee-sub {
+  font-size: 11px;
+  color: #059669;
+  font-weight: 700;
+  margin-top: 1px;
+}
+
+/* 3. Saved Accounts Fast-Fill Chips */
+.sonic-saved-accounts-wrap {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.sonic-saved-account-chip {
+  padding: 6px 12px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  color: #334155;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.sonic-saved-account-chip:hover {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.sonic-saved-account-chip.active {
+  border-color: #f59e0b;
+  background: #fef3c7;
+  color: #b45309;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.18);
+}
+
+/* 4. Luxury Inputs for Payout Rail */
+.sonic-input-field-group {
+  margin-bottom: 12px;
+}
+
+.sonic-input-tiny-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #475569;
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+}
+
+.sonic-input-field-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 10px 14px;
+  transition: all 0.15s ease;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.03);
+}
+
+.sonic-input-field-box:focus-within {
+  border-color: #f59e0b;
+  background: #fffdf5;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+}
+
+.sonic-input-field-box i {
+  color: #94a3b8;
+  font-size: 15px;
+}
+
+.sonic-input-field-box:focus-within i {
+  color: #d97706;
+}
+
+.sonic-input-field-box input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* 5. Obsidian Radar HUD for Active Withdrawal */
+.sonic-radar-hud-card {
+  text-align: center;
+  padding: 26px 18px;
+  background: linear-gradient(135deg, #0b0f19 0%, #000000 100%);
+  border-radius: 22px;
+  border: 1.5px solid #3b82f6;
+  color: #f8fafc;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.sonic-radar-hud-card.completed {
+  border-color: #10b981;
+}
+
+.sonic-radar-hud-card.rejected {
+  border-color: #ef4444;
+}
+
+.sonic-radar-hud-icon-wrap {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 16px;
+}
+
+.sonic-radar-hud-pulse {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid #3b82f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  animation: sonicPulseWave 1.8s infinite;
+  background: rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.35);
+}
+
+@keyframes sonicPulseWave {
+  0% {
+    transform: scale(0.96);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6);
+  }
+  70% {
+    transform: scale(1.04);
+    box-shadow: 0 0 0 16px rgba(59, 130, 246, 0);
+  }
+  100% {
+    transform: scale(0.96);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+.sonic-radar-receipt-box {
+  background: #131b2e;
+  border: 1.5px solid #23314d;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.sonic-radar-receipt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 9px;
+  font-size: 13px;
+}
+
+.sonic-radar-receipt-label {
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.sonic-radar-receipt-val {
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+

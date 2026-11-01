@@ -394,3 +394,92 @@ export const GoldenCheckCircle: React.FC<{ size?: number }> = ({ size = 26 }) =>
     ✓
   </div>
 );
+
+/**
+ * 🛡️ Golden Escrow Shield Jewel
+ * 3D polished golden security shield with lock keyhole & specular reflection.
+ * Used for withdrawable balance protection & 0% fee escrow guarantee.
+ */
+export const GoldenEscrowShieldIcon: React.FC<{ size?: number; className?: string }> = ({
+  size = 38,
+  className = ''
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 48 48"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    style={{ display: 'inline-block', verticalAlign: 'middle', filter: 'drop-shadow(0 3px 8px rgba(217, 119, 6, 0.4))' }}
+  >
+    <defs>
+      <linearGradient id="shieldGoldGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#FFFBEB" />
+        <stop offset="20%" stopColor="#FDE047" />
+        <stop offset="50%" stopColor="#F59E0B" />
+        <stop offset="85%" stopColor="#D97706" />
+        <stop offset="100%" stopColor="#78350F" />
+      </linearGradient>
+      <linearGradient id="shieldRimGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#FEF08A" />
+        <stop offset="50%" stopColor="#D97706" />
+        <stop offset="100%" stopColor="#451A03" />
+      </linearGradient>
+      <linearGradient id="shieldInnerGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+        <stop offset="0%" stopColor="#FEF9C3" />
+        <stop offset="50%" stopColor="#FBBF24" />
+        <stop offset="100%" stopColor="#B45309" />
+      </linearGradient>
+    </defs>
+
+    {/* Outer Shield Rim */}
+    <path
+      d="M24 4 L40 10 C40 26 33 37 24 44 C15 37 8 26 8 10 L24 4 Z"
+      fill="url(#shieldGoldGrad1)"
+      stroke="url(#shieldRimGrad)"
+      strokeWidth="1.5"
+    />
+
+    {/* Inner Shield Inset */}
+    <path
+      d="M24 8 L36 12.5 C36 24.5 30.5 33.5 24 39 C17.5 33.5 12 24.5 12 12.5 L24 8 Z"
+      fill="url(#shieldInnerGlow)"
+      opacity="0.9"
+    />
+
+    {/* Specular Highlight Streak */}
+    <path
+      d="M24 8 L14 12.5 C14 23 18 31 23 37 L23 9 Z"
+      fill="#FFFFFF"
+      opacity="0.28"
+    />
+
+    {/* Lock Shackle */}
+    <path
+      d="M19 22 V18 C19 15.2 21.2 13 24 13 C26.8 13 29 15.2 29 18 V22"
+      stroke="#78350F"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      fill="none"
+    />
+
+    {/* Lock Body */}
+    <rect
+      x="17"
+      y="21"
+      width="14"
+      height="11"
+      rx="2.5"
+      fill="url(#shieldGoldGrad1)"
+      stroke="#78350F"
+      strokeWidth="1.2"
+    />
+
+    {/* Keyhole */}
+    <circle cx="24" cy="25" r="1.5" fill="#451A03" />
+    <path d="M24 25.5 V28.5" stroke="#451A03" strokeWidth="1.2" strokeLinecap="round" />
+  </svg>
+);
+
+
