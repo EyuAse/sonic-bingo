@@ -146,9 +146,9 @@ export const TelegramRegisterModal: React.FC<TelegramRegisterModalProps> = ({
           }}
         >
           {lang === 'am' ? (
-            <>የእርስዎን <span style={{ color: '#16a34a' }}>ሎሚ</span> መለያ ይፍጠሩ</>
+            <>የእርስዎን <span style={{ color: '#ca8a04' }}>ሶኒክ</span> መለያ ይፍጠሩ</>
           ) : (
-            <>Create Your <span style={{ color: '#16a34a' }}>Lomi</span> Account</>
+            <>Create Your <span style={{ color: '#ca8a04' }}>Sonic</span> Account</>
           )}
         </h2>
 

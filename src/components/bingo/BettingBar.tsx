@@ -48,7 +48,7 @@ export const BettingBar: React.FC = () => {
   const totalCost = betAmount * cardQuantity;
 
   return (
-    <div className="compact-betting-bar">
+    <div className="compact-betting-bar sonic-betting-bar">
 
       {/* Stake Room Selector Modal for switching rooms inside lobby */}
       <StakeRoomSelectorModal
@@ -133,69 +133,71 @@ export const BettingBar: React.FC = () => {
             )}
           </div>
 
-          {/* ── Responsive 2-Row Lobby Buy Bar (Controls Row + Full-Width CTA) ── */}
-          <div className="compact-lobby-buy-bar">
+          {/* ── 100% Exact Reference Clone Buy Bar (Controls Row + Gold Border CTA) ── */}
+          <div className="compact-lobby-buy-bar sonic-lobby-controls-card">
             <div className="compact-lobby-controls-row">
-              {/* 1. Stepper for 1 to 4 cartelas */}
-              <div className="compact-lobby-stepper" title="Choose 1 to 4 cartelas">
+              {/* 1. Stepper for 1 to 4 cartelas [- 4 +] in crisp white pill */}
+              <div className="sonic-stepper-pill" title="Choose 1 to 4 cartelas">
                 <button
                   type="button"
-                  className="btn-stepper-mini"
+                  className="btn-stepper-ctrl"
                   onClick={() => setCardQuantity(cardQuantity - 1)}
                   disabled={cardQuantity <= 1 || hasTicket}
+                  aria-label="Decrease Cards"
                 >
                   −
                 </button>
-                <span className="compact-stepper-num">{cardQuantity}</span>
+                <span className="sonic-stepper-val">{cardQuantity}</span>
                 <button
                   type="button"
-                  className="btn-stepper-mini"
+                  className="btn-stepper-ctrl"
                   onClick={() => setCardQuantity(cardQuantity + 1)}
                   disabled={cardQuantity >= 4 || hasTicket}
+                  aria-label="Increase Cards"
                 >
                   +
                 </button>
               </div>
 
-              {/* 2. Pick cards button */}
+              {/* 2. Pick cards button: [ 👆 #600, #30, #42 ] in obsidian black pill */}
               <button
                 type="button"
-                className="btn-compact-pick-cards"
+                className="btn-sonic-selected-cartelas"
                 onClick={openCartelaPicker}
                 title="Pick your cartela numbers (from 600 cards)"
               >
-                <i className="fa-solid fa-hand-pointer"></i>
-                <span>
-                  {hasSelectedCartelas && selectedCartelaIds.length > 0
+                <span className="cartela-hand-icon" aria-hidden="true">👆</span>
+                <span className="cartela-ids-txt">
+                  {selectedCartelaIds.length > 0
                     ? `#${selectedCartelaIds.slice(0, cardQuantity).join(', #')}`
-                    : 'Pick 🎟️'}
+                    : '#600, #30, #42'}
                 </span>
               </button>
 
-              {/* 3. Active Stake Room Pill / Switcher */}
+              {/* 3. Circular Golden Info Button [ ⓘ ] */}
               <button
                 type="button"
-                className="btn-compact-stake-pill"
+                className="btn-sonic-info-circle"
                 onClick={() => setShowStakeModal(true)}
-                title="Change stake room (10, 20, 50, 100 ETB)"
+                title="Change stake room / Rules (10, 20, 50, 100 ETB)"
+                aria-label="Game Info"
               >
-                <span>🪙 {betAmount} ETB</span>
-                <i className="fa-solid fa-chevron-down mini-arrow"></i>
+                <span>i</span>
               </button>
             </div>
 
-            {/* 4. Primary CTA: Full-Width Buy Ticket Button */}
+            {/* 4. Primary CTA: Full-Width Pitch-Black Obsidian Pill Button with 2px Metallic Gold Border Glow */}
             <button
               type="button"
-              className="btn-compact-buy-cta"
+              className="btn-sonic-obsidian-buy-ticket-cta"
               onClick={hasTicket ? undefined : (!hasSelectedCartelas ? openCartelaPicker : buyTicket)}
               disabled={hasTicket}
             >
-              <i className={hasSelectedCartelas ? "fa-solid fa-ticket" : "fa-solid fa-hand-pointer"}></i>
-              <span>
-                {!hasSelectedCartelas
-                  ? `SELECT CARDS (${totalCost} ETB)`
-                  : `${t('bingo.buyTicket')} · ${totalCost} ETB`}
+              <i className="fa-solid fa-ticket sonic-cta-ticket-icon" aria-hidden="true"></i>
+              <span className="sonic-cta-buy-text">
+                {hasTicket
+                  ? 'TICKET BOUGHT'
+                  : `BUY TICKET - ${totalCost} ETB`}
               </span>
             </button>
           </div>
@@ -208,28 +210,25 @@ export const BettingBar: React.FC = () => {
           <div className="bingo-cancel-modal-card" onClick={e => e.stopPropagation()}>
             <div className="cancel-modal-icon-wrap">
               <div className="cancel-modal-icon">
-                <i className="fa-solid fa-arrow-rotate-left"></i>
+                <i className="fa-solid fa-triangle-exclamation"></i>
               </div>
             </div>
-
-            <h3 className="cancel-modal-title">Cancel Bet & Refund?</h3>
+            <h3 className="cancel-modal-title">
+              {lang === 'am' ? 'ውርርድ ይሰረዝ?' : 'Cancel Your Bet?'}
+            </h3>
             <p className="cancel-modal-desc">
-              Would you like to cancel your bet and immediately refund <strong>{totalCost} ETB</strong> back to your wallet?
+              {lang === 'am'
+                ? `የመረጧቸው ${cardQuantity} ካርቴላዎች ይሰረዛሉ እንዲሁም ሙሉው ${totalCost} ብር ወዲያውኑ ወደ አካውንትዎ ይመለሳል።`
+                : `Your ${cardQuantity} cartela(s) will be released and your ${totalCost} ETB stake will be immediately refunded.`}
             </p>
-
-            <div className="cancel-modal-cartelas-preview">
-              <span className="preview-lbl">Cartelas to release:</span>
-              <span className="preview-val">#{selectedCartelaIds.slice(0, cardQuantity).join(' · #')}</span>
-            </div>
-
             <div className="cancel-modal-actions">
               <button
                 type="button"
-                className="btn-cancel-modal-keep"
+                className="btn-cancel-modal-back"
                 onClick={() => setShowCancelModal(false)}
                 disabled={isCancelling}
               >
-                Keep Bet
+                {lang === 'am' ? 'ተመለስ (ይቆይ)' : 'Keep Bet'}
               </button>
               <button
                 type="button"
@@ -237,13 +236,22 @@ export const BettingBar: React.FC = () => {
                 onClick={handleConfirmCancel}
                 disabled={isCancelling}
               >
-                {isCancelling ? 'Refunding...' : `Yes, Cancel & Refund (${totalCost} ETB)`}
+                {isCancelling ? (
+                  <>
+                    <i className="fa-solid fa-spinner fa-spin"></i>
+                    <span>{lang === 'am' ? 'በመሰረዝ ላይ...' : 'Refunding...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-arrow-rotate-left"></i>
+                    <span>{lang === 'am' ? 'አዎ ሰርዝ እና መልስ' : 'Confirm & Refund'}</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 };

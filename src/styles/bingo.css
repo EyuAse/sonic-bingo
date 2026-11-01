@@ -7168,3 +7168,814 @@
 
 
 
+
+
+/* ==========================================================================
+   SONIC BINGO LIVE ARENA 100% PIXEL-PERFECT EXACT REFERENCE CLONE
+   Target: media_1793560981186_b5acf9b1.png, 41e1d5ed.png, 39fc4468.png
+   ========================================================================== */
+
+/* ── 1. Top Action Bar & Status Strip Pills ── */
+.bingo-top-action-bar {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 42px !important;
+  padding: 4px 2px 6px !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+}
+
+.btn-bingo-mini-back {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  border: 1.5px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 0.95rem !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06) !important;
+  transition: all 0.15s ease !important;
+}
+
+.btn-bingo-mini-back:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  transform: translateY(-1px) !important;
+}
+
+.sonic-stats-pill-strip {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex: 1 1 0 !important;
+  overflow-x: auto !important;
+  scrollbar-width: none !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding: 2px 0 !important;
+}
+
+.sonic-stats-pill-strip::-webkit-scrollbar {
+  display: none !important;
+}
+
+.sonic-stat-pill {
+  background: #ffffff !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 9999px !important;
+  padding: 3px 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  height: 38px !important;
+  box-sizing: border-box !important;
+  user-select: none !important;
+}
+
+.sonic-stat-pill.pill-game-id,
+.sonic-stat-pill.pill-derash,
+.sonic-stat-pill.pill-called {
+  flex-direction: column !important;
+}
+
+.sonic-pill-meta-lbl {
+  font-size: 0.58rem !important;
+  font-weight: 850 !important;
+  color: #64748b !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.4px !important;
+  line-height: 1 !important;
+}
+
+.sonic-pill-main-val {
+  font-size: 0.95rem !important;
+  font-weight: 950 !important;
+  color: #0f172a !important;
+  line-height: 1.1 !important;
+  margin-top: 1px !important;
+  font-family: Outfit, -apple-system, sans-serif !important;
+}
+
+.sonic-pill-main-val.val-derash {
+  color: #16a34a !important;
+  font-size: 1.05rem !important;
+}
+
+/* Radiant Gold 👑 JACKPOT Pill */
+.sonic-stat-pill.pill-jackpot-radiant-gold {
+  background: linear-gradient(180deg, #fef08a 0%, #facc15 50%, #eab308 100%) !important;
+  border: 1.5px solid #ca8a04 !important;
+  box-shadow: 0 2px 8px rgba(234, 179, 8, 0.4) !important;
+  flex-direction: column !important;
+  padding: 3px 14px !important;
+}
+
+.sonic-pill-jackpot-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  font-size: 0.60rem !important;
+  font-weight: 950 !important;
+  color: #0f172a !important;
+  letter-spacing: 0.4px !important;
+  line-height: 1 !important;
+}
+
+.sonic-pill-jackpot-header .jackpot-crown-icon {
+  font-size: 0.70rem !important;
+  line-height: 1 !important;
+}
+
+.sonic-pill-main-val.val-jackpot {
+  color: #0f172a !important;
+  font-size: 1.05rem !important;
+  font-weight: 950 !important;
+}
+
+/* Players Pill */
+.sonic-stat-pill.pill-players {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.sonic-stat-pill.pill-players .sonic-pill-leading-icon {
+  color: #0f172a !important;
+  font-size: 0.95rem !important;
+}
+
+.sonic-pill-col {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+}
+
+/* Stake Pill */
+.sonic-stat-pill.pill-stake {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.sonic-stat-pill.pill-stake.is-clickable {
+  cursor: pointer !important;
+}
+
+.sonic-b-coin-badge {
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 50% !important;
+  background: #facc15 !important;
+  border: 1px solid #ca8a04 !important;
+  color: #0f172a !important;
+  font-size: 0.70rem !important;
+  font-weight: 950 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  font-family: Outfit, sans-serif !important;
+  flex-shrink: 0 !important;
+}
+
+.sonic-pill-trailing-chevron {
+  font-size: 0.60rem !important;
+  color: #0f172a !important;
+  margin-left: 2px !important;
+}
+
+/* ── 2. Lobby Countdown Banner ── */
+.sonic-lobby-call-card {
+  background: #ffffff !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  margin-bottom: 8px !important;
+  flex-shrink: 0 !important;
+}
+
+.sonic-lobby-card-body {
+  padding: 12px 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+.sonic-lobby-row-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+}
+
+.sonic-lobby-title-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.sonic-rocket-emoji {
+  font-size: 1.35rem !important;
+  line-height: 1 !important;
+}
+
+.sonic-lobby-title-txt {
+  font-size: 1.35rem !important;
+  font-weight: 900 !important;
+  color: #0f172a !important;
+  font-family: Outfit, sans-serif !important;
+}
+
+.sonic-obsidian-timer-pill {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border-radius: 9999px !important;
+  padding: 5px 14px !important;
+  font-weight: 950 !important;
+  font-size: 1.05rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.3) !important;
+  font-family: Outfit, sans-serif !important;
+}
+
+.sonic-timer-clock-icon {
+  font-size: 1rem !important;
+  line-height: 1 !important;
+  color: #facc15 !important;
+}
+
+.sonic-timer-seconds-txt {
+  color: #ffffff !important;
+}
+
+.sonic-lobby-row-status-pill {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 9999px !important;
+  padding: 6px 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  text-align: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.sonic-status-dot-pulse {
+  font-size: 0.8rem !important;
+  line-height: 1 !important;
+}
+
+.sonic-status-primary-txt {
+  font-size: 0.92rem !important;
+  font-weight: 900 !important;
+  color: #0f172a !important;
+}
+
+.sonic-status-sub-txt {
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  color: #64748b !important;
+}
+
+.sonic-lobby-row-controls {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+}
+
+.sonic-sound-pill-btn {
+  background: #ffffff !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 9999px !important;
+  padding: 4px 14px !important;
+  font-weight: 800 !important;
+  font-size: 0.80rem !important;
+  color: #0f172a !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  transition: all 0.15s ease !important;
+}
+
+.sonic-sound-pill-btn:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+.sonic-auto-toggle-wrap {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  user-select: none !important;
+}
+
+.sonic-auto-toggle-wrap .auto-text-label {
+  font-size: 0.85rem !important;
+  font-weight: 850 !important;
+  color: #0f172a !important;
+}
+
+.sonic-auto-obsidian-badge {
+  background: #0f172a !important;
+  color: #facc15 !important;
+  font-size: 0.72rem !important;
+  font-weight: 950 !important;
+  padding: 3px 12px !important;
+  border-radius: 9999px !important;
+  letter-spacing: 0.5px !important;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.25) !important;
+}
+
+.sonic-auto-obsidian-badge.badge-off {
+  background: #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+/* In-game Call Banner Details */
+.sonic-ingame-call-body {
+  padding: 8px 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+.sonic-call-top-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.sonic-call-phase-badge {
+  font-weight: 900 !important;
+  font-size: 0.82rem !important;
+  color: #0f172a !important;
+}
+
+.sonic-call-column-hint {
+  font-size: 0.72rem !important;
+  color: #64748b !important;
+  display: block !important;
+}
+
+.sonic-current-ball-capsule {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border-radius: 9999px !important;
+  padding: 4px 14px !important;
+  font-weight: 950 !important;
+  font-size: 1.15rem !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+}
+
+.sonic-current-ball-capsule.col-b { background: linear-gradient(135deg, #facc15, #ca8a04) !important; color: #0f172a !important; }
+.sonic-current-ball-capsule.col-i { background: #0f172a !important; color: #ffffff !important; }
+.sonic-current-ball-capsule.col-n { background: #0f172a !important; color: #ffffff !important; }
+.sonic-current-ball-capsule.col-g { background: linear-gradient(135deg, #facc15, #ca8a04) !important; color: #0f172a !important; }
+.sonic-current-ball-capsule.col-o { background: #0f172a !important; color: #ffffff !important; }
+
+.sonic-recent-tray-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 6px !important;
+  padding-top: 4px !important;
+  border-top: 1px solid #f1f5f9 !important;
+}
+
+.sonic-recent-tray-lbl {
+  font-size: 0.65rem !important;
+  font-weight: 850 !important;
+  color: #94a3b8 !important;
+}
+
+.sonic-recent-balls-list {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.sonic-recent-ball-dot {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50% !important;
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 900 !important;
+  font-size: 0.70rem !important;
+}
+
+.sonic-ingame-mini-controls {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.btn-mini-sound {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 50% !important;
+  width: 28px !important;
+  height: 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #0f172a !important;
+  font-size: 0.75rem !important;
+  cursor: pointer !important;
+}
+
+/* ── 3. Luxury 75-Ball Cartela Card (100% Exact Clone of Image 8) ── */
+.sonic-cartela-card {
+  background: #ffffff !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.sonic-card-header {
+  background: #0f172a !important;
+  height: 38px !important;
+  padding: 0 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.sonic-card-gold-ribbon {
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  width: 120px !important;
+  height: 100% !important;
+  background: linear-gradient(135deg, transparent 35%, rgba(250, 204, 21, 0.88) 60%, rgba(202, 138, 4, 0.98) 100%) !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+}
+
+.sonic-card-header-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.sonic-card-header-title {
+  color: #ffffff !important;
+  font-size: 1.05rem !important;
+  font-weight: 900 !important;
+  font-family: Outfit, sans-serif !important;
+  letter-spacing: 0.2px !important;
+}
+
+.sonic-card-id-sub {
+  color: #cbd5e1 !important;
+  font-size: 0.80rem !important;
+  font-weight: 700 !important;
+}
+
+.sonic-card-header-right {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.btn-sonic-preview-pill {
+  background: #ffffff !important;
+  border: none !important;
+  border-radius: 9999px !important;
+  padding: 3px 10px !important;
+  color: #0f172a !important;
+  font-weight: 950 !important;
+  font-size: 0.68rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15) !important;
+  cursor: pointer !important;
+  transition: all 0.12s ease !important;
+}
+
+.btn-sonic-preview-pill:hover {
+  background: #f8fafc !important;
+  transform: translateY(-1px) !important;
+}
+
+.sonic-card-body {
+  padding: 6px 8px 8px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Alternating Columns Header: B(Gold), I(Black), N(Black), G(Gold), O(Black) */
+.sonic-bingo-col-headers {
+  display: grid !important;
+  grid-template-columns: repeat(5, 1fr) !important;
+  gap: 4px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.sonic-bingo-col-hdr {
+  height: 30px !important;
+  border-radius: 7px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 950 !important;
+  font-size: 1.05rem !important;
+  font-family: Outfit, sans-serif !important;
+}
+
+.sonic-bingo-col-hdr.hdr-gold {
+  background: #facc15 !important;
+  color: #0f172a !important;
+}
+
+.sonic-bingo-col-hdr.hdr-obsidian {
+  background: #0f172a !important;
+  color: #ffffff !important;
+}
+
+/* 5x5 Matrix Grid */
+.sonic-cartela-5x5 {
+  display: grid !important;
+  grid-template-columns: repeat(5, 1fr) !important;
+  grid-template-rows: repeat(5, 1fr) !important;
+  gap: 4px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.sonic-cartela-cell {
+  background: #ffffff !important;
+  border: 1.5px solid #f1f5f9 !important;
+  border-radius: 8px !important;
+  aspect-ratio: 1 !important;
+  min-height: 38px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  transition: transform 0.1s ease !important;
+  box-sizing: border-box !important;
+}
+
+.sonic-cell-number {
+  font-family: Outfit, sans-serif !important;
+  font-size: 1.15rem !important;
+  font-weight: 950 !important;
+  color: #0f172a !important;
+  line-height: 1 !important;
+}
+
+/* Center Free Space: Pitch-Black Obsidian Squircle with 24k Gold Star */
+.sonic-cartela-cell.free-center-squircle {
+  background: #0f172a !important;
+  border: 1px solid #1e293b !important;
+  border-radius: 10px !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.35) !important;
+}
+
+.sonic-free-star-wrap {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.sonic-gold-star {
+  color: #facc15 !important;
+  font-size: 1.35rem !important;
+  line-height: 1 !important;
+  filter: drop-shadow(0 1px 3px rgba(250, 204, 21, 0.6)) !important;
+}
+
+.sonic-cartela-cell.daubed {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+  color: #ffffff !important;
+  border-color: #16a34a !important;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.6) !important;
+}
+
+.sonic-cartela-cell.win-glow {
+  animation: winGlowPulse 0.8s infinite alternate !important;
+  border: 2px solid #facc15 !important;
+}
+
+/* ── 4. Bottom Cartela Selector Controls & Obsidian Gold Border CTA (100% Clone of Image 9) ── */
+.sonic-betting-bar {
+  margin-top: auto !important;
+  width: 100% !important;
+}
+
+.sonic-lobby-controls-card {
+  background: #ffffff !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 20px !important;
+  padding: 10px 12px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+}
+
+.compact-lobby-controls-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+/* Stepper [- 4 +] in crisp white pill */
+.sonic-stepper-pill {
+  background: #ffffff !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 9999px !important;
+  padding: 4px 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+  height: 38px !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+}
+
+.btn-stepper-ctrl {
+  border: none !important;
+  background: transparent !important;
+  font-weight: 950 !important;
+  font-size: 1.15rem !important;
+  color: #0f172a !important;
+  cursor: pointer !important;
+  padding: 0 4px !important;
+  line-height: 1 !important;
+}
+
+.btn-stepper-ctrl:disabled {
+  opacity: 0.3 !important;
+  cursor: not-allowed !important;
+}
+
+.sonic-stepper-val {
+  font-weight: 950 !important;
+  font-size: 1.05rem !important;
+  color: #0f172a !important;
+  min-width: 14px !important;
+  text-align: center !important;
+  font-family: Outfit, sans-serif !important;
+}
+
+/* Selected Cartelas Button [ 👆 #600, #30, #42 ] */
+.btn-sonic-selected-cartelas {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 9999px !important;
+  padding: 6px 18px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25) !important;
+  cursor: pointer !important;
+  font-weight: 900 !important;
+  font-size: 0.90rem !important;
+  height: 38px !important;
+  font-family: Outfit, sans-serif !important;
+  flex: 1 1 0 !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  transition: all 0.15s ease !important;
+}
+
+.btn-sonic-selected-cartelas:hover {
+  background: #1e293b !important;
+  transform: translateY(-1px) !important;
+}
+
+.cartela-hand-icon {
+  font-size: 1rem !important;
+  line-height: 1 !important;
+}
+
+.cartela-ids-txt {
+  color: #ffffff !important;
+}
+
+/* Circular Golden Info Button [ ⓘ ] */
+.btn-sonic-info-circle {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  border-radius: 50% !important;
+  background: #facc15 !important;
+  color: #0f172a !important;
+  font-weight: 950 !important;
+  font-size: 1.1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 2px 8px rgba(234, 179, 8, 0.4) !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  flex-shrink: 0 !important;
+  font-family: serif, sans-serif !important;
+}
+
+.btn-sonic-info-circle:hover {
+  background: #fef08a !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Full-Width Pitch-Black Obsidian Pill Button with 2px Metallic Gold Border Glow */
+.btn-sonic-obsidian-buy-ticket-cta {
+  width: 100% !important;
+  height: 48px !important;
+  background: #000000 !important;
+  border: 2px solid #eab308 !important;
+  border-radius: 9999px !important;
+  font-size: 1.05rem !important;
+  font-weight: 950 !important;
+  color: #ffffff !important;
+  letter-spacing: 0.5px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 12px rgba(234, 179, 8, 0.35) !important;
+  transition: all 0.15s ease !important;
+  font-family: Outfit, sans-serif !important;
+  user-select: none !important;
+}
+
+.btn-sonic-obsidian-buy-ticket-cta:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.5), 0 0 16px rgba(234, 179, 8, 0.5) !important;
+  border-color: #facc15 !important;
+}
+
+.btn-sonic-obsidian-buy-ticket-cta:active:not(:disabled) {
+  transform: scale(0.98) !important;
+}
+
+.btn-sonic-obsidian-buy-ticket-cta:disabled {
+  opacity: 0.7 !important;
+  cursor: not-allowed !important;
+}
+
+.sonic-cta-ticket-icon {
+  color: #facc15 !important;
+  font-size: 1.25rem !important;
+}
+
+.sonic-cta-buy-text {
+  color: #ffffff !important;
+  font-weight: 950 !important;
+}

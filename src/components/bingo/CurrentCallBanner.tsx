@@ -50,150 +50,161 @@ export const CurrentCallBanner: React.FC = () => {
   const isWaitingAlone = roundPhase === 'lobby' && waitingForPlayers && !is1Ready && !isMultipleInRoom;
 
   return (
-    <div className="compact-current-call-block">
-      {/* 1. Main Current Call Header Bar */}
-      <div className={`compact-call-header ${spherePop ? 'call-pop' : ''}`}>
-        <div className="compact-call-title">
-          {roundPhase === 'playing'
-            ? (lang === 'am' ? 'የተጠራ ቁጥር' : 'Current Call')
-            : roundPhase === 'winner'
-            ? (lang === 'am' ? 'የአሸናፊ ማስታወቂያ 🏆' : 'Round Concluded 🏆')
-            : (lang === 'am' ? '🚀 ሎቢ' : '🚀 Lobby')}
-        </div>
+    <div className="sonic-lobby-call-card">
+      {/* ── LOBBY VIEW (100% Exact Clone of Image 7) ── */}
+      {roundPhase === 'lobby' ? (
+        <div className="sonic-lobby-card-body">
+          {/* Row 1: Rocket Lobby Title on left + Pitch-black obsidian countdown pill on right */}
+          <div className="sonic-lobby-row-header">
+            <div className="sonic-lobby-title-wrap">
+              <span className="sonic-rocket-emoji" aria-hidden="true">🚀</span>
+              <span className="sonic-lobby-title-txt">
+                {lang === 'am' ? 'ሎቢ' : 'Lobby'}
+              </span>
+            </div>
 
-        {/* Center: In lobby, show Starts in Xs! Get ready! (Matching Image!) */}
-        {roundPhase === 'lobby' && (
-          <div className="compact-call-center-status">
-            <span className="compact-center-primary">
+            {/* Obsidian Countdown Pill */}
+            <div className="sonic-obsidian-timer-pill">
+              <span className="sonic-timer-clock-icon" aria-hidden="true">🕒</span>
+              <span className="sonic-timer-seconds-txt">
+                {isCountdown ? `${lobbyCountdown}s` : betAmount === 10 ? `${lobbyCountdown}s` : '45s'}
+              </span>
+            </div>
+          </div>
+
+          {/* Row 2: Full-width soft pill status */}
+          <div className="sonic-lobby-row-status-pill">
+            <span className="sonic-status-dot-pulse">🟢</span>
+            <span className="sonic-status-primary-txt">
               {isCountdown
-                ? `🟢 ${lang === 'am' ? `በ ${lobbyCountdown}s ይጀምራል!` : `Starts in ${lobbyCountdown}s!`}`
+                ? (lang === 'am' ? `በ ${lobbyCountdown}s ይጀምራል!` : `Starts in ${lobbyCountdown}s!`)
                 : is1Ready
-                ? `🟡 ${lang === 'am' ? '1/2 ተጫዋች ዝግጁ' : '1/2 Players Ready'}`
+                ? (lang === 'am' ? '1/2 ተጫዋች ዝግጁ ነው!' : '1/2 Players Ready!')
                 : isMultipleInRoom
-                ? `👥 ${lang === 'am' ? `${activeUsersCount} ተጫዋቾች አሉ` : `${activeUsersCount} in Room`}`
+                ? (lang === 'am' ? `${activeUsersCount} ተጫዋቾች በክፍሉ አሉ` : `${activeUsersCount} Players in Room`)
                 : betAmount === 10
-                ? `👥 ${lang === 'am' ? `${playersCount} ዝግጁ` : `${playersCount} Players Ready`}`
-                : `⏳ ${lang === 'am' ? 'ተጫዋች በመጠበቅ...' : 'Waiting for players...'}`}
+                ? (lang === 'am' ? `${playersCount} ተጫዋቾች ዝግጁ!` : `${playersCount} Players Ready!`)
+                : (lang === 'am' ? 'ተጫዋቾችን በመጠበቅ ላይ...' : 'Waiting for players...')}
             </span>
-            <span className="compact-center-sub">
+            <span className="sonic-status-sub-txt">
               {isCountdown
                 ? (lang === 'am' ? 'ይዘጋጁ!' : 'Get ready!')
                 : (lang === 'am' ? 'ካርቴላ ይግዙ!' : 'Buy ticket to play!')}
             </span>
           </div>
-        )}
 
-        <div className="compact-call-badge-wrap">
-          {roundPhase === 'winner' ? (
-            <div className="compact-current-ball-pill" style={{ background: '#fef3c7', color: '#b45309', border: '1px solid #fcd34d' }}>
-              <span className="call-ball-col">{waitingForOtherHouses ? '⏳' : '🏆'}</span>
-              <span className="call-ball-num lobby-status-text">
-                {waitingForOtherHouses
-                  ? (lang === 'am' ? 'ሌሎች ክፍሎች በመጠበቅ...' : 'Waiting other houses...')
-                  : `${winnerCountdown}s`}
-              </span>
-            </div>
-          ) : currentCall ? (
-            <div className={`compact-current-ball-pill ${mainColClass}`}>
-              <span className="call-ball-col">{currentCall.col}</span>
-              <span className="call-ball-hyphen">-</span>
-              <span className="call-ball-num">{currentCall.num}</span>
-            </div>
-          ) : roundPhase === 'lobby' ? (
-            <div
-              className={`compact-current-ball-pill lobby-timer ${
-                isCountdown
-                  ? 'countdown-active'
-                  : is1Ready
-                  ? 'ready-waiting'
-                  : isMultipleInRoom
-                  ? 'players-in-room'
-                  : betAmount === 10
-                  ? 'ready-waiting'
-                  : 'waiting-match'
-              }`}
+          {/* Row 3: Sound Pill Button on left + Auto Toggle on right */}
+          <div className="sonic-lobby-row-controls">
+            <button
+              type="button"
+              className={`sonic-sound-pill-btn ${isMuted ? 'is-muted' : 'is-active'}`}
+              onClick={toggleMute}
+              title={isMuted ? 'Sound Muted — Click to unmute' : 'Sound ON — Click to mute'}
+              aria-label="Sound Toggle"
             >
-              <span className="call-ball-col">
-                {isCountdown ? '⏱️' : (is1Ready || betAmount === 10) ? '🟡' : isMultipleInRoom ? '👥' : '⏳'}
-              </span>
-              <span className="call-ball-num lobby-status-text">
-                {isCountdown
-                  ? `${lobbyCountdown}s`
-                  : is1Ready
-                  ? (lang === 'am' ? '1/2 ዝግጁ' : '1/2 Ready')
-                  : isMultipleInRoom
-                  ? (lang === 'am' ? `${activeUsersCount} ተጫዋች` : `${activeUsersCount} in Room`)
-                  : betAmount === 10
-                  ? (lang === 'am' ? `${playersCount} ዝግጁ` : `${playersCount} Ready`)
-                  : (lang === 'am' ? 'በመጠበቅ...' : 'Waiting...')}
-              </span>
-            </div>
-          ) : (
-            <div className="compact-current-ball-pill waiting">
-              <span className="call-ball-col">🎱</span>
-              <span className="call-ball-num">--</span>
-            </div>
-          )}
-        </div>
-      </div>
+              <span className="sound-text-label">Sound</span>
+              <i className={`fa-solid ${isMuted ? 'fa-volume-xmark' : 'fa-volume-high'}`}></i>
+            </button>
 
-      {/* 2. Recent Balls Tray (Visible during active playing) */}
-      {roundPhase !== 'lobby' && (
-        <div className="compact-recent-balls-tray">
-          <div className="compact-recent-balls-inner">
-            {prevTrail.length > 0 ? (
-              prevTrail.map((num, idx) => {
-                const colClass = getColClass(num);
-                const colLetter = getColLetter(num);
-                return (
-                  <div key={`${num}-${idx}`} className={`compact-recent-ball col-${colClass}`}>
-                    <span className="recent-ball-col">{colLetter}</span>
-                    <span className="recent-ball-num">{num}</span>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="compact-recent-empty-dots">
-                <span className="recent-empty-ball">--</span>
-                <span className="recent-empty-ball">--</span>
-                <span className="recent-empty-ball">--</span>
+            <div
+              className={`sonic-auto-toggle-wrap ${isAutoModeLocked ? 'is-locked' : ''}`}
+              onClick={isAutoModeLocked ? undefined : toggleAutoPlay}
+              role="button"
+              tabIndex={0}
+              title={
+                isAutoModeLocked
+                  ? (lang === 'am' ? '🔒 ጨዋታው እየተካሄደ ስለሆነ ሞድ መቀየር አይቻልም' : '🔒 Mode is locked while game is in progress')
+                  : (autoPlay ? 'Auto Daub ON — Click to switch' : 'Auto Daub OFF — Click to switch')
+              }
+            >
+              <span className="auto-text-label">Auto</span>
+              <span className={`sonic-auto-obsidian-badge ${autoPlay ? 'badge-on' : 'badge-off'}`}>
+                {autoPlay ? 'ON' : 'OFF'}
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* ── IN-GAME PLAYING / WINNER VIEW ── */
+        <div className={`sonic-ingame-call-body ${spherePop ? 'call-pop' : ''}`}>
+          <div className="sonic-call-top-row">
+            <div className="sonic-call-left-meta">
+              <span className="sonic-call-phase-badge">
+                {roundPhase === 'winner'
+                  ? (lang === 'am' ? '🏆 የአሸናፊ ማስታወቂያ' : '🏆 WINNER CALLED')
+                  : (lang === 'am' ? 'የተጠራ ቁጥር' : 'CURRENT CALL')}
+              </span>
+              {currentCall && (
+                <span className="sonic-call-column-hint">
+                  Column {currentCall.col} · Ball #{calledNumbers.length}/75
+                </span>
+              )}
+            </div>
+
+            {/* Current Ball Pill */}
+            <div className="sonic-call-right-ball">
+              {roundPhase === 'winner' ? (
+                <div className="sonic-ball-winner-pill">
+                  <span>{waitingForOtherHouses ? '⏳' : '🏆'}</span>
+                  <span>{waitingForOtherHouses ? 'Syncing...' : `${winnerCountdown}s`}</span>
+                </div>
+              ) : currentCall ? (
+                <div className={`sonic-current-ball-capsule ${mainColClass}`}>
+                  <span className="ball-col-letter">{currentCall.col}</span>
+                  <span className="ball-dash">-</span>
+                  <span className="ball-num-val">{currentCall.num}</span>
+                </div>
+              ) : (
+                <div className="sonic-current-ball-capsule ball-waiting">
+                  <span>--</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Recent Balls Tray */}
+          <div className="sonic-recent-tray-row">
+            <span className="sonic-recent-tray-lbl">PREVIOUS:</span>
+            <div className="sonic-recent-balls-list">
+              {prevTrail.length > 0 ? (
+                prevTrail.map((num, idx) => {
+                  const colClass = getColClass(num);
+                  const colLetter = getColLetter(num);
+                  return (
+                    <div key={`${num}-${idx}`} className={`sonic-recent-ball-dot col-${colClass}`}>
+                      <span className="recent-letter">{colLetter}</span>
+                      <span className="recent-num">{num}</span>
+                    </div>
+                  );
+                })
+              ) : (
+                <span className="recent-tray-empty">Waiting for first ball...</span>
+              )}
+            </div>
+
+            {/* In-game controls */}
+            <div className="sonic-ingame-mini-controls">
+              <button
+                type="button"
+                className="btn-mini-sound"
+                onClick={toggleMute}
+                title={isMuted ? 'Unmute' : 'Mute'}
+              >
+                <i className={`fa-solid ${isMuted ? 'fa-volume-xmark' : 'fa-volume-high'}`}></i>
+              </button>
+              <div
+                className={`sonic-auto-toggle-wrap mini ${isAutoModeLocked ? 'is-locked' : ''}`}
+                onClick={isAutoModeLocked ? undefined : toggleAutoPlay}
+              >
+                <span className="auto-text-label">Auto</span>
+                <span className={`sonic-auto-obsidian-badge ${autoPlay ? 'badge-on' : 'badge-off'}`}>
+                  {autoPlay ? 'ON' : 'OFF'}
+                </span>
               </div>
-            )}
+            </div>
           </div>
         </div>
       )}
-
-      {/* 3. In-line Sound & Auto-Daub Controls Strip */}
-      <div className="compact-call-controls-row">
-        <button
-          type="button"
-          className={`btn-compact-sound ${isMuted ? 'muted' : 'active'}`}
-          onClick={toggleMute}
-          title={isMuted ? 'Sound Muted — Click to unmute' : 'Sound ON — Click to mute'}
-        >
-          <span className="sound-lbl">Sound</span>
-          <i className={`fa-solid ${isMuted ? 'fa-volume-xmark' : 'fa-volume-high'}`}></i>
-        </button>
-
-        <button
-          type="button"
-          className={`btn-compact-auto ${autoPlay ? 'on' : 'off'} ${isAutoModeLocked ? 'locked' : ''}`}
-          onClick={toggleAutoPlay}
-          title={
-            isAutoModeLocked
-              ? (lang === 'am' ? '🔒 ጨዋታው እየተካሄደ ስለሆነ ሞድ መቀየር አይቻልም' : '🔒 Mode is locked while game is in progress')
-              : (autoPlay ? 'Auto Daub ON — Click to switch' : 'Auto Daub OFF — Click to switch')
-          }
-        >
-          <span className="auto-lbl">
-            {isAutoModeLocked && <i className="fa-solid fa-lock auto-lock-icon"></i>}
-            Auto
-          </span>
-          <span className={`auto-switch-pill ${autoPlay ? 'on' : 'off'} ${isAutoModeLocked ? 'locked' : ''}`}>
-            {autoPlay ? 'ON' : 'OFF'}
-          </span>
-        </button>
-      </div>
     </div>
   );
 };
