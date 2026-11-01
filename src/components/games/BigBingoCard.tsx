@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
-import { useApp } from '../../context/AppContext.tsx';
-import { useBingo } from '../../context/BingoContext.tsx';
 import { useLanguage } from '../../context/LanguageContext.tsx';
 import { StakeRoomSelectorModal } from './StakeRoomSelectorModal.tsx';
 
 export const BigBingoCard: React.FC = () => {
-  const { switchPage } = useApp();
-  const { startLobbyCountdown, prizePool } = useBingo();
   const { lang } = useLanguage();
   const [showStakeModal, setShowStakeModal] = useState<boolean>(false);
 
@@ -18,12 +14,13 @@ export const BigBingoCard: React.FC = () => {
     <div className="fresh-fast-bingo-card">
       {/* Top Badges Row */}
       <div className="card-top-badges">
-        <span className="badge-fast-pill" style={{ background: '#16a34a', color: '#fff' }}>
-          <i className="fa-solid fa-circle" style={{ fontSize: '0.5rem', marginRight: 4 }}></i>
+        <span className="badge-live-room-emerald">
+          <span className="emerald-pulse-dot" aria-hidden="true"></span>
           <span>{lang === 'am' ? 'ቀጥታ ስርጭት' : 'LIVE ROOM'}</span>
         </span>
-        <span className="badge-players-pill">
-          <i className="fa-solid fa-fire" style={{ color: '#eab308', marginRight: 4 }}></i>
+
+        <span className="badge-live-arena-peach">
+          <span className="fire-emoji-icon" aria-hidden="true">🔥</span>
           <span>{lang === 'am' ? 'ቀጥታ ቢንጎ አሬና' : 'LIVE ARENA'}</span>
         </span>
       </div>
@@ -32,33 +29,43 @@ export const BigBingoCard: React.FC = () => {
       <div className="card-main-split">
         {/* Left Info Column */}
         <div className="card-left-info">
-          <h3 className="card-title-fast">{lang === 'am' ? 'ፈጣን ቢንጎ' : 'Fast Bingo'}</h3>
-          <span className="badge-75-ball">{lang === 'am' ? '75-ኳስ ፈጣን ጨዋታ' : '75-Ball Fast Action'}</span>
+          <h3 className="card-title-fast">
+            {lang === 'am' ? 'ፈጣን ቢንጎ' : 'Fast Bingo'}
+          </h3>
 
-          <div className="stakes-values-txt">10 • 20 • 50 • 100 ETB</div>
+          <span className="badge-75-ball-action">
+            {lang === 'am' ? '75-ኳስ ፈጣን ጨዋታ' : '75-Ball Fast Action'}
+          </span>
+
+          <div className="stakes-values-txt">10 - 20 - 50 - 100 ETB</div>
+
           <div className="stakes-limits-sub">
             {lang === 'am' ? 'ዝቅተኛ፡ 10 ብር • ፈጣን የቢንጎ ክፍል' : 'Min: 10 ETB • Fast Bingo Arena'}
           </div>
 
-          {/* Micro Stats: Players & Top Prize */}
+          {/* Micro Stats: Signup Bonus & Multiplier */}
           <div className="card-micro-stats-row">
             <div className="micro-stat-item">
-              <div className="stat-icon-circ yellow">
-                <i className="fa-solid fa-gift"></i>
+              <div className="stat-icon-circ" aria-hidden="true">
+                <i className="fa-solid fa-users"></i>
               </div>
               <div className="stat-text-meta">
                 <strong className="stat-bold-val">10 ETB</strong>
-                <span className="stat-sub-lbl">{lang === 'am' ? 'የመመዝገቢያ ቦነስ' : 'Signup Bonus'}</span>
+                <span className="stat-sub-lbl">
+                  {lang === 'am' ? 'የመመዝገቢያ ቦነስ' : 'Signup Bonus'}
+                </span>
               </div>
             </div>
 
             <div className="micro-stat-item">
-              <div className="stat-icon-circ yellow">
+              <div className="stat-icon-circ" aria-hidden="true">
                 <i className="fa-solid fa-trophy"></i>
               </div>
               <div className="stat-text-meta">
                 <strong className="stat-bold-val">45x MULTI</strong>
-                <span className="stat-sub-lbl">{lang === 'am' ? 'እስከ 4,500 ብር ሽልማት' : 'Up to 4,500 ETB'}</span>
+                <span className="stat-sub-lbl">
+                  {lang === 'am' ? 'እስከ 4,500 ብር' : 'Up to 4500 ETB'}
+                </span>
               </div>
             </div>
           </div>
@@ -68,20 +75,24 @@ export const BigBingoCard: React.FC = () => {
         <div className="card-right-art">
           <img
             src="/assets/images/fast-bingo-exact-hero.jpg"
-            alt="Fast Bingo 3D Cards, Star Coin and Balls"
+            alt="Fast Bingo 3D Cards, Crown Coin and Balls"
             className="fast-bingo-3d-hero-img"
+            loading="eager"
           />
         </div>
       </div>
 
-      {/* Full-width Golden CTA Button */}
+      {/* Full-width Pitch-Black Obsidian CTA Button */}
       <button
         type="button"
-        className="btn-play-fast-bingo-cta"
+        className="btn-obsidian-fast-bingo-cta"
         onClick={handlePlayNow}
+        aria-label="Play 75-Ball Bingo Now"
       >
-        <span>{lang === 'am' ? 'አሁን 75-ኳስ ቢንጎ ይጫወቱ' : 'PLAY 75-BALL BINGO NOW'}</span>
-        <i className="fa-solid fa-arrow-right"></i>
+        <span>
+          {lang === 'am' ? 'አሁን 75-ኳስ ቢንጎ ይጫወቱ' : 'PLAY 75-BALL BINGO NOW'}
+        </span>
+        <i className="fa-solid fa-arrow-right" aria-hidden="true"></i>
       </button>
 
       {/* Stake Room Selection Modal */}

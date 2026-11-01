@@ -1,18 +1,19 @@
 /* ============================================================
-   LOMI BINGO: EXACT LOBBY & GAMES DASHBOARD DESIGN
-   Matches exact light-lemon mobile aesthetic
+   SONIC BINGO: 100% EXACT LOBBY & GAMES DASHBOARD DESIGN
+   Matches exact target aesthetic (media_1793557426769_4b03b00d.jpg)
    ============================================================ */
 
 .page-lobby-fresh {
   min-height: 100vh;
-  background: #fbf9ef;
+  background: #f8fafc;
   color: #0f172a;
-  padding-bottom: 90px;
+  padding-bottom: 96px;
   position: relative;
 }
 
 /* ============================================================
-   EXACT TOP LOBBY HEADER
+   1. TOP LOBBY HEADER
+   Circular action buttons & Unified Sonic Bingo + Language Pill
    ============================================================ */
 .lobby-fresh-header {
   display: flex;
@@ -21,7 +22,7 @@
   padding: 10px 14px;
   background: #ffffff;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
   position: sticky;
   top: 0;
   z-index: 50;
@@ -32,7 +33,7 @@
 .btn-lobby-notif {
   width: 38px;
   height: 38px;
-  border-radius: 10px;
+  border-radius: 50%;
   background: #ffffff;
   border: 1px solid #e2e8f0;
   color: #0f172a;
@@ -44,6 +45,7 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: all 0.15s ease;
   position: relative;
+  flex-shrink: 0;
 }
 
 .btn-lobby-hamburger:hover,
@@ -51,6 +53,7 @@
 .btn-lobby-notif:hover {
   background: #f8fafc;
   border-color: #cbd5e1;
+  transform: translateY(-1px);
 }
 
 .btn-lobby-hamburger i,
@@ -59,45 +62,93 @@
   color: #0f172a;
 }
 
-.lobby-brand-center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.lomi-brand-logo-inline {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-family: var(--font-display), 'Outfit', sans-serif;
-  font-size: 1.35rem;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.brand-lomi-txt {
-  color: #0f172a;
-}
-
-.brand-lemon-o {
-  width: 24px;
-  height: 24px;
+/* Unified Brand + Language Selector Pill */
+.lobby-brand-lang-pill {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  margin: 0 1px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  padding: 4px 10px 4px 12px;
+  gap: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
-.mini-lemon-svg {
-  width: 100%;
-  height: 100%;
-  filter: drop-shadow(0 1px 3px rgba(234, 179, 8, 0.3));
+.brand-sonic-clickable {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  user-select: none;
+}
+
+.sonic-crown-emblem {
+  font-size: 1.15rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  filter: drop-shadow(0 1px 2px rgba(234, 179, 8, 0.35));
+}
+
+.brand-sonic-txt {
+  font-family: var(--font-display), 'Outfit', sans-serif;
+  font-size: 1.125rem;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.2px;
+}
+
+.brand-pill-pipe {
+  color: #cbd5e1;
+  font-weight: 300;
+  font-size: 0.95rem;
+  margin: 0 2px;
 }
 
 .brand-bingo-gold {
+  font-family: var(--font-display), 'Outfit', sans-serif;
+  font-size: 1.125rem;
+  font-weight: 900;
   color: #eab308;
-  margin-left: 5px;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
+}
+
+.brand-pill-divider {
+  width: 1px;
+  height: 16px;
+  background: #e2e8f0;
+  margin: 0 2px;
+}
+
+/* Embedded language dropdown inside pill */
+.lobby-brand-lang-pill .custom-lang-pill-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.lobby-brand-lang-pill .btn-custom-lang-pill {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  gap: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.lobby-brand-lang-pill .lang-code-bold {
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.lobby-brand-lang-pill .pill-chevron-mini {
+  font-size: 0.65rem;
+  color: #64748b;
+  margin-left: 1px;
 }
 
 .lobby-header-right {
@@ -106,44 +157,12 @@
   gap: 8px;
 }
 
-.btn-lobby-notif {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  color: #0f172a;
-  font-size: 1.05rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  position: relative;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-.notif-pill-badge {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  background: #eab308;
-  color: #0f172a;
-  font-size: 0.625rem;
-  font-weight: 900;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1.5px solid #ffffff;
-}
-
 /* ============================================================
-   LOBBY BALANCE BAR
+   2. LOBBY BALANCE BAR
+   Obsidian squircle with 3D gold wallet, 0.00 ETB, + Deposit black pill
    ============================================================ */
 .lobby-balance-bar-wrapper {
-  background: #fbf9ef;
+  background: #f8fafc;
   padding: 10px 14px 2px;
   width: 100%;
 }
@@ -167,22 +186,23 @@
   width: 100%;
 }
 
-.balance-wallet-icon-circle {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #facc15;
-  color: #ffffff;
+.balance-wallet-obsidian-squircle {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #0f172a;
+  color: #facc15;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
-  box-shadow: 0 2px 6px rgba(234, 179, 8, 0.35);
+  font-size: 1.1rem;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
   flex-shrink: 0;
 }
 
-.balance-wallet-icon-circle i {
-  color: #ffffff !important;
+.balance-wallet-obsidian-squircle i {
+  color: #facc15 !important;
+  filter: drop-shadow(0 1px 3px rgba(250, 204, 21, 0.5));
 }
 
 .balance-amount-center {
@@ -191,12 +211,31 @@
   gap: 8px;
 }
 
+.balance-val-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .balance-val-text {
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 900;
   color: #0f172a;
   letter-spacing: -0.3px;
   font-family: var(--font-display), 'Outfit', sans-serif;
+}
+
+.balance-bonus-badge {
+  font-size: 10px;
+  font-weight: 800;
+  background: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  padding: 1px 6px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .btn-balance-eye-toggle {
@@ -208,10 +247,15 @@
   padding: 2px 4px;
   display: flex;
   align-items: center;
+  transition: color 0.15s ease;
 }
 
-.btn-fresh-deposit {
-  background: linear-gradient(135deg, #22c55e, #16a34a);
+.btn-balance-eye-toggle:hover {
+  color: #0f172a;
+}
+
+.btn-obsidian-deposit {
+  background: #0f172a;
   border: none;
   border-radius: 9999px;
   padding: 8px 18px;
@@ -222,130 +266,111 @@
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  box-shadow: 0 3px 10px rgba(34, 197, 94, 0.35);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.25);
   transition: all 0.15s ease;
 }
 
-.btn-fresh-deposit:hover {
+.btn-obsidian-deposit:hover {
+  background: #18181b;
   transform: translateY(-1px);
-  box-shadow: 0 5px 14px rgba(34, 197, 94, 0.45);
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.35);
+}
+
+.btn-obsidian-deposit i {
+  color: #ffffff;
 }
 
 /* ============================================================
-   BANNER 1: "READY TO PLAY?"
+   3. BANNER 1: "READY TO PLAY?" (DARK OBSIDIAN HERO)
    ============================================================ */
 .lobby-ready-play-card {
-  background: radial-gradient(ellipse at 80% 50%, #fefce8 0%, #fef08a 100%);
-  border: 1px solid rgba(234, 179, 8, 0.25);
-  border-radius: 18px;
-  padding: 14px 16px;
+  background: linear-gradient(135deg, #18181b 0%, #09090b 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 16px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 18px rgba(234, 179, 8, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  min-height: 108px;
 }
 
-.ready-lemon-slice-bg {
+.ready-gold-swoosh-bg {
   position: absolute;
-  top: -15px;
-  left: -15px;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #fffbeb, #facc15);
-  opacity: 0.35;
-  filter: blur(1px);
+  right: -20px;
+  bottom: -20px;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(234, 179, 8, 0.25) 0%, rgba(234, 179, 8, 0) 70%);
   pointer-events: none;
+  filter: blur(14px);
 }
 
 .ready-text-group {
   position: relative;
   z-index: 2;
+  text-align: left;
 }
 
 .ready-title-bold {
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   font-weight: 900;
-  color: #0f172a;
-  margin: 0 0 2px;
+  color: #ffffff;
+  margin: 0 0 4px;
   font-family: var(--font-display), 'Outfit', sans-serif;
+  letter-spacing: -0.3px;
 }
 
 .ready-subtitle-txt {
   font-size: 0.75rem;
-  color: #475569;
-  font-weight: 600;
+  color: #cbd5e1;
+  font-weight: 500;
+  line-height: 1.35;
   margin: 0;
 }
 
-.ready-balls-cluster {
+.txt-gold-highlight {
+  color: #facc15;
+  font-weight: 800;
+}
+
+.ready-hero-graphic-wrap {
+  width: 140px;
+  height: 90px;
   display: flex;
   align-items: center;
+  justify-content: center;
   position: relative;
-  z-index: 2;
-  margin-left: 8px;
-}
-
-.mini-3d-ball {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display), 'Outfit', sans-serif;
-  font-size: 0.8125rem;
-  font-weight: 900;
-  color: #0f172a;
-  margin-left: -10px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  border: 1.5px solid #ffffff;
-}
-
-.mini-3d-ball:first-child { margin-left: 0; }
-
-.ball-y7 {
-  background: radial-gradient(circle at 35% 35%, #fffbeb, #facc15 60%, #ca8a04 100%);
-  z-index: 1;
-}
-
-.ball-g3 {
-  background: radial-gradient(circle at 35% 35%, #f0fdf4, #4ade80 60%, #15803d 100%);
-  width: 38px;
-  height: 38px;
-  font-size: 0.9375rem;
+  flex-shrink: 0;
   z-index: 2;
 }
 
-.ball-y1 {
-  background: radial-gradient(circle at 35% 35%, #fffbeb, #facc15 60%, #ca8a04 100%);
-  z-index: 1;
+.ready-hero-gift-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45));
+  transition: transform 0.2s ease;
 }
 
-.ball-digit {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.ready-hero-gift-img:hover {
+  transform: scale(1.03);
 }
 
 /* ============================================================
-   HERO CARD: FAST BINGO (75-BALL)
+   4. HERO CARD: FAST BINGO (75-BALL)
    ============================================================ */
 .fresh-fast-bingo-card {
   background: #ffffff;
   border: 1px solid #f1f5f9;
-  border-radius: 22px;
-  padding: 16px;
+  border-radius: 24px;
+  padding: 18px 16px;
   box-shadow: 0 8px 26px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .card-top-badges {
@@ -354,9 +379,36 @@
   justify-content: space-between;
 }
 
-.badge-fast-pill {
-  background: #fefce8;
-  color: #ca8a04;
+.badge-live-room-emerald {
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25);
+}
+
+.emerald-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffffff;
+  animation: pulseDot 1.5s infinite;
+}
+
+@keyframes pulseDot {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.7; }
+}
+
+.badge-live-arena-peach {
+  background: #fef3c7;
+  color: #b45309;
   font-size: 0.6875rem;
   font-weight: 800;
   padding: 4px 10px;
@@ -366,21 +418,14 @@
   gap: 4px;
 }
 
-.badge-players-pill {
-  background: #f0fdf4;
-  color: #16a34a;
-  font-size: 0.6875rem;
-  font-weight: 800;
-  padding: 4px 10px;
-  border-radius: 9999px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+.fire-emoji-icon {
+  font-size: 0.8rem;
+  line-height: 1;
 }
 
 .card-main-split {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.1fr 0.9fr;
   gap: 10px;
   align-items: center;
 }
@@ -393,32 +438,34 @@
 }
 
 .card-title-fast {
-  font-size: 1.45rem;
+  font-size: 1.6rem;
   font-weight: 900;
   color: #0f172a;
   margin: 0 0 4px;
   font-family: var(--font-display), 'Outfit', sans-serif;
+  letter-spacing: -0.3px;
 }
 
-.badge-75-ball {
+.badge-75-ball-action {
   background: #fef9c3;
   color: #854d0e;
   font-size: 0.6875rem;
   font-weight: 800;
   padding: 3px 8px;
   border-radius: 6px;
+  display: inline-block;
   margin-bottom: 8px;
 }
 
 .stakes-values-txt {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 800;
   color: #0f172a;
   margin-bottom: 2px;
 }
 
 .stakes-limits-sub {
-  font-size: 0.6875rem;
+  font-size: 0.7rem;
   color: #64748b;
   margin-bottom: 12px;
 }
@@ -426,7 +473,7 @@
 .card-micro-stats-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .micro-stat-item {
@@ -435,33 +482,35 @@
   gap: 6px;
 }
 
-.stat-icon-circ.yellow {
-  width: 24px;
-  height: 24px;
+.micro-stat-item .stat-icon-circ {
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: #fef08a;
   color: #854d0e;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.6875rem;
+  font-size: 0.72rem;
 }
 
 .stat-text-meta {
   display: flex;
   flex-direction: column;
+  text-align: left;
 }
 
 .stat-bold-val {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 900;
   color: #0f172a;
   line-height: 1.1;
 }
 
 .stat-sub-lbl {
-  font-size: 0.5875rem;
+  font-size: 0.62rem;
   color: #64748b;
+  font-weight: 600;
 }
 
 .card-right-art {
@@ -473,10 +522,10 @@
 
 .fast-bingo-3d-hero-img {
   width: 100%;
-  max-width: 165px;
+  max-width: 175px;
   height: auto;
   object-fit: contain;
-  border-radius: 12px;
+  border-radius: 14px;
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.08));
   transition: transform 0.2s ease;
 }
@@ -485,123 +534,37 @@
   transform: scale(1.03);
 }
 
-.bingo-star-hero-glow {
-  position: absolute;
-  width: 130px;
-  height: 130px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(250, 204, 21, 0.45) 0%, rgba(254, 240, 138, 0) 70%);
-  filter: blur(10px);
-}
-
-.bingo-3d-ball-showcase {
-  position: relative;
-  width: 140px;
-  height: 130px;
-}
-
-.bingo-ball-3d {
-  position: absolute;
-  border-radius: 50%;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25), inset 0 2px 4px rgba(255, 255, 255, 0.8), inset 0 -4px 8px rgba(0, 0, 0, 0.3);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #ffffff;
-}
-
-.sphere-b12 {
-  width: 58px;
-  height: 58px;
-  top: 8px;
-  left: 8px;
-  background: radial-gradient(circle at 35% 30%, #93c5fd 0%, #3b82f6 50%, #1d4ed8 100%);
-  z-index: 2;
-  animation: floatBall1 3s ease-in-out infinite alternate;
-}
-
-.sphere-n34 {
-  width: 50px;
-  height: 50px;
-  bottom: 8px;
-  left: 42px;
-  background: radial-gradient(circle at 35% 30%, #f472b6 0%, #d946ef 50%, #86198f 100%);
-  z-index: 3;
-  animation: floatBall2 2.6s ease-in-out infinite alternate;
-}
-
-.sphere-o75 {
-  width: 66px;
-  height: 66px;
-  top: 20px;
-  right: 4px;
-  background: radial-gradient(circle at 35% 30%, #fef08a 0%, #facc15 50%, #b45309 100%);
-  z-index: 1;
-  animation: floatBall3 3.4s ease-in-out infinite alternate;
-}
-
-.sphere-letter {
-  font-size: 0.625rem;
-  font-weight: 900;
-  color: #ffffff;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-  line-height: 1;
-}
-
-.sphere-num {
-  font-size: 1.1rem;
-  font-weight: 950;
-  color: #ffffff;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.6);
-  line-height: 1;
-  font-family: var(--font-display), 'Outfit', sans-serif;
-}
-
-@keyframes floatBall1 {
-  0% { transform: translateY(0px) rotate(0deg); }
-  100% { transform: translateY(-6px) rotate(4deg); }
-}
-
-@keyframes floatBall2 {
-  0% { transform: translateY(0px) rotate(0deg); }
-  100% { transform: translateY(5px) rotate(-4deg); }
-}
-
-@keyframes floatBall3 {
-  0% { transform: translateY(0px) scale(1); }
-  100% { transform: translateY(-4px) scale(1.03); }
-}
-
-.btn-play-fast-bingo-cta {
+.btn-obsidian-fast-bingo-cta {
   width: 100%;
-  background: linear-gradient(135deg, #fde047 0%, #facc15 50%, #eab308 100%);
+  background: #0f172a;
   border: none;
-  border-radius: 14px;
-  padding: 13px 20px;
+  border-radius: 9999px;
+  padding: 14px 20px;
   font-size: 0.9375rem;
   font-weight: 900;
-  color: #0f172a;
+  color: #ffffff;
+  letter-spacing: 0.5px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 4px 16px rgba(234, 179, 8, 0.4);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.35);
   transition: all 0.15s ease;
   margin-top: 4px;
 }
 
-.btn-play-fast-bingo-cta:hover {
+.btn-obsidian-fast-bingo-cta:hover {
+  background: #18181b;
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(234, 179, 8, 0.55);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.45);
 }
 
 /* ============================================================
-   BANNER 2: "MORE FUN, MORE WINS!" TREASURE CHEST (75-BALL)
+   5. BANNER 2: "MORE FUN, MORE WINS!" TREASURE CHEST
    ============================================================ */
 .lobby-rewards-chest-card {
-  background: radial-gradient(ellipse at 50% 50%, #fffdf8 0%, #fefce8 60%, #fef08a 100%);
+  background: linear-gradient(90deg, #fffdf8 0%, #fefce8 60%, #fef08a 100%);
   border: 1px solid rgba(234, 179, 8, 0.25);
   border-radius: 20px;
   padding: 12px 14px;
@@ -612,6 +575,12 @@
   gap: 8px;
   position: relative;
   overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.lobby-rewards-chest-card:hover {
+  transform: translateY(-1px);
 }
 
 .chest-balls-cluster-left {
@@ -695,7 +664,7 @@
 }
 
 .chest-title-bold {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   font-weight: 900;
   color: #0f172a;
   margin: 0 0 2px;
@@ -703,8 +672,8 @@
 }
 
 .chest-sub-txt {
-  font-size: 0.6875rem;
-  color: #64748b;
+  font-size: 0.72rem;
+  color: #475569;
   font-weight: 600;
   margin: 0;
 }
@@ -716,15 +685,17 @@
   flex-shrink: 0;
 }
 
-.treasure-chest-svg {
+.treasure-chest-3d-img {
   width: 82px;
-  height: 68px;
+  height: auto;
+  max-height: 72px;
+  object-fit: contain;
   display: block;
-  filter: drop-shadow(0 3px 10px rgba(234, 179, 8, 0.35));
+  filter: drop-shadow(0 4px 12px rgba(234, 179, 8, 0.35));
 }
 
 /* ============================================================
-   "MORE GAMES" 2x2 GRID
+   6. "MORE GAMES" 2x2 GRID
    ============================================================ */
 .fresh-more-games-section {
   display: flex;
@@ -845,7 +816,7 @@
 }
 
 /* ============================================================
-   4-TAB BOTTOM NAVIGATION BAR
+   7. 4-TAB BOTTOM NAVIGATION BAR
    ============================================================ */
 .lobby-fresh-bottom-nav {
   position: fixed;

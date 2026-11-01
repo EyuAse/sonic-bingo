@@ -5,31 +5,43 @@ import { MoreGamesGrid } from '../components/games/MoreGamesGrid.tsx';
 import { TreasureRewardBanner } from '../components/games/TreasureRewardBanner.tsx';
 
 export const GamesPage: React.FC = () => {
-  const { t } = useLanguage();
+  const { lang, t } = useLanguage();
 
   return (
     <div className="page active page-lobby-fresh" id="page-games">
       <main className="lobby-content-scroll-container">
-        {/* 1. "Ready to Play?" Mini Banner */}
+        {/* 1. "Ready to Play?" Dark Obsidian Luxury Hero Banner */}
         <div className="lobby-ready-play-card">
-          <div className="ready-lemon-slice-bg"></div>
+          <div className="ready-gold-swoosh-bg" aria-hidden="true"></div>
+
           <div className="ready-text-group">
-            <h2 className="ready-title-bold">{t('games.readyToPlay')}</h2>
+            <h2 className="ready-title-bold">
+              {lang === 'am' ? 'ለመጫወት ዝግጁ ኖት?' : 'Ready to Play?'}
+            </h2>
             <p className="ready-subtitle-txt">
-              {t('games.startWinning')}
+              {lang === 'am' ? (
+                <>
+                  የእርስዎን እድለኛ ካርቴላ ይምረጡና
+                  <br />
+                  ቀጥታ <strong className="txt-gold-highlight">75-ኳስ ቢንጎ</strong> በብር ይጫወቱ!
+                </>
+              ) : (
+                <>
+                  Pick your lucky Cartela and play
+                  <br />
+                  live <strong className="txt-gold-highlight">75-Ball Bingo</strong> in ETB!
+                </>
+              )}
             </p>
           </div>
 
-          <div className="ready-balls-cluster">
-            <div className="mini-3d-ball ball-y7">
-              <span className="ball-digit">7</span>
-            </div>
-            <div className="mini-3d-ball ball-g3">
-              <span className="ball-digit">3</span>
-            </div>
-            <div className="mini-3d-ball ball-y1">
-              <span className="ball-digit">1</span>
-            </div>
+          <div className="ready-hero-graphic-wrap">
+            <img
+              src="/assets/images/ready-to-play-gift-hero.jpg"
+              alt="Ready to Play 3D Luxury Gift Box, Coins and Lucky Balls"
+              className="ready-hero-gift-img"
+              loading="eager"
+            />
           </div>
         </div>
 
