@@ -1,64 +1,67 @@
 /* ============================================================
-   LOMI BINGO: EXACT LIGHT LEMON WALLET & PROFILE DESIGN
-   Matches exact light-lemon theme in reference mockup
+   SONIC BINGO: 100% EXACT WALLET & PROFILE DESIGN
+   Matches exact target aesthetic (media_1793558819516_d2b69ae2.jpg)
    ============================================================ */
 
 #page-wallet {
   min-height: 100dvh;
-  background: #fbf9ef;
+  background: #f8fafc;
   color: #0f172a;
   padding: 10px 14px 100px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 /* ============================================================
-   PROFILE BANNER CARD
+   1. VIP PROFILE BANNER CARD
+   Obsidian top-left cut, 3D Royal Gold Crown, EA Avatar & Rank
    ============================================================ */
 .fresh-profile-banner-card {
-  background: radial-gradient(ellipse at 85% 40%, #fefce8 0%, #fef08a 60%, #fde047 100%);
-  border: 1px solid rgba(234, 179, 8, 0.35);
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
   border-radius: 20px;
-  padding: 16px 18px;
+  padding: 14px 16px;
   display: flex;
   align-items: center;
   gap: 14px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 18px rgba(234, 179, 8, 0.15);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  min-height: 90px;
 }
 
-.banner-lemon-glow {
+.banner-obsidian-corner-cut {
   position: absolute;
-  top: -20px;
-  right: -20px;
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #ffffff, #facc15);
-  opacity: 0.4;
-  filter: blur(2px);
+  top: 0;
+  left: 0;
+  width: 110px;
+  height: 100%;
+  background: linear-gradient(135deg, #18181b 0%, #09090b 100%);
+  clip-path: polygon(0 0, 100% 0, 58% 100%, 0 100%);
   pointer-events: none;
+  z-index: 1;
 }
 
 .profile-avatar-wrapper {
   position: relative;
   flex-shrink: 0;
+  z-index: 2;
 }
 
 .avatar-ea-circle {
-  width: 54px;
-  height: 54px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
   background: #ffffff;
-  border: 2px solid #ffffff;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-display), 'Outfit', sans-serif;
-  font-size: 1.35rem;
+  font-size: 1.45rem;
   font-weight: 900;
   color: #0f172a;
 }
@@ -72,13 +75,19 @@
   border-radius: 50%;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  color: #64748b;
-  font-size: 0.625rem;
+  color: #475569;
+  font-size: 0.65rem;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  transition: all 0.15s ease;
+}
+
+.btn-avatar-edit-pencil:hover {
+  background: #f8fafc;
+  color: #0f172a;
 }
 
 .profile-details-group {
@@ -86,6 +95,7 @@
   display: flex;
   flex-direction: column;
   text-align: left;
+  z-index: 2;
 }
 
 .profile-name-bold {
@@ -94,352 +104,354 @@
   color: #0f172a;
   margin: 0 0 2px;
   font-family: var(--font-display), 'Outfit', sans-serif;
+  letter-spacing: -0.2px;
 }
 
-.profile-phone-sub {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #475569;
-}
-
-.btn-profile-arrow-circ {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: none;
-  color: #0f172a;
-  font-size: 0.8125rem;
+.profile-handle-rank-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.profile-handle-txt {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.profile-rank-pill {
+  background: #fef3c7;
+  color: #854d0e;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rank-star-icon {
+  color: #eab308;
+  font-size: 0.72rem;
+}
+
+.profile-crown-graphic-right {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.vip-crown-ribbon-img {
+  height: 100%;
+  width: auto;
+  max-width: 140px;
+  object-fit: contain;
+  object-position: right center;
+  filter: drop-shadow(0 2px 8px rgba(234, 179, 8, 0.2));
 }
 
 /* ============================================================
-   BALANCE OVERVIEW SPLIT CARD
+   2. OVERVIEW CARDS STACK
    ============================================================ */
-.fresh-balance-overview-card {
+.wallet-overview-cards-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+/* Total Balance Card */
+.fresh-total-balance-card {
   background: #ffffff;
   border: 1px solid #f1f5f9;
-  border-radius: 20px;
-  padding: 16px;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-}
-
-.balance-overview-col {
+  border-radius: 18px;
+  padding: 14px 18px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
 }
 
-.overview-icon-circ {
-  width: 42px;
-  height: 42px;
+.total-balance-obsidian-squircle {
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
+  background: #0f172a;
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
 }
 
-.overview-icon-circ.yellow {
-  background: #fef9c3;
-  color: #854d0e;
-}
-
-.overview-icon-circ.green {
-  background: #f0fdf4;
-  color: #16a34a;
-}
-
-.overview-col-text {
+.total-balance-meta-group {
   display: flex;
   flex-direction: column;
   text-align: left;
 }
 
-.overview-col-lbl {
-  font-size: 0.6875rem;
-  color: #64748b;
+.total-balance-label {
+  font-size: 0.78rem;
   font-weight: 600;
+  color: #64748b;
   margin-bottom: 2px;
 }
 
-.overview-col-val {
-  font-size: 1.05rem;
+.total-balance-value {
+  font-size: 1.45rem;
   font-weight: 900;
   color: #0f172a;
   font-family: var(--font-display), 'Outfit', sans-serif;
   letter-spacing: -0.3px;
 }
 
-.overview-col-divider {
+/* Coins Loyalty Banner */
+.fresh-coins-loyalty-banner {
+  background: linear-gradient(90deg, #fffdf8 0%, #fefce8 60%, #fffbeb 100%);
+  border: 1px solid rgba(234, 179, 8, 0.25);
+  border-radius: 18px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(234, 179, 8, 0.08);
+}
+
+.coins-banner-left-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stacked-gold-coins-icon {
+  position: relative;
+  width: 34px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stacked-coin {
+  font-size: 1.4rem;
+  position: absolute;
+  filter: drop-shadow(0 2px 4px rgba(234, 179, 8, 0.4));
+}
+
+.stacked-coin.c1 { top: 0; left: 0; z-index: 1; }
+.stacked-coin.c2 { bottom: 0; right: 0; z-index: 2; }
+
+.coins-banner-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.coins-amount-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.coins-count-bold {
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.coins-multiplier-pill {
+  background: #f59e0b;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.coins-rate-sub {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 600;
+  margin: 0;
+}
+
+.coins-banner-divider {
   width: 1px;
-  height: 38px;
-  background: #f1f5f9;
-  margin: 0 10px;
+  height: 30px;
+  background: #e2e8f0;
+  margin: 0 6px;
+}
+
+.btn-coins-redeem-action {
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: #0f172a;
+  cursor: pointer;
+  padding: 4px;
+  transition: all 0.15s ease;
+}
+
+.btn-coins-redeem-action:hover {
+  transform: translateX(2px);
+}
+
+.btn-coins-redeem-action i {
+  color: #64748b;
+  font-size: 0.8125rem;
 }
 
 /* ============================================================
-   QUICK ACTION BUTTONS
+   3. QUICK ACTION ROW (Withdraw & Deposit Now)
    ============================================================ */
 .fresh-wallet-action-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  margin-top: 2px;
 }
 
 .btn-wallet-action-white {
   background: #ffffff;
   border: 1.5px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 13px 16px;
-  font-size: 0.9375rem;
+  border-radius: 16px;
+  padding: 14px 16px;
+  font-size: 0.95rem;
   font-weight: 800;
   color: #0f172a;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .btn-wallet-action-white:hover {
   background: #f8fafc;
   border-color: #cbd5e1;
+  transform: translateY(-1px);
 }
 
-.btn-wallet-action-gold {
-  background: linear-gradient(135deg, #fde047 0%, #facc15 50%, #eab308 100%);
-  border: none;
-  border-radius: 14px;
-  padding: 13px 16px;
-  font-size: 0.9375rem;
-  font-weight: 900;
-  color: #0f172a;
+.btn-wallet-action-obsidian-gold {
+  background: #0f172a;
+  border: 1.5px solid #eab308;
+  border-radius: 16px;
+  padding: 14px 16px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.35);
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(234, 179, 8, 0.35);
   transition: all 0.15s ease;
 }
 
-.btn-wallet-action-gold:hover {
+.btn-wallet-action-obsidian-gold:hover {
+  background: #18181b;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.45);
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(234, 179, 8, 0.5);
 }
 
 /* ============================================================
-   DAILY LEADERBOARD COUNTDOWN CARD
+   4. 3 STANDALONE LUXURY HISTORY CARDS
    ============================================================ */
-.fresh-leaderboard-countdown-card {
-  background: #ffffff;
-  border: 1px solid #f1f5f9;
-  border-radius: 20px;
-  padding: 16px;
+.fresh-wallet-menu-cards-stack {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-}
-
-.leaderboard-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.leaderboard-title-left {
-  display: flex;
-  align-items: center;
   gap: 10px;
-}
-
-.trophy-icon-circ {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: #fef9c3;
-  color: #ca8a04;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-}
-
-.leaderboard-heading-txt {
-  font-size: 1.05rem;
-  font-weight: 900;
-  color: #0f172a;
-  margin: 0;
-  font-family: var(--font-display), 'Outfit', sans-serif;
-}
-
-.btn-view-leaderboard-gold {
-  background: #fefce8;
-  border: 1px solid rgba(234, 179, 8, 0.35);
-  border-radius: 9999px;
-  padding: 5px 12px;
-  font-size: 0.6875rem;
-  font-weight: 800;
-  color: #a16207;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-}
-
-.countdown-blocks-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.time-digit-block {
-  background: #fef9c3;
-  border-radius: 12px;
-  padding: 10px 18px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 68px;
-}
-
-.digit-huge {
-  font-size: 1.75rem;
-  font-weight: 950;
-  color: #eab308;
-  line-height: 1;
-  font-family: var(--font-display), 'Outfit', sans-serif;
-}
-
-.digit-unit-lbl {
-  font-size: 0.625rem;
-  font-weight: 800;
-  color: #854d0e;
   margin-top: 4px;
 }
 
-.time-digit-sep {
-  font-size: 1.5rem;
-  font-weight: 900;
-  color: #0f172a;
-  margin: 0 2px;
-}
-
-/* ============================================================
-   5 LUXURY MENU ROWS CONTAINER
-   ============================================================ */
-.fresh-wallet-menu-container {
+.wallet-luxury-menu-card {
   background: #ffffff;
   border: 1px solid #f1f5f9;
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-  display: flex;
-  flex-direction: column;
-}
-
-.fresh-menu-row-item {
+  border-radius: 18px;
+  padding: 12px 14px;
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px 16px;
-  border-bottom: 1px solid #f8fafc;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.fresh-menu-row-item:last-child {
-  border-bottom: none;
+.wallet-luxury-menu-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
-.fresh-menu-row-item:hover {
-  background: #fefce8;
-}
-
-.menu-row-icon-box {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+.menu-card-squircle-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.15rem;
   color: #ffffff;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
-.menu-row-icon-box.green { background: #22c55e; }
-.menu-row-icon-box.red { background: #f87171; }
-.menu-row-icon-box.gold { background: #facc15; color: #0f172a; }
-.menu-row-icon-box.blue { background: #3b82f6; }
-.menu-row-icon-box.purple { background: #a855f7; }
+.menu-card-squircle-icon.emerald { background: #22c55e; }
+.menu-card-squircle-icon.red { background: #ef4444; }
+.menu-card-squircle-icon.orange { background: #f97316; }
 
-.menu-row-info-text {
+.menu-card-text-group {
   flex: 1;
   display: flex;
   flex-direction: column;
   text-align: left;
 }
 
-.menu-row-title {
-  font-size: 0.9375rem;
+.menu-card-title {
+  font-size: 0.95rem;
   font-weight: 800;
   color: #0f172a;
   margin-bottom: 2px;
 }
 
-.menu-row-sub {
-  font-size: 0.6875rem;
+.menu-card-subtitle {
+  font-size: 0.72rem;
   color: #64748b;
+  font-weight: 500;
 }
 
-.menu-row-action-right {
+.menu-card-action-right {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.menu-counter-badge {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  font-size: 0.6875rem;
-  font-weight: 900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.menu-counter-badge.green {
-  background: #dcfce7;
-  color: #16a34a;
-}
-
-.menu-counter-badge.red {
-  background: #fee2e2;
-  color: #dc2626;
-}
-
-.menu-tag-pill.gold {
-  background: #fef9c3;
-  color: #a16207;
-  font-size: 0.625rem;
-  font-weight: 900;
-  padding: 3px 8px;
-  border-radius: 6px;
+.menu-count-pill-amber {
+  background: #fef3c7;
+  color: #854d0e;
+  font-weight: 800;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  margin-right: 4px;
 }
 
 .menu-chevron {

@@ -280,7 +280,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [stakes, setStakes] = useState<number[]>([10, 20, 50, 100]);
   const [verticalBoardMode, setVerticalBoardMode] = useState<boolean>(false);
 
-  const [registerBonus, setRegisterBonus] = useState<number>(10);
+  const [registerBonus, setRegisterBonus] = useState<number>(20);
   const [referralBonusRate, setReferralBonusRate] = useState<number>(10);
 
   // 50-Player Room Density & Win Rates

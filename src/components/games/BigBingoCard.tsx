@@ -50,7 +50,7 @@ export const BigBingoCard: React.FC = () => {
                 <i className="fa-solid fa-users"></i>
               </div>
               <div className="stat-text-meta">
-                <strong className="stat-bold-val">10 ETB</strong>
+                <strong className="stat-bold-val">20 ETB</strong>
                 <span className="stat-sub-lbl">
                   {lang === 'am' ? 'የመመዝገቢያ ቦነስ' : 'Signup Bonus'}
                 </span>

@@ -1,5 +1,4 @@
 import React from 'react';
-import { useApp } from '../../context/AppContext.tsx';
 import { useLanguage } from '../../context/LanguageContext.tsx';
 import { useAdmin } from '../../context/AdminContext.tsx';
 import { useAuth } from '../../context/AuthContext.tsx';
@@ -11,7 +10,6 @@ interface WalletMenuProps {
 }
 
 export const WalletMenu: React.FC<WalletMenuProps> = ({ onOpenHistory, gamesCount }) => {
-  const { switchPage } = useApp();
   const { t, lang } = useLanguage();
   const { transactions } = useAdmin();
   const { user } = useAuth();
@@ -33,117 +31,93 @@ export const WalletMenu: React.FC<WalletMenuProps> = ({ onOpenHistory, gamesCoun
     return () => { isMounted = false; };
   }, [gamesCount]);
 
-  const myTransactions = (transactions || []).filter(
-    tx => tx.userId === user?.id || (user?.phone && tx.phone === user?.phone)
-  );
-
-  const depositsCount = myTransactions.filter(tx => tx.type === 'deposit').length;
-  const withdrawalsCount = myTransactions.filter(tx => tx.type === 'withdrawal').length;
-  const effectiveGamesCount = gamesCount !== undefined ? gamesCount : (liveGamesCount || 0);
+  const effectiveGamesCount = gamesCount !== undefined ? gamesCount : (liveGamesCount !== null ? liveGamesCount : 1);
 
   return (
-    <div className="fresh-wallet-menu-container">
-      {/* Row 1: Deposit History */}
+    <div className="fresh-wallet-menu-cards-stack">
+      {/* Card 1: Deposit History */}
       <div
-        className="fresh-menu-row-item"
+        className="wallet-luxury-menu-card"
         onClick={() => onOpenHistory?.('deposits')}
+        role="button"
+        tabIndex={0}
+        aria-label="Deposit History"
       >
-        <div className="menu-row-icon-box green">
+        <div className="menu-card-squircle-icon emerald">
           <i className="fa-solid fa-arrow-down"></i>
         </div>
-        <div className="menu-row-info-text">
-          <strong className="menu-row-title">{t('wallet.depositHistory')}</strong>
-          <span className="menu-row-sub">
-            {lang === 'am' ? 'የቴሌብር እና ንግድ ባንክ ተቀማጭዎን ይከታተሉ' : 'Track your Telebirr & CBE deposits'}
+
+        <div className="menu-card-text-group">
+          <strong className="menu-card-title">
+            {t('wallet.depositHistory') || 'Deposit History'}
+          </strong>
+          <span className="menu-card-subtitle">
+            {lang === 'am'
+              ? 'የቴሌብር እና ንግድ ባንክ ተቀማጭዎን ይከታተሉ'
+              : 'Track your Telstair & CBE deposits'}
           </span>
         </div>
-        <div className="menu-row-action-right">
-          {depositsCount > 0 && (
-            <span className="menu-counter-badge green">{depositsCount}</span>
-          )}
+
+        <div className="menu-card-action-right">
           <i className="fa-solid fa-chevron-right menu-chevron"></i>
         </div>
       </div>
 
-      {/* Row 2: Withdrawal History */}
+      {/* Card 2: Withdrawal History */}
       <div
-        className="fresh-menu-row-item"
+        className="wallet-luxury-menu-card"
         onClick={() => onOpenHistory?.('withdrawals')}
+        role="button"
+        tabIndex={0}
+        aria-label="Withdrawal History"
       >
-        <div className="menu-row-icon-box red">
+        <div className="menu-card-squircle-icon red">
           <i className="fa-solid fa-arrow-up-from-bracket"></i>
         </div>
-        <div className="menu-row-info-text">
-          <strong className="menu-row-title">{t('wallet.withdrawalHistory')}</strong>
-          <span className="menu-row-sub">
-            {lang === 'am' ? 'የገንዘብ ወጪዎችዎን እና ክፍያዎችን ይከታተሉ' : 'Track your payouts & cashouts'}
+
+        <div className="menu-card-text-group">
+          <strong className="menu-card-title">
+            {t('wallet.withdrawalHistory') || 'Withdrawal History'}
+          </strong>
+          <span className="menu-card-subtitle">
+            {lang === 'am'
+              ? 'የገንዘብ ወጪዎችዎን እና ክፍያዎችን ይከታተሉ'
+              : 'Track your payouts & cashouts'}
           </span>
         </div>
-        <div className="menu-row-action-right">
-          {withdrawalsCount > 0 && (
-            <span className="menu-counter-badge red">{withdrawalsCount}</span>
-          )}
+
+        <div className="menu-card-action-right">
           <i className="fa-solid fa-chevron-right menu-chevron"></i>
         </div>
       </div>
 
-      {/* Row 3: Game & Bet History */}
+      {/* Card 3: Game & Bet History */}
       <div
-        className="fresh-menu-row-item"
+        className="wallet-luxury-menu-card"
         onClick={() => onOpenHistory?.('bets')}
+        role="button"
+        tabIndex={0}
+        aria-label="Game & Bet History"
       >
-        <div className="menu-row-icon-box amber">
-          <i className="fa-solid fa-dice"></i>
+        <div className="menu-card-squircle-icon orange">
+          <i className="fa-solid fa-gamepad"></i>
         </div>
-        <div className="menu-row-info-text">
-          <strong className="menu-row-title">{t('wallet.betHistory')}</strong>
-          <span className="menu-row-sub">
-            {t('wallet.betHistorySub')}
-          </span>
-        </div>
-        <div className="menu-row-action-right">
-          {effectiveGamesCount > 0 && (
-            <span className="menu-counter-badge amber">{effectiveGamesCount}</span>
-          )}
-          <i className="fa-solid fa-chevron-right menu-chevron"></i>
-        </div>
-      </div>
 
-      {/* Row 4: Affiliate Program */}
-      <div
-        className="fresh-menu-row-item"
-        onClick={() => switchPage('affiliate')}
-      >
-        <div className="menu-row-icon-box gold">
-          <i className="fa-solid fa-users"></i>
-        </div>
-        <div className="menu-row-info-text">
-          <strong className="menu-row-title">{t('wallet.affiliateProgram')}</strong>
-          <span className="menu-row-sub">
-            {lang === 'am' ? 'በእያንዳንዱ 1ኛ ተቀማጭ የ10% ቦነስ ያግኙ' : 'Earn 10% on every 1st deposit'}
+        <div className="menu-card-text-group">
+          <strong className="menu-card-title">
+            {t('wallet.betHistory') || 'Game & Bet History'}
+          </strong>
+          <span className="menu-card-subtitle">
+            {lang === 'am'
+              ? 'የቢንጎ ድሎችን፣ ሽንፈቶችን እና ትርፎችን ይከታተሉ'
+              : 'Track your bingo wins, losses & profits'}
           </span>
         </div>
-        <div className="menu-row-action-right">
-          <span className="menu-tag-pill gold">{t('wallet.bonusTag')}</span>
-          <i className="fa-solid fa-chevron-right menu-chevron"></i>
-        </div>
-      </div>
 
-      {/* Row 4: Help & Support */}
-      <div
-        className="fresh-menu-row-item"
-        onClick={() => switchPage('help')}
-      >
-        <div className="menu-row-icon-box purple">
-          <i className="fa-solid fa-headset"></i>
-        </div>
-        <div className="menu-row-info-text">
-          <strong className="menu-row-title">{t('wallet.helpSupport')}</strong>
-          <span className="menu-row-sub">
-            {lang === 'am' ? 'የ24/7 የቀጥታ የደንበኞች ድጋፍ' : '24/7 Live customer assistance'}
+        <div className="menu-card-action-right">
+          <span className="menu-count-pill-amber">
+            {effectiveGamesCount > 0 ? effectiveGamesCount : 1}
           </span>
-        </div>
-        <div className="menu-row-action-right">
           <i className="fa-solid fa-chevron-right menu-chevron"></i>
         </div>
       </div>

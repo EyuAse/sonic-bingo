@@ -28,23 +28,31 @@ export const NewPlayerWelcomeModal: React.FC<NewPlayerWelcomeModalProps> = ({
     switchPage('games');
   };
 
-  const displayName = user.fullName || 'Lomi Player';
+  // Sanitize player name to prevent font fallback / broken glyphs [?]
+  const rawName = user.fullName || (user.telegramUsername ? `@${user.telegramUsername}` : 'Sonic Player');
+  const cleanDisplayName = rawName
+    .replace(/[\u0000-\u001F\u007F-\u009F\uFFFD\uFFFE\uFFFF]/g, '')
+    .trim() || 'Sonic Player';
+
   const displayUsername = user.telegramUsername ? `@${user.telegramUsername}` : 'Verified Player';
+  const effectiveBonus = bonusAmount > 0 ? bonusAmount : 20;
 
   return (
     <div className="otp-modal-overlay">
       <div className="otp-modal-backdrop" onClick={onClose}></div>
       <div
-        className="otp-modal-card hk-welcome-card"
+        className="otp-modal-card sonic-welcome-modal-card"
         style={{
           maxWidth: '390px',
-          background: 'linear-gradient(180deg, #1e1b4b 0%, #0f172a 100%)',
-          color: '#ffffff',
+          width: '92%',
+          background: '#ffffff',
+          color: '#0f172a',
           borderRadius: '28px',
-          padding: '28px 20px 22px 20px',
-          border: '1.5px solid rgba(250, 204, 21, 0.4)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 25px rgba(234, 179, 8, 0.25)',
-          textAlign: 'center'
+          padding: '28px 22px 24px',
+          border: '1px solid #f1f5f9',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.2), 0 0 25px rgba(234, 179, 8, 0.15)',
+          textAlign: 'center',
+          position: 'relative'
         }}
       >
         {/* Close Button */}
@@ -53,46 +61,75 @@ export const NewPlayerWelcomeModal: React.FC<NewPlayerWelcomeModalProps> = ({
           className="btn-otp-modal-close"
           onClick={onClose}
           title="Close"
-          style={{ background: 'rgba(255, 255, 255, 0.1)', color: '#cbd5e1' }}
+          style={{
+            position: 'absolute',
+            top: '14px',
+            right: '14px',
+            width: '32px',
+            height: '32px',
+            borderRadius: '50%',
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            color: '#64748b',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+          aria-label="Close Welcome Modal"
         >
           <i className="fa-solid fa-xmark"></i>
         </button>
 
-        {/* 3D Crowned Lemon Transparent Badge */}
-        <div style={{ position: 'relative', display: 'inline-block', marginBottom: '14px' }}>
+        {/* Royal 3D Crown Emblem with Golden Halo */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '14px' }}>
           <div
             style={{
-              width: '90px',
-              height: '90px',
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, #fffdf0 0%, #fef9c3 60%, #fef08a 100%)',
+              border: '2px solid #facc15',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              margin: '0 auto',
-              filter: 'drop-shadow(0 10px 25px rgba(250, 204, 21, 0.5))'
+              boxShadow: '0 6px 18px rgba(234, 179, 8, 0.35)',
+              fontSize: '2.5rem',
+              lineHeight: 1
             }}
           >
-            <img
-              src="/assets/images/lomi_crowned_lemon_badge.png"
-              alt="Lomi Crowned Lemon"
-              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-            />
+            👑
           </div>
+          <span
+            style={{
+              fontSize: '11px',
+              fontWeight: 900,
+              color: '#ca8a04',
+              letterSpacing: '1.5px',
+              textTransform: 'uppercase',
+              marginTop: '6px',
+              fontFamily: 'Outfit, sans-serif'
+            }}
+          >
+            SONIC BINGO
+          </span>
         </div>
 
         {/* Level 1 Badge */}
         <div
           style={{
             display: 'inline-block',
-            background: 'rgba(250, 204, 21, 0.15)',
-            border: '1px solid #facc15',
+            background: '#fef9c3',
+            border: '1px solid #fde047',
             borderRadius: '999px',
             padding: '3px 12px',
             fontSize: '11px',
-            fontWeight: '800',
-            color: '#fde047',
-            letterSpacing: '1px',
+            fontWeight: 800,
+            color: '#854d0e',
+            letterSpacing: '0.8px',
             textTransform: 'uppercase',
-            marginBottom: '8px'
+            marginBottom: '10px'
           }}
         >
           ⭐ LVL 1 • {lang === 'am' ? 'ጀማሪ ተጫዋች' : 'ROOKIE BINGO MASTER'}
@@ -102,70 +139,77 @@ export const NewPlayerWelcomeModal: React.FC<NewPlayerWelcomeModalProps> = ({
         <h3
           style={{
             fontSize: '22px',
-            fontWeight: '900',
+            fontWeight: 900,
             margin: '0 0 4px 0',
             letterSpacing: '-0.3px',
-            color: '#ffffff'
+            color: '#0f172a',
+            fontFamily: 'Outfit, sans-serif'
           }}
         >
-          {lang === 'am' ? `እንኳን ደህና መጡ፣ ${displayName}!` : `Welcome, ${displayName}!`}
+          {lang === 'am' ? `እንኳን ደህና መጡ፣ ${cleanDisplayName}!` : `Welcome, ${cleanDisplayName}!`}
         </h3>
-        <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 16px 0' }}>
-          {displayUsername} • <span style={{ color: '#22c55e' }}>🟢 {lang === 'am' ? 'መለያዎ ተረጋግጧል' : 'Account Verified'}</span>
+
+        <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px 0', fontWeight: 500 }}>
+          {displayUsername} •{' '}
+          <span style={{ color: '#16a34a', fontWeight: 700 }}>
+            🟢 {lang === 'am' ? 'መለያዎ ተረጋግጧል' : 'Account Verified'}
+          </span>
         </p>
 
-        {/* Hamster Kombat Style +10 ETB Reward Box */}
+        {/* +20.00 ETB Welcome Bonus Reward Box */}
         <div
           style={{
-            background: 'linear-gradient(135deg, rgba(250, 204, 21, 0.2) 0%, rgba(202, 138, 4, 0.25) 100%)',
+            background: 'linear-gradient(135deg, #fffdf8 0%, #fefce8 60%, #fef08a 100%)',
             border: '1.5px solid #eab308',
             borderRadius: '20px',
             padding: '16px 14px',
             marginBottom: '18px',
-            backdropFilter: 'blur(8px)',
-            boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)'
+            boxShadow: '0 4px 16px rgba(234, 179, 8, 0.15)'
           }}
         >
           <div
             style={{
               fontSize: '11px',
-              fontWeight: '800',
+              fontWeight: 800,
               textTransform: 'uppercase',
               letterSpacing: '1px',
-              color: '#fef08a'
+              color: '#854d0e'
             }}
           >
             🎁 {lang === 'am' ? 'የመጀመሪያ መመዝገቢያ ቦነስ' : 'FREE SIGN UP BONUS'}
           </div>
+
           <div
             style={{
               fontSize: '34px',
-              fontWeight: '900',
-              color: '#facc15',
+              fontWeight: 950,
+              color: '#0f172a',
               margin: '4px 0',
               letterSpacing: '-0.5px',
-              textShadow: '0 2px 10px rgba(250, 204, 21, 0.5)'
+              fontFamily: 'Outfit, sans-serif'
             }}
           >
-            +{bonusAmount}.00 <span style={{ fontSize: '18px', fontWeight: '700' }}>ETB</span>
+            +{effectiveBonus}.00{' '}
+            <span style={{ fontSize: '18px', fontWeight: 800, color: '#eab308' }}>ETB</span>
           </div>
-          <div style={{ fontSize: '12px', color: '#fde68a', fontWeight: '600' }}>
+
+          <div style={{ fontSize: '12px', color: '#475569', fontWeight: 600 }}>
             {lang === 'am'
               ? 'ወደ ቦርሳዎ ገቢ ተደርጓል • አሁኑኑ መጫወት ይችላሉ!'
               : 'Added to your wallet • Ready for live games!'}
           </div>
         </div>
 
-        {/* Big CTA Action Button */}
+        {/* Big CTA Action Button (Pitch-Black Obsidian) */}
         <button
           type="button"
           onClick={handleStartPlaying}
           style={{
             width: '100%',
-            background: 'linear-gradient(135deg, #facc15 0%, #eab308 50%, #ca8a04 100%)',
-            color: '#0f172a',
-            fontSize: '16px',
-            fontWeight: '900',
+            background: '#0f172a',
+            color: '#ffffff',
+            fontSize: '15px',
+            fontWeight: 900,
             border: 'none',
             borderRadius: '999px',
             padding: '14px',
@@ -174,7 +218,7 @@ export const NewPlayerWelcomeModal: React.FC<NewPlayerWelcomeModalProps> = ({
             alignItems: 'center',
             justifyContent: 'center',
             gap: '8px',
-            boxShadow: '0 6px 20px rgba(234, 179, 8, 0.45)',
+            boxShadow: '0 6px 20px rgba(15, 23, 42, 0.35)',
             textTransform: 'uppercase',
             letterSpacing: '0.5px',
             transition: 'all 0.15s ease'
