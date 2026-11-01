@@ -164,7 +164,7 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
 
   return (
     <div className="sonic-desk-container" style={{ maxWidth: '1240px', margin: '0 auto' }}>
-      
+
       {/* ====================================================================
           1. FINTECH HERO IDENTITY CARD
           Separates Agent Code from Phone Number, with Glowing Badges & Live Float
@@ -181,7 +181,7 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px' }}>
-          
+
           {/* Left: Agent Profile Info */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             <div
@@ -378,7 +378,7 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
           2. TWO-COLUMN GRID: ONBOARDING QR & SECURITY PIN TERMINAL
           ==================================================================== */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-        
+
         {/* CARD A: AGENCY REFERRAL & ONBOARDING QR */}
         <div
           className="sonic-white-card"
@@ -786,7 +786,7 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
 
         <form onSubmit={handleSaveAccounts}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-            
+
             {/* 1. Telebirr Account Card */}
             <div
               style={{
@@ -1225,7 +1225,7 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px' }}>
-          
+
           {/* Rules List */}
           <div style={{ flex: 1, minWidth: '300px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>

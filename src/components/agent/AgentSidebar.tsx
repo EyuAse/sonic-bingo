@@ -31,7 +31,6 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
   setIsCollapsed,
   isMobileOpen,
   closeMobile,
-  agentProfile,
   pendingRequestsCount = 0,
   pendingWithdrawalsCount = 0,
   onLogout
@@ -44,7 +43,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
     { id: 'overview', label: 'Dashboard', icon: 'fa-solid fa-table-cells-large' },
     { id: 'deposit_requests', label: 'Deposit Desk & History', icon: 'fa-solid fa-inbox' },
     { id: 'withdrawal_requests', label: 'Withdrawal Desk & History', icon: 'fa-solid fa-money-bill-transfer' },
-    { id: 'players', label: 'My Players', icon: 'fa-solid fa-users' },
+    { id: 'players', label: 'My Players', icon: 'fa-solid fa-user-group' },
     { id: 'cash_in', label: 'Direct Cash-In', icon: 'fa-solid fa-bolt' },
     { id: 'cash_out', label: 'Commission Desk', icon: 'fa-solid fa-coins' },
     { id: 'recharge', label: 'Recharge Float', icon: 'fa-solid fa-wallet' },
@@ -65,7 +64,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
         onClick={closeMobile}
       />
 
-      {/* Main Collapsible Sidebar (Dark Luxury Theme matching Reference UI) */}
+      {/* Main Collapsible Sidebar (Dark Luxury Obsidian Theme 100% Reference Clone) */}
       <aside
         className={`sonic-agent-sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}
         style={{
@@ -78,26 +77,47 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
           zIndex: 40,
           background: '#0a0d14',
           borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-          boxShadow: '4px 0 24px rgba(0, 0, 0, 0.4)'
+          boxShadow: '4px 0 24px rgba(0, 0, 0, 0.45)',
+          display: 'flex',
+          flexDirection: 'column'
         }}
       >
-        {/* Brand Top Header */}
+        {/* Brand Top Header: Centered 3D Gold Crown with Stacked Sonic Bingo */}
         <div
           className="sonic-sidebar-brand-box"
           style={{
-            padding: '24px 20px',
+            padding: isCollapsed ? '20px 8px' : '22px 18px',
             borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: isCollapsed ? 'center' : 'space-between'
+            justifyContent: isCollapsed ? 'center' : 'space-between',
+            position: 'relative'
           }}
         >
-          <div className="sonic-brand-row" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '28px', lineHeight: 1, filter: 'drop-shadow(0 2px 8px rgba(245, 158, 11, 0.4))' }}>
+          <div
+            className="sonic-brand-row"
+            style={{
+              display: 'flex',
+              flexDirection: isCollapsed ? 'row' : 'column',
+              alignItems: isCollapsed ? 'center' : 'center',
+              width: isCollapsed ? 'auto' : '100%',
+              textAlign: 'center'
+            }}
+          >
+            {/* Luminous 3D Crown */}
+            <span
+              style={{
+                fontSize: '28px',
+                lineHeight: 1,
+                filter: 'drop-shadow(0 2px 10px rgba(245, 158, 11, 0.6))',
+                marginBottom: isCollapsed ? 0 : '4px'
+              }}
+            >
               👑
             </span>
+
             {!isCollapsed && (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <span
                   style={{
                     fontSize: '20px',
@@ -107,26 +127,46 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
                     lineHeight: 1.1
                   }}
                 >
-                  Sonic <span style={{ color: '#f59e0b' }}>Bingo</span>
+                  Sonic
+                </span>
+                <span
+                  style={{
+                    fontSize: '20px',
+                    fontWeight: 900,
+                    color: '#f59e0b',
+                    letterSpacing: '-0.3px',
+                    lineHeight: 1.1
+                  }}
+                >
+                  Bingo
                 </span>
               </div>
             )}
           </div>
 
           {/* Desktop Toggle Button */}
-          <button
-            type="button"
-            className="sonic-sidebar-toggle-btn"
-            onClick={() => setIsCollapsed(prev => !prev)}
-            title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-            style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              color: '#94a3b8'
-            }}
-          >
-            <i className={`fa-solid ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`}></i>
-          </button>
+          {!isCollapsed && (
+            <button
+              type="button"
+              className="sonic-sidebar-toggle-btn"
+              onClick={() => setIsCollapsed(prev => !prev)}
+              title="Collapse Sidebar"
+              style={{
+                position: 'absolute',
+                right: '12px',
+                top: '16px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: '#94a3b8',
+                borderRadius: '6px',
+                padding: '4px 6px',
+                cursor: 'pointer',
+                fontSize: '11px'
+              }}
+            >
+              <i className="fa-solid fa-chevron-left"></i>
+            </button>
+          )}
         </div>
 
         {/* Navigation List */}
@@ -142,10 +182,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
           }}
         >
           {navItems.map((item, index) => {
-            // Determine active state: if activeTab === item.id (deduplicating profile sub-items)
-            const isActive =
-              item.id === activeTab &&
-              (item.id !== 'profile' || item.label === 'Referrals');
+            const isActive = item.id === activeTab;
 
             return (
               <button
@@ -160,7 +197,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
                   padding: '12px 16px',
                   borderRadius: '12px',
                   border: 'none',
-                  background: isActive ? '#f59e0b' : 'transparent',
+                  background: isActive ? 'linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)' : 'transparent',
                   color: isActive ? '#000000' : '#94a3b8',
                   fontWeight: isActive ? 900 : 600,
                   fontSize: '13px',
@@ -168,8 +205,20 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
                   transition: 'all 0.15s ease',
                   width: '100%',
                   textAlign: 'left',
-                  boxShadow: isActive ? '0 4px 14px rgba(245, 158, 11, 0.35)' : 'none',
+                  boxShadow: isActive ? '0 4px 16px rgba(245, 158, 11, 0.4)' : 'none',
                   position: 'relative'
+                }}
+                onMouseEnter={e => {
+                  if (!isActive) {
+                    e.currentTarget.style.color = '#ffffff';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!isActive) {
+                    e.currentTarget.style.color = '#94a3b8';
+                    e.currentTarget.style.background = 'transparent';
+                  }
                 }}
               >
                 <i
@@ -181,9 +230,10 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
                     color: isActive ? '#000000' : '#94a3b8'
                   }}
                 ></i>
+
                 {!isCollapsed && (
                   <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
-                    <span>{item.label}</span>
+                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
                     {item.id === 'deposit_requests' && pendingRequestsCount > 0 && (
                       <span
                         style={{
@@ -216,6 +266,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
                     )}
                   </span>
                 )}
+
                 {isCollapsed && item.id === 'deposit_requests' && pendingRequestsCount > 0 && (
                   <span
                     style={{
@@ -249,11 +300,11 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
 
         {/* Bottom Card: "Grow Together with Sonic" 3D Golden Card */}
         {!isCollapsed && (
-          <div style={{ padding: '0 12px 16px 12px' }}>
+          <div style={{ padding: '0 12px 14px 12px' }}>
             <div
               style={{
                 background: 'linear-gradient(180deg, #131722 0%, #0b0e14 100%)',
-                border: '1px solid rgba(245, 158, 11, 0.3)',
+                border: '1px solid rgba(245, 158, 11, 0.35)',
                 borderRadius: '16px',
                 padding: '16px',
                 position: 'relative',
@@ -285,7 +336,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
                   with Sonic
                 </div>
 
-                {/* 3D Bingo Ball Graphic */}
+                {/* 3D Bingo Ball Graphic with Glowing Halo */}
                 <div style={{ margin: '12px auto 6px auto', display: 'flex', justifyContent: 'center' }}>
                   <div
                     style={{
@@ -293,11 +344,11 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
                       height: '54px',
                       borderRadius: '50%',
                       background: 'radial-gradient(circle at 35% 35%, #fef08a 0%, #f59e0b 50%, #b45309 100%)',
-                      boxShadow: '0 6px 16px rgba(245, 158, 11, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.6)',
+                      boxShadow: '0 6px 18px rgba(245, 158, 11, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.7)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      border: '2px solid rgba(255, 255, 255, 0.3)'
+                      border: '2px solid rgba(255, 255, 255, 0.4)'
                     }}
                   >
                     <span style={{ fontSize: '22px', fontWeight: 900, color: '#000000', fontFamily: 'sans-serif' }}>
@@ -307,7 +358,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
                 </div>
 
                 {/* Gold Swirl Ribbon Arc */}
-                <div style={{ height: '4px', background: 'linear-gradient(90deg, transparent, #f59e0b, transparent)', borderRadius: '2px', marginTop: '8px' }} />
+                <div style={{ height: '3px', background: 'linear-gradient(90deg, transparent, #f59e0b, transparent)', borderRadius: '2px', marginTop: '8px' }} />
               </div>
             </div>
           </div>
