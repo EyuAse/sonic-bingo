@@ -402,7 +402,7 @@ router.get('/recharges', requireAgent, async (req: AuthenticatedRequest, res: Re
     }
 
     if (timeframe === 'today') {
-      sql += ` AND created_at >= (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date`;
+      sql += ` AND (created_at AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date`;
     } else if (timeframe === 'week') {
       sql += ` AND created_at >= NOW() - INTERVAL '7 days'`;
     } else if (timeframe === 'month') {
@@ -478,12 +478,16 @@ router.get('/performance', requireAgent, async (req: AuthenticatedRequest, res: 
         WHERE u.agent_id = $1
       `, [agentId]),
       query(`
+        WITH combined_deposits AS (
+          SELECT amount, created_at FROM agent_deposit_requests WHERE agent_id = $1 AND status = 'approved'
+          UNION ALL
+          SELECT amount, created_at FROM agent_player_deposits WHERE agent_id = $1
+        )
         SELECT 
           COALESCE(SUM(amount), 0) as total_deposited_all_time,
-          COALESCE(SUM(amount) FILTER (WHERE created_at >= CURRENT_DATE), 0) as today_deposited,
-          COALESCE(SUM(amount) FILTER (WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE)), 0) as month_deposited
-        FROM agent_player_deposits
-        WHERE agent_id = $1
+          COALESCE(SUM(amount) FILTER (WHERE (created_at AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date), 0) as today_deposited,
+          COALESCE(SUM(amount) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days'), 0) as month_deposited
+        FROM combined_deposits
       `, [agentId]),
       query(`
         SELECT apd.*, u.full_name as player_name, u.phone as player_phone
@@ -511,8 +515,9 @@ router.get('/performance', requireAgent, async (req: AuthenticatedRequest, res: 
       query(`
         SELECT 
           COALESCE(SUM(commission_earned), 0) as total_comm_earned,
-          COALESCE(SUM(commission_earned) FILTER (WHERE source_type = 'deposit'), 0) as deposit_comm_earned,
-          COALESCE(SUM(commission_earned) FILTER (WHERE source_type = 'cashout_voucher'), 0) as voucher_comm_earned
+          COALESCE(SUM(commission_earned) FILTER (WHERE source_type IN ('deposit', 'cash_in')), 0) as deposit_comm_earned,
+          COALESCE(SUM(commission_earned) FILTER (WHERE source_type = 'cashout_voucher'), 0) as voucher_comm_earned,
+          COALESCE(SUM(commission_earned) FILTER (WHERE source_type = 'withdrawal'), 0) as withdrawal_comm_earned
         FROM agent_commissions
         WHERE agent_id = $1
       `, [agentId])
@@ -1266,7 +1271,7 @@ router.get('/deposit-requests', requireAgent, async (req: AuthenticatedRequest, 
     }
 
     if (timeframe === 'today') {
-      sql += ` AND req.created_at >= (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date`;
+      sql += ` AND (req.created_at AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date`;
     } else if (timeframe === 'week') {
       sql += ` AND req.created_at >= NOW() - INTERVAL '7 days'`;
     } else if (timeframe === 'month') {
@@ -1285,8 +1290,8 @@ router.get('/deposit-requests', requireAgent, async (req: AuthenticatedRequest, 
            SELECT amount, created_at FROM agent_player_deposits WHERE agent_id = $1
          )
          SELECT
-           COALESCE(SUM(amount) FILTER (WHERE created_at >= (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date), 0) as today_amount,
-           COUNT(*) FILTER (WHERE created_at >= (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date) as today_count,
+           COALESCE(SUM(amount) FILTER (WHERE (created_at AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date), 0) as today_amount,
+           COUNT(*) FILTER (WHERE (created_at AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date) as today_count,
            COALESCE(SUM(amount) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days'), 0) as week_amount,
            COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days') as week_count,
            COALESCE(SUM(amount) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days'), 0) as month_amount,
@@ -1670,7 +1675,7 @@ router.get('/withdrawal-requests', requireAgent, async (req: AuthenticatedReques
     const params: any[] = [agentId];
 
     if (timeframe === 'today') {
-      sql += ` AND (COALESCE(req.resolved_at, req.created_at) AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date`;
+      sql += ` AND (COALESCE(req.resolved_at, req.created_at) AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date`;
     } else if (timeframe === 'week') {
       sql += ` AND COALESCE(req.resolved_at, req.created_at) >= NOW() - INTERVAL '7 days'`;
     } else if (timeframe === 'month') {
@@ -1683,9 +1688,9 @@ router.get('/withdrawal-requests', requireAgent, async (req: AuthenticatedReques
       query(sql, params),
       query(
         `SELECT
-           COALESCE(SUM(amount) FILTER (WHERE status IN ('approved', 'completed') AND (COALESCE(resolved_at, created_at) AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date), 0) as today_amount,
-           COUNT(*) FILTER (WHERE status IN ('approved', 'completed') AND (COALESCE(resolved_at, created_at) AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date) as today_count,
-           COALESCE(SUM(agent_commission_earned) FILTER (WHERE status IN ('approved', 'completed') AND (COALESCE(resolved_at, created_at) AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date), 0) as today_commission,
+           COALESCE(SUM(amount) FILTER (WHERE status IN ('approved', 'completed') AND (COALESCE(resolved_at, created_at) AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date), 0) as today_amount,
+           COUNT(*) FILTER (WHERE status IN ('approved', 'completed') AND (COALESCE(resolved_at, created_at) AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date) as today_count,
+           COALESCE(SUM(agent_commission_earned) FILTER (WHERE status IN ('approved', 'completed') AND (COALESCE(resolved_at, created_at) AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date), 0) as today_commission,
 
            COALESCE(SUM(amount) FILTER (WHERE status IN ('approved', 'completed') AND COALESCE(resolved_at, created_at) >= NOW() - INTERVAL '7 days'), 0) as week_amount,
            COUNT(*) FILTER (WHERE status IN ('approved', 'completed') AND COALESCE(resolved_at, created_at) >= NOW() - INTERVAL '7 days') as week_count,
