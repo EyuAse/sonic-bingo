@@ -35,7 +35,7 @@ export class TelegramBotService {
   }
 
   /**
-   * Normalizes channel handles or full URLs (e.g. 'https://t.me/BRILV' -> '@BRILV')
+   * Normalizes channel handles or full URLs (e.g. 'https://t.me/SonicGameEthiopia' -> '@SonicGameEthiopia')
    */
   public normalizeChannelIdentifier(input?: string): string {
     if (!input) return '';
@@ -108,7 +108,7 @@ export class TelegramBotService {
       if (process.env.TELEGRAM_WEBAPP_URL) webAppUrl = process.env.TELEGRAM_WEBAPP_URL;
     }
 
-    const normalizedChannel = this.normalizeChannelIdentifier(channelId || '@BRILV');
+    const normalizedChannel = this.normalizeChannelIdentifier(channelId || '@SonicGameEthiopia');
 
     this.cachedConfig = {
       token: token.trim(),
@@ -420,7 +420,7 @@ export class TelegramBotService {
     message: string;
   }> {
     const cfg = await this.getConfig();
-    const channel = (targetChat || cfg.channelId || '@BRILV').trim();
+    const channel = (targetChat || cfg.channelId || '@SonicGameEthiopia').trim();
 
     if (!channel) {
       return { success: false, channel: '', deletedCount: 0, scannedCount: 0, message: 'No target channel specified' };
@@ -485,7 +485,7 @@ export class TelegramBotService {
     description: string;
   }> {
     const cfg = await this.getConfig();
-    const channel = this.normalizeChannelIdentifier(channelInput || cfg.channelId || '@BRILV');
+    const channel = this.normalizeChannelIdentifier(channelInput || cfg.channelId || '@SonicGameEthiopia');
     if (!channel) {
       return { ok: false, channel: '', canPost: false, isAdministrator: false, description: 'No channel configured' };
     }
@@ -609,7 +609,7 @@ export class TelegramBotService {
 
     // 1. Single Channel or Group Broadcast
     if (opts.targetType === 'channel' || opts.targetType === 'group') {
-      const rawTarget = opts.targetId || cfg.channelId || '@BRILV';
+      const rawTarget = opts.targetId || cfg.channelId || '@SonicGameEthiopia';
       const targetChat = this.normalizeChannelIdentifier(rawTarget);
       if (!targetChat) {
         return { success: false, totalRecipients: 0, sentCount: 0, failedCount: 0, message: 'Target channel or group username/ID is missing' };
@@ -622,7 +622,7 @@ export class TelegramBotService {
           totalRecipients: 0,
           sentCount: 0,
           failedCount: 1,
-          message: `Cannot post to '${targetChat}'. That is an individual Telegram user ID, not a Channel. Telegram Channel usernames start with '@' (e.g. @BRILV) or channel chat IDs start with -100 (e.g. -100xxxxxxx).`
+          message: `Cannot post to '${targetChat}'. That is an individual Telegram user ID, not a Channel. Telegram Channel usernames start with '@' (e.g. @SonicGameEthiopia) or channel chat IDs start with -100 (e.g. -100xxxxxxx).`
         };
       }
 
@@ -664,7 +664,7 @@ export class TelegramBotService {
         } else if (desc.includes("can't send messages to the bot")) {
           friendlyError = `A bot cannot post messages to itself. Please specify a Telegram Channel (e.g. @YourChannel) where @${botUser} is an Administrator, or select 'All Players (Direct)'.`;
         } else if (desc.includes('bot was blocked by the user') || desc.includes("can't initiate conversation")) {
-          friendlyError = `Failed to post to '${targetChat}': The target identifier belongs to an individual user who blocked the bot. Telegram Channels start with @ (e.g. @BRILV) or -100.`;
+          friendlyError = `Failed to post to '${targetChat}': The target identifier belongs to an individual user who blocked the bot. Telegram Channels start with @ (e.g. @SonicGameEthiopia) or -100.`;
         }
       }
 
@@ -907,7 +907,7 @@ export class TelegramBotService {
     // Execute concurrent channel cross-post if requested
     let channelCrossPostResult: any = null;
     if (opts.crossPostChannel) {
-      const channelChat = this.normalizeChannelIdentifier(cfg.channelId || '@BRILV');
+      const channelChat = this.normalizeChannelIdentifier(cfg.channelId || '@SonicGameEthiopia');
       try {
         let chanRes;
         const channelKeyboard: any[][] = [];
@@ -1084,7 +1084,7 @@ export class TelegramBotService {
           `ስርዓታችንን ለማሻሻል እና የተሻለ አገልግሎት ለመስጠት ጨዋታው ለጥቂት ሰዓታት በጊዜያዊ ጥገና ላይ ይቆያል።\n\n` +
           `🔒 <b>የእርስዎ ቀሪ ሂሳብ እና ገንዘብ 100% ደህንነቱ የተጠበቀ ነው!</b>\n` +
           `በቅርቡ በታላቅ ማሻሻያ እንመለሳለን።\n\n` +
-          `📢 <i>ዝርዝር መረጃ ለማግኘት ቻናላችንን ይከታተሉ: @BRILV</i>\n\n` +
+          `📢 <i>ዝርዝር መረጃ ለማግኘት ቻናላችንን ይከታተሉ: @SonicGameEthiopia</i>\n\n` +
           `────────────────\n` +
           `🛠️ <b>Sonic Bingo is under scheduled maintenance.</b>\n` +
           `All player wallet balances are 100% safe. We will be back online shortly!`;
@@ -1126,7 +1126,7 @@ Tap the button below to launch the game and start winning! 👇`;
         console.warn('Could not read custom welcome greeting:', e);
       }
 
-      const channelLink = cfg.channelId ? `https://t.me/${cfg.channelId.replace('@', '')}` : 'https://t.me/BRILV';
+      const channelLink = cfg.channelId ? `https://t.me/${cfg.channelId.replace('@', '')}` : 'https://t.me/SonicGameEthiopia';
 
       const inlineKeyboard = [
         [{ text: '🎮 Play Bingo Now (10 ETB Gift)', web_app: { url: playAppUrl } }],
