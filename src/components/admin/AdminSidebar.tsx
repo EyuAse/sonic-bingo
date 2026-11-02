@@ -52,6 +52,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   closeMobileSidebar
 }) => {
   const {
+    isSidebarCollapsed,
+    toggleSidebar,
     logoutAdmin,
     transactions,
     users,
@@ -98,9 +100,28 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   ];
 
   return (
-    <aside className="enqu-sidebar">
-      {/* Exact Brand Logo matching Enqu Game Admin */}
-      <div className="logo">Sonic Bingo</div>
+    <aside className={`enqu-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
+      {/* Header Row: Logo & ChatGPT Collapse Toggle Button */}
+      <div className={`sidebar-header-row ${isSidebarCollapsed ? 'collapsed' : ''}`}>
+        {!isSidebarCollapsed ? (
+          <div className="logo">Sonic Bingo</div>
+        ) : (
+          <div className="logo-compact" title="Sonic Bingo">
+            SB
+          </div>
+        )}
+        <button
+          type="button"
+          className="btn-chatgpt-toggle"
+          onClick={toggleSidebar}
+          title={isSidebarCollapsed ? 'Open sidebar' : 'Close sidebar'}
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <line x1="9" y1="3" x2="9" y2="21" />
+          </svg>
+        </button>
+      </div>
 
       {/* Main Navigation List */}
       <nav className="enqu-nav">
@@ -111,6 +132,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               key={item.id}
               className={isActive ? 'on' : ''}
               onClick={() => handleSelectTab(item.id)}
+              title={isSidebarCollapsed ? item.label : undefined}
             >
               <svg viewBox="0 0 24 24">
                 <path d={item.path} />
@@ -125,16 +147,20 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 </span>
               )}
               {item.s && <span className="s">{item.s}</span>}
+              {isSidebarCollapsed && item.urgentBadge && (
+                <span className="collapsed-urgent-dot" />
+              )}
             </a>
           );
         })}
       </nav>
 
-      {/* Exact Footer Actions matching Enqu Game Admin */}
+      {/* Exact Footer Actions */}
       <div className="foot nav">
         <nav>
           <a
             onClick={() => showToast('⚙️ System Settings & Security')}
+            title={isSidebarCollapsed ? 'Settings' : undefined}
           >
             <svg viewBox="0 0 24 24">
               <path d={IC.set} />
@@ -146,6 +172,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               logoutAdmin();
               showToast('👋 Logged out from Admin Portal');
             }}
+            title={isSidebarCollapsed ? 'Log out' : undefined}
           >
             <svg viewBox="0 0 24 24">
               <path d={IC.out} />

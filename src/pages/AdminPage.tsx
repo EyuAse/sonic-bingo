@@ -22,7 +22,7 @@ import { OfficialAccountsDesk } from '../components/admin/OfficialAccountsDesk.t
 import '../styles/admin.css';
 
 export const AdminPage: React.FC = () => {
-  const { isAuthenticated, isSidebarCollapsed } = useAdmin();
+  const { isAuthenticated, isSidebarCollapsed, toggleSidebar } = useAdmin();
   const { showToast } = useApp();
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -33,7 +33,7 @@ export const AdminPage: React.FC = () => {
   }
 
   return (
-    <div className="admin-layout-shell">
+    <div className={`admin-layout-shell ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       {/* 1. Modern Collapsible Sidebar */}
       <AdminSidebar
         activeTab={activeTab}
@@ -47,6 +47,20 @@ export const AdminPage: React.FC = () => {
         {/* Top Header Bar matching Reference UI */}
         <header className="admin-viewport-header-light">
           <div className="viewport-header-left-light">
+            {isSidebarCollapsed && (
+              <button
+                type="button"
+                className="btn-chatgpt-toggle"
+                onClick={toggleSidebar}
+                title="Open sidebar"
+                style={{ marginRight: '6px' }}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <line x1="9" y1="3" x2="9" y2="21" />
+                </svg>
+              </button>
+            )}
             <button
               className="admin-mobile-toggle-light"
               onClick={() => setIsMobileSidebarOpen(true)}

@@ -236,6 +236,11 @@
   overflow: hidden !important;
   font-family: Urbanist, "Helvetica Neue", Arial, sans-serif !important;
   color: var(--ink) !important;
+  transition: grid-template-columns 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.admin-layout-shell.sidebar-collapsed {
+  grid-template-columns: 68px 1fr !important;
 }
 
 .enqu-sidebar, aside {
@@ -7829,4 +7834,109 @@ input:checked + .slider-round:before {
 
 .player-search-clear-btn:hover {
   color: #ef4444;
+}
+
+/* ChatGPT Collapsible Sidebar Styles */
+.sidebar-header-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: 12px !important;
+  min-height: 36px !important;
+  padding: 0 4px !important;
+}
+
+.sidebar-header-row.collapsed {
+  justify-content: center !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+.logo-compact {
+  font-size: 17px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.5px !important;
+  color: var(--ink) !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
+  background: var(--chip) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.btn-chatgpt-toggle {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--mute) !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  flex-shrink: 0 !important;
+  padding: 0 !important;
+}
+
+.btn-chatgpt-toggle:hover {
+  background: var(--chip) !important;
+  color: var(--ink) !important;
+}
+
+.btn-chatgpt-toggle svg {
+  width: 18px !important;
+  height: 18px !important;
+  stroke: currentColor !important;
+  stroke-width: 1.8 !important;
+  fill: none !important;
+}
+
+.enqu-sidebar.collapsed {
+  width: 68px !important;
+  padding: 16px 8px !important;
+}
+
+.enqu-sidebar.collapsed .logo {
+  display: none !important;
+}
+
+.enqu-sidebar.collapsed .enqu-nav a,
+.enqu-sidebar.collapsed nav a {
+  justify-content: center !important;
+  padding: 10px 0 !important;
+  position: relative !important;
+}
+
+.enqu-sidebar.collapsed .enqu-nav a span,
+.enqu-sidebar.collapsed nav a span {
+  display: none !important;
+}
+
+.enqu-sidebar.collapsed .enqu-nav a .n,
+.enqu-sidebar.collapsed .enqu-nav a .s {
+  display: none !important;
+}
+
+.enqu-sidebar.collapsed .collapsed-urgent-dot {
+  position: absolute !important;
+  top: 6px !important;
+  right: 14px !important;
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  background: #b0302f !important;
+  display: block !important;
+}
+
+.enqu-sidebar.collapsed .foot nav a {
+  justify-content: center !important;
+  padding: 10px 0 !important;
+}
+
+.enqu-sidebar.collapsed .foot nav a span {
+  display: none !important;
 }
