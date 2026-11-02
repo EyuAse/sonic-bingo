@@ -1,5 +1,5 @@
 import React from 'react';
-import { LomiLogo } from './LomiLogo';
+import { SonicLogo } from './SonicLogo';
 import { useLanguage } from '../../context/LanguageContext';
 
 export const AppSplashScreen: React.FC = () => {
@@ -15,55 +15,58 @@ export const AppSplashScreen: React.FC = () => {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'radial-gradient(ellipse at 50% 0%, #fffdf8 0%, #fefce8 50%, #fef9c3 100%)',
-        color: '#0f172a',
+        background: 'radial-gradient(ellipse at 50% 25%, #0f172a 0%, #090d16 55%, #030508 100%)',
+        color: '#f8fafc',
         padding: '24px',
         textAlign: 'center',
         fontFamily: "'Inter', sans-serif"
       }}
     >
-      {/* Brand Logo */}
+      {/* Brand Logo with Soft Gold Ambient Glow */}
       <div
         style={{
-          transform: 'scale(1.3)',
-          marginBottom: '28px',
-          filter: 'drop-shadow(0 10px 25px rgba(234, 179, 8, 0.3))'
+          transform: 'scale(1.25)',
+          marginBottom: '32px',
+          filter: 'drop-shadow(0 12px 30px rgba(245, 158, 11, 0.4))'
         }}
       >
-        <LomiLogo size="lg" />
+        <SonicLogo size="lg" />
       </div>
 
-      {/* Brand Subtitle Badge */}
+      {/* Brand Subtitle Pill */}
       <div
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '6px',
-          background: 'rgba(255, 255, 255, 0.9)',
-          border: '1px solid rgba(234, 179, 8, 0.3)',
-          padding: '6px 14px',
+          gap: '8px',
+          background: 'rgba(255, 255, 255, 0.06)',
+          border: '1px solid rgba(250, 204, 21, 0.35)',
+          backdropFilter: 'blur(10px)',
+          padding: '6px 16px',
           borderRadius: '999px',
           fontSize: '12px',
           fontWeight: 800,
-          color: '#854d0e',
-          marginBottom: '32px',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
+          color: '#fef08a',
+          marginBottom: '36px',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
         }}
       >
         <span>🇪🇹</span>
         <span>{lang === 'am' ? 'የቀጥታ 75-ኳስ ቢንጎ' : 'Live 75-Ball Bingo'}</span>
       </div>
 
-      {/* Modern Circular Spinner */}
+      {/* Modern High-End Circular Spinner */}
       <div
         style={{
-          width: '36px',
-          height: '36px',
+          width: '38px',
+          height: '38px',
           borderRadius: '50%',
-          border: '3px solid rgba(234, 179, 8, 0.2)',
-          borderTopColor: '#16a34a',
-          animation: 'spin 0.8s linear infinite',
-          marginBottom: '16px'
+          border: '3px solid rgba(255, 255, 255, 0.08)',
+          borderTopColor: '#38bdf8',
+          borderRightColor: '#facc15',
+          animation: 'sonicSpin 0.85s linear infinite',
+          marginBottom: '18px',
+          boxShadow: '0 0 15px rgba(56, 189, 248, 0.25)'
         }}
       />
 
@@ -72,15 +75,16 @@ export const AppSplashScreen: React.FC = () => {
         style={{
           fontSize: '13.5px',
           fontWeight: 700,
-          color: '#334155',
-          letterSpacing: '0.2px'
+          color: '#cbd5e1',
+          letterSpacing: '0.3px',
+          textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'
         }}
       >
-        {lang === 'am' ? 'እንኳን ደህና መጡ! በመገናኘት ላይ...' : 'Welcome! Connecting...'}
+        {lang === 'am' ? 'እንኳን ወደ ሶኒክ ቢንጎ በደህና መጡ! በመገናኘት ላይ...' : 'Welcome to Sonic Bingo! Connecting...'}
       </div>
 
       <style>{`
-        @keyframes spin {
+        @keyframes sonicSpin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
@@ -88,3 +92,5 @@ export const AppSplashScreen: React.FC = () => {
     </div>
   );
 };
+
+export default AppSplashScreen;
