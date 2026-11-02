@@ -14,10 +14,10 @@ async function runPhase3Tests() {
   // Test 1: Dynamic Pot & Derash Calculations in Room 10
   console.log('\n[Test 1] Testing Dynamic Pot Math across varying Bot Counts...');
   const potScenarios = [
-    { bots: 4, real: 1, expectedPot: 50, expectedFee: 10, expectedPayout: 40 },
-    { bots: 14, real: 1, expectedPot: 150, expectedFee: 30, expectedPayout: 120 },
-    { bots: 24, real: 1, expectedPot: 250, expectedFee: 50, expectedPayout: 200 },
-    { bots: 49, real: 1, expectedPot: 500, expectedFee: 100, expectedPayout: 400 },
+    { bots: 4, real: 1, expectedPot: 50, expectedFee: 10, expectedPayout: 35 },
+    { bots: 14, real: 1, expectedPot: 150, expectedFee: 30, expectedPayout: 105 },
+    { bots: 24, real: 1, expectedPot: 250, expectedFee: 50, expectedPayout: 175 },
+    { bots: 49, real: 1, expectedPot: 500, expectedFee: 100, expectedPayout: 350 },
   ];
 
   for (const s of potScenarios) {
@@ -141,8 +141,8 @@ async function runPhase3Tests() {
   assert.strictEqual(room50.totalPot, 300, '6 cards x 50 ETB = 300 ETB');
   assert.strictEqual(room50.commissionPercent, 20, 'Commission tier for > 5 cards must be 20%');
   assert.strictEqual(room50.houseFee, 60, '300 ETB x 20% = 60 ETB house fee');
-  assert.strictEqual(room50.winnerPayout, 240, '300 ETB - 60 ETB = 240 ETB payout');
-  console.log('  ✅ Room 50 (> 5 cartelas): 20% fee tier confirmed (60 ETB fee, 240 ETB payout).');
+  assert.strictEqual(room50.winnerPayout, 210, '300 ETB - 60 ETB - 30 ETB jackpot = 210 ETB payout');
+  console.log('  ✅ Room 50 (> 5 cartelas): 20% fee tier confirmed (60 ETB fee, 30 ETB jackpot, 210 ETB payout).');
 
   // Reset bot config back to dynamic default
   gameEngine.setBotConfig({ mode: 'dynamic', minBots: 2, maxBots: 50, fixedCount: 20, staggeredJoin: true, livingClock: true });
