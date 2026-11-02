@@ -27,7 +27,7 @@ export const AdminSettings: React.FC = () => {
 
   const { showToast } = useApp();
 
-  const [editBrand, setEditBrand] = useState(brandName || 'Lomi Bingo');
+  const [editBrand, setEditBrand] = useState(brandName || 'Sonic Bingo');
   const [newPin, setNewPin] = useState(adminPin || '1234');
   const [confirmPin, setConfirmPin] = useState('');
   const [showPinChange, setShowPinChange] = useState(false);
@@ -467,7 +467,7 @@ export const AdminSettings: React.FC = () => {
                   value={editBrand}
                   onChange={e => setEditBrand(e.target.value)}
                   className="settings-text-input"
-                  placeholder="e.g. Lomi Bingo"
+                  placeholder="e.g. Sonic Bingo"
                 />
                 <button type="submit" className="btn-settings-save">
                   Save

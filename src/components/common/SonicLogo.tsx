@@ -118,3 +118,4 @@ export const SonicLogo: React.FC<SonicLogoProps> = ({
 };
 
 export default SonicLogo;
+

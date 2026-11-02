@@ -57,7 +57,7 @@ export const AdminPINModal: React.FC = () => {
             <i className="fa-solid fa-shield-halved"></i>
           </div>
           <h2 className="pin-brand-title">
-            <span className="text-white">LOMI</span> <span className="text-gold">BINGO</span>
+            <span className="text-white">SONIC</span> <span className="text-gold">BINGO</span>
           </h2>
           <span className="pin-portal-badge">PRIVATE ADMIN PORTAL</span>
         </div>
@@ -114,7 +114,7 @@ export const AdminPINModal: React.FC = () => {
         </div>
 
         <div className="pin-footer-hint">
-          <span>Protected by Lomi Bingo Engine V3 Security</span>
+          <span>Protected by Sonic Bingo Engine V3 Security</span>
         </div>
       </div>
     </div>

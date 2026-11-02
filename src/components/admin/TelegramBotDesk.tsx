@@ -94,14 +94,14 @@ export const TelegramBotDesk: React.FC = () => {
 
   // Bot Profile & Welcome Greeting State
   const [botDescription, setBotDescription] = useState<string>(
-    "🍋 Welcome to Lomi Bingo! Ethiopia's #1 Live Real-Time Multiplayer Bingo in Telegram. 20 ETB Welcome Gift, 600 Cartelas, Instant Cashier Payouts!"
+    "👑 Welcome to Sonic Bingo! Ethiopia's #1 Live Real-Time Multiplayer Bingo in Telegram. 20 ETB Welcome Gift, 600 Cartelas, Instant Cashier Payouts!"
   );
   const [botShortDescription, setBotShortDescription] = useState<string>(
-    "🍋 Lomi Bingo: Live multiplayer bingo with instant payouts!"
+    "👑 Sonic Bingo: Live multiplayer bingo with instant payouts!"
   );
   const [botWelcomeText, setBotWelcomeText] = useState<string>(
-    '👋 <b>እንኳን ወደ ሎሚ ቢንጎ በደህና መጡ!</b> 🍋🎯\n' +
-    '<b>Welcome to Lomi / Betika Bingo!</b>\n\n' +
+    '👋 <b>እንኳን ወደ ሶኒክ ቢንጎ በደህና መጡ!</b> 👑🎯\n' +
+    '<b>Welcome to Sonic Bingo!</b>\n\n' +
     '🇪🇹 Ethiopia\'s #1 Real-Time Multiplayer Live Bingo in Telegram!\n\n' +
     '🎁 <b>20 ETB Welcome Bonus</b> for new players\n' +
     '⚡ <b>Instant Cashier Withdrawals & Deposits</b>\n' +
@@ -138,7 +138,7 @@ export const TelegramBotDesk: React.FC = () => {
       icon: 'fa-gift',
       title: '🎁 10 ETB Welcome Bonus for New Players!',
       text:
-        '👋 <b>እንኳን ወደ ሎሚ ቢንጎ በደህና መጡ!</b> 🍋🎁\n' +
+        '👋 <b>እንኳን ወደ ሶኒክ ቢንጎ በደህና መጡ!</b> 👑🎁\n' +
         '<b>10 ETB Free Welcome Bonus!</b>\n\n' +
         '💰 አዲስ ለተመዘገቡ ተጫዋቾች <b>10 ETB ነፃ ቦነስ</b> ተዘጋጅቷል!\n' +
         '⚡ ፈጣን ተቀማጭ እና ወጪ ክፍያዎች በቴሌብር እና በሲቢኢ ብር\n' +
@@ -247,7 +247,7 @@ export const TelegramBotDesk: React.FC = () => {
           if (!adButtonUrl) {
             setAdButtonUrl(defaultUrl);
           }
-          handleVerifyChannel(sData.config?.channelId || '@lomibingo_official');
+          handleVerifyChannel(sData.config?.channelId || '@BRILV');
         }
       }
 
@@ -286,7 +286,7 @@ export const TelegramBotDesk: React.FC = () => {
     loadData();
   }, []);
 
-  // Helper to normalize channel handles or full URLs (e.g. https://t.me/lomibingo_official -> @lomibingo_official)
+  // Helper to normalize channel handles or full URLs (e.g. https://t.me/BRILV -> @BRILV)
   const cleanChannelInput = (val: string): string => {
     let c = val.trim();
     if (c.includes('t.me/')) {
@@ -299,7 +299,7 @@ export const TelegramBotDesk: React.FC = () => {
 
   // Check channel posting access and administrator status
   const handleVerifyChannel = async (customChannel?: string) => {
-    const ch = cleanChannelInput(customChannel || targetChatId || channelId || '@lomibingo_official');
+    const ch = cleanChannelInput(customChannel || targetChatId || channelId || '@BRILV');
     if (!ch) return;
     setChannelHealth({ loading: true, ok: false, canPost: false, channel: ch });
     try {
@@ -319,7 +319,7 @@ export const TelegramBotDesk: React.FC = () => {
     setAdText(preset.text);
     setAdPhoto(preset.photo);
     setAdButtonText(preset.buttonText);
-    const botUser = status?.bot?.username || 'LomiBingobot';
+    const botUser = status?.bot?.username || 'SonicGameOfficialBot';
     setAdButtonUrl(`https://t.me/${botUser}/play`);
     setTargetType('all_users');
     showToast(`✨ Loaded preset: ${preset.name}`);
@@ -342,7 +342,7 @@ export const TelegramBotDesk: React.FC = () => {
           messageText: adText,
           photoUrl: adPhoto.trim(),
           buttonText: adButtonText.trim(),
-          buttonUrl: adButtonUrl.trim() || `https://t.me/${status?.bot?.username || 'LomiBingobot'}/play`,
+          buttonUrl: adButtonUrl.trim() || `https://t.me/${status?.bot?.username || 'SonicGameOfficialBot'}/play`,
           broadcastNow: broadcastImmediately,
           crossPostChannel: crossPostChannel && targetType === 'all_users'
         })
@@ -544,7 +544,7 @@ export const TelegramBotDesk: React.FC = () => {
           buttonText: adButtonText.trim() || undefined,
           buttonUrl: adButtonUrl.trim() || webAppUrl.trim() || undefined,
           targetType,
-          targetId: targetType === 'channel' ? cleanChannelInput(targetChatId || channelId || '@lomibingo_official') : (targetType === 'test' ? targetChatId : undefined),
+          targetId: targetType === 'channel' ? cleanChannelInput(targetChatId || channelId || '@BRILV') : (targetType === 'test' ? targetChatId : undefined),
           crossPostChannel: crossPostChannel && targetType === 'all_users',
           pinMessage: pinMessage && (targetType === 'channel' || crossPostChannel)
         })
@@ -600,7 +600,7 @@ export const TelegramBotDesk: React.FC = () => {
             </span>
           </div>
           <div style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
-            {status?.bot?.first_name || (loading ? 'Loading Bot...' : 'Betika / Lomi Bingo Bot')}
+            {status?.bot?.first_name || (loading ? 'Loading Bot...' : 'Sonic Bingo Bot')}
           </div>
           <div style={{ fontSize: '13px', color: '#0284c7', fontWeight: 600 }}>
             {status?.bot?.username ? `@${status.bot.username}` : (loading ? 'Connecting to Telegram...' : 'Configure bot token below')}
@@ -760,7 +760,7 @@ export const TelegramBotDesk: React.FC = () => {
           }}
         >
           <i className="fa-solid fa-bullhorn"></i>
-          <span>📢 Channel Broadcaster ({channelId || '@lomibingo_official'})</span>
+          <span>📢 Channel Broadcaster ({channelId || '@BRILV'})</span>
         </button>
 
         <button
@@ -998,7 +998,7 @@ export const TelegramBotDesk: React.FC = () => {
                 </h3>
                 <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>
                   {activeSection === 'in_bot_promo'
-                    ? 'Create promotional offers delivered directly inside @LomiBingobot and registered on the /promo menu.'
+                    ? 'Create promotional offers delivered directly inside @SonicGameOfficialBot and registered on the /promo menu.'
                     : 'Create rich advertisements with banner images and direct "Play Now" Mini App buttons.'}
                 </p>
               </div>
@@ -1087,7 +1087,7 @@ export const TelegramBotDesk: React.FC = () => {
                     <div style={{ display: 'flex', gap: '6px' }}>
                       <button
                         type="button"
-                        onClick={() => handleVerifyChannel(targetChatId || channelId || '@lomibingo_official')}
+                        onClick={() => handleVerifyChannel(targetChatId || channelId || '@BRILV')}
                         disabled={channelHealth?.loading}
                         style={{
                           background: '#f1f5f9',
@@ -1109,8 +1109,8 @@ export const TelegramBotDesk: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          setTargetChatId('@lomibingo_official');
-                          handleVerifyChannel('@lomibingo_official');
+                          setTargetChatId('@BRILV');
+                          handleVerifyChannel('@BRILV');
                         }}
                         style={{
                           background: '#e0f2fe',
@@ -1126,7 +1126,7 @@ export const TelegramBotDesk: React.FC = () => {
                           gap: '4px'
                         }}
                       >
-                        <i className="fa-solid fa-bullhorn" style={{ fontSize: '10px' }}></i> Set to @lomibingo_official
+                        <i className="fa-solid fa-bullhorn" style={{ fontSize: '10px' }}></i> Set to @BRILV
                       </button>
                     </div>
                   </div>
@@ -1140,7 +1140,7 @@ export const TelegramBotDesk: React.FC = () => {
                     onBlur={() => {
                       if (targetChatId) handleVerifyChannel(targetChatId);
                     }}
-                    placeholder={channelId || '@lomibingo_official'}
+                    placeholder={channelId || '@BRILV'}
                     style={{
                       width: '100%',
                       padding: '10px 14px',
@@ -1173,7 +1173,7 @@ export const TelegramBotDesk: React.FC = () => {
                   {targetChatId && /^\d+$/.test(targetChatId.trim()) && (
                     <div style={{ marginTop: '6px', color: '#dc2626', fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <i className="fa-solid fa-triangle-exclamation"></i>
-                      Notice: "{targetChatId}" is an individual user ID. Telegram Channel usernames must start with @ (e.g. @lomibingo_official) or negative chat IDs starting with -100.
+                      Notice: "{targetChatId}" is an individual user ID. Telegram Channel usernames must start with @ (e.g. @BRILV) or negative chat IDs starting with -100.
                     </div>
                   )}
                   <div style={{
@@ -1191,8 +1191,8 @@ export const TelegramBotDesk: React.FC = () => {
                     </div>
                     <div>1. Open your Channel in Telegram (e.g. your announcement channel).</div>
                     <div>2. Tap Channel Title &rarr; <b>Administrators &rarr; Add Administrator</b>.</div>
-                    <div>3. Search for <b>@{status?.bot?.username || 'LomiBingobot'}</b> and add it with <b>"Post Messages"</b> turned <b>ON</b>.</div>
-                    <div>4. Enter your channel @username (e.g. <code>@lomibingo</code>) above and click <b>Publish</b>!</div>
+                    <div>3. Search for <b>@{status?.bot?.username || 'SonicGameOfficialBot'}</b> and add it with <b>"Post Messages"</b> turned <b>ON</b>.</div>
+                    <div>4. Enter your channel @username (e.g. <code>@BRILV</code>) above and click <b>Publish</b>!</div>
                   </div>
                 </div>
               )}
@@ -1349,7 +1349,7 @@ export const TelegramBotDesk: React.FC = () => {
                   <div style={{ display: 'flex', gap: '4px' }}>
                     <button
                       type="button"
-                      onClick={() => setAdButtonUrl(`https://t.me/${status?.bot?.username || 'LomiBingobot'}/play`)}
+                      onClick={() => setAdButtonUrl(`https://t.me/${status?.bot?.username || 'SonicGameOfficialBot'}/play`)}
                       style={{
                         background: '#f0fdf4',
                         color: '#166534',
@@ -1479,7 +1479,7 @@ export const TelegramBotDesk: React.FC = () => {
                     style={{ width: '16px', height: '16px', accentColor: '#0284c7' }}
                   />
                   <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
-                    📣 Also cross-post announcement to Telegram Channel ({channelId || '@lomibingo_official'})
+                    📣 Also cross-post announcement to Telegram Channel ({channelId || '@BRILV'})
                   </span>
                 </label>
               </div>
@@ -1517,9 +1517,9 @@ export const TelegramBotDesk: React.FC = () => {
                         ? 'Send Test Message'
                         : (targetType === 'all_users'
                             ? (crossPostChannel
-                                ? `🚀 Broadcast to Players + Channel (${channelId || '@lomibingo_official'})`
+                                ? `🚀 Broadcast to Players + Channel (${channelId || '@BRILV'})`
                                 : '🚀 Broadcast Promotion Inside Bot (All Players)')
-                            : `Publish Announcement to Channel (${targetChatId || channelId || '@lomibingo_official'})`))}
+                            : `Publish Announcement to Channel (${targetChatId || channelId || '@BRILV'})`))}
                 </button>
 
                 {targetType === 'all_users' && (
@@ -1591,11 +1591,11 @@ export const TelegramBotDesk: React.FC = () => {
               </div>
               <div>
                 <div style={{ color: '#ffffff', fontSize: '14px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  {status?.bot?.first_name || 'Lomi Bingo'}
+                  {status?.bot?.first_name || 'Sonic Bingo'}
                   <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.15)', padding: '1px 5px', borderRadius: '4px' }}>bot</span>
                 </div>
                 <div style={{ color: '#94a3b8', fontSize: '11px' }}>
-                  {targetType === 'channel' ? (targetChatId || '@lomibingo') : 'Live Preview'}
+                  {targetType === 'channel' ? (targetChatId || '@BRILV') : 'Live Preview'}
                 </div>
               </div>
             </div>
@@ -1769,7 +1769,7 @@ export const TelegramBotDesk: React.FC = () => {
                 maxLength={120}
                 value={botShortDescription}
                 onChange={(e) => setBotShortDescription(e.target.value)}
-                placeholder="e.g. 🍋 Lomi Bingo: Live multiplayer bingo with instant payouts!"
+                placeholder="e.g. 👑 Sonic Bingo: Live multiplayer bingo with instant payouts!"
                 style={{
                   width: '100%',
                   padding: '10px 12px',
@@ -1945,7 +1945,7 @@ export const TelegramBotDesk: React.FC = () => {
               type="text"
               value={channelId}
               onChange={(e) => setChannelId(cleanChannelInput(e.target.value))}
-              placeholder="@lomibingo_official"
+              placeholder="@BRILV"
               style={{
                 width: '100%',
                 padding: '10px 14px',
@@ -2135,10 +2135,10 @@ export const TelegramBotDesk: React.FC = () => {
               Are you sure you want to publish <strong>"{adTitle}"</strong> to{' '}
               <span style={{ color: '#0284c7', fontWeight: 700 }}>
                 {targetType === 'channel'
-                  ? `Telegram Channel ${targetChatId || channelId || '@lomibingo_official'}`
+                  ? `Telegram Channel ${targetChatId || channelId || '@BRILV'}`
                   : (targetType === 'all_users'
                       ? (crossPostChannel
-                          ? `All Registered Players AND Telegram Channel (${channelId || '@lomibingo_official'})`
+                          ? `All Registered Players AND Telegram Channel (${channelId || '@BRILV'})`
                           : 'All Registered Players (In-Bot Direct)')
                       : 'Your Personal Chat')}
               </span>?

@@ -73,9 +73,9 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
               </span>
               <span className="dash-uptime-tag">99.9% Uptime</span>
             </div>
-            <h1 className="dash-hero-main-title">LOMI BINGO PLATFORM OPERATIONS DESK</h1>
+            <h1 className="dash-hero-main-title">SONIC BINGO PLATFORM OPERATIONS DESK</h1>
             <p className="dash-hero-sub-title">
-              የሎሚ ቢንጎ የቀጥታ ጨዋታዎችን፣ የኮሚሽን ትርፍን እና የክፍያዎችን ፍሰት በአንድ ማዕከል ይቆጣጠሩ
+              የሶኒክ ቢንጎ የቀጥታ ጨዋታዎችን፣ የኮሚሽን ትርፍን እና የክፍያዎችን ፍሰት በአንድ ማዕከል ይቆጣጠሩ
             </p>
           </div>
         </div>

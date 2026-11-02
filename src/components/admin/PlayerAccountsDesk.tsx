@@ -113,7 +113,7 @@ export const PlayerAccountsDesk: React.FC = () => {
               </span>
               <span className="player-uptime-tag">Verified Accounts</span>
             </div>
-            <h1 className="player-hero-main-title">LOMI BINGO PLAYER ACCOUNTS & WALLETS DIRECTORY</h1>
+            <h1 className="player-hero-main-title">SONIC BINGO PLAYER ACCOUNTS & WALLETS DIRECTORY</h1>
             <p className="player-hero-sub-title">
               የተመዘገቡ ተጫዋቾችን፣ የዋሌት ቀሪ ሂሳብን፣ ቦነስን እና እንቅስቃሴዎችን በአንድ ማዕከል ይቆጣጠሩ
             </p>

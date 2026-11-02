@@ -77,7 +77,7 @@ export const CashFlowAnalytics: React.FC = () => {
             </div>
             <h1 className="cf-hero-main-title">TELEBIRR & CBE CASH FLOW & REVENUE DESK</h1>
             <p className="cf-hero-sub-title">
-              የቀን ተቀማጭ፣ የክፍያ ወጪ እና የተጣራ የሎሚ ቢንጎ የኮሚሽን ገቢ ዝርዝር የሂሳብ መረጃ
+              የቀን ተቀማጭ፣ የክፍያ ወጪ እና የተጣራ የሶኒክ ቢንጎ የኮሚሽን ገቢ ዝርዝር የሂሳብ መረጃ
             </p>
           </div>
         </div>

@@ -396,11 +396,9 @@ export const CartelasDesk: React.FC = () => {
               {/* Full-Scale 5x5 Card */}
               <div className="full-cartela-board">
                 <div className="board-top-banner">
-                  <div className="lomi-logo-artwork mini">
-                    <span className="lomi-letter-l">L</span>
-                    <span className="lomi-lemon-o">🍋</span>
-                    <span className="lomi-letter-m">M</span>
-                    <span className="lomi-letter-i">I</span>
+                  <div className="sonic-card-watermark mini" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontWeight: 900, color: '#f59e0b', fontSize: '11px', letterSpacing: '1px' }}>
+                    <span>👑</span>
+                    <span style={{ color: '#0284c7' }}>SONIC</span>
                   </div>
                   <span className="board-serial-pill">{selectedCard.serialNumber}</span>
                 </div>

@@ -65,15 +65,37 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         {/* 1. Brand Logo Header */}
         <div className="sidebar-light-brand-box">
           <div className="sidebar-light-logo-wrap">
-            <div className="lomi-logo-artwork">
-              <span className="lomi-letter-l">L</span>
-              <span className="lomi-lemon-o">
-                <span className="lemon-slice-svg">🍋</span>
-              </span>
-              <span className="lomi-letter-m">M</span>
-              <span className="lomi-letter-i">I</span>
+            <div className="sonic-admin-logo-artwork" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div
+                style={{
+                  width: isSidebarCollapsed ? '28px' : '32px',
+                  height: isSidebarCollapsed ? '28px' : '32px',
+                  borderRadius: '50%',
+                  background: 'radial-gradient(circle at 35% 30%, #fef08a 0%, #f59e0b 55%, #b45309 100%)',
+                  boxShadow: '0 0 12px rgba(245, 158, 11, 0.45), inset 0 1px 2px rgba(255, 255, 255, 0.7)',
+                  border: '1.5px solid rgba(254, 240, 138, 0.9)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: isSidebarCollapsed ? '15px' : '17px',
+                  flexShrink: 0
+                }}
+              >
+                👑
+              </div>
+              {!isSidebarCollapsed && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ fontSize: '1.15rem', fontWeight: 950, letterSpacing: '1.5px', color: '#0284c7' }}>SONIC</span>
+                    <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>|</span>
+                    <span style={{ fontSize: '1.15rem', fontWeight: 950, letterSpacing: '1px', color: '#d97706' }}>BINGO</span>
+                  </div>
+                  <span style={{ fontSize: '0.5625rem', fontWeight: 900, letterSpacing: '2.5px', color: '#64748b', textTransform: 'uppercase', marginTop: '2px' }}>
+                    • B I N G O •
+                  </span>
+                </div>
+              )}
             </div>
-            <span className="lomi-sub-dots">• B I N G O •</span>
           </div>
 
           <button
