@@ -1670,11 +1670,11 @@ router.get('/withdrawal-requests', requireAgent, async (req: AuthenticatedReques
     const params: any[] = [agentId];
 
     if (timeframe === 'today') {
-      sql += ` AND req.created_at >= (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date`;
+      sql += ` AND (COALESCE(req.resolved_at, req.created_at) AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date`;
     } else if (timeframe === 'week') {
-      sql += ` AND req.created_at >= NOW() - INTERVAL '7 days'`;
+      sql += ` AND COALESCE(req.resolved_at, req.created_at) >= NOW() - INTERVAL '7 days'`;
     } else if (timeframe === 'month') {
-      sql += ` AND req.created_at >= NOW() - INTERVAL '30 days'`;
+      sql += ` AND COALESCE(req.resolved_at, req.created_at) >= NOW() - INTERVAL '30 days'`;
     }
 
     sql += ` ORDER BY req.created_at DESC LIMIT 100`;
@@ -1683,35 +1683,49 @@ router.get('/withdrawal-requests', requireAgent, async (req: AuthenticatedReques
       query(sql, params),
       query(
         `SELECT
-           COALESCE(SUM(amount) FILTER (WHERE status = 'completed' AND created_at >= (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date), 0) as today_amount,
-           COUNT(*) FILTER (WHERE status = 'completed' AND created_at >= (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date) as today_count,
-           COALESCE(SUM(amount) FILTER (WHERE status = 'completed' AND created_at >= NOW() - INTERVAL '7 days'), 0) as week_amount,
-           COUNT(*) FILTER (WHERE status = 'completed' AND created_at >= NOW() - INTERVAL '7 days') as week_count,
-           COALESCE(SUM(amount) FILTER (WHERE status = 'completed' AND created_at >= NOW() - INTERVAL '30 days'), 0) as month_amount,
-           COUNT(*) FILTER (WHERE status = 'completed' AND created_at >= NOW() - INTERVAL '30 days') as month_count,
-           COALESCE(SUM(amount) FILTER (WHERE status = 'completed'), 0) as all_time_amount,
-           COUNT(*) FILTER (WHERE status = 'completed') as all_time_count
+           COALESCE(SUM(amount) FILTER (WHERE status IN ('approved', 'completed') AND (COALESCE(resolved_at, created_at) AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date), 0) as today_amount,
+           COUNT(*) FILTER (WHERE status IN ('approved', 'completed') AND (COALESCE(resolved_at, created_at) AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date) as today_count,
+           COALESCE(SUM(agent_commission_earned) FILTER (WHERE status IN ('approved', 'completed') AND (COALESCE(resolved_at, created_at) AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date), 0) as today_commission,
+
+           COALESCE(SUM(amount) FILTER (WHERE status IN ('approved', 'completed') AND COALESCE(resolved_at, created_at) >= NOW() - INTERVAL '7 days'), 0) as week_amount,
+           COUNT(*) FILTER (WHERE status IN ('approved', 'completed') AND COALESCE(resolved_at, created_at) >= NOW() - INTERVAL '7 days') as week_count,
+           COALESCE(SUM(agent_commission_earned) FILTER (WHERE status IN ('approved', 'completed') AND COALESCE(resolved_at, created_at) >= NOW() - INTERVAL '7 days'), 0) as week_commission,
+
+           COALESCE(SUM(amount) FILTER (WHERE status IN ('approved', 'completed') AND COALESCE(resolved_at, created_at) >= NOW() - INTERVAL '30 days'), 0) as month_amount,
+           COUNT(*) FILTER (WHERE status IN ('approved', 'completed') AND COALESCE(resolved_at, created_at) >= NOW() - INTERVAL '30 days') as month_count,
+           COALESCE(SUM(agent_commission_earned) FILTER (WHERE status IN ('approved', 'completed') AND COALESCE(resolved_at, created_at) >= NOW() - INTERVAL '30 days'), 0) as month_commission,
+
+           COALESCE(SUM(amount) FILTER (WHERE status IN ('approved', 'completed')), 0) as all_time_amount,
+           COUNT(*) FILTER (WHERE status IN ('approved', 'completed')) as all_time_count,
+           COALESCE(SUM(agent_commission_earned) FILTER (WHERE status IN ('approved', 'completed')), 0) as all_time_commission,
+
+           COUNT(*) FILTER (WHERE status = 'pending') as pending_count
          FROM agent_withdrawal_requests
          WHERE agent_id = $1`,
         [agentId]
       )
     ]);
 
-    const pendingCount = requestsRes.rows.filter(r => r.status === 'pending').length;
     const a = analyticsRes.rows[0] || {};
+    const pendingCount = parseInt(a.pending_count || '0', 10);
     const todayAmount = parseFloat(a.today_amount || '0');
     const weekAmount = parseFloat(a.week_amount || '0');
     const monthAmount = parseFloat(a.month_amount || '0');
     const allTimeAmount = parseFloat(a.all_time_amount || '0');
 
+    const todayComm = parseFloat(a.today_commission || '0') || Number((todayAmount * 0.02).toFixed(2));
+    const weekComm = parseFloat(a.week_commission || '0') || Number((weekAmount * 0.02).toFixed(2));
+    const monthComm = parseFloat(a.month_commission || '0') || Number((monthAmount * 0.02).toFixed(2));
+    const allTimeComm = parseFloat(a.all_time_commission || '0') || Number((allTimeAmount * 0.02).toFixed(2));
+
     return res.json({
       success: true,
       pendingCount,
       analytics: {
-        today: { amount: todayAmount, count: parseInt(a.today_count || '0', 10), commission: Number((todayAmount * 0.02).toFixed(2)) },
-        week: { amount: weekAmount, count: parseInt(a.week_count || '0', 10), commission: Number((weekAmount * 0.02).toFixed(2)) },
-        month: { amount: monthAmount, count: parseInt(a.month_count || '0', 10), commission: Number((monthAmount * 0.02).toFixed(2)) },
-        allTime: { amount: allTimeAmount, count: parseInt(a.all_time_count || '0', 10), commission: Number((allTimeAmount * 0.02).toFixed(2)) }
+        today: { amount: todayAmount, count: parseInt(a.today_count || '0', 10), commission: todayComm },
+        week: { amount: weekAmount, count: parseInt(a.week_count || '0', 10), commission: weekComm },
+        month: { amount: monthAmount, count: parseInt(a.month_count || '0', 10), commission: monthComm },
+        allTime: { amount: allTimeAmount, count: parseInt(a.all_time_count || '0', 10), commission: allTimeComm }
       },
       requests: requestsRes.rows.map(r => ({
         id: r.id,
