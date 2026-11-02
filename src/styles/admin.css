@@ -7109,20 +7109,7 @@ input:checked + .slider-round:before {
 /* ============================================================
    11. ADMIN MOBILE APP-STYLE BOTTOM NAVIGATION BAR (< 768px)
    ============================================================ */
-.admin-bottom-nav {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-top: 1.5px solid #f1f5f9;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
-  z-index: 1000;
-  padding: 4px 6px calc(6px + env(safe-area-inset-bottom, 0px));
-}
+.admin-bottom-nav { display: none !important; }
 
 .admin-bottom-nav-scroll {
   display: flex;
@@ -7223,10 +7210,8 @@ input:checked + .slider-round:before {
    12. COMPREHENSIVE RESPONSIVE STYLING FOR MOBILE (< 768px)
    ============================================================ */
 @media (max-width: 768px) {
-  /* Show Mobile Bottom Nav */
-  .admin-bottom-nav {
-    display: block !important;
-  }
+  /* Mobile Bottom Nav Permanently Disabled */
+  .admin-bottom-nav { display: none !important; }
 
   /* Hide Desktop Sidebar & Desktop Backdrops */
   .admin-sidebar-light {
@@ -7248,7 +7233,7 @@ input:checked + .slider-round:before {
     overflow-y: visible !important;
     overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch !important;
-    padding: 8px 10px calc(85px + env(safe-area-inset-bottom, 16px)) !important;
+    padding: 8px 10px 20px !important;
   }
 
   .admin-layout-shell {
