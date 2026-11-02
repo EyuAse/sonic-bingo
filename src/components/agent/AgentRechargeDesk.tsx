@@ -205,6 +205,30 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
         logo: <CBELogo size={28} />
       };
     }
+    if (norm.includes('abyssinia')) {
+      return {
+        color: '#d97706',
+        bg: 'rgba(217, 119, 6, 0.05)',
+        border: 'rgba(217, 119, 6, 0.25)',
+        logo: <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px' }} title="Bank of Abyssinia">🦁</div>
+      };
+    }
+    if (norm.includes('awash')) {
+      return {
+        color: '#0284c7',
+        bg: 'rgba(2, 132, 199, 0.05)',
+        border: 'rgba(2, 132, 199, 0.25)',
+        logo: <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px' }} title="Awash Bank">🏦</div>
+      };
+    }
+    if (norm.includes('dashen')) {
+      return {
+        color: '#1e3a8a',
+        bg: 'rgba(30, 58, 138, 0.05)',
+        border: 'rgba(30, 58, 138, 0.25)',
+        logo: <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'linear-gradient(135deg, #1e3a8a 0%, #172554 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#facc15', fontSize: '15px' }} title="Dashen Bank">⭐</div>
+      };
+    }
     return {
       color: '#e11d48',
       bg: 'rgba(225, 29, 72, 0.05)',

@@ -172,6 +172,27 @@ export const OfficialAccountsDesk: React.FC<OfficialAccountsDeskProps> = ({ show
     if (norm.includes('telebirr')) return <TelebirrLogo size={32} />;
     if (norm.includes('cbe') || norm.includes('commercial')) return <CBELogo size={32} />;
     if (norm.includes('mpesa') || norm.includes('m-pesa')) return <MpesaLogo size={32} />;
+    if (norm.includes('abyssinia')) {
+      return (
+        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', fontSize: '16px', fontWeight: 900, boxShadow: '0 2px 6px rgba(217, 119, 6, 0.3)' }} title="Bank of Abyssinia">
+          🦁
+        </div>
+      );
+    }
+    if (norm.includes('awash')) {
+      return (
+        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', fontSize: '16px', fontWeight: 900, boxShadow: '0 2px 6px rgba(2, 132, 199, 0.3)' }} title="Awash Bank">
+          🏦
+        </div>
+      );
+    }
+    if (norm.includes('dashen')) {
+      return (
+        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'linear-gradient(135deg, #1e3a8a 0%, #172554 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#facc15', fontSize: '16px', fontWeight: 900, boxShadow: '0 2px 6px rgba(30, 58, 138, 0.3)' }} title="Dashen Bank">
+          ⭐
+        </div>
+      );
+    }
     return (
       <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
         🏦
@@ -551,6 +572,15 @@ export const OfficialAccountsDesk: React.FC<OfficialAccountsDeskProps> = ({ show
                       } else if (p === 'M-Pesa') {
                         setAccountTitle('SAFARICOM M-PESA');
                         setBadge('📲 Instant Till / Paybill');
+                      } else if (p === 'Bank of Abyssinia') {
+                        setAccountTitle('BANK OF ABYSSINIA SUPER AGENT');
+                        setBadge('🦁 Instant Bank Transfer');
+                      } else if (p === 'Awash Bank') {
+                        setAccountTitle('AWASH BANK OFFICIAL');
+                        setBadge('🏦 Direct Bank Transfer');
+                      } else if (p === 'Dashen Bank') {
+                        setAccountTitle('DASHEN BANK OFFICIAL');
+                        setBadge('⭐ Direct Bank Transfer');
                       }
                     }
                   }}
