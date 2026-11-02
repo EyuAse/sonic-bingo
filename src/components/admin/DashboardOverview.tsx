@@ -22,6 +22,11 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
     totalUsersCount,
     userStats,
     transactions,
+    totalAgentsCount,
+    totalAgentBalance,
+    activeAgentsCount,
+    agentsList,
+    weeklyRevenueData,
     approveAndReleaseTransaction,
     rejectTransaction,
     isSidebarCollapsed,
@@ -30,11 +35,11 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
 
   const { showToast } = useApp();
 
-  const activePlayersCount = userStats?.activePlayers ?? users.filter(u => u.status === 'active').length ?? 3418;
-  const platformRevenue = (totalHouseProfit || todayHouseProfit || 184320);
+  const activePlayersCount = userStats?.activePlayers ?? (users.filter(u => u.status === 'active').length || users.length || 0);
+  const platformRevenue = totalHouseProfit || todayHouseProfit || 0;
 
   // Helper number formatter
-  const formatNumber = (num: number) => Number(num).toLocaleString('en-US');
+  const formatNumber = (num: number) => Number(num || 0).toLocaleString('en-US');
 
   // Dynamic Date Range label
   const currentDateRange = useMemo(() => {
@@ -46,15 +51,21 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
     return `${startStr} - ${endStr}`;
   }, []);
 
-  // Weekly Revenue Bar Chart Data
+  // Real 7-Day Weekly Revenue Bar Chart Data from Neon PostgreSQL
   const weeklyData = useMemo(() => {
+    if (weeklyRevenueData && weeklyRevenueData.length > 0) {
+      const days = weeklyRevenueData.map(d => d.day);
+      const vals = weeklyRevenueData.map(d => Math.round(d.revenue));
+      const maxVal = Math.max(...vals, 100);
+      const todayDayIndex = weeklyRevenueData.length - 1; // Current day is the last element
+      return { days, vals, maxVal, todayDayIndex };
+    }
+    // Fallback default days if telemetry still loading
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    // Realistic revenue distribution in ETB thousands
-    const vals = [62, 48, 84, 55, 91, 40, 73];
-    const todayDayIndex = (new Date().getDay() + 6) % 7; // Convert Sun(0)-Sat(6) to Mon(0)-Sun(6)
-    const maxVal = Math.max(...vals);
-    return { days, vals, maxVal, todayDayIndex };
-  }, []);
+    const vals = [0, 0, 0, 0, 0, 0, 0];
+    const todayDayIndex = (new Date().getDay() + 6) % 7;
+    return { days, vals, maxVal: 100, todayDayIndex };
+  }, [weeklyRevenueData]);
 
   // Quick Action Handlers
   const handleApproveTx = async (tx: TransactionRequest) => {
@@ -97,45 +108,45 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
           <div className="lab">Platform Revenue</div>
           <div className="val">ETB {formatNumber(platformRevenue)}</div>
           <div className="tr">
-            <span className="up">{TRD} 4.2%</span> from last month
+            <span className="up">{TRD} Live</span> net platform profit
           </div>
         </div>
 
         {/* Card 2: Active Players */}
         <div className="card">
           <div className="lab">Active Players</div>
-          <div className="val">{formatNumber(activePlayersCount || 3418)}</div>
+          <div className="val">{formatNumber(activePlayersCount)}</div>
           <div className="tr">
-            <span className="up">{TRD} 1.7%</span> from last month
+            <span className="up">{TRD} {formatNumber(totalUsersCount || users.length)}</span> registered users
           </div>
         </div>
 
-        {/* Card 3: Agents */}
+        {/* Card 3: Total Agents (100% Real from PostgreSQL DB) */}
         <div className="card">
-          <div className="lab">Agents</div>
-          <div className="val">86</div>
+          <div className="lab">Total Agents</div>
+          <div className="val">{formatNumber(totalAgentsCount)}</div>
           <div className="tr">
-            <span className="up">{TRD} 0.9%</span> from last month
+            <span className="up">{TRD} {activeAgentsCount}</span> active on network
           </div>
         </div>
 
-        {/* Card 4: Jackpot Vault */}
+        {/* Card 4: Total Agent Balances (Replacing Jackpot Vault with Real Agent Float) */}
         <div className="card">
-          <div className="lab">Jackpot Vault</div>
-          <div className="val">ETB 48,200</div>
+          <div className="lab">Agent Balances</div>
+          <div className="val">ETB {formatNumber(totalAgentBalance)}</div>
           <div className="tr">
-            <span className="up">{TRD} 2.9%</span> this week
+            <span className="up">{TRD} Float</span> circulating cash float
           </div>
         </div>
       </div>
 
       {/* 3. Middle Section (.g2: 1.7fr 1fr) */}
       <div className="grid g2">
-        {/* Total Revenue Bar Chart */}
+        {/* Total Revenue Bar Chart (Real Daily Data from DB) */}
         <div className="card">
           <h3>
             Total Revenue
-            <span className="r lab">ETB thousand</span>
+            <span className="r lab">ETB (Last 7 Days)</span>
           </h3>
 
           <div className="bars">
@@ -149,11 +160,11 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
             {/* Daily Bars */}
             {weeklyData.vals.map((v, i) => {
               const isHighlight = i === weeklyData.todayDayIndex;
-              const barHeight = Math.round((v / weeklyData.maxVal) * 145);
+              const barHeight = Math.max(8, Math.round((v / weeklyData.maxVal) * 145));
 
               return (
-                <div key={weeklyData.days[i]} className={`bar ${isHighlight ? 'h' : ''}`}>
-                  <i style={{ height: `${barHeight}px` }} title={`${weeklyData.days[i]}: ${v}k ETB`} />
+                <div key={`${weeklyData.days[i]}-${i}`} className={`bar ${isHighlight ? 'h' : ''}`}>
+                  <i style={{ height: `${barHeight}px` }} title={`${weeklyData.days[i]}: ETB ${formatNumber(v)}`} />
                   {weeklyData.days[i]}
                 </div>
               );
@@ -161,40 +172,46 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
           </div>
         </div>
 
-        {/* Game Allocation Donut */}
+        {/* Game Allocation Donut (Sonic Bingo 80/20 Math) */}
         <div className="card">
           <h3>Game Allocation</h3>
 
-          {/* 3-Slice Conic Gradient Donut */}
-          <div className="donut">
+          {/* 2-Slice Conic Gradient Donut (80% Prize Pool, 20% House Fee) */}
+          <div className="donut" style={{ background: 'conic-gradient(var(--dark) 0 80%, var(--grey) 80% 100%)' }}>
             <b>100%</b>
           </div>
 
           <div className="lg">
-            <span style={{ '--c': 'var(--dark)' } as React.CSSProperties}>Prize pool</span>
-            70%
+            <span style={{ '--c': 'var(--dark)' } as React.CSSProperties}>Prize Pool (Derash)</span>
+            80%
           </div>
 
           <div className="lg">
-            <span style={{ '--c': 'var(--grey)' } as React.CSSProperties}>Commission</span>
+            <span style={{ '--c': 'var(--grey)' } as React.CSSProperties}>House Commission</span>
             20%
           </div>
 
-          <div className="lg">
-            <span style={{ '--c': '#cdcdd0' } as React.CSSProperties}>Jackpot</span>
-            10%
-          </div>
-
-          <div className="tr" style={{ marginTop: '8px' }}>
-            Example: 100 players × 50 ETB = 5,000 ETB
+          <div className="tr" style={{ marginTop: '14px' }}>
+            Formula: 80% to round winner, 20% platform cut
           </div>
         </div>
       </div>
 
-      {/* 4. Bottom Section: Recent Transactions Table (.g1) */}
+      {/* 4. Bottom Section 1: Recent Transactions Table (.g1) */}
       <div className="grid g1">
         <div className="card">
-          <h3>Recent Transactions</h3>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <h3 style={{ margin: 0 }}>Recent Transactions</h3>
+            <button
+              type="button"
+              className="p"
+              onClick={() => onNavigateTab('cashier')}
+              title="Open P2P Cashier Desk"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <span>Cashier Desk ({transactions.length}) →</span>
+            </button>
+          </div>
 
           <div className="wrap">
             <table>
@@ -213,7 +230,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
                 {transactions.length === 0 ? (
                   <tr>
                     <td colSpan={7} style={{ textAlign: 'center', color: 'var(--mute)', padding: '24px 0' }}>
-                      No recent transactions recorded.
+                      No recent transactions recorded in database.
                     </td>
                   </tr>
                 ) : (
@@ -256,6 +273,96 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
                           ) : (
                             <span style={{ color: 'var(--mute)', fontSize: '12px' }}>Completed</span>
                           )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. Bottom Section 2: Registered Agents & Float Balances Directory (Filling Empty Space) */}
+      <div className="grid g1">
+        <div className="card">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+            <h3 style={{ margin: 0 }}>Registered Agents & Float Balances</h3>
+            <button
+              type="button"
+              className="p"
+              onClick={() => onNavigateTab('agents')}
+              title="Open full Agents Management Portal"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <span>Manage Agents Directory ({totalAgentsCount})</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Agent & Code</th>
+                  <th>Phone</th>
+                  <th>City / Region</th>
+                  <th>Referred Players</th>
+                  <th>Total Volume Deposited</th>
+                  <th>Wallet Float Balance</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {agentsList.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} style={{ textAlign: 'center', color: 'var(--mute)', padding: '24px 0' }}>
+                      No agents registered yet. Use the Agents Directory tab to onboard your first P2P agent.
+                    </td>
+                  </tr>
+                ) : (
+                  agentsList.slice(0, 6).map((agent: any) => {
+                    const isActive = agent.status === 'active';
+                    const balance = parseFloat(agent.wallet_balance || '0');
+                    const isLow = balance <= (parseFloat(agent.low_balance_threshold) || 1000);
+
+                    return (
+                      <tr key={agent.id}>
+                        <td>
+                          <strong>{agent.full_name || agent.name || 'Agent'}</strong>{' '}
+                          <span style={{ fontSize: '11px', color: 'var(--mute)' }}>
+                            ({agent.agent_code || 'AGT'})
+                          </span>
+                        </td>
+                        <td>{agent.phone || '—'}</td>
+                        <td>{agent.city || 'Addis Ababa'}</td>
+                        <td>{formatNumber(agent.total_players || 0)} players</td>
+                        <td>ETB {formatNumber(agent.total_volume_deposited || 0)}</td>
+                        <td>
+                          <strong>ETB {formatNumber(balance)}</strong>
+                          {isLow && (
+                            <span style={{ marginLeft: '6px', fontSize: '10px', color: 'var(--r)', fontWeight: 700 }}>
+                              LOW
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <span className={`b ${isActive ? 'k' : 'w'}`}>
+                            {isActive ? 'Active' : 'Suspended'}
+                          </span>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            onClick={() => onNavigateTab('agents')}
+                            style={{ padding: '4px 10px', fontSize: '11.5px' }}
+                          >
+                            Details →
+                          </button>
                         </td>
                       </tr>
                     );

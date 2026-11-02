@@ -1026,7 +1026,17 @@ router.post('/withdrawals/:id/reject', requireAdmin, async (req: AuthenticatedRe
  */
 router.get('/stats', requireAdmin, async (_req, res) => {
   try {
-    const [userCountRes, depositSumRes, withdrawSumRes, roundsStatsRes, netCashRes, jackpotPoolRes, jackpotPaidRes] = await Promise.all([
+    const [
+      userCountRes,
+      depositSumRes,
+      withdrawSumRes,
+      roundsStatsRes,
+      netCashRes,
+      jackpotPoolRes,
+      jackpotPaidRes,
+      agentStatsRes,
+      weeklyRevenueRes
+    ] = await Promise.all([
       query(
         "SELECT COUNT(*) as count FROM users WHERE role = 'player' AND (is_bot IS NULL OR is_bot = false) AND full_name NOT LIKE 'Synthetic%'"
       ),
@@ -1052,11 +1062,29 @@ router.get('/stats', requireAdmin, async (_req, res) => {
           AND (u.is_bot IS NULL OR u.is_bot = false)
       `),
       query("SELECT COALESCE(SUM(balance), 0) as total_jackpot_pool FROM jackpot_pool"),
-      query("SELECT COALESCE(SUM(amount), 0) as total_jackpot_paid FROM jackpot_winners")
+      query("SELECT COALESCE(SUM(amount), 0) as total_jackpot_paid FROM jackpot_winners"),
+      query(`
+        SELECT 
+          COUNT(*) as total_agents,
+          COALESCE(SUM(wallet_balance), 0) as total_agent_balance,
+          COUNT(*) FILTER (WHERE status = 'active') as active_agents
+        FROM agent_profiles
+      `),
+      query(`
+        SELECT 
+          TO_CHAR(d::date, 'Dy') as day_name,
+          TO_CHAR(d::date, 'YYYY-MM-DD') as round_date,
+          COALESCE(SUM(gr.platform_fee), 0) as daily_revenue
+        FROM generate_series(CURRENT_DATE - INTERVAL '6 days', CURRENT_DATE, '1 day'::interval) d
+        LEFT JOIN game_rounds gr ON DATE(gr.started_at) = d::date
+        GROUP BY d::date
+        ORDER BY d::date ASC
+      `)
     ]);
 
     const rStats = roundsStatsRes.rows[0] || {};
     const netCash = parseFloat(netCashRes.rows[0]?.today_net_cash_profit || '0');
+    const aStats = agentStatsRes.rows[0] || {};
 
     return res.json({
       success: true,
@@ -1071,7 +1099,15 @@ router.get('/stats', requireAdmin, async (_req, res) => {
         todayNetCashProfit: netCash,
         totalJackpotPool: parseFloat(jackpotPoolRes.rows[0]?.total_jackpot_pool || '0'),
         totalJackpotPaid: parseFloat(jackpotPaidRes.rows[0]?.total_jackpot_paid || '0'),
-        defaultCommissionRate: 20
+        defaultCommissionRate: 20,
+        totalAgents: parseInt(aStats.total_agents || '0', 10),
+        totalAgentBalance: parseFloat(aStats.total_agent_balance || '0'),
+        activeAgentsCount: parseInt(aStats.active_agents || '0', 10),
+        weeklyRevenue: weeklyRevenueRes.rows.map(r => ({
+          day: r.day_name,
+          date: r.round_date,
+          revenue: parseFloat(r.daily_revenue || '0')
+        }))
       }
     });
   } catch (error: any) {

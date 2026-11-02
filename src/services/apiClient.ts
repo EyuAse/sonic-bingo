@@ -723,6 +723,10 @@ export const apiClient = {
           todayHouseRevenue: number;
           todayNetCashProfit: number;
           defaultCommissionRate: number;
+          totalAgents?: number;
+          totalAgentBalance?: number;
+          activeAgentsCount?: number;
+          weeklyRevenue?: { day: string; date: string; revenue: number }[];
         };
       }>(res);
     },

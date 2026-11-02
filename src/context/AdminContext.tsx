@@ -180,6 +180,11 @@ interface AdminContextType {
   todayGamesPlayed: number;
   todayNetCashProfit: number;
   pendingTransactionsCount: number;
+  totalAgentsCount: number;
+  totalAgentBalance: number;
+  activeAgentsCount: number;
+  agentsList: any[];
+  weeklyRevenueData: { day: string; date: string; revenue: number }[];
   refreshAdminData: () => Promise<void>;
 }
 
@@ -375,6 +380,11 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [todayHouseProfit, setTodayHouseProfit] = useState<number>(0);
   const [todayGamesPlayed, setTodayGamesPlayed] = useState<number>(0);
   const [todayNetCashProfit, setTodayNetCashProfit] = useState<number>(0);
+  const [totalAgentsCount, setTotalAgentsCount] = useState<number>(0);
+  const [totalAgentBalance, setTotalAgentBalance] = useState<number>(0);
+  const [activeAgentsCount, setActiveAgentsCount] = useState<number>(0);
+  const [agentsList, setAgentsList] = useState<any[]>([]);
+  const [weeklyRevenueData, setWeeklyRevenueData] = useState<{ day: string; date: string; revenue: number }[]>([]);
 
   // Dedicated Paginated & Searchable User Fetch
   const fetchUsers = useCallback(async (params?: {
@@ -445,11 +455,12 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       // 1. Fetch Real Users (Preserving current page, limit & search filter)
       await fetchUsers();
 
-      // 2. Fetch Real Deposits & Withdrawals
-      const [depRes, wdRes, statsRes] = await Promise.all([
+      // 2. Fetch Real Deposits, Withdrawals, Stats & Agents
+      const [depRes, wdRes, statsRes, agentsRes] = await Promise.all([
         apiClient.admin.getDeposits().catch(() => ({ deposits: [] })),
         apiClient.admin.getWithdrawals().catch(() => ({ withdrawals: [] })),
-        apiClient.admin.getStats().catch(() => ({ stats: null }))
+        apiClient.admin.getStats().catch(() => ({ stats: null })),
+        apiClient.admin.getAgents().catch(() => ({ agents: [] }))
       ]);
 
       const txList: TransactionRequest[] = [];
@@ -516,6 +527,27 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
         if (typeof statsRes.stats.todayNetCashProfit === 'number') {
           setTodayNetCashProfit(statsRes.stats.todayNetCashProfit);
+        }
+        if (Array.isArray(statsRes.stats.weeklyRevenue)) {
+          setWeeklyRevenueData(statsRes.stats.weeklyRevenue);
+        }
+      }
+
+      if (agentsRes && Array.isArray(agentsRes.agents)) {
+        setAgentsList(agentsRes.agents);
+        setTotalAgentsCount(agentsRes.agents.length);
+        const floatSum = agentsRes.agents.reduce((acc: number, a: any) => acc + (parseFloat(a.wallet_balance) || 0), 0);
+        setTotalAgentBalance(floatSum);
+        setActiveAgentsCount(agentsRes.agents.filter((a: any) => a.status === 'active').length);
+      } else if (statsRes.stats) {
+        if (typeof statsRes.stats.totalAgents === 'number') {
+          setTotalAgentsCount(statsRes.stats.totalAgents);
+        }
+        if (typeof statsRes.stats.totalAgentBalance === 'number') {
+          setTotalAgentBalance(statsRes.stats.totalAgentBalance);
+        }
+        if (typeof statsRes.stats.activeAgentsCount === 'number') {
+          setActiveAgentsCount(statsRes.stats.activeAgentsCount);
         }
       }
     } catch (err) {
@@ -827,6 +859,11 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         todayGamesPlayed,
         todayNetCashProfit,
         pendingTransactionsCount,
+        totalAgentsCount,
+        totalAgentBalance,
+        activeAgentsCount,
+        agentsList,
+        weeklyRevenueData,
         refreshAdminData,
         botConfig,
         updateBotConfig,
