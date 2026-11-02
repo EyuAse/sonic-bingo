@@ -115,19 +115,30 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         return;
       }
       console.log('⚡ [Live Real Balance Event Received]:', data);
-      // Optimistically update both balance and bonus from push event payload
-      if (typeof data?.newBalance === 'number') {
-        setBalance(data.newBalance);
-        localStorage.setItem('sonic_live_balance', data.newBalance.toFixed(2));
-      } else if (typeof data?.balance === 'number') {
-        setBalance(data.balance);
-        localStorage.setItem('sonic_live_balance', data.balance.toFixed(2));
-      } else if (typeof data?.amount === 'number') {
-        setBalance(prev => prev + data.amount);
+      
+      const rawNewBal = data?.newBalance ?? data?.balance;
+      const parsedNewBal = rawNewBal !== undefined && rawNewBal !== null ? parseFloat(rawNewBal) : null;
+      const parsedAmount = data?.amount !== undefined && data?.amount !== null ? parseFloat(data.amount) : null;
+      const parsedBonus = data?.bonus !== undefined && data?.bonus !== null ? parseFloat(data.bonus) : null;
+
+      if (parsedNewBal !== null && !isNaN(parsedNewBal)) {
+        setBalance(parsedNewBal);
+        localStorage.setItem('sonic_live_balance', parsedNewBal.toFixed(2));
+        window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: { balance: parsedNewBal } }));
+      } else if (parsedAmount !== null && !isNaN(parsedAmount)) {
+        setBalance(prev => {
+          const next = prev + parsedAmount;
+          localStorage.setItem('sonic_live_balance', next.toFixed(2));
+          window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: { balance: next } }));
+          return next;
+        });
       }
-      if (typeof data?.bonus === 'number') {
-        setBonus(data.bonus);
+
+      if (parsedBonus !== null && !isNaN(parsedBonus)) {
+        setBonus(parsedBonus);
+        localStorage.setItem('sonic_live_bonus', parsedBonus.toFixed(2));
       }
+
       // Always follow up with authoritative DB fetch
       fetchLiveBalance();
     };
@@ -143,6 +154,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     let unsubUserWithdrawalRejected: (() => void) | null = null;
 
     if (user?.id) {
+      socketService.setAuthenticatedUser(user.id, user.fullName);
       unsubUserBalance = socketService.on(`user_${user.id}_balance`, handleBalanceEvent);
       unsubUserDepositApproved = socketService.on(`user_${user.id}_deposit_approved`, (data: any) => {
         console.log('⚡ [WalletContext] User Deposit Approved Push:', data);

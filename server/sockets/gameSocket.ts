@@ -22,10 +22,59 @@ export function setupGameSockets(io: Server) {
 
     let currentRoomId: string | null = null;
     let authUserId: string | null = null;
-    let authUserName: string = 'Lomi Player';
+    let authUserName: string = 'Sonic Player';
+
+    // Helper: Register user session, enforce single-device policy, and join user room
+    const registerUserSession = (userId: string, userName?: string) => {
+      if (!userId) return;
+      authUserId = userId;
+      if (userName) authUserName = userName;
+
+      // Enforce Single Active Device Policy: Prohibit simultaneous logins on 2 or more devices
+      const existingSession = activeUserSessions.get(userId);
+      if (existingSession && existingSession.socketId !== socket.id) {
+        const oldSocket = io.sockets.sockets.get(existingSession.socketId);
+        if (oldSocket) {
+          console.log(`⚠️ [Single-Device Policy] User ${userId} connected from new socket ${socket.id}. Disconnecting previous socket ${existingSession.socketId}.`);
+          oldSocket.emit("session_terminated", {
+            reason: "concurrent_device",
+            message: "⚠️ Your account was opened on another device. Simultaneous play on multiple devices is strictly prohibited."
+          });
+          oldSocket.leave(`user_${userId}`);
+          if (currentRoomId) {
+            oldSocket.leave(currentRoomId);
+          }
+          oldSocket.disconnect(true);
+        }
+      }
+      activeUserSessions.set(userId, { socketId: socket.id, connectedAt: Date.now() });
+
+      socket.join(`user_${userId}`);
+      console.log(`⚡ [Socket.IO] User ${userId} joined room user_${userId} on socket ${socket.id}`);
+
+      // Check for Disconnect Protection wins that occurred while offline
+      const unackedWins = gameEngine.getUnacknowledgedWins(userId);
+      if (unackedWins && unackedWins.length > 0) {
+        socket.emit("offline_win_notification", unackedWins);
+      }
+    };
+
+    // Auto-identify if credentials provided in connection handshake auth/query
+    const handshakeUserId = (socket.handshake.auth?.userId || socket.handshake.query?.userId) as string | undefined;
+    const handshakeUserName = (socket.handshake.auth?.userName || socket.handshake.query?.userName) as string | undefined;
+    if (handshakeUserId) {
+      registerUserSession(handshakeUserId, handshakeUserName);
+    }
+
+    // Explicit User Identification Event: Allows instant room registration without entering a game room
+    socket.on("identify_user", (data: { userId?: string; userName?: string }) => {
+      if (data?.userId) {
+        registerUserSession(data.userId, data.userName);
+      }
+    });
 
     // 1. Join Game Room
-    socket.on('join_room', (data: { roomId: string; userId?: string; userName?: string }) => {
+    socket.on("join_room", (data: { roomId: string; userId?: string; userName?: string }) => {
       const { roomId, userId, userName } = data;
       if (!roomId) return;
 
@@ -36,38 +85,12 @@ export function setupGameSockets(io: Server) {
 
       currentRoomId = roomId;
       if (userId) {
-        // Enforce Single Active Device Policy: Prohibit simultaneous logins on 2 or more devices
-        const existingSession = activeUserSessions.get(userId);
-        if (existingSession && existingSession.socketId !== socket.id) {
-          const oldSocket = io.sockets.sockets.get(existingSession.socketId);
-          if (oldSocket) {
-            console.log(`⚠️ [Single-Device Policy] User ${userId} connected from new socket ${socket.id}. Disconnecting previous socket ${existingSession.socketId}.`);
-            oldSocket.emit('session_terminated', {
-              reason: 'concurrent_device',
-              message: '⚠️ Your account was opened on another device. Simultaneous play on multiple devices is strictly prohibited.'
-            });
-            oldSocket.leave(`user_${userId}`);
-            if (currentRoomId) {
-              oldSocket.leave(currentRoomId);
-            }
-            oldSocket.disconnect(true);
-          }
-        }
-        activeUserSessions.set(userId, { socketId: socket.id, connectedAt: Date.now() });
-
-        authUserId = userId;
-        socket.join(`user_${userId}`);
-        // Check for Disconnect Protection wins that occurred while offline
-        const unackedWins = gameEngine.getUnacknowledgedWins(userId);
-        if (unackedWins && unackedWins.length > 0) {
-          socket.emit('offline_win_notification', unackedWins);
-        }
+        registerUserSession(userId, userName);
       }
       if (userName) authUserName = userName;
 
       socket.join(roomId);
       gameEngine.handleJoinRoom(socket.id, roomId, userId, authUserName);
-
       const room = gameEngine.getRoom(roomId);
       if (room) {
         // Find any existing active or queued pre-bought tickets for this user

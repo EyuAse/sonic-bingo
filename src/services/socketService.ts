@@ -38,7 +38,19 @@ class SocketService {
   private eventSubscribers: Map<string, Set<Function>> = new Map();
   private attachedSocketEvents: Set<string> = new Set();
 
-  private constructor() {
+    private constructor() {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('sonic_user');
+        if (stored) {
+          const u = JSON.parse(stored);
+          if (u?.id) {
+            this.currentUserId = u.id;
+            this.currentUserName = u.fullName || u.telegramUsername || 'Sonic Player';
+          }
+        }
+      } catch (_) {}
+    }
     this.initLifecycleListeners();
   }
 
@@ -95,6 +107,18 @@ class SocketService {
     telegramService.onViewportChanged(() => {
       handleForeground();
     });
+  }
+
+    public setAuthenticatedUser(userId: string | null, userName?: string | null) {
+    this.currentUserId = userId;
+    this.currentUserName = userName || 'Sonic Player';
+    if (this.socket && this.socket.connected && userId) {
+      this.socket.emit('identify_user', {
+        userId,
+        userName: this.currentUserName
+      });
+      console.log('🔌 [SocketService] Identified user:', userId);
+    }
   }
 
   public onForegroundResume(callback: () => void): () => void {
@@ -178,6 +202,10 @@ class SocketService {
     // Resilient Mobile Network Socket.IO Configuration (15s timeout with jitter backoff)
     const socketOptions = {
       transports: ['websocket', 'polling'],
+      auth: {
+        userId: this.currentUserId,
+        userName: this.currentUserName
+      },
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 500,
@@ -193,6 +221,13 @@ class SocketService {
       this.lastMessageTime = Date.now();
       this.updateStatus('connected');
       this.measurePing();
+
+      if (this.currentUserId) {
+        this.socket?.emit('identify_user', {
+          userId: this.currentUserId,
+          userName: this.currentUserName
+        });
+      }
 
       if (this.currentRoomId) {
         this.socket?.emit('join_room', {
