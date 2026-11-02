@@ -224,7 +224,7 @@ export const LandingPage: React.FC = () => {
                 alt="75-Ball Sonic Bingo VIP 3D Podium"
                 className="hero-artwork-img"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/assets/images/lomi-hero-75.jpg';
+                  (e.target as HTMLImageElement).src = '/assets/images/fast-bingo-exact-hero.jpg';
                 }}
               />
             </div>

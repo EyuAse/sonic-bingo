@@ -300,7 +300,7 @@ class AuthService {
       this.saveStoredUsers(users);
     }
 
-    const token = `lomi_tg_jwt_${Date.now()}_${user.id}`;
+    const token = `sonic_tg_jwt_${Date.now()}_${user.id}`;
     const safeUser: User = {
       id: user.id,
       phone: user.phone,
@@ -359,7 +359,7 @@ class AuthService {
     users.push(newUser);
     this.saveStoredUsers(users);
 
-    const token = `lomi_jwt_${Date.now()}_${newUser.id}`;
+    const token = `sonic_jwt_${Date.now()}_${newUser.id}`;
     const safeUser: User = {
       id: newUser.id,
       phone: newUser.phone,
@@ -405,7 +405,7 @@ class AuthService {
     user.lastLogin = new Date().toISOString();
     this.saveStoredUsers(users);
 
-    const token = `lomi_jwt_${Date.now()}_${user.id}`;
+    const token = `sonic_jwt_${Date.now()}_${user.id}`;
     const safeUser: User = {
       id: user.id,
       phone: user.phone,

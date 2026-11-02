@@ -328,7 +328,7 @@ export const AffiliatePage: React.FC = () => {
               }}
             >
               <img
-                src="/assets/images/lomi_rewards_chest_etb.png"
+                src="/assets/images/sonic-rewards-chest-coins.png"
                 alt="3D ETB Royal Treasure Chest"
                 style={{ width: '100%', height: '100%', objectFit: 'contain' }}
               />

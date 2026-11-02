@@ -25,7 +25,7 @@ export const BlumOnboardingCarousel: React.FC<BlumOnboardingCarouselProps> = ({
       sub: lang === 'am'
         ? 'በየ60 ሰከንዱ የቀጥታ ዙሮች እና ሺዎች የሚቆጠሩ እውነተኛ ኢትዮጵያውያን ተጫዋቾች!'
         : 'Fast-paced 75-ball express rounds with thousands of real Ethiopian players.',
-      art: '/assets/images/lomi-hero-75.jpg',
+      art: '/assets/images/sonic-hero-75-vip.jpg',
       features: [
         {
           icon: '⚡',
@@ -85,7 +85,7 @@ export const BlumOnboardingCarousel: React.FC<BlumOnboardingCarouselProps> = ({
       sub: lang === 'am'
         ? 'በቴሌግራም በአንድ ንክኪ ይመዝገቡና የ20 ብር ነፃ ቦነስዎን ወዲያውኑ ተቀብለው ይጫወቱ!'
         : 'Create account in 1-tap via Telegram and claim 20 ETB welcome bonus now.',
-      art: '/assets/images/lomi-hero-75.jpg',
+      art: '/assets/images/sonic-hero-75-vip.jpg',
       features: [
         {
           icon: '🎁',

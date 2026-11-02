@@ -25,7 +25,7 @@ import { AffiliatePage } from './pages/AffiliatePage.tsx';
 import { telegramService } from './services/telegramService.ts';
 import { AccountInfoPage } from './pages/AccountInfoPage.tsx';
 import { HelpCenterPage } from './pages/HelpCenterPage.tsx';
-import { AboutLomiPage } from './pages/AboutLomiPage.tsx';
+import { AboutSonicPage } from './pages/AboutSonicPage.tsx';
 import { AdminPage } from './pages/AdminPage.tsx';
 import { AgentPortalPage } from './pages/AgentPortalPage.tsx';
 import { AppSplashScreen } from './components/common/AppSplashScreen.tsx';
@@ -139,7 +139,7 @@ export const App: React.FC = () => {
       {currentPage === 'affiliate' && <AffiliatePage />}
       {currentPage === 'account-info' && <AccountInfoPage />}
       {currentPage === 'help' && <HelpCenterPage />}
-      {currentPage === 'about' && <AboutLomiPage />}
+      {currentPage === 'about' && <AboutSonicPage />}
 
       {/* Bottom Navigation */}
       {!isStandalonePage && !isDedicatedGamePage && <BottomNav />}

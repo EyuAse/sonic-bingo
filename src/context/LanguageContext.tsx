@@ -15,13 +15,13 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [lang, setLangState] = useState<Language>(() => {
-    const saved = localStorage.getItem('lomi_bingo_lang');
+    const saved = localStorage.getItem('sonic_bingo_lang') || localStorage.getItem('lomi_bingo_lang');
     return saved === 'en' || saved === 'am' ? saved : 'am';
   });
 
   const setLang = (nextLang: Language) => {
     setLangState(nextLang);
-    localStorage.setItem('lomi_bingo_lang', nextLang);
+    localStorage.setItem('sonic_bingo_lang', nextLang);
     soundEngine.setVoiceLang(nextLang);
   };
 

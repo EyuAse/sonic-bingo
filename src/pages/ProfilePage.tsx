@@ -108,8 +108,8 @@ export const ProfilePage: React.FC = () => {
                 <i className="fa-solid fa-shield-halved"></i>
               </div>
               <div className="settings-row-text-col">
-                <strong className="settings-row-title">{t('profile.aboutLomi')}</strong>
-                <span className="settings-row-sub">{t('profile.aboutLomiSub')}</span>
+                <strong className="settings-row-title">{t('profile.aboutSonic') || t('profile.aboutLomi')}</strong>
+                <span className="settings-row-sub">{t('profile.aboutSonicSub') || t('profile.aboutLomiSub')}</span>
               </div>
               <i className="fa-solid fa-chevron-right settings-chevron"></i>
             </div>

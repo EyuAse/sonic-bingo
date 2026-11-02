@@ -113,8 +113,8 @@ export const TelegramRegisterModal: React.FC<TelegramRegisterModalProps> = ({
             }}
           >
             <img
-              src="/assets/images/lomi_crowned_lemon_badge.png"
-              alt="Lomi Crowned Lemon"
+              src="/assets/images/wallet-vip-crown-ribbon.jpg"
+              alt="Sonic Crown VIP Badge"
               style={{ width: '100%', height: '100%', objectFit: 'contain' }}
             />
           </div>
@@ -134,7 +134,7 @@ export const TelegramRegisterModal: React.FC<TelegramRegisterModalProps> = ({
           </span>
         </div>
 
-        {/* 2. Dual-Tone Title: Create Your Lomi Account */}
+        {/* 2. Dual-Tone Title: Create Your Sonic Account */}
         <h2
           style={{
             fontSize: '23px',
@@ -146,9 +146,9 @@ export const TelegramRegisterModal: React.FC<TelegramRegisterModalProps> = ({
           }}
         >
           {lang === 'am' ? (
-            <>የእርስዎን <span style={{ color: '#16a34a' }}>ሎሚ</span> መለያ ይፍጠሩ</>
+            <>የእርስዎን <span style={{ color: '#0ea5e9' }}>ሶኒክ</span> መለያ ይፍጠሩ</>
           ) : (
-            <>Create Your <span style={{ color: '#16a34a' }}>Lomi</span> Account</>
+            <>Create Your <span style={{ color: '#0ea5e9' }}>Sonic</span> Account</>
           )}
         </h2>
 
@@ -248,7 +248,7 @@ export const TelegramRegisterModal: React.FC<TelegramRegisterModalProps> = ({
             }}
           >
             <img
-              src="/assets/images/lomi_etb_coins_reward.png"
+              src="/assets/images/sonic-rewards-chest-coins.png"
               alt="ETB Gold Coins Stack"
               style={{ width: '100%', height: '100%', objectFit: 'contain' }}
             />
