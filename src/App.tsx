@@ -42,7 +42,7 @@ export const App: React.FC = () => {
       const isAgentHash = typeof window !== 'undefined' && (
         window.location.hash.includes('agent') ||
         window.location.pathname.includes('agent') ||
-        (localStorage.getItem('sonic_active_portal') === 'agent' && !!localStorage.getItem('sonic_agent_token'))
+        localStorage.getItem('sonic_active_portal') === 'agent'
       );
       if (isAgentHash) {
         switchPage('agent');

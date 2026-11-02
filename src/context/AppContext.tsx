@@ -33,7 +33,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const hash = window.location.hash;
       const path = window.location.pathname;
       const savedPortal = localStorage.getItem('sonic_active_portal');
-      const hasAgentToken = !!localStorage.getItem('sonic_agent_token');
 
       if (hash.includes('lomibingo-Admin-vBingo') || path.includes('lomibingo-Admin-vBingo') || hash.includes('admin')) {
         return 'admin';
@@ -41,7 +40,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (
         hash.includes('agent') ||
         path.includes('agent') ||
-        (savedPortal === 'agent' && hasAgentToken)
+        savedPortal === 'agent'
       ) {
         return 'agent';
       }
@@ -57,14 +56,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const hash = window.location.hash;
       const path = window.location.pathname;
       const savedPortal = localStorage.getItem('sonic_active_portal');
-      const hasAgentToken = !!localStorage.getItem('sonic_agent_token');
 
       if (hash.includes('lomibingo-Admin-vBingo') || path.includes('lomibingo-Admin-vBingo') || hash.includes('admin')) {
         setCurrentPage('admin');
       } else if (
         hash.includes('agent') ||
         path.includes('agent') ||
-        (savedPortal === 'agent' && hasAgentToken)
+        savedPortal === 'agent'
       ) {
         setCurrentPage('agent');
       }

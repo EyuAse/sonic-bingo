@@ -5,6 +5,7 @@ import { apiClient } from '../services/apiClient.ts';
 
 // Luxury Sonic Theme & Component Suite
 import '../styles/agent.css';
+import { AgentLoginScreen } from '../components/agent/AgentLoginScreen.tsx';
 import { AgentSidebar, AgentDeskTab } from '../components/agent/AgentSidebar.tsx';
 import { AgentHeader } from '../components/agent/AgentHeader.tsx';
 import { AgentDashboardDesk } from '../components/agent/AgentDashboardDesk.tsx';
@@ -225,13 +226,16 @@ export const AgentPortalPage: React.FC = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('sonic_agent_token');
-    localStorage.removeItem('sonic_active_portal');
     localStorage.removeItem('sonic_agent_tab');
     setIsAgentLoggedIn(false);
     setProfile(null);
     setMetrics(null);
+    setLoginPassword('');
     showToast('🚪 Logged out of Sonic Agent Terminal');
-    switchPage('landing');
+    if (typeof window !== 'undefined') {
+      window.location.hash = '/agent-portal';
+      localStorage.setItem('sonic_active_portal', 'agent');
+    }
   };
 
   const handleQuickDeposit = (player: any) => {
@@ -239,138 +243,20 @@ export const AgentPortalPage: React.FC = () => {
     setActiveTab('cash_in');
   };
 
-  // 3. Render Login Screen if unauthenticated
+  // 3. Render 100% Pixel-Perfect Cloned Login Screen if unauthenticated
   if (!isAgentLoggedIn) {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          background: 'linear-gradient(180deg, #f8fafc 0%, #edf2f7 100%)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '20px',
-          boxSizing: 'border-box'
-        }}
-      >
-        <div
-          className="sonic-white-card"
-          style={{
-            maxWidth: '440px',
-            width: '100%',
-            padding: '36px 32px',
-            borderRadius: '20px',
-            boxShadow: '0 20px 40px -15px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04)'
-          }}
-        >
-          {/* Logo Brand */}
-          <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-            <div
-              style={{
-                width: '64px',
-                height: '64px',
-                borderRadius: '16px',
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '32px',
-                boxShadow: '0 6px 18px rgba(245, 158, 11, 0.4)',
-                marginBottom: '14px',
-                color: '#ffffff'
-              }}
-            >
-              👑
-            </div>
-            <h1
-              style={{
-                fontSize: '22px',
-                fontWeight: 900,
-                color: '#0f172a',
-                margin: 0,
-                letterSpacing: '-0.5px'
-              }}
-            >
-              Sonic <span style={{ color: '#d97706' }}>Bingo</span> Agent Terminal
-            </h1>
-            <p style={{ fontSize: '13px', color: '#64748b', marginTop: '6px', margin: 0 }}>
-              Authorized Cash-In & Cash-Out Network Portal
-            </p>
-          </div>
-
-          <form onSubmit={handleAgentLogin}>
-            <div style={{ marginBottom: '14px' }}>
-              <label className="sonic-field-label">Agent Phone Number</label>
-              <input
-                type="text"
-                className="sonic-input-field"
-                placeholder="e.g. 0911223344"
-                value={loginPhone}
-                onChange={e => setLoginPhone(e.target.value)}
-                required
-              />
-            </div>
-
-            <div style={{ marginBottom: '14px' }}>
-              <label className="sonic-field-label">PIN / Password</label>
-              <input
-                type="password"
-                className="sonic-input-field"
-                placeholder="Enter 4-digit PIN (default: 1234)"
-                value={loginPassword}
-                onChange={e => setLoginPassword(e.target.value)}
-              />
-            </div>
-
-            <div style={{ marginBottom: '22px' }}>
-              <label className="sonic-field-label">Agent Code (Optional)</label>
-              <input
-                type="text"
-                className="sonic-input-field"
-                placeholder="e.g. AGT-1001"
-                value={loginCode}
-                onChange={e => setLoginCode(e.target.value)}
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="sonic-gold-btn"
-              style={{ width: '100%', padding: '14px', fontSize: '14px' }}
-              disabled={isLoggingIn}
-            >
-              {isLoggingIn ? (
-                <>
-                  <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '8px' }}></i>
-                  Authenticating...
-                </>
-              ) : (
-                '🔑 Access Agent Terminal'
-              )}
-            </button>
-          </form>
-
-          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #e2e8f0', textAlign: 'center' }}>
-            <button
-              type="button"
-              onClick={() => switchPage('games')}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#64748b',
-                fontSize: '13px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
-            >
-              <i className="fa-solid fa-arrow-left"></i> Return to Sonic Bingo Player App
-            </button>
-          </div>
-        </div>
-      </div>
+      <AgentLoginScreen
+        loginPhone={loginPhone}
+        setLoginPhone={setLoginPhone}
+        loginPassword={loginPassword}
+        setLoginPassword={setLoginPassword}
+        loginCode={loginCode}
+        setLoginCode={setLoginCode}
+        isLoggingIn={isLoggingIn}
+        onSubmit={handleAgentLogin}
+        onReturnToBingo={() => switchPage(user ? 'games' : 'landing')}
+      />
     );
   }
 
