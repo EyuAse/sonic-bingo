@@ -137,3 +137,4 @@ export const AboutSonicPage: React.FC = () => {
 
 export const AboutLomiPage = AboutSonicPage;
 export default AboutSonicPage;
+

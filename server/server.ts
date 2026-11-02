@@ -82,7 +82,7 @@ app.get('/api/health', async (_req, res) => {
 
   res.status(dbHealth.connected ? 200 : 503).json({
     status: dbHealth.connected ? 'healthy' : 'degraded',
-    service: 'Lomi Bingo Production API',
+    service: 'Sonic Bingo Production API',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
     database: {
@@ -117,7 +117,7 @@ app.use((req, res, next) => {
     return res.status(503).json({
       success: false,
       maintenance: true,
-      error: 'ሎሚ ቢንጎ በጊዜያዊ ጥገና ላይ ነው። ጨዋታዎች ለጊዜው ቆመዋል (Lomi Bingo is under scheduled maintenance).'
+      error: 'ሶኒክ ቢንጎ በጊዜያዊ ጥገና ላይ ነው። ጨዋታዎች ለጊዜው ቆመዋል (Sonic Bingo is under scheduled maintenance).'
     });
   }
 
@@ -130,7 +130,7 @@ app.use((req, res, next) => {
     return res.sendFile(maintenanceFile);
   }
 
-  return res.status(503).send('Lomi Bingo is under scheduled maintenance. We will be back soon.');
+  return res.status(503).send('Sonic Bingo is under scheduled maintenance. We will be back soon.');
 });
 
 // Network Health & Diagnostics Endpoint (Open for Admin and Client Status)
@@ -339,14 +339,14 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 if (process.env.NODE_ENV !== 'test') {
   server.on('error', (err: any) => {
     if (err.code === 'EADDRINUSE') {
-      console.log(`ℹ️ [Lomi Bingo Server] Port ${PORT} is already in use by primary instance.`);
+      console.log(`ℹ️ [Sonic Bingo Server] Port ${PORT} is already in use by primary instance.`);
     } else {
       console.error('❌ [Server Error]:', err);
     }
   });
 
   server.listen(PORT, () => {
-    console.log(`🚀 [Lomi Bingo Server] Running on http://localhost:${PORT}`);
+    console.log(`🚀 [Sonic Bingo Server] Running on http://localhost:${PORT}`);
     console.log(`📊 [Neon PostgreSQL] Connection Pool Active`);
     console.log(`🎮 [Bingo Engine] 4 Game Rooms Initialized`);
     query(`

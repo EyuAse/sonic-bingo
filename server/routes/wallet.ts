@@ -446,11 +446,11 @@ router.get('/referrals', requireAuth, async (req: AuthenticatedRequest, res) => 
     let referralCode = userRes.rows[0]?.referral_code;
 
     if (!referralCode) {
-      referralCode = 'LOMI-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+      referralCode = 'SONIC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
       await query('UPDATE users SET referral_code = $1 WHERE id = $2', [referralCode, userId]);
     }
 
-    const referralLink = `https://t.me/LomiBingobot/play?startapp=ref_${referralCode}`;
+    const referralLink = `https://t.me/SonicGameOfficialBot/play?startapp=ref_${referralCode}`;
 
     // 2. Fetch real referrals data from Neon DB
     const friendsRes = await query(

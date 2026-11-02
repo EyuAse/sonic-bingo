@@ -835,7 +835,7 @@ class BingoGameEngine {
     if (process.env.MAINTENANCE_MODE === 'true') {
       return {
         success: false,
-        error: 'ሎሚ ቢንጎ በጊዜያዊ ጥገና ላይ ነው። ውርርድ ለጊዜው ቆሟል (Lomi Bingo is under maintenance. Betting is paused).'
+        error: 'ሶኒክ ቢንጎ በጊዜያዊ ጥገና ላይ ነው። ውርርድ ለጊዜው ቆሟል (Sonic Bingo is under maintenance. Betting is paused).'
       };
     }
 

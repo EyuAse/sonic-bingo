@@ -14,7 +14,7 @@ export function setupGameSockets(io: Server) {
   io.on('connection', (socket: Socket) => {
     if (process.env.MAINTENANCE_MODE === 'true') {
       socket.emit('maintenance_mode', {
-        message: 'ሎሚ ቢንጎ በጊዜያዊ ጥገና ላይ ነው። ጨዋታዎች ለጊዜው ቆመዋል (Lomi Bingo is under scheduled maintenance).'
+        message: 'ሶኒክ ቢንጎ በጊዜያዊ ጥገና ላይ ነው። ጨዋታዎች ለጊዜው ቆመዋል (Sonic Bingo is under scheduled maintenance).'
       });
       socket.disconnect(true);
       return;

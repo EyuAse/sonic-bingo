@@ -35,7 +35,7 @@ export class TelegramBotService {
   }
 
   /**
-   * Normalizes channel handles or full URLs (e.g. 'https://t.me/lomibingo_official' -> '@lomibingo_official')
+   * Normalizes channel handles or full URLs (e.g. 'https://t.me/BRILV' -> '@BRILV')
    */
   public normalizeChannelIdentifier(input?: string): string {
     if (!input) return '';
@@ -108,7 +108,7 @@ export class TelegramBotService {
       if (process.env.TELEGRAM_WEBAPP_URL) webAppUrl = process.env.TELEGRAM_WEBAPP_URL;
     }
 
-    const normalizedChannel = this.normalizeChannelIdentifier(channelId || '@lomibingo_official');
+    const normalizedChannel = this.normalizeChannelIdentifier(channelId || '@BRILV');
 
     this.cachedConfig = {
       token: token.trim(),
@@ -304,7 +304,7 @@ export class TelegramBotService {
    */
   public async setMyCommands(customCommands?: Array<{ command: string; description: string }>): Promise<{ success: boolean; message: string }> {
     const commands = customCommands || [
-      { command: 'play', description: '🎮 Launch Lomi Bingo Mini App' },
+      { command: 'play', description: '🎮 Launch Sonic Bingo Mini App' },
       { command: 'start', description: '🍋 Welcome & 10 ETB Bonus Gift' },
       { command: 'promo', description: '📢 View Active Promotions & Offers' },
       { command: 'bonus', description: '🎁 Claim 10 ETB Welcome Bonus' },
@@ -420,7 +420,7 @@ export class TelegramBotService {
     message: string;
   }> {
     const cfg = await this.getConfig();
-    const channel = (targetChat || cfg.channelId || '@lomibingo_official').trim();
+    const channel = (targetChat || cfg.channelId || '@BRILV').trim();
 
     if (!channel) {
       return { success: false, channel: '', deletedCount: 0, scannedCount: 0, message: 'No target channel specified' };
@@ -485,7 +485,7 @@ export class TelegramBotService {
     description: string;
   }> {
     const cfg = await this.getConfig();
-    const channel = this.normalizeChannelIdentifier(channelInput || cfg.channelId || '@lomibingo_official');
+    const channel = this.normalizeChannelIdentifier(channelInput || cfg.channelId || '@BRILV');
     if (!channel) {
       return { ok: false, channel: '', canPost: false, isAdministrator: false, description: 'No channel configured' };
     }
@@ -558,7 +558,7 @@ export class TelegramBotService {
     }
 
     const meRes = await this.getMe();
-    const botUser = meRes.result?.username || 'LomiBingobot';
+    const botUser = meRes.result?.username || 'SonicGameOfficialBot';
 
     // Build inline keyboard if button details provided
     const inlineKeyboard: any[][] = [];
@@ -609,7 +609,7 @@ export class TelegramBotService {
 
     // 1. Single Channel or Group Broadcast
     if (opts.targetType === 'channel' || opts.targetType === 'group') {
-      const rawTarget = opts.targetId || cfg.channelId || '@lomibingo_official';
+      const rawTarget = opts.targetId || cfg.channelId || '@BRILV';
       const targetChat = this.normalizeChannelIdentifier(rawTarget);
       if (!targetChat) {
         return { success: false, totalRecipients: 0, sentCount: 0, failedCount: 0, message: 'Target channel or group username/ID is missing' };
@@ -622,7 +622,7 @@ export class TelegramBotService {
           totalRecipients: 0,
           sentCount: 0,
           failedCount: 1,
-          message: `Cannot post to '${targetChat}'. That is an individual Telegram user ID, not a Channel. Telegram Channel usernames start with '@' (e.g. @lomibingo_official) or channel chat IDs start with -100 (e.g. -100xxxxxxx).`
+          message: `Cannot post to '${targetChat}'. That is an individual Telegram user ID, not a Channel. Telegram Channel usernames start with '@' (e.g. @BRILV) or channel chat IDs start with -100 (e.g. -100xxxxxxx).`
         };
       }
 
@@ -664,7 +664,7 @@ export class TelegramBotService {
         } else if (desc.includes("can't send messages to the bot")) {
           friendlyError = `A bot cannot post messages to itself. Please specify a Telegram Channel (e.g. @YourChannel) where @${botUser} is an Administrator, or select 'All Players (Direct)'.`;
         } else if (desc.includes('bot was blocked by the user') || desc.includes("can't initiate conversation")) {
-          friendlyError = `Failed to post to '${targetChat}': The target identifier belongs to an individual user who blocked the bot. Telegram Channels start with @ (e.g. @lomibingo_official) or -100.`;
+          friendlyError = `Failed to post to '${targetChat}': The target identifier belongs to an individual user who blocked the bot. Telegram Channels start with @ (e.g. @BRILV) or -100.`;
         }
       }
 
@@ -907,7 +907,7 @@ export class TelegramBotService {
     // Execute concurrent channel cross-post if requested
     let channelCrossPostResult: any = null;
     if (opts.crossPostChannel) {
-      const channelChat = this.normalizeChannelIdentifier(cfg.channelId || '@lomibingo_official');
+      const channelChat = this.normalizeChannelIdentifier(cfg.channelId || '@BRILV');
       try {
         let chanRes;
         const channelKeyboard: any[][] = [];
@@ -977,7 +977,7 @@ export class TelegramBotService {
     }
 
     const text =
-      `🏆 <b>MEGA WINNER IN LOMI BINGO!</b> 🍋🎉
+      `🏆 <b>MEGA WINNER IN SONIC BINGO!</b> 👑🎉
 
 💰 <b>Player:</b> ${winnerName}
 💵 <b>Winning Amount:</b> <b>+${amount.toFixed(2)} ETB!</b>
@@ -987,7 +987,7 @@ export class TelegramBotService {
 ⚡ <i>The next round is starting now! Tap below to join and claim your win!</i>`;
 
     const meRes = await this.getMe();
-    const botUser = meRes.result?.username || 'LomiBingobot';
+    const botUser = meRes.result?.username || 'SonicGameOfficialBot';
     const channelPlayUrl = `https://t.me/${botUser}/play`;
 
     const inlineKeyboard = [
@@ -1080,13 +1080,13 @@ export class TelegramBotService {
     if (text.startsWith('/start') || text === '/play') {
       if (process.env.MAINTENANCE_MODE === 'true') {
         const maintenanceMsg =
-          `🛠️ <b>ውድ ደንበኞቻችን፣ ሎሚ ቢንጎ በጊዜያዊ ጥገና ላይ ነው!</b> 🍋\n\n` +
+          `🛠️ <b>ውድ ደንበኞቻችን፣ ሶኒክ ቢንጎ በጊዜያዊ ጥገና ላይ ነው!</b> 👑\n\n` +
           `ስርዓታችንን ለማሻሻል እና የተሻለ አገልግሎት ለመስጠት ጨዋታው ለጥቂት ሰዓታት በጊዜያዊ ጥገና ላይ ይቆያል።\n\n` +
           `🔒 <b>የእርስዎ ቀሪ ሂሳብ እና ገንዘብ 100% ደህንነቱ የተጠበቀ ነው!</b>\n` +
           `በቅርቡ በታላቅ ማሻሻያ እንመለሳለን።\n\n` +
-          `📢 <i>ዝርዝር መረጃ ለማግኘት ቻናላችንን ይከታተሉ: @lomibingo_official</i>\n\n` +
+          `📢 <i>ዝርዝር መረጃ ለማግኘት ቻናላችንን ይከታተሉ: @BRILV</i>\n\n` +
           `────────────────\n` +
-          `🛠️ <b>Lomi Bingo is under scheduled maintenance.</b>\n` +
+          `🛠️ <b>Sonic Bingo is under scheduled maintenance.</b>\n` +
           `All player wallet balances are 100% safe. We will be back online shortly!`;
 
         await this.sendMessage(chatId, maintenanceMsg);
@@ -1098,8 +1098,8 @@ export class TelegramBotService {
       const playAppUrl = this.getVersionedWebAppUrl(webAppUrl, startParam);
 
       let welcomeText =
-        `👋 <b>እንኳን ወደ ሎሚ ቢንጎ በደህና መጡ!</b> 🍋🎯
-<b>Welcome to Lomi / Betika Bingo!</b>
+        `👋 <b>እንኳን ወደ ሶኒክ ቢንጎ በደህና መጡ!</b> 👑🎯
+<b>Welcome to Sonic Bingo!</b>
 
 🇪🇹 Ethiopia's #1 Real-Time Multiplayer Live Bingo in Telegram!
 
@@ -1126,7 +1126,7 @@ Tap the button below to launch the game and start winning! 👇`;
         console.warn('Could not read custom welcome greeting:', e);
       }
 
-      const channelLink = cfg.channelId ? `https://t.me/${cfg.channelId.replace('@', '')}` : 'https://t.me/lomibingo_official';
+      const channelLink = cfg.channelId ? `https://t.me/${cfg.channelId.replace('@', '')}` : 'https://t.me/BRILV';
 
       const inlineKeyboard = [
         [{ text: '🎮 Play Bingo Now (10 ETB Gift)', web_app: { url: playAppUrl } }],
@@ -1143,7 +1143,7 @@ Tap the button below to launch the game and start winning! 👇`;
 
     if (text === '/help') {
       const helpText =
-        `📖 <b>Lomi Bingo Help & Guides</b> 🍋
+        `📖 <b>Sonic Bingo Help & Guides</b> 👑
 
 1️⃣ <b>Select a Room:</b> Choose 10, 20, 50, or 100 ETB stake room.
 2️⃣ <b>Pick Cartelas:</b> Choose 1 or 2 cartelas from 400 serial numbers.
@@ -1178,8 +1178,8 @@ Open the game below to claim your free welcome bonus cartela! 👇`;
 
     if (text === '/promo' || text === '/promotion' || text === '/promotions') {
       let promoText =
-        `🎁 <b>የሎሚ ቢንጎ ልዩ ማስተዋወቂያዎች!</b> 🍋✨
-<b>Active Lomi Bingo Promotions:</b>
+        `🎁 <b>የሶኒክ ቢንጎ ልዩ ማስተዋወቂያዎች!</b> 👑✨
+<b>Active Sonic Bingo Promotions:</b>
 
 🎉 <b>1. 10 ETB የነፃ ቦነስ ስጦታ</b> ለሁሉም አዳዲስ ደንበኞች!
 💰 <b>2. 10,000 ETB የሳምንቱ መጨረሻ ውድድር!</b>

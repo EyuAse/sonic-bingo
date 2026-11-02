@@ -338,7 +338,7 @@ router.get('/active-promo', async (_req, res) => {
 
     const cfg = await telegramBotService.getConfig();
     const meRes = await telegramBotService.getMe();
-    const botUser = meRes.result?.username || 'LomiBingobot';
+    const botUser = meRes.result?.username || 'SonicGameOfficialBot';
 
     return res.json({
       success: true,

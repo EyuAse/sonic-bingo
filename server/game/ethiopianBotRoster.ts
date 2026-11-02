@@ -50,7 +50,7 @@ export const ETHIOPIAN_200_BOT_ROSTER: ReadonlyArray<StandbyBotProfile> = Object
   { id: 'bot_standby_025', name: '_Maki 🖤', phone: '0935191705', gender: 'male' },
   { id: 'bot_standby_026', name: 'Bereket ツ', phone: '0940195526', gender: 'male' },
   { id: 'bot_standby_027', name: 'Amen 🙏', phone: '0944199347', gender: 'male' },
-  { id: 'bot_standby_028', name: 'Lomi Fan 🍋', phone: '0952203168', gender: 'male' },
+  { id: 'bot_standby_028', name: 'Sonic Fan 👑', phone: '0952203168', gender: 'male' },
   { id: 'bot_standby_029', name: 'Dani 🎲', phone: '0970206989', gender: 'male' },
   { id: 'bot_standby_030', name: 'Henok 🏆', phone: '0711210810', gender: 'male' },
   { id: 'bot_standby_031', name: 'Robel 💎', phone: '0712214631', gender: 'male' },

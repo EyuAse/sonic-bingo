@@ -285,8 +285,8 @@ router.post('/register', async (req, res) => {
     }
 
     const hashedPin = await bcrypt.hash(pin.trim(), 10);
-    const name = (fullName || 'Lomi Player').trim();
-    const myReferralCode = 'LOMI-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    const name = (fullName || 'Sonic Player').trim();
+    const myReferralCode = 'SONIC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
     const result = await withTransaction(async (client) => {
       // Resolve referrer if code passed
