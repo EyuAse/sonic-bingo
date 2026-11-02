@@ -1868,5 +1868,168 @@ router.post('/agents/recharges/:id/reject', requireAdmin, async (req: Authentica
   }
 });
 
+/**
+ * Official Platform Receiving Accounts Management (Admin Control Desk)
+ */
+router.get('/official-accounts', requireAdmin, async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT * FROM payment_accounts ORDER BY display_order ASC, created_at ASC`
+    );
+    return res.json({
+      success: true,
+      accounts: result.rows
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin GET Official Accounts Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to fetch official accounts' });
+  }
+});
+
+router.post('/official-accounts', requireAdmin, async (req, res) => {
+  try {
+    const { provider, accountTitle, accountName, accountNumber, badge, dailyLimit, isActive, displayOrder } = req.body;
+
+    if (!provider || !accountNumber || !accountName) {
+      return res.status(400).json({ success: false, error: 'Provider, account number, and account name are required' });
+    }
+
+    const cleanNumber = String(accountNumber).trim();
+    const cleanProvider = String(provider).trim();
+    const cleanName = String(accountName).trim();
+    const cleanTitle = (accountTitle || `${cleanProvider.toUpperCase()} OFFICIAL`).trim();
+    const cleanBadge = (badge || '⚡ Verified Rail').trim();
+    const limit = typeof dailyLimit === 'number' && dailyLimit > 0 ? dailyLimit : 500000;
+    const active = isActive !== false;
+    const order = typeof displayOrder === 'number' ? displayOrder : 1;
+
+    const result = await query(
+      `INSERT INTO payment_accounts (provider, account_title, account_name, account_number, badge, is_active, display_order, daily_limit)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT (account_number) DO UPDATE
+       SET provider = EXCLUDED.provider,
+           account_title = EXCLUDED.account_title,
+           account_name = EXCLUDED.account_name,
+           badge = EXCLUDED.badge,
+           is_active = EXCLUDED.is_active,
+           display_order = EXCLUDED.display_order,
+           daily_limit = EXCLUDED.daily_limit,
+           updated_at = NOW()
+       RETURNING *`,
+      [cleanProvider, cleanTitle, cleanName, cleanNumber, cleanBadge, active, order, limit]
+    );
+
+    io.emit('official_accounts_updated', { account: result.rows[0], action: 'created' });
+
+    return res.json({
+      success: true,
+      account: result.rows[0],
+      message: 'Official account saved successfully'
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Create Official Account Error]:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Failed to create official account' });
+  }
+});
+
+router.put('/official-accounts/:id', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { provider, accountTitle, accountName, accountNumber, badge, dailyLimit, isActive, displayOrder } = req.body;
+
+    const updates: string[] = [];
+    const values: any[] = [];
+    let idx = 1;
+
+    if (provider) { updates.push(`provider = $${idx++}`); values.push(provider.trim()); }
+    if (accountTitle) { updates.push(`account_title = $${idx++}`); values.push(accountTitle.trim()); }
+    if (accountName) { updates.push(`account_name = $${idx++}`); values.push(accountName.trim()); }
+    if (accountNumber) { updates.push(`account_number = $${idx++}`); values.push(accountNumber.trim()); }
+    if (badge) { updates.push(`badge = $${idx++}`); values.push(badge.trim()); }
+    if (typeof dailyLimit === 'number') { updates.push(`daily_limit = $${idx++}`); values.push(dailyLimit); }
+    if (typeof isActive === 'boolean') { updates.push(`is_active = $${idx++}`); values.push(isActive); }
+    if (typeof displayOrder === 'number') { updates.push(`display_order = $${idx++}`); values.push(displayOrder); }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ success: false, error: 'No fields provided for update' });
+    }
+
+    updates.push(`updated_at = NOW()`);
+    values.push(id);
+
+    const result = await query(
+      `UPDATE payment_accounts SET ${updates.join(', ')} WHERE id = $${idx} RETURNING *`,
+      values
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Official account not found' });
+    }
+
+    io.emit('official_accounts_updated', { account: result.rows[0], action: 'updated' });
+
+    return res.json({
+      success: true,
+      account: result.rows[0],
+      message: 'Official account updated successfully'
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Update Official Account Error]:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Failed to update official account' });
+  }
+});
+
+router.patch('/official-accounts/:id/toggle', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await query(
+      `UPDATE payment_accounts 
+       SET is_active = NOT is_active, updated_at = NOW() 
+       WHERE id = $1 
+       RETURNING *`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Official account not found' });
+    }
+
+    io.emit('official_accounts_updated', { account: result.rows[0], action: 'toggled' });
+
+    return res.json({
+      success: true,
+      account: result.rows[0],
+      message: `Account status updated to ${result.rows[0].is_active ? 'Active' : 'Inactive'}`
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Toggle Official Account Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to toggle account status' });
+  }
+});
+
+router.delete('/official-accounts/:id', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await query(
+      `DELETE FROM payment_accounts WHERE id = $1 RETURNING *`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Official account not found' });
+    }
+
+    io.emit('official_accounts_updated', { id, action: 'deleted' });
+
+    return res.json({
+      success: true,
+      message: 'Official account deleted successfully'
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Delete Official Account Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to delete official account' });
+  }
+});
+
 export default router;
 

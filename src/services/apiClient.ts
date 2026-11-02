@@ -952,6 +952,62 @@ export const apiClient = {
         headers: { ...adminHeaders }
       });
       return handleResponse<{ success: boolean; metrics: any }>(res);
+    },
+
+    // Official Platform Receiving Accounts Management
+    async getOfficialAccounts() {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/official-accounts`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; accounts: any[] }>(res);
+    },
+
+    async createOfficialAccount(payload: {
+      provider: string;
+      accountTitle: string;
+      accountName: string;
+      accountNumber: string;
+      badge?: string;
+      dailyLimit?: number;
+      isActive?: boolean;
+      displayOrder?: number;
+    }) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/official-accounts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify(payload)
+      });
+      return handleResponse<{ success: boolean; account: any; message?: string; error?: string }>(res);
+    },
+
+    async updateOfficialAccount(id: string, payload: any) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/official-accounts/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify(payload)
+      });
+      return handleResponse<{ success: boolean; account: any; message?: string; error?: string }>(res);
+    },
+
+    async toggleOfficialAccount(id: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/official-accounts/${id}/toggle`, {
+        method: 'PATCH',
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; account: any; message?: string; error?: string }>(res);
+    },
+
+    async deleteOfficialAccount(id: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/official-accounts/${id}`, {
+        method: 'DELETE',
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; message?: string; error?: string }>(res);
     }
   },
 
@@ -1452,6 +1508,14 @@ export const apiClient = {
         message?: string;
         error?: string;
       }>(res);
+    },
+
+    // Real-Time Official Platform Receiving Accounts (Only Active)
+    async getOfficialAccounts() {
+      const res = await fetch(`${API_BASE}/agent/official-accounts`, {
+        headers: { ...getAgentAuthHeader() }
+      });
+      return handleResponse<{ success: boolean; accounts: any[] }>(res);
     }
   }
 };

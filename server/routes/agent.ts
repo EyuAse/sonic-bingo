@@ -1224,11 +1224,11 @@ router.get('/deposit-requests', requireAgent, async (req: AuthenticatedRequest, 
     }
 
     if (timeframe === 'today') {
-      sql += ` AND req.created_at >= CURRENT_DATE`;
+      sql += ` AND req.created_at >= (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date`;
     } else if (timeframe === 'week') {
-      sql += ` AND req.created_at >= date_trunc('week', CURRENT_DATE)`;
+      sql += ` AND req.created_at >= NOW() - INTERVAL '7 days'`;
     } else if (timeframe === 'month') {
-      sql += ` AND req.created_at >= date_trunc('month', CURRENT_DATE)`;
+      sql += ` AND req.created_at >= NOW() - INTERVAL '30 days'`;
     }
 
     sql += ` ORDER BY req.created_at DESC LIMIT 100`;
@@ -1238,12 +1238,12 @@ router.get('/deposit-requests', requireAgent, async (req: AuthenticatedRequest, 
       query(`SELECT COUNT(*) as count FROM agent_deposit_requests WHERE agent_id = $1 AND status = 'pending'`, [agentId]),
       query(
         `SELECT
-           COALESCE(SUM(amount) FILTER (WHERE status = 'approved' AND created_at >= CURRENT_DATE), 0) as today_amount,
-           COUNT(*) FILTER (WHERE status = 'approved' AND created_at >= CURRENT_DATE) as today_count,
-           COALESCE(SUM(amount) FILTER (WHERE status = 'approved' AND created_at >= date_trunc('week', CURRENT_DATE)), 0) as week_amount,
-           COUNT(*) FILTER (WHERE status = 'approved' AND created_at >= date_trunc('week', CURRENT_DATE)) as week_count,
-           COALESCE(SUM(amount) FILTER (WHERE status = 'approved' AND created_at >= date_trunc('month', CURRENT_DATE)), 0) as month_amount,
-           COUNT(*) FILTER (WHERE status = 'approved' AND created_at >= date_trunc('month', CURRENT_DATE)) as month_count,
+           COALESCE(SUM(amount) FILTER (WHERE status = 'approved' AND created_at >= (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date), 0) as today_amount,
+           COUNT(*) FILTER (WHERE status = 'approved' AND created_at >= (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date) as today_count,
+           COALESCE(SUM(amount) FILTER (WHERE status = 'approved' AND created_at >= NOW() - INTERVAL '7 days'), 0) as week_amount,
+           COUNT(*) FILTER (WHERE status = 'approved' AND created_at >= NOW() - INTERVAL '7 days') as week_count,
+           COALESCE(SUM(amount) FILTER (WHERE status = 'approved' AND created_at >= NOW() - INTERVAL '30 days'), 0) as month_amount,
+           COUNT(*) FILTER (WHERE status = 'approved' AND created_at >= NOW() - INTERVAL '30 days') as month_count,
            COALESCE(SUM(amount) FILTER (WHERE status = 'approved'), 0) as all_time_amount,
            COUNT(*) FILTER (WHERE status = 'approved') as all_time_count
          FROM agent_deposit_requests
@@ -1624,11 +1624,11 @@ router.get('/withdrawal-requests', requireAgent, async (req: AuthenticatedReques
     const params: any[] = [agentId];
 
     if (timeframe === 'today') {
-      sql += ` AND req.created_at >= CURRENT_DATE`;
+      sql += ` AND req.created_at >= (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date`;
     } else if (timeframe === 'week') {
-      sql += ` AND req.created_at >= date_trunc('week', CURRENT_DATE)`;
+      sql += ` AND req.created_at >= NOW() - INTERVAL '7 days'`;
     } else if (timeframe === 'month') {
-      sql += ` AND req.created_at >= date_trunc('month', CURRENT_DATE)`;
+      sql += ` AND req.created_at >= NOW() - INTERVAL '30 days'`;
     }
 
     sql += ` ORDER BY req.created_at DESC LIMIT 100`;
@@ -1637,12 +1637,12 @@ router.get('/withdrawal-requests', requireAgent, async (req: AuthenticatedReques
       query(sql, params),
       query(
         `SELECT
-           COALESCE(SUM(amount) FILTER (WHERE status = 'completed' AND created_at >= CURRENT_DATE), 0) as today_amount,
-           COUNT(*) FILTER (WHERE status = 'completed' AND created_at >= CURRENT_DATE) as today_count,
-           COALESCE(SUM(amount) FILTER (WHERE status = 'completed' AND created_at >= date_trunc('week', CURRENT_DATE)), 0) as week_amount,
-           COUNT(*) FILTER (WHERE status = 'completed' AND created_at >= date_trunc('week', CURRENT_DATE)) as week_count,
-           COALESCE(SUM(amount) FILTER (WHERE status = 'completed' AND created_at >= date_trunc('month', CURRENT_DATE)), 0) as month_amount,
-           COUNT(*) FILTER (WHERE status = 'completed' AND created_at >= date_trunc('month', CURRENT_DATE)) as month_count,
+           COALESCE(SUM(amount) FILTER (WHERE status = 'completed' AND created_at >= (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date), 0) as today_amount,
+           COUNT(*) FILTER (WHERE status = 'completed' AND created_at >= (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date) as today_count,
+           COALESCE(SUM(amount) FILTER (WHERE status = 'completed' AND created_at >= NOW() - INTERVAL '7 days'), 0) as week_amount,
+           COUNT(*) FILTER (WHERE status = 'completed' AND created_at >= NOW() - INTERVAL '7 days') as week_count,
+           COALESCE(SUM(amount) FILTER (WHERE status = 'completed' AND created_at >= NOW() - INTERVAL '30 days'), 0) as month_amount,
+           COUNT(*) FILTER (WHERE status = 'completed' AND created_at >= NOW() - INTERVAL '30 days') as month_count,
            COALESCE(SUM(amount) FILTER (WHERE status = 'completed'), 0) as all_time_amount,
            COUNT(*) FILTER (WHERE status = 'completed') as all_time_count
          FROM agent_withdrawal_requests
@@ -2240,6 +2240,28 @@ router.post('/commission/request-cashout', requireAgent, async (req: Authenticat
 });
 
 /**
+ * GET /api/agent/official-accounts
+ * Returns all active official platform receiving accounts for Agent Float Recharge Desk
+ */
+router.get('/official-accounts', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const result = await query(
+      `SELECT id, provider, account_title, account_name, account_number, badge, daily_limit, is_active, display_order 
+       FROM payment_accounts 
+       WHERE is_active = true 
+       ORDER BY display_order ASC, created_at ASC`
+    );
+    return res.json({
+      success: true,
+      accounts: result.rows
+    });
+  } catch (error: any) {
+    console.error('❌ [Agent GET Official Accounts Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve official accounts' });
+  }
+});
+
+/**
  * Update Agent Terminal Security PIN / Password
  */
 const handlePasswordUpdate = async (req: AuthenticatedRequest, res: Response) => {
@@ -2259,7 +2281,7 @@ const handlePasswordUpdate = async (req: AuthenticatedRequest, res: Response) =>
 
     // Query user and agent code
     const userRes = await query(
-      `SELECT u.id, u.pin_hash, u.password_hash, ap.agent_code 
+      `SELECT u.id, u.pin_hash, COALESCE(u.password_hash, u.pin_hash) as password_hash, ap.agent_code 
        FROM users u
        JOIN agent_profiles ap ON u.id = ap.user_id
        WHERE u.id = $1`,
@@ -2275,7 +2297,7 @@ const handlePasswordUpdate = async (req: AuthenticatedRequest, res: Response) =>
 
     // Verify current PIN/password
     let isValidCurrent = false;
-    const existingHash = user.pin_hash || user.password_hash;
+    const existingHash = user.password_hash || user.pin_hash;
     if (existingHash) {
       isValidCurrent = await bcrypt.compare(cleanCurrentPass, existingHash);
     }
@@ -2308,7 +2330,7 @@ const handlePasswordUpdate = async (req: AuthenticatedRequest, res: Response) =>
     });
   } catch (error: any) {
     console.error('❌ [Agent Update Password Error]:', error);
-    return res.status(500).json({ success: false, error: 'Failed to update security password' });
+    return res.status(500).json({ success: false, error: error.message || 'Failed to update security password' });
   }
 };
 

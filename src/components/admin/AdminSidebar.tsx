@@ -13,6 +13,7 @@ export type AdminTab =
   | 'telegram-bot'
   | 'agents'
   | 'agent-recharges'
+  | 'official-accounts'
   | 'jackpots'
   | 'coins';
 
@@ -274,6 +275,24 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               <>
                 <span className="light-nav-text">Agent Recharges</span>
                 <span className="light-nav-badge yellow-badge">Float</span>
+              </>
+            )}
+          </button>
+
+          {/* 10. Official Platform Receiving Accounts */}
+          <button
+            type="button"
+            className={`light-nav-item ${activeTab === 'official-accounts' ? 'active' : ''}`}
+            onClick={() => handleSelectTab('official-accounts')}
+            title="Official Receiving Accounts (Telebirr, CBE, M-Pesa)"
+          >
+            <div className="light-nav-icon">
+              <i className="fa-solid fa-building-columns" style={{ color: '#0284c7' }}></i>
+            </div>
+            {!isSidebarCollapsed && (
+              <>
+                <span className="light-nav-text">Official Accounts</span>
+                <span className="light-nav-badge" style={{ background: '#e0f2fe', color: '#0284c7' }}>Rails</span>
               </>
             )}
           </button>

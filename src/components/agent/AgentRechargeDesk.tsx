@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiClient } from '../../services/apiClient.ts';
 import { TelebirrLogo, CBELogo, MpesaLogo } from '../wallet/PaymentLogos.tsx';
-import { TELEBIRR_RECEIVERS } from '../../config/paymentReceivers.ts';
+import { socketService } from '../../services/socketService.ts';
 import { compressImage, formatFileSize, CompressedImageResult } from '../../utils/imageCompressor.ts';
 
 interface AgentRechargeDeskProps {
@@ -41,10 +41,35 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
     }
   };
 
+  // Live Official Accounts State from Neon DB (Zero hardcoding)
+  const [officialAccounts, setOfficialAccounts] = useState<any[]>([]);
+  const [isLoadingOfficialAccounts, setIsLoadingOfficialAccounts] = useState<boolean>(true);
+
+  const fetchOfficialAccounts = async () => {
+    try {
+      setIsLoadingOfficialAccounts(true);
+      const res = await apiClient.agent.getOfficialAccounts();
+      if (res.success && res.accounts) {
+        setOfficialAccounts(res.accounts);
+      }
+    } catch (err) {
+      console.warn('Error fetching live official accounts:', err);
+    } finally {
+      setIsLoadingOfficialAccounts(false);
+    }
+  };
+
   useEffect(() => {
     fetchHistory();
+    fetchOfficialAccounts();
     const interval = setInterval(fetchHistory, 15000);
-    return () => clearInterval(interval);
+    const unsub = socketService.on('official_accounts_updated', () => {
+      fetchOfficialAccounts();
+    });
+    return () => {
+      clearInterval(interval);
+      unsub();
+    };
   }, []);
 
   const handleCopy = (text: string, label: string) => {
@@ -133,48 +158,42 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
 
   const quickAmounts = [1000, 2000, 5000, 10000, 20000, 50000];
 
-  // Official Sonic deposit accounts configuration (Strictly Telebirr, CBE Bank, M-Pesa)
-  const officialAccounts = [
-    {
-      id: 'telebirr',
-      rail: 'Telebirr',
-      name: TELEBIRR_RECEIVERS[0]?.accountName || 'Abduurehim Sheycho',
-      number: TELEBIRR_RECEIVERS[0]?.accountNumber || '0952013863',
-      formatted: TELEBIRR_RECEIVERS[0]?.formattedNumber || '09 52 01 38 63',
-      title: 'TELEBIRR SUPER AGENT',
-      badge: '⚡ Instant Fast Track',
-      color: '#0284c7',
-      bg: 'rgba(2, 132, 199, 0.05)',
-      border: 'rgba(2, 132, 199, 0.25)',
-      logo: <TelebirrLogo size={28} />
-    },
-    {
-      id: 'cbe',
-      rail: 'CBE',
-      name: 'Sonic Gaming Operations',
-      number: '1000458291048',
-      formatted: '1000 4582 9104 8',
-      title: 'COMMERCIAL BANK OF ETHIOPIA',
-      badge: '🏦 Direct Bank Transfer',
-      color: '#b45309',
-      bg: 'rgba(245, 158, 11, 0.05)',
-      border: 'rgba(245, 158, 11, 0.25)',
-      logo: <CBELogo size={28} />
-    },
-    {
-      id: 'mpesa',
-      rail: 'M-Pesa',
-      name: 'Sonic Gaming Operations',
-      number: '0712345678',
-      formatted: '07 12 34 56 78',
-      title: 'SAFARICOM M-PESA',
-      badge: '📲 Instant Till / Paybill',
+  const formatAccountNumber = (num: string) => {
+    const clean = (num || '').replace(/\s+/g, '');
+    if (clean.length === 10 && (clean.startsWith('09') || clean.startsWith('07'))) {
+      return `${clean.slice(0, 2)} ${clean.slice(2, 4)} ${clean.slice(4, 6)} ${clean.slice(6, 8)} ${clean.slice(8)}`;
+    }
+    if (clean.length === 13) {
+      return `${clean.slice(0, 4)} ${clean.slice(4, 8)} ${clean.slice(8, 12)} ${clean.slice(12)}`;
+    }
+    return num;
+  };
+
+  const getRailStyle = (provider: string) => {
+    const norm = (provider || '').toLowerCase();
+    if (norm.includes('telebirr')) {
+      return {
+        color: '#0284c7',
+        bg: 'rgba(2, 132, 199, 0.05)',
+        border: 'rgba(2, 132, 199, 0.25)',
+        logo: <TelebirrLogo size={28} />
+      };
+    }
+    if (norm.includes('cbe') || norm.includes('commercial')) {
+      return {
+        color: '#b45309',
+        bg: 'rgba(245, 158, 11, 0.05)',
+        border: 'rgba(245, 158, 11, 0.25)',
+        logo: <CBELogo size={28} />
+      };
+    }
+    return {
       color: '#e11d48',
       bg: 'rgba(225, 29, 72, 0.05)',
       border: 'rgba(225, 29, 72, 0.25)',
       logo: <MpesaLogo size={28} />
-    }
-  ];
+    };
+  };
 
   return (
     <div className="sonic-agent-desk-container" style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
@@ -594,75 +613,92 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {officialAccounts.map(acc => {
-                const isSelected = paymentMethod === acc.rail || (paymentMethod === 'CBE' && acc.id === 'cbe');
-                return (
-                  <div
-                    key={acc.id}
-                    style={{
-                      background: isSelected ? acc.bg : '#f8fafc',
-                      border: isSelected ? `2px solid ${acc.color}` : '1px solid #e2e8f0',
-                      borderRadius: '12px',
-                      padding: '14px',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {acc.logo}
-                        <div>
-                          <div style={{ fontSize: '11px', fontWeight: 800, color: acc.color }}>
-                            {acc.title}
-                          </div>
-                          <div style={{ fontSize: '11px', color: '#64748b' }}>
-                            {acc.name}
+              {isLoadingOfficialAccounts && officialAccounts.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: '13px' }}>
+                  <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '8px' }}></i>
+                  Loading official platform accounts...
+                </div>
+              ) : officialAccounts.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1', color: '#64748b', fontSize: '13px' }}>
+                  No active accounts configured by Admin. Please contact Admin Desk.
+                </div>
+              ) : (
+                officialAccounts.map(acc => {
+                  const style = getRailStyle(acc.provider);
+                  const isSelected = paymentMethod.toLowerCase() === (acc.provider || '').toLowerCase();
+                  const formattedNum = formatAccountNumber(acc.account_number);
+                  const title = acc.account_title || `${(acc.provider || '').toUpperCase()} OFFICIAL`;
+                  const holderName = acc.account_name;
+                  const badge = acc.badge || '⚡ Instant Fast Track';
+
+                  return (
+                    <div
+                      key={acc.id}
+                      style={{
+                        background: isSelected ? style.bg : '#f8fafc',
+                        border: isSelected ? `2px solid ${style.color}` : '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        padding: '14px',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {style.logo}
+                          <div>
+                            <div style={{ fontSize: '11px', fontWeight: 800, color: style.color }}>
+                              {title}
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#64748b' }}>
+                              {holderName}
+                            </div>
                           </div>
                         </div>
+
+                        <span
+                          style={{
+                            fontSize: '10px',
+                            fontWeight: 800,
+                            padding: '2px 8px',
+                            borderRadius: '10px',
+                            background: '#ffffff',
+                            border: '1px solid #e2e8f0',
+                            color: '#475569'
+                          }}
+                        >
+                          {badge}
+                        </span>
                       </div>
 
-                      <span
-                        style={{
-                          fontSize: '10px',
-                          fontWeight: 800,
-                          padding: '2px 8px',
-                          borderRadius: '10px',
-                          background: '#ffffff',
-                          border: '1px solid #e2e8f0',
-                          color: '#475569'
-                        }}
-                      >
-                        {acc.badge}
-                      </span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <span style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: '15px', color: '#0f172a' }}>
+                          {formattedNum}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(acc.account_number, title)}
+                          style={{
+                            background: '#f1f5f9',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '6px',
+                            padding: '4px 10px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            color: '#1e293b'
+                          }}
+                        >
+                          <i className="fa-regular fa-copy"></i>
+                          <span>Copy</span>
+                        </button>
+                      </div>
                     </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                      <span style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: '15px', color: '#0f172a' }}>
-                        {acc.formatted}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(acc.number, acc.title)}
-                        style={{
-                          background: '#f1f5f9',
-                          border: '1px solid #cbd5e1',
-                          borderRadius: '6px',
-                          padding: '4px 10px',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          color: '#1e293b'
-                        }}
-                      >
-                        <i className="fa-regular fa-copy"></i>
-                        <span>Copy</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
 
