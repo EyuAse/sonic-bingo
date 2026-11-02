@@ -26,12 +26,12 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
   const [realTransactions, setRealTransactions] = useState<any[]>([]);
   const [loadingFeeds, setLoadingFeeds] = useState(false);
 
-  // Cashier Timeframe Analytics State (Defaults matching Reference UI)
+  // Cashier Timeframe Analytics State (Live database metrics)
   const [depositAnalytics, setDepositAnalytics] = useState({
-    today: { amount: 650, count: 4, commission: 32.5 },
-    week: { amount: 650, count: 4, commission: 32.5 },
-    month: { amount: 650, count: 4, commission: 32.5 },
-    allTime: { amount: 650, count: 4, commission: 32.5 }
+    today: { amount: 0, count: 0, commission: 0 },
+    week: { amount: 0, count: 0, commission: 0 },
+    month: { amount: 0, count: 0, commission: 0 },
+    allTime: { amount: 0, count: 0, commission: 0 }
   });
   const [pendingDepositCount, setPendingDepositCount] = useState<number>(0);
 
@@ -50,7 +50,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
       const [pRes, tRes, depRes, withRes] = await Promise.all([
         apiClient.agent.getPlayers().catch(() => null),
         apiClient.agent.getTransactions().catch(() => null),
-        apiClient.agent.getDepositRequests('pending').catch(() => null),
+        apiClient.agent.getDepositRequests().catch(() => null),
         apiClient.agent.getWithdrawalRequests().catch(() => null)
       ]);
       if (pRes?.success && pRes.players && pRes.players.length > 0) {
@@ -764,7 +764,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                     </h3>
                   </div>
                   <div style={{ fontSize: '12px', color: '#16a34a', fontWeight: 700, marginTop: '3px' }}>
-                    ↑ 8.00% Instant Cashier Commission
+                    ↑ {(profile?.commissionRate || 5.0).toFixed(2)}% Instant Cashier Commission
                   </div>
                 </div>
 
@@ -781,21 +781,21 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                     gap: '4px'
                   }}
                 >
-                  ✓ All Settled
+                  {pendingDepositCount > 0 ? `⚡ ${pendingDepositCount} Pending` : '✓ All Settled'}
                 </span>
               </div>
 
-              {/* 3 Columns: TODAY, THIS WEEK, THIS MONTH */}
+              {/* 3 Columns: TODAY, THIS WEEK, THIS MONTH (100% Real Live DB Data) */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                 <div style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: '10px', padding: '10px 12px' }}>
                   <div style={{ fontSize: '10px', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <span>v</span> TODAY
                   </div>
                   <div style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', marginTop: '3px' }}>
-                    650 <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
+                    {depositAnalytics.today.amount.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
                   </div>
                   <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 700, marginTop: '2px' }}>
-                    +32.5 ETB (4)
+                    +{depositAnalytics.today.commission.toFixed(1)} ETB ({depositAnalytics.today.count})
                   </div>
                 </div>
 
@@ -804,10 +804,10 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                     <span>★</span> THIS WEEK
                   </div>
                   <div style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', marginTop: '3px' }}>
-                    650 <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
+                    {depositAnalytics.week.amount.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
                   </div>
                   <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 700, marginTop: '2px' }}>
-                    +32.5 ETB (4)
+                    +{depositAnalytics.week.commission.toFixed(1)} ETB ({depositAnalytics.week.count})
                   </div>
                 </div>
 
@@ -816,10 +816,10 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                     <span>★</span> THIS MONTH
                   </div>
                   <div style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', marginTop: '3px' }}>
-                    650 <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
+                    {depositAnalytics.month.amount.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
                   </div>
                   <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 700, marginTop: '2px' }}>
-                    +32.5 ETB (4)
+                    +{depositAnalytics.month.commission.toFixed(1)} ETB ({depositAnalytics.month.count})
                   </div>
                 </div>
               </div>
@@ -893,21 +893,21 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                     gap: '4px'
                   }}
                 >
-                  ✓ All Paid Out
+                  {pendingWithdrawalCount > 0 ? `⚡ ${pendingWithdrawalCount} Pending` : '✓ All Paid Out'}
                 </span>
               </div>
 
-              {/* 3 Columns */}
+              {/* 3 Columns (100% Real Live DB Data) */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                 <div style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: '10px', padding: '10px 12px' }}>
                   <div style={{ fontSize: '10px', fontWeight: 800, color: '#7c3aed', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <span>v</span> TODAY
                   </div>
                   <div style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', marginTop: '3px' }}>
-                    0 <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
+                    {withdrawalAnalytics.today.amount.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
                   </div>
                   <div style={{ fontSize: '11px', color: '#7c3aed', fontWeight: 700, marginTop: '2px' }}>
-                    +0.0 ETB (0)
+                    +{withdrawalAnalytics.today.commission.toFixed(1)} ETB ({withdrawalAnalytics.today.count})
                   </div>
                 </div>
 
@@ -916,10 +916,10 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                     <span>★</span> THIS WEEK
                   </div>
                   <div style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', marginTop: '3px' }}>
-                    0 <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
+                    {withdrawalAnalytics.week.amount.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
                   </div>
                   <div style={{ fontSize: '11px', color: '#7c3aed', fontWeight: 700, marginTop: '2px' }}>
-                    +0.0 ETB (0)
+                    +{withdrawalAnalytics.week.commission.toFixed(1)} ETB ({withdrawalAnalytics.week.count})
                   </div>
                 </div>
 
@@ -928,10 +928,10 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                     <span>★</span> THIS MONTH
                   </div>
                   <div style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', marginTop: '3px' }}>
-                    0 <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
+                    {withdrawalAnalytics.month.amount.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
                   </div>
                   <div style={{ fontSize: '11px', color: '#7c3aed', fontWeight: 700, marginTop: '2px' }}>
-                    +0.0 ETB (0)
+                    +{withdrawalAnalytics.month.commission.toFixed(1)} ETB ({withdrawalAnalytics.month.count})
                   </div>
                 </div>
               </div>

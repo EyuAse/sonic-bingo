@@ -379,7 +379,7 @@ router.post('/recharge', requireAgent, async (req: AuthenticatedRequest, res: Re
 });
 
 /**
- * Get Agent Recharge History
+ * Get Agent Recharge History (With Timeframe & Status Filters)
  */
 router.get('/recharges', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -390,18 +390,60 @@ router.get('/recharges', requireAgent, async (req: AuthenticatedRequest, res: Re
     }
 
     const agentId = agentRes.rows[0].id;
+    const timeframe = (req.query.timeframe as string) || 'all';
+    const status = (req.query.status as string) || 'all';
 
-    const listRes = await query(
-      `SELECT * FROM agent_recharge_requests 
-       WHERE agent_id = $1 
-       ORDER BY created_at DESC 
-       LIMIT 50`,
-      [agentId]
-    );
+    let sql = `SELECT * FROM agent_recharge_requests WHERE agent_id = $1`;
+    const params: any[] = [agentId];
+
+    if (status && status !== 'all') {
+      params.push(status);
+      sql += ` AND status = $${params.length}`;
+    }
+
+    if (timeframe === 'today') {
+      sql += ` AND created_at >= (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date`;
+    } else if (timeframe === 'week') {
+      sql += ` AND created_at >= NOW() - INTERVAL '7 days'`;
+    } else if (timeframe === 'month') {
+      sql += ` AND created_at >= NOW() - INTERVAL '30 days'`;
+    }
+
+    sql += ` ORDER BY created_at DESC LIMIT 100`;
+
+    const [listRes, analyticsRes] = await Promise.all([
+      query(sql, params),
+      query(
+        `SELECT
+           COALESCE(SUM(amount) FILTER (WHERE status = 'approved'), 0) as approved_amount,
+           COUNT(*) FILTER (WHERE status = 'approved') as approved_count,
+           COALESCE(SUM(amount) FILTER (WHERE status = 'pending'), 0) as pending_amount,
+           COUNT(*) FILTER (WHERE status = 'pending') as pending_count,
+           COALESCE(SUM(amount) FILTER (WHERE status = 'rejected'), 0) as rejected_amount,
+           COUNT(*) FILTER (WHERE status = 'rejected') as rejected_count,
+           COALESCE(SUM(amount), 0) as all_time_amount,
+           COUNT(*) as all_time_count
+         FROM agent_recharge_requests
+         WHERE agent_id = $1`,
+        [agentId]
+      )
+    ]);
+
+    const a = analyticsRes.rows[0] || {};
 
     return res.json({
       success: true,
-      recharges: listRes.rows
+      recharges: listRes.rows,
+      analytics: {
+        totalApprovedAmount: parseFloat(a.approved_amount || '0'),
+        totalApprovedCount: parseInt(a.approved_count || '0', 10),
+        totalPendingAmount: parseFloat(a.pending_amount || '0'),
+        totalPendingCount: parseInt(a.pending_count || '0', 10),
+        totalRejectedAmount: parseFloat(a.rejected_amount || '0'),
+        totalRejectedCount: parseInt(a.rejected_count || '0', 10),
+        allTimeAmount: parseFloat(a.all_time_amount || '0'),
+        allTimeCount: parseInt(a.all_time_count || '0', 10)
+      }
     });
   } catch (error: any) {
     console.error('❌ [Agent Recharges GET Error]:', error);
@@ -1237,17 +1279,21 @@ router.get('/deposit-requests', requireAgent, async (req: AuthenticatedRequest, 
       query(sql, params),
       query(`SELECT COUNT(*) as count FROM agent_deposit_requests WHERE agent_id = $1 AND status = 'pending'`, [agentId]),
       query(
-        `SELECT
-           COALESCE(SUM(amount) FILTER (WHERE status = 'approved' AND created_at >= (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date), 0) as today_amount,
-           COUNT(*) FILTER (WHERE status = 'approved' AND created_at >= (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date) as today_count,
-           COALESCE(SUM(amount) FILTER (WHERE status = 'approved' AND created_at >= NOW() - INTERVAL '7 days'), 0) as week_amount,
-           COUNT(*) FILTER (WHERE status = 'approved' AND created_at >= NOW() - INTERVAL '7 days') as week_count,
-           COALESCE(SUM(amount) FILTER (WHERE status = 'approved' AND created_at >= NOW() - INTERVAL '30 days'), 0) as month_amount,
-           COUNT(*) FILTER (WHERE status = 'approved' AND created_at >= NOW() - INTERVAL '30 days') as month_count,
-           COALESCE(SUM(amount) FILTER (WHERE status = 'approved'), 0) as all_time_amount,
-           COUNT(*) FILTER (WHERE status = 'approved') as all_time_count
-         FROM agent_deposit_requests
-         WHERE agent_id = $1`,
+        `WITH combined_deposits AS (
+           SELECT amount, created_at FROM agent_deposit_requests WHERE agent_id = $1 AND status = 'approved'
+           UNION ALL
+           SELECT amount, created_at FROM agent_player_deposits WHERE agent_id = $1
+         )
+         SELECT
+           COALESCE(SUM(amount) FILTER (WHERE created_at >= (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date), 0) as today_amount,
+           COUNT(*) FILTER (WHERE created_at >= (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date) as today_count,
+           COALESCE(SUM(amount) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days'), 0) as week_amount,
+           COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days') as week_count,
+           COALESCE(SUM(amount) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days'), 0) as month_amount,
+           COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days') as month_count,
+           COALESCE(SUM(amount), 0) as all_time_amount,
+           COUNT(*) as all_time_count
+         FROM combined_deposits`,
         [agentId]
       )
     ]);

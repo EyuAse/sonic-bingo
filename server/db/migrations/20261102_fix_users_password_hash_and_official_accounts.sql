@@ -42,3 +42,4 @@ SET
   is_active = EXCLUDED.is_active,
   display_order = EXCLUDED.display_order,
   updated_at = NOW();
+

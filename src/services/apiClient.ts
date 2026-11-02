@@ -1197,13 +1197,27 @@ export const apiClient = {
       }>(res);
     },
 
-    async getRecharges() {
-      const res = await fetch(`${API_BASE}/agent/recharges`, {
+    async getRecharges(timeframe?: string, status?: string) {
+      const params = new URLSearchParams();
+      if (timeframe && timeframe !== 'all') params.append('timeframe', timeframe);
+      if (status && status !== 'all') params.append('status', status);
+      const queryStr = params.toString() ? `?${params.toString()}` : '';
+      const res = await fetch(`${API_BASE}/agent/recharges${queryStr}`, {
         headers: { ...getAgentAuthHeader() }
       });
       return handleResponse<{
         success: boolean;
         recharges: any[];
+        analytics?: {
+          totalApprovedAmount: number;
+          totalApprovedCount: number;
+          totalPendingAmount: number;
+          totalPendingCount: number;
+          totalRejectedAmount: number;
+          totalRejectedCount: number;
+          allTimeAmount: number;
+          allTimeCount: number;
+        };
       }>(res);
     },
 

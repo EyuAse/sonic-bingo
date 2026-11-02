@@ -20,6 +20,21 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
   const [recharges, setRecharges] = useState<any[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
+  // Timeframe & Status Filter State for Recharge History
+  const [timeframe, setTimeframe] = useState<'today' | 'week' | 'month' | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [rechargeAnalytics, setRechargeAnalytics] = useState({
+    totalApprovedAmount: 0,
+    totalApprovedCount: 0,
+    totalPendingAmount: 0,
+    totalPendingCount: 0,
+    totalRejectedAmount: 0,
+    totalRejectedCount: 0,
+    allTimeAmount: 0,
+    allTimeCount: 0
+  });
+
   // Receipt Screenshot Attachment State (Client-Side Compressed)
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [compressionStats, setCompressionStats] = useState<CompressedImageResult | null>(null);
@@ -27,12 +42,15 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
   const [viewingReceiptModal, setViewingReceiptModal] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchHistory = async () => {
+  const fetchHistory = async (tf = timeframe, st = statusFilter) => {
     try {
       setIsLoadingHistory(true);
-      const res = await apiClient.agent.getRecharges();
+      const res = await apiClient.agent.getRecharges(tf, st);
       if (res.success && res.recharges) {
         setRecharges(res.recharges);
+        if (res.analytics) {
+          setRechargeAnalytics(res.analytics);
+        }
       }
     } catch (err) {
       console.error('Error fetching recharge history:', err);
@@ -60,9 +78,9 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
   };
 
   useEffect(() => {
-    fetchHistory();
+    fetchHistory(timeframe, statusFilter);
     fetchOfficialAccounts();
-    const interval = setInterval(fetchHistory, 15000);
+    const interval = setInterval(() => fetchHistory(timeframe, statusFilter), 15000);
     const unsub = socketService.on('official_accounts_updated', () => {
       fetchOfficialAccounts();
     });
@@ -70,7 +88,7 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
       clearInterval(interval);
       unsub();
     };
-  }, []);
+  }, [timeframe, statusFilter]);
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -724,26 +742,27 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
         </div>
       </div>
 
-      {/* 3. Live Recent Recharge Requests Table */}
+      {/* 3. Live Recent Recharge Requests Table & Timeframe History Hub */}
       <div style={{ background: '#ffffff', borderRadius: '18px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        <div style={{ padding: '18px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {/* Header Bar */}
+        <div style={{ padding: '18px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 900, color: '#0f172a' }}>
-              Recent Recharge Requests
+            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 900, color: '#0f172a' }}>
+              Recharge Requests History Desk
             </h3>
             <span style={{ fontSize: '12px', color: '#64748b' }}>
-              Track the live approval status of your working float replenishments
+              Real-time authoritative audit log of your working float replenishments
             </span>
           </div>
 
           <button
             type="button"
-            onClick={fetchHistory}
+            onClick={() => fetchHistory(timeframe, statusFilter)}
             style={{
               background: '#f8fafc',
               border: '1px solid #cbd5e1',
               borderRadius: '8px',
-              padding: '6px 12px',
+              padding: '7px 14px',
               fontSize: '12px',
               fontWeight: 700,
               cursor: 'pointer',
@@ -753,102 +772,236 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
             }}
           >
             <i className={`fa-solid fa-rotate ${isLoadingHistory ? 'fa-spin' : ''}`}></i>
-            <span>Refresh</span>
+            <span>Refresh History</span>
           </button>
         </div>
 
-        {recharges.length === 0 ? (
-          <div style={{ padding: '48px 24px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
-            <div style={{ fontSize: '32px', marginBottom: '8px' }}>📦</div>
-            <div style={{ fontWeight: 700, color: '#475569' }}>No Recharge Requests Recorded</div>
-            <div style={{ fontSize: '12px', marginTop: '4px' }}>
-              Submit your first float replenishment request above.
+        {/* 3 Summary Analytics Metric Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', padding: '16px 24px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+          <div style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: '#16a34a', textTransform: 'uppercase' }}>✓ Total Float Credited</div>
+            <div style={{ fontSize: '18px', fontWeight: 900, color: '#0f172a', marginTop: '2px' }}>
+              {rechargeAnalytics.totalApprovedAmount.toLocaleString()} <span style={{ fontSize: '12px', color: '#64748b' }}>ETB</span>
             </div>
+            <div style={{ fontSize: '11px', color: '#16a34a', marginTop: '2px' }}>{rechargeAnalytics.totalApprovedCount} approved recharges</div>
           </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>
-                  <th style={{ padding: '12px 20px', fontWeight: 700 }}>Status</th>
-                  <th style={{ padding: '12px 20px', fontWeight: 700 }}>Amount</th>
-                  <th style={{ padding: '12px 20px', fontWeight: 700 }}>Payment Rail</th>
-                  <th style={{ padding: '12px 20px', fontWeight: 700 }}>Transaction Code</th>
-                  <th style={{ padding: '12px 20px', fontWeight: 700 }}>Receipt Screenshot</th>
-                  <th style={{ padding: '12px 20px', fontWeight: 700 }}>Submitted At</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recharges.map((r, i) => (
-                  <tr
-                    key={r.id}
-                    style={{
-                      borderBottom: i < recharges.length - 1 ? '1px solid #f1f5f9' : 'none'
-                    }}
-                  >
-                    <td style={{ padding: '12px 20px' }}>
-                      <span
-                        style={{
-                          padding: '3px 8px',
-                          borderRadius: '12px',
-                          fontSize: '11px',
-                          fontWeight: 800,
-                          background:
-                            r.status === 'approved' ? '#ecfdf5' :
-                            r.status === 'rejected' ? '#fef2f2' : '#fffbeb',
-                          color:
-                            r.status === 'approved' ? '#047857' :
-                            r.status === 'rejected' ? '#b91c1c' : '#b45309'
-                        }}
-                      >
-                        {r.status === 'approved' ? '✓ Credited' : r.status === 'rejected' ? '✕ Rejected' : '⏳ Pending'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px 20px', fontWeight: 900, color: '#0f172a' }}>
-                      {Number(r.amount).toLocaleString()} ETB
-                    </td>
-                    <td style={{ padding: '12px 20px', fontWeight: 700, color: '#475569' }}>
-                      {r.payment_method}
-                    </td>
-                    <td style={{ padding: '12px 20px', fontFamily: 'monospace', color: '#0f172a' }}>
-                      {r.transaction_code}
-                    </td>
-                    <td style={{ padding: '12px 20px' }}>
-                      {r.receipt_image ? (
-                        <button
-                          type="button"
-                          onClick={() => setViewingReceiptModal(r.receipt_image)}
+
+          <div style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: '#b45309', textTransform: 'uppercase' }}>⏳ In Audit (Pending)</div>
+            <div style={{ fontSize: '18px', fontWeight: 900, color: '#0f172a', marginTop: '2px' }}>
+              {rechargeAnalytics.totalPendingAmount.toLocaleString()} <span style={{ fontSize: '12px', color: '#64748b' }}>ETB</span>
+            </div>
+            <div style={{ fontSize: '11px', color: '#b45309', marginTop: '2px' }}>{rechargeAnalytics.totalPendingCount} pending admin review</div>
+          </div>
+
+          <div style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>📦 All-Time Requests</div>
+            <div style={{ fontSize: '18px', fontWeight: 900, color: '#0f172a', marginTop: '2px' }}>
+              {rechargeAnalytics.allTimeAmount.toLocaleString()} <span style={{ fontSize: '12px', color: '#64748b' }}>ETB</span>
+            </div>
+            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{rechargeAnalytics.allTimeCount} total requests submitted</div>
+          </div>
+        </div>
+
+        {/* Filter Toolbar: Status, Search, and Timeframe Selector */}
+        <div
+          style={{
+            padding: '14px 24px',
+            borderBottom: '1px solid #e2e8f0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '12px'
+          }}
+        >
+          {/* Status Tabs */}
+          <div style={{ display: 'flex', gap: '6px', background: '#f1f5f9', padding: '3px', borderRadius: '10px' }}>
+            {[
+              { id: 'all', label: 'All' },
+              { id: 'pending', label: '⏳ Pending' },
+              { id: 'approved', label: '✓ Credited' },
+              { id: 'rejected', label: '✕ Rejected' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setStatusFilter(tab.id as any)}
+                style={{
+                  background: statusFilter === tab.id ? '#ffffff' : 'transparent',
+                  color: statusFilter === tab.id ? '#0f172a' : '#64748b',
+                  boxShadow: statusFilter === tab.id ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+                  border: 'none',
+                  borderRadius: '7px',
+                  padding: '5px 12px',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  cursor: 'pointer'
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Search Box */}
+          <div style={{ position: 'relative', minWidth: '220px' }}>
+            <i className="fa-solid fa-magnifying-glass" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '11px' }}></i>
+            <input
+              type="text"
+              placeholder="Search SMS code / rail..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '6px 10px 6px 30px',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                fontSize: '12px',
+                fontWeight: 600,
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          {/* Timeframe Selector Pills */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700 }}>Timeframe:</span>
+            {[
+              { id: 'today', label: 'Today' },
+              { id: 'week', label: 'This Week' },
+              { id: 'month', label: 'This Month' },
+              { id: 'all', label: 'All Time' }
+            ].map(tf => (
+              <button
+                key={tf.id}
+                type="button"
+                onClick={() => setTimeframe(tf.id as any)}
+                style={{
+                  background: timeframe === tf.id ? '#0f172a' : '#f8fafc',
+                  color: timeframe === tf.id ? '#ffffff' : '#475569',
+                  border: timeframe === tf.id ? '1px solid #0f172a' : '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '4px 10px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                {tf.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Table View */}
+        {(() => {
+          const filtered = recharges.filter(r => {
+            if (!searchQuery.trim()) return true;
+            const q = searchQuery.trim().toLowerCase();
+            return (
+              (r.transaction_code || '').toLowerCase().includes(q) ||
+              (r.payment_method || '').toLowerCase().includes(q)
+            );
+          });
+
+          if (filtered.length === 0) {
+            return (
+              <div style={{ padding: '48px 24px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>📦</div>
+                <div style={{ fontWeight: 700, color: '#475569' }}>No Recharge Requests Recorded for this Filter</div>
+                <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                  Try switching timeframe to "All Time" or submit your first float replenishment request above.
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>
+                    <th style={{ padding: '12px 20px', fontWeight: 700 }}>Status</th>
+                    <th style={{ padding: '12px 20px', fontWeight: 700 }}>Amount</th>
+                    <th style={{ padding: '12px 20px', fontWeight: 700 }}>Payment Rail</th>
+                    <th style={{ padding: '12px 20px', fontWeight: 700 }}>Transaction Code</th>
+                    <th style={{ padding: '12px 20px', fontWeight: 700 }}>Receipt Screenshot</th>
+                    <th style={{ padding: '12px 20px', fontWeight: 700 }}>Submitted At</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((r, i) => (
+                    <tr
+                      key={r.id}
+                      style={{
+                        borderBottom: i < filtered.length - 1 ? '1px solid #f1f5f9' : 'none'
+                      }}
+                    >
+                      <td style={{ padding: '12px 20px' }}>
+                        <span
                           style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            background: '#eff6ff',
-                            border: '1px solid #bfdbfe',
-                            color: '#1d4ed8',
-                            padding: '4px 10px',
-                            borderRadius: '8px',
+                            padding: '3px 8px',
+                            borderRadius: '12px',
                             fontSize: '11px',
                             fontWeight: 800,
-                            cursor: 'pointer'
+                            background:
+                              r.status === 'approved' ? '#ecfdf5' :
+                              r.status === 'rejected' ? '#fef2f2' : '#fffbeb',
+                            color:
+                              r.status === 'approved' ? '#047857' :
+                              r.status === 'rejected' ? '#b91c1c' : '#b45309'
                           }}
-                          title="Click to view transfer receipt screenshot"
                         >
-                          <i className="fa-solid fa-image"></i>
-                          <span>View Receipt</span>
-                        </button>
-                      ) : (
-                        <span style={{ color: '#94a3b8', fontSize: '12px' }}>—</span>
-                      )}
-                    </td>
-                    <td style={{ padding: '12px 20px', color: '#94a3b8', fontSize: '12px' }}>
-                      {new Date(r.created_at).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                          {r.status === 'approved' ? '✓ Credited' : r.status === 'rejected' ? '✕ Rejected' : '⏳ Pending'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px 20px', fontWeight: 900, color: '#0f172a' }}>
+                        {Number(r.amount).toLocaleString()} ETB
+                      </td>
+                      <td style={{ padding: '12px 20px', fontWeight: 700, color: '#475569' }}>
+                        {r.payment_method}
+                      </td>
+                      <td style={{ padding: '12px 20px', fontFamily: 'monospace', color: '#0f172a' }}>
+                        {r.transaction_code}
+                      </td>
+                      <td style={{ padding: '12px 20px' }}>
+                        {r.receipt_image ? (
+                          <button
+                            type="button"
+                            onClick={() => setViewingReceiptModal(r.receipt_image)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              background: '#eff6ff',
+                              border: '1px solid #bfdbfe',
+                              color: '#1d4ed8',
+                              padding: '4px 10px',
+                              borderRadius: '8px',
+                              fontSize: '11px',
+                              fontWeight: 800,
+                              cursor: 'pointer'
+                            }}
+                            title="Click to view transfer receipt screenshot"
+                          >
+                            <i className="fa-solid fa-image"></i>
+                            <span>View Receipt</span>
+                          </button>
+                        ) : (
+                          <span style={{ color: '#94a3b8', fontSize: '12px' }}>—</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '12px 20px', color: '#94a3b8', fontSize: '12px' }}>
+                        {new Date(r.created_at).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Lightbox Modal for Full-Size Receipt */}
