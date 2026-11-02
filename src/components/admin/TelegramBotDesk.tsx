@@ -22,6 +22,7 @@ interface BotStatus {
     totalTelegramUsers: number;
     activeBotSubscribers: number;
     totalBroadcasts: number;
+    channelMembers?: number;
   };
 }
 
@@ -413,7 +414,7 @@ export const TelegramBotDesk: React.FC = () => {
   };
 
   const botSubscribers = status?.metrics?.activeBotSubscribers ?? 7;
-  const channelMembers = 423;
+  const channelMembers = status?.metrics?.channelMembers ?? 4;
   const campaignsSentCount = broadcasts.length;
   const botName = status?.bot?.first_name || 'SonicGameBot';
   const botUsername = status?.bot?.username ? `@${status.bot.username}` : '@SonicGameOfficialBot';
@@ -427,56 +428,94 @@ export const TelegramBotDesk: React.FC = () => {
         </h1>
       </div>
 
-      {/* 2. Header Overview KPI Card */}
-      <div className="card tg-ov">
-        <div className="tg-id">
-          <span className="tg-logo">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
+      {/* 2. Top Metric Cards in 4-Column Grid */}
+      <div className="tg-stat-grid">
+        {/* Card 1: Bot Status & Identity */}
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <span className="tg-logo" style={{ width: '48px', height: '48px', borderRadius: '16px', background: '#1679ad', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 4L3 11l6 2 2 6 3-4 4 3z" />
             </svg>
           </span>
-          <div>
-            <div className="tg-name">{botName}</div>
-            <div className="tg-user">{botUsername}</div>
-          </div>
-          <span className="b ok">● Online</span>
-        </div>
-
-        <div className="tg-kpis">
-          <div>
-            <b>{botSubscribers}</b>
-            <span>Bot subscribers</span>
-          </div>
-          <div>
-            <b>{channelMembers}</b>
-            <span>Channel members</span>
-          </div>
-          <div>
-            <b>{campaignsSentCount}</b>
-            <span>Campaigns sent</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ fontSize: '17px', fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {botName}
+              </div>
+              <span className="b ok" style={{ fontSize: '11.5px', padding: '2px 8px', borderRadius: '8px', background: '#e4f1e8', color: '#1f6a37', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                ● Online
+              </span>
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--mute)', fontWeight: 500 }}>
+              {botUsername}
+            </div>
           </div>
         </div>
 
-        <div className="tg-acts">
-          <div className="tg-actl">Mini App "Play Bingo" button</div>
-          <div className="row" style={{ display: 'flex', gap: '8px' }}>
-            <button
-              type="button"
-              className="tg-btn k"
-              onClick={handleSetMenuButton}
-              disabled={isUpdatingMenu}
-            >
-              {isUpdatingMenu ? 'Updating...' : 'Update menu button'}
-            </button>
-            <button
-              type="button"
-              className="tg-btn"
-              onClick={handleSyncCommands}
-              disabled={isSyncingCommands}
-            >
-              {isSyncingCommands ? 'Syncing...' : 'Sync commands'}
-            </button>
+        {/* Card 2: Bot Subscribers */}
+        <div className="card">
+          <div style={{ fontSize: '13px', color: 'var(--mute)', fontWeight: 600 }}>Bot Subscribers</div>
+          <div style={{ fontSize: '26px', fontWeight: 800, color: 'var(--ink)', marginTop: '4px' }}>
+            {botSubscribers}
           </div>
+          <div style={{ fontSize: '12px', color: '#2e9e4f', fontWeight: 600, marginTop: '2px' }}>
+            Live Telegram players
+          </div>
+        </div>
+
+        {/* Card 3: Channel Members */}
+        <div className="card">
+          <div style={{ fontSize: '13px', color: 'var(--mute)', fontWeight: 600 }}>Channel Members</div>
+          <div style={{ fontSize: '26px', fontWeight: 800, color: 'var(--ink)', marginTop: '4px' }}>
+            {channelMembers}
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--mute)', fontWeight: 500, marginTop: '2px' }}>
+            @SonicGameEthiopia community
+          </div>
+        </div>
+
+        {/* Card 4: Campaigns Sent */}
+        <div className="card">
+          <div style={{ fontSize: '13px', color: 'var(--mute)', fontWeight: 600 }}>Campaigns Sent</div>
+          <div style={{ fontSize: '26px', fontWeight: 800, color: 'var(--ink)', marginTop: '4px' }}>
+            {campaignsSentCount}
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--mute)', fontWeight: 500, marginTop: '2px' }}>
+            Total broadcasts dispatched
+          </div>
+        </div>
+      </div>
+
+      {/* 2b. Mini App Controls Strip */}
+      <div className="tg-control-strip">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '18px' }}>🎮</span>
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--ink)' }}>
+              Mini App "Play Bingo" Menu & Commands
+            </div>
+            <div style={{ fontSize: '12.5px', color: 'var(--mute)' }}>
+              Sync bottom left "Play" button & bot slash commands directly with Telegram Bot API
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            type="button"
+            className="tg-btn k"
+            onClick={handleSetMenuButton}
+            disabled={isUpdatingMenu}
+          >
+            {isUpdatingMenu ? 'Updating...' : 'Update menu button'}
+          </button>
+          <button
+            type="button"
+            className="tg-btn"
+            onClick={handleSyncCommands}
+            disabled={isSyncingCommands}
+          >
+            {isSyncingCommands ? 'Syncing...' : 'Sync commands'}
+          </button>
         </div>
       </div>
 
@@ -608,7 +647,7 @@ export const TelegramBotDesk: React.FC = () => {
                     onClick={() => setTargetDest('channel')}
                   >
                     Channel
-                    <small>{channelInput} · 423</small>
+                    <small>{channelInput} · {channelMembers}</small>
                   </button>
                   <button
                     type="button"

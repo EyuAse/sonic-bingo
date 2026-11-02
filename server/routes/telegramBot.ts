@@ -33,6 +33,16 @@ router.get('/status', async (_req, res) => {
       'SELECT COUNT(*) as total_broadcasts FROM telegram_broadcasts'
     );
 
+    let channelMembers = 4;
+    try {
+      const chCountRes = await telegramBotService.callApi('getChatMemberCount', {
+        chat_id: config.channelId || '@SonicGameEthiopia'
+      });
+      if (chCountRes.ok && typeof chCountRes.result === 'number') {
+        channelMembers = chCountRes.result;
+      }
+    } catch {}
+
     return res.json({
       success: true,
       isConnected,
@@ -48,7 +58,8 @@ router.get('/status', async (_req, res) => {
       metrics: {
         totalTelegramUsers: parseInt(countRes.rows[0]?.total_telegram_users || '0', 10),
         activeBotSubscribers: parseInt(countRes.rows[0]?.bot_started_users || '0', 10),
-        totalBroadcasts: parseInt(broadcastsRes.rows[0]?.total_broadcasts || '0', 10)
+        totalBroadcasts: parseInt(broadcastsRes.rows[0]?.total_broadcasts || '0', 10),
+        channelMembers
       }
     });
   } catch (err: any) {
