@@ -1932,6 +1932,234 @@ router.post('/agents/recharges/:id/reject', requireAdmin, async (req: Authentica
 });
 
 /**
+ * Agent Commission Payout Requests (Admin Control Desk)
+ * GET /api/admin/agents/payouts
+ */
+router.get('/agents/payouts', requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const status = (req.query.status as string || 'all').toLowerCase();
+    let sql = `
+      SELECT acpr.id, acpr.agent_id, acpr.amount, acpr.payout_method, acpr.payout_account,
+             acpr.status, acpr.admin_notes, acpr.created_at, acpr.settled_at,
+             ap.agent_code, ap.commission_balance, ap.wallet_balance,
+             u.full_name as agent_name, u.phone as agent_phone, u.telegram_username as agent_username
+      FROM agent_commission_payout_requests acpr
+      JOIN agent_profiles ap ON acpr.agent_id = ap.id
+      JOIN users u ON ap.user_id = u.id
+    `;
+    const params: any[] = [];
+    if (status !== 'all') {
+      params.push(status);
+      sql += ` WHERE acpr.status = $${params.length}`;
+    }
+    sql += ` ORDER BY acpr.created_at DESC LIMIT 100`;
+
+    const [payoutsRes, countsRes] = await Promise.all([
+      query(sql, params),
+      query(`
+        SELECT 
+          COUNT(*) as total_count,
+          COUNT(*) FILTER (WHERE status = 'pending') as pending_count,
+          COUNT(*) FILTER (WHERE status = 'approved') as approved_count,
+          COUNT(*) FILTER (WHERE status = 'rejected') as rejected_count,
+          COALESCE(SUM(amount) FILTER (WHERE status = 'approved'), 0) as total_approved_amount,
+          COALESCE(SUM(amount) FILTER (WHERE status = 'pending'), 0) as total_pending_amount
+        FROM agent_commission_payout_requests
+      `)
+    ]);
+
+    const c = countsRes.rows[0] || {};
+    return res.json({
+      success: true,
+      pendingCount: parseInt(c.pending_count || '0', 10),
+      summary: {
+        totalCount: parseInt(c.total_count || '0', 10),
+        pendingCount: parseInt(c.pending_count || '0', 10),
+        approvedCount: parseInt(c.approved_count || '0', 10),
+        rejectedCount: parseInt(c.rejected_count || '0', 10),
+        totalApprovedAmount: parseFloat(c.total_approved_amount || '0'),
+        totalPendingAmount: parseFloat(c.total_pending_amount || '0')
+      },
+      payouts: payoutsRes.rows.map(p => ({
+        id: p.id,
+        agentId: p.agent_id,
+        agentCode: p.agent_code,
+        agentName: p.agent_name || 'Agent',
+        agentPhone: p.agent_phone || '',
+        agentUsername: p.agent_username || '',
+        amount: parseFloat(p.amount),
+        payoutMethod: p.payout_method,
+        payoutAccount: p.payout_account,
+        status: p.status,
+        adminNotes: p.admin_notes || null,
+        createdAt: p.created_at,
+        settledAt: p.settled_at
+      }))
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin GET Agent Payouts Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve agent payout requests' });
+  }
+});
+
+/**
+ * Approve Agent Commission Payout
+ * POST /api/admin/agents/payouts/:id/approve
+ */
+router.post('/agents/payouts/:id/approve', requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { txRef, notes } = req.body;
+    const adminRef = (txRef || '').trim() || (notes || '').trim() || 'ADMIN-DISBURSED';
+
+    const result = await withTransaction(async (client) => {
+      const pRes = await client.query(
+        `SELECT acpr.*, ap.agent_code, ap.user_id, u.full_name as agent_name 
+         FROM agent_commission_payout_requests acpr
+         JOIN agent_profiles ap ON acpr.agent_id = ap.id
+         JOIN users u ON ap.user_id = u.id
+         WHERE acpr.id = $1 FOR UPDATE`,
+        [id]
+      );
+
+      if (pRes.rows.length === 0) {
+        throw new Error('Payout request not found');
+      }
+
+      const payout = pRes.rows[0];
+      if (payout.status !== 'pending') {
+        throw new Error(`Payout request is already ${payout.status}`);
+      }
+
+      // Mark request as approved with admin transaction reference
+      await client.query(
+        `UPDATE agent_commission_payout_requests
+         SET status = 'approved',
+             settled_at = NOW(),
+             admin_notes = $1
+         WHERE id = $2`,
+        [adminRef, id]
+      );
+
+      return {
+        id: payout.id,
+        agentId: payout.agent_id,
+        agentCode: payout.agent_code,
+        agentName: payout.agent_name,
+        amount: parseFloat(payout.amount),
+        payoutMethod: payout.payout_method,
+        payoutAccount: payout.payout_account,
+        adminRef
+      };
+    });
+
+    // Notify agent via WebSocket
+    io.emit(`agent_${result.agentId}_payout_approved`, {
+      id: result.id,
+      amount: result.amount,
+      payoutMethod: result.payoutMethod,
+      adminRef: result.adminRef,
+      status: 'approved'
+    });
+    io.emit('agent_payout_status_updated', { id: result.id, status: 'approved' });
+
+    return res.json({
+      success: true,
+      message: `Commission payout of ${result.amount.toFixed(2)} ETB approved for Agent #${result.agentCode}. Ref: ${result.adminRef}`,
+      payout: result
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Approve Agent Payout Error]:', error);
+    return res.status(400).json({ success: false, error: error.message || 'Failed to approve payout request' });
+  }
+});
+
+/**
+ * Reject Agent Commission Payout & Refund Commission Balance
+ * POST /api/admin/agents/payouts/:id/reject
+ */
+router.post('/agents/payouts/:id/reject', requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const rejectionReason = (reason || '').trim() || 'Disbursement rejected by compliance';
+
+    const result = await withTransaction(async (client) => {
+      const pRes = await client.query(
+        `SELECT acpr.*, ap.agent_code, ap.commission_balance, u.full_name as agent_name 
+         FROM agent_commission_payout_requests acpr
+         JOIN agent_profiles ap ON acpr.agent_id = ap.id
+         JOIN users u ON ap.user_id = u.id
+         WHERE acpr.id = $1 FOR UPDATE`,
+        [id]
+      );
+
+      if (pRes.rows.length === 0) {
+        throw new Error('Payout request not found');
+      }
+
+      const payout = pRes.rows[0];
+      if (payout.status !== 'pending') {
+        throw new Error(`Payout request is already ${payout.status}`);
+      }
+
+      const refundAmount = parseFloat(payout.amount);
+
+      // 1. Mark request rejected
+      await client.query(
+        `UPDATE agent_commission_payout_requests
+         SET status = 'rejected',
+             settled_at = NOW(),
+             admin_notes = $1
+         WHERE id = $2`,
+        [rejectionReason, id]
+      );
+
+      // 2. Refund deducted commission balance back to agent profile
+      const agentUpdateRes = await client.query(
+        `UPDATE agent_profiles
+         SET commission_balance = COALESCE(commission_balance, 0) + $1,
+             updated_at = NOW()
+         WHERE id = $2
+         RETURNING commission_balance`,
+        [refundAmount, payout.agent_id]
+      );
+
+      const newCommissionBalance = parseFloat(agentUpdateRes.rows[0]?.commission_balance || '0');
+
+      return {
+        id: payout.id,
+        agentId: payout.agent_id,
+        agentCode: payout.agent_code,
+        agentName: payout.agent_name,
+        amount: refundAmount,
+        newCommissionBalance,
+        reason: rejectionReason
+      };
+    });
+
+    // Notify agent via WebSocket
+    io.emit(`agent_${result.agentId}_payout_rejected`, {
+      id: result.id,
+      amount: result.amount,
+      reason: result.reason,
+      newCommissionBalance: result.newCommissionBalance,
+      status: 'rejected'
+    });
+    io.emit('agent_payout_status_updated', { id: result.id, status: 'rejected' });
+
+    return res.json({
+      success: true,
+      message: `Commission payout of ${result.amount.toFixed(2)} ETB rejected for Agent #${result.agentCode}. ${result.amount.toFixed(2)} ETB refunded back to commission balance!`,
+      payout: result
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Reject Agent Payout Error]:', error);
+    return res.status(400).json({ success: false, error: error.message || 'Failed to reject payout request' });
+  }
+});
+
+/**
  * Official Platform Receiving Accounts Management (Admin Control Desk)
  */
 router.get('/official-accounts', requireAdmin, async (req, res) => {

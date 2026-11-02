@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../services/apiClient.ts';
+import { socketService } from '../../services/socketService.ts';
 import { TelebirrLogo, CBELogo } from '../wallet/PaymentLogos.tsx';
 
 interface AgentCommissionDeskProps {
@@ -46,8 +47,35 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
   useEffect(() => {
     fetchOverview();
     const interval = setInterval(fetchOverview, 15000);
-    return () => clearInterval(interval);
-  }, []);
+
+    const agentId = agentProfile?.id;
+    const unsubApproved = agentId
+      ? socketService.on(`agent_${agentId}_payout_approved`, (data: any) => {
+          showToast(`🎉 Payout Approved: ${data.amount} ETB via ${data.payoutMethod}! Ref: ${data.adminRef || 'Settled'}`);
+          fetchOverview();
+          onRefresh();
+        })
+      : null;
+
+    const unsubRejected = agentId
+      ? socketService.on(`agent_${agentId}_payout_rejected`, (data: any) => {
+          showToast(`⚠️ Payout Rejected: ${data.reason}. ${data.amount} ETB refunded to your balance.`);
+          fetchOverview();
+          onRefresh();
+        })
+      : null;
+
+    const unsubGeneric = socketService.on('agent_payout_status_updated', () => {
+      fetchOverview();
+    });
+
+    return () => {
+      clearInterval(interval);
+      if (unsubApproved) unsubApproved();
+      if (unsubRejected) unsubRejected();
+      if (unsubGeneric) unsubGeneric();
+    };
+  }, [agentProfile?.id]);
 
   const currentCommission = overview?.commissionBalance ?? agentProfile?.commissionBalance ?? 0;
 
@@ -504,8 +532,8 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
                     <td style={{ padding: '12px 20px', fontFamily: 'monospace', color: '#475569' }}>
                       {req.payoutAccount}
                     </td>
-                    <td style={{ padding: '12px 20px', fontFamily: 'monospace', color: '#64748b' }}>
-                      {req.adminTxRef || '—'}
+                    <td style={{ padding: '12px 20px', fontFamily: 'monospace', color: req.status === 'rejected' ? '#dc2626' : '#64748b' }}>
+                      {req.adminTxRef || req.adminNotes || '—'}
                     </td>
                     <td style={{ padding: '12px 20px', color: '#94a3b8', fontSize: '12px' }}>
                       {new Date(req.createdAt).toLocaleDateString()}

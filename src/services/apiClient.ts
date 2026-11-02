@@ -945,6 +945,41 @@ export const apiClient = {
       return handleResponse<{ success: boolean; message?: string; error?: string }>(res);
     },
 
+    // Agent Commission Payouts
+    async getAgentPayouts(status?: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+      const res = await fetch(`${API_BASE}/admin/agents/payouts${qs}`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{
+        success: boolean;
+        pendingCount: number;
+        summary: any;
+        payouts: any[];
+      }>(res);
+    },
+
+    async approveAgentPayout(id: string, data: { txRef?: string; notes?: string }) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agents/payouts/${id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify(data)
+      });
+      return handleResponse<{ success: boolean; message: string; payout: any }>(res);
+    },
+
+    async rejectAgentPayout(id: string, data: { reason?: string }) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agents/payouts/${id}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify(data)
+      });
+      return handleResponse<{ success: boolean; message: string; payout: any }>(res);
+    },
+
     // Network Health
     async getNetworkHealth() {
       const adminHeaders = await getAdminAuthHeader();

@@ -15,6 +15,7 @@ import { TelegramBotDesk } from '../components/admin/TelegramBotDesk.tsx';
 import { BotEngineControllerDesk } from '../components/admin/BotEngineControllerDesk.tsx';
 import { AgentsDesk } from '../components/admin/AgentsDesk.tsx';
 import { AgentRechargesDesk } from '../components/admin/AgentRechargesDesk.tsx';
+import { AgentPayoutsDesk } from '../components/admin/AgentPayoutsDesk.tsx';
 import { JackpotDesk } from '../components/admin/JackpotDesk.tsx';
 import { CoinsRewardsDesk } from '../components/admin/CoinsRewardsDesk.tsx';
 import { OfficialAccountsDesk } from '../components/admin/OfficialAccountsDesk.tsx';
@@ -66,6 +67,7 @@ export const AdminPage: React.FC = () => {
                 {activeTab === 'telegram-bot' && 'Telegram Bot & Ads Broadcast Center'}
                 {activeTab === 'agents' && 'Decentralized Agents Network & Wallets'}
                 {activeTab === 'agent-recharges' && 'Agent Float Recharge Requests'}
+                {activeTab === 'agent-payouts' && 'Agent Commission Cashouts & Settlement (የወኪሎች ኮሚሽን ክፍያ)'}
                 {activeTab === 'official-accounts' && 'Official Platform Receiving Accounts (የክፍያ መቀበያ ሂሳቦች)'}
                 {activeTab === 'jackpots' && 'Progressive Jackpot Pools & Settlement'}
                 {activeTab === 'coins' && 'Coins Loyalty & Rewards Engine (1.5x)'}
@@ -81,6 +83,7 @@ export const AdminPage: React.FC = () => {
                 {activeTab === 'telegram-bot' && 'የቴሌግራም ቦት ማስተዋወቂያ፣ የቻናል ልጥፎች እና የተጠቃሚዎች ማስታወቂያ ማዕከል'}
                 {activeTab === 'agents' && 'የወኪሎች መረብ፣ የዋሌት ቀሪ ሂሳብ፣ የኮሚሽን እና የደንበኞች ተቀማጭ መዝገብ'}
                 {activeTab === 'agent-recharges' && 'የወኪሎች የዋሌት መሙያ ጥያቄዎችን ይገምግሙ እና ያጽድቁ'}
+                {activeTab === 'agent-payouts' && 'የወኪሎች የኮሚሽን ወጪ ጥያቄዎችን በ Telebirr ወይም CBE ይክፈሉ፣ ያጽድቁ ወይም ይመልሱ'}
                 {activeTab === 'official-accounts' && 'የቢንጎ እና የፍሎት ክፍያ መቀበያ ኦፊሴላዊ ሂሳቦች (Telebirr, CBE, M-Pesa)'}
                 {activeTab === 'jackpots' && 'የ 4ቱ ክፍሎች ፕሮግረሲቭ ጃክፖት ሳጥን፣ የ 10% ድልድል እና የ 18 ኳስ አሸናፊዎች'}
                 {activeTab === 'coins' && 'የተጠቃሚዎች የኮይን ነጥቦች (1.5x)፣ የመቀየሪያ ህጎች እና የቦነስ ልውውጥ'}
@@ -146,6 +149,7 @@ export const AdminPage: React.FC = () => {
             { id: 'cartelas', label: '🗂️ 600 Cards' },
             { id: 'agents', label: '🤝 Agents' },
             { id: 'agent-recharges', label: '⚡ Recharges' },
+            { id: 'agent-payouts', label: '💸 Payouts' },
             { id: 'jackpots', label: '🎰 Jackpots' },
             { id: 'coins', label: '🪙 Coins' }
           ].map(t => (
@@ -222,7 +226,10 @@ export const AdminPage: React.FC = () => {
           {/* TAB 9: AGENT RECHARGES */}
           {activeTab === 'agent-recharges' && <AgentRechargesDesk />}
 
-          {/* TAB 9b: OFFICIAL RECEIVING ACCOUNTS */}
+          {/* TAB 9b: AGENT COMMISSION PAYOUTS */}
+          {activeTab === 'agent-payouts' && <AgentPayoutsDesk />}
+
+          {/* TAB 9c: OFFICIAL RECEIVING ACCOUNTS */}
           {activeTab === 'official-accounts' && <OfficialAccountsDesk showToast={showToast} />}
 
           {/* TAB 10: PROGRESSIVE JACKPOTS */}

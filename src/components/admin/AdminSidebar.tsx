@@ -13,6 +13,7 @@ export type AdminTab =
   | 'telegram-bot'
   | 'agents'
   | 'agent-recharges'
+  | 'agent-payouts'
   | 'official-accounts'
   | 'jackpots'
   | 'coins';
@@ -275,6 +276,24 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               <>
                 <span className="light-nav-text">Agent Recharges</span>
                 <span className="light-nav-badge yellow-badge">Float</span>
+              </>
+            )}
+          </button>
+
+          {/* 9b. Agent Commission Cashouts */}
+          <button
+            type="button"
+            className={`light-nav-item ${activeTab === 'agent-payouts' ? 'active' : ''}`}
+            onClick={() => handleSelectTab('agent-payouts')}
+            title="Agent Commission Cashouts"
+          >
+            <div className="light-nav-icon">
+              <i className="fa-solid fa-money-bill-transfer" style={{ color: '#10b981' }}></i>
+            </div>
+            {!isSidebarCollapsed && (
+              <>
+                <span className="light-nav-text">Agent Payouts</span>
+                <span className="light-nav-badge green-badge">Cashout</span>
               </>
             )}
           </button>
