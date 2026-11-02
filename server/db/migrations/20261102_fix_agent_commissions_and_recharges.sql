@@ -18,3 +18,4 @@ END $$;
 CREATE INDEX IF NOT EXISTS idx_recharge_req_agent_created ON agent_recharge_requests(agent_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_agent_comm_agent_created ON agent_commissions(agent_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_apd_agent_created ON agent_player_deposits(agent_id, created_at DESC);
+

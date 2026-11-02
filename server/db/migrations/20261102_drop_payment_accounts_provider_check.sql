@@ -9,3 +9,4 @@ ALTER TABLE payment_accounts ALTER COLUMN provider TYPE VARCHAR(100);
 -- Ensure index exists on provider for fast filtering
 CREATE INDEX IF NOT EXISTS idx_payment_accounts_provider ON payment_accounts(provider);
 CREATE INDEX IF NOT EXISTS idx_payment_accounts_active ON payment_accounts(is_active);
+

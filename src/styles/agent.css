@@ -670,3 +670,725 @@
     display: block;
   }
 }
+
+/* ==========================================================================
+   5. AGENT DASHBOARD DESK PRECISION MOBILE RESPONSIVE STYLES
+   ========================================================================== */
+@media (max-width: 768px) {
+  .sonic-agent-page-content {
+    padding: 14px 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .sonic-agent-page-content {
+    padding: 10px 8px !important;
+  }
+}
+
+/* Dashboard Root */
+.sonic-dashboard-root {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  color: #0f172a;
+}
+
+@media (max-width: 768px) {
+  .sonic-dashboard-root {
+    gap: 14px;
+  }
+}
+
+/* 1. Welcome Greeting & Tier Header */
+.sonic-dashboard-welcome-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  position: relative;
+  width: 100%;
+}
+
+.sonic-dashboard-welcome-left {
+  z-index: 1;
+}
+
+.sonic-dashboard-welcome-title {
+  font-size: 32px;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 2px 0 4px 0;
+  letter-spacing: -0.5px;
+  line-height: 1.15;
+}
+
+.sonic-dashboard-welcome-crown {
+  position: absolute;
+  left: 52%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.12;
+}
+
+.sonic-dashboard-welcome-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 280px;
+  z-index: 1;
+}
+
+.sonic-dashboard-welcome-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sonic-dashboard-target-progress-box {
+  width: 100%;
+  max-width: 280px;
+  margin-top: 2px;
+}
+
+@media (max-width: 768px) {
+  .sonic-dashboard-welcome-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .sonic-dashboard-welcome-title {
+    font-size: 24px;
+    line-height: 1.2;
+  }
+  .sonic-dashboard-welcome-crown {
+    display: none;
+  }
+  .sonic-dashboard-welcome-meta {
+    align-items: stretch;
+    min-width: 0;
+    width: 100%;
+    gap: 8px;
+  }
+  .sonic-dashboard-welcome-pills {
+    justify-content: space-between;
+    width: 100%;
+  }
+  .sonic-dashboard-target-progress-box {
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+/* 2. Hero Float Liquidity Card */
+.sonic-dashboard-float-card {
+  background: #fffdfa;
+  border: 1.5px solid #fef3c7;
+  border-radius: 18px;
+  padding: 20px 26px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.06);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sonic-dashboard-float-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.sonic-dashboard-float-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #fef3c7;
+  border: 2px solid #fde68a;
+  color: #d97706;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+  flex-shrink: 0;
+}
+
+.sonic-dashboard-float-details {
+  min-width: 0;
+}
+
+.sonic-dashboard-float-amount {
+  font-size: 28px;
+  font-weight: 900;
+  color: #0f172a;
+  line-height: 1.2;
+  margin: 2px 0;
+  word-break: break-word;
+}
+
+.sonic-dashboard-float-meta {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.sonic-dashboard-float-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sonic-dashboard-float-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 9999px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.sonic-dashboard-float-btn-desk {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  padding: 9px 16px;
+  font-size: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.sonic-dashboard-float-btn-desk:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.sonic-dashboard-float-btn-recharge {
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+  border: none;
+  color: #000000;
+  padding: 9px 18px;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+}
+
+.sonic-dashboard-float-btn-recharge:hover {
+  filter: brightness(1.05);
+}
+
+@media (max-width: 768px) {
+  .sonic-dashboard-float-card {
+    padding: 16px 14px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .sonic-dashboard-float-info {
+    gap: 12px;
+  }
+  .sonic-dashboard-float-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+  .sonic-dashboard-float-amount {
+    font-size: 22px;
+  }
+  .sonic-dashboard-float-meta {
+    font-size: 11px;
+  }
+  .sonic-dashboard-float-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+  .sonic-dashboard-float-btn-desk {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 6px;
+    font-size: 11px;
+  }
+  .sonic-dashboard-float-btn-recharge {
+    grid-column: span 2;
+    width: 100%;
+    justify-content: center;
+    padding: 11px 16px;
+    font-size: 12px;
+  }
+}
+
+/* 3. Four Key Metrics Row */
+.sonic-dashboard-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sonic-dashboard-metric-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.sonic-dashboard-metric-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #fef3c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.sonic-dashboard-metric-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.sonic-dashboard-metric-value {
+  font-size: 24px;
+  font-weight: 900;
+  color: #0f172a;
+  line-height: 1.1;
+  word-break: break-word;
+}
+
+.sonic-dashboard-metric-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sonic-dashboard-metric-trend {
+  font-size: 12px;
+  font-weight: 800;
+  color: #16a34a;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.sonic-dashboard-metric-watermark {
+  position: absolute;
+  right: 10px;
+  bottom: 6px;
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+@media (max-width: 1180px) {
+  .sonic-dashboard-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sonic-dashboard-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .sonic-dashboard-metric-card {
+    padding: 12px 10px;
+    border-radius: 14px;
+    gap: 8px;
+  }
+  .sonic-dashboard-metric-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+  .sonic-dashboard-metric-value {
+    font-size: 17px;
+  }
+  .sonic-dashboard-metric-label {
+    font-size: 11px;
+  }
+  .sonic-dashboard-metric-trend {
+    font-size: 11px;
+  }
+  .sonic-dashboard-metric-watermark {
+    display: none;
+  }
+}
+
+@media (max-width: 340px) {
+  .sonic-dashboard-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 4. Cashier Desks & Timeframe Hub */
+.sonic-dashboard-hub-header {
+  background: #0f172a;
+  border-radius: 14px;
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sonic-dashboard-hub-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.sonic-dashboard-hub-subtitle {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 1px;
+}
+
+.sonic-dashboard-desks-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sonic-dashboard-desk-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.sonic-dashboard-desk-timeframes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sonic-dashboard-desk-box {
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.sonic-dashboard-desk-box-title {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.sonic-dashboard-desk-box-amount {
+  font-size: 16px;
+  font-weight: 900;
+  color: #0f172a;
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sonic-dashboard-desk-box-sub {
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sonic-dashboard-desk-jump-btn {
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  padding: 11px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+  text-align: center;
+  line-height: 1.3;
+}
+
+@media (max-width: 992px) {
+  .sonic-dashboard-desks-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sonic-dashboard-hub-header {
+    padding: 12px 14px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .sonic-dashboard-hub-title {
+    font-size: 13px;
+  }
+  .sonic-dashboard-hub-subtitle {
+    font-size: 11px;
+  }
+  .sonic-dashboard-desk-card {
+    padding: 16px 14px;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sonic-dashboard-desk-card {
+    padding: 14px 10px;
+  }
+  .sonic-dashboard-desk-timeframes {
+    gap: 6px;
+  }
+  .sonic-dashboard-desk-box {
+    padding: 8px 4px;
+    text-align: center;
+  }
+  .sonic-dashboard-desk-box-title {
+    font-size: 9px;
+    justify-content: center;
+  }
+  .sonic-dashboard-desk-box-amount {
+    font-size: 13px;
+  }
+  .sonic-dashboard-desk-box-amount span {
+    font-size: 10px !important;
+  }
+  .sonic-dashboard-desk-box-sub {
+    font-size: 9.5px;
+  }
+  .sonic-dashboard-desk-jump-btn {
+    padding: 10px 8px;
+    font-size: 11px;
+  }
+}
+
+/* 5. Two-Column Feeds: My Players & Recent Transactions */
+.sonic-dashboard-feeds-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sonic-dashboard-feed-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+@media (max-width: 992px) {
+  .sonic-dashboard-feeds-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sonic-dashboard-feed-card {
+    padding: 16px 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sonic-dashboard-feed-card {
+    padding: 14px 10px;
+  }
+}
+
+/* 6. Bottom Referral Banner */
+.sonic-dashboard-referral-banner {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 40%, #fde68a 85%, #f59e0b 100%);
+  border: 1px solid #fde68a;
+  border-radius: 20px;
+  padding: 24px 32px;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.12);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sonic-dashboard-referral-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  z-index: 2;
+  min-width: 0;
+  flex: 1;
+}
+
+.sonic-dashboard-referral-gift {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  background: #fef3c7;
+  border: 2px solid #fde68a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2);
+}
+
+.sonic-dashboard-referral-text {
+  min-width: 0;
+}
+
+.sonic-dashboard-referral-title {
+  font-size: 20px;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.3px;
+}
+
+.sonic-dashboard-referral-desc {
+  font-size: 13px;
+  color: #475569;
+  margin: 0;
+  font-weight: 600;
+}
+
+.sonic-dashboard-referral-copy-btn {
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+  border: none;
+  border-radius: 9999px;
+  padding: 10px 22px;
+  color: #000000;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+  margin-left: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.sonic-dashboard-referral-copy-btn:hover {
+  filter: brightness(1.05);
+}
+
+.sonic-dashboard-referral-right {
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  margin-right: -10px;
+}
+
+@media (max-width: 992px) {
+  .sonic-dashboard-referral-banner {
+    padding: 20px 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sonic-dashboard-referral-banner {
+    padding: 18px 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .sonic-dashboard-referral-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+  }
+  .sonic-dashboard-referral-gift {
+    width: 44px;
+    height: 44px;
+    font-size: 24px;
+  }
+  .sonic-dashboard-referral-title {
+    font-size: 18px;
+  }
+  .sonic-dashboard-referral-desc {
+    font-size: 12px;
+  }
+  .sonic-dashboard-referral-copy-btn {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+    padding: 11px 16px;
+    font-size: 12px;
+  }
+  .sonic-dashboard-referral-right {
+    justify-content: center;
+    margin-right: 0;
+    margin-top: 4px;
+  }
+}
+

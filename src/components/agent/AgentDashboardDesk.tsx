@@ -134,42 +134,15 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
   ];
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '20px',
-        width: '100%',
-        boxSizing: 'border-box',
-        color: '#0f172a'
-      }}
-    >
+    <div className="sonic-dashboard-root">
       {/* ===================================================================
           1. WELCOME GREETING & TIER HEADER (WITH CROWN WATERMARK)
           =================================================================== */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          flexWrap: 'wrap',
-          gap: '16px',
-          position: 'relative'
-        }}
-      >
+      <div className="sonic-dashboard-welcome-header">
         {/* Left: Welcome Greeting */}
-        <div style={{ zIndex: 1 }}>
+        <div className="sonic-dashboard-welcome-left">
           <div style={{ fontSize: '15px', color: '#334155', fontWeight: 500 }}>Welcome back,</div>
-          <h1
-            style={{
-              fontSize: '32px',
-              fontWeight: 900,
-              color: '#0f172a',
-              margin: '2px 0 4px 0',
-              letterSpacing: '-0.5px',
-              lineHeight: 1.15
-            }}
-          >
+          <h1 className="sonic-dashboard-welcome-title">
             {agentName}!
           </h1>
           <p style={{ fontSize: '13px', color: '#64748b', margin: 0, fontWeight: 500 }}>
@@ -178,25 +151,15 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
         </div>
 
         {/* Center: Crown Watermark */}
-        <div
-          style={{
-            position: 'absolute',
-            left: '52%',
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
-            pointerEvents: 'none',
-            zIndex: 0,
-            opacity: 0.12
-          }}
-        >
+        <div className="sonic-dashboard-welcome-crown">
           <svg width="190" height="90" viewBox="0 0 24 24" fill="#f59e0b">
             <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5m14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z" />
           </svg>
         </div>
 
         {/* Right: Gold Agent Pill, Date Pill, and Monthly Target */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', minWidth: '280px', zIndex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="sonic-dashboard-welcome-meta">
+          <div className="sonic-dashboard-welcome-pills">
             {/* Gold Agent Pill */}
             <div
               style={{
@@ -210,7 +173,8 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
-                boxShadow: '0 2px 6px rgba(245, 158, 11, 0.15)'
+                boxShadow: '0 2px 6px rgba(245, 158, 11, 0.15)',
+                whiteSpace: 'nowrap'
               }}
             >
               <span>👑</span>
@@ -231,7 +195,8 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                 alignItems: 'center',
                 gap: '6px',
                 boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
               }}
               onClick={() => {
                 onRefresh();
@@ -246,7 +211,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
           </div>
 
           {/* Monthly Target Progress Widget */}
-          <div style={{ width: '100%', maxWidth: '280px', marginTop: '2px' }}>
+          <div className="sonic-dashboard-target-progress-box">
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
               <span>Monthly Target: {targetPlayers.toLocaleString()} Players</span>
               <span style={{ fontWeight: 800, color: '#0f172a' }}>{activePlayers} / {targetPlayers.toLocaleString()}</span>
@@ -269,41 +234,14 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
       {/* ===================================================================
           2. HERO AVAILABLE FLOAT LIQUIDITY CARD (EXACT CLONE)
           =================================================================== */}
-      <div
-        style={{
-          background: '#fffdfa',
-          border: '1.5px solid #fef3c7',
-          borderRadius: '18px',
-          padding: '20px 26px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '16px',
-          boxShadow: '0 4px 16px rgba(245, 158, 11, 0.06)'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div className="sonic-dashboard-float-card">
+        <div className="sonic-dashboard-float-info">
           {/* Circular 3D Gold Wallet Icon Halo */}
-          <div
-            style={{
-              width: '54px',
-              height: '54px',
-              borderRadius: '50%',
-              background: '#fef3c7',
-              border: '2px solid #fde68a',
-              color: '#d97706',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '24px',
-              boxShadow: '0 4px 12px rgba(245, 158, 11, 0.15)'
-            }}
-          >
+          <div className="sonic-dashboard-float-icon">
             👝
           </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="sonic-dashboard-float-details">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 AVAILABLE FLOAT LIQUIDITY
               </span>
@@ -323,34 +261,21 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                 <span>🟢</span> Healthy
               </span>
             </div>
-            <div style={{ fontSize: '28px', fontWeight: 900, color: '#0f172a', lineHeight: 1.2, margin: '2px 0' }}>
+            <div className="sonic-dashboard-float-amount">
               {walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ETB
             </div>
-            <div style={{ fontSize: '12px', color: '#64748b' }}>
+            <div className="sonic-dashboard-float-meta">
               Agent Code: <strong style={{ color: '#0f172a' }}>{agentCode}</strong> • Warning Threshold: {lowThreshold.toLocaleString()} ETB
             </div>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="sonic-dashboard-float-actions">
           <button
             type="button"
             onClick={() => onNavigateTab('deposit_requests')}
-            style={{
-              background: '#ffffff',
-              border: '1px solid #cbd5e1',
-              color: '#0f172a',
-              padding: '9px 16px',
-              borderRadius: '9999px',
-              fontSize: '12px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
-            }}
+            className="sonic-dashboard-float-btn sonic-dashboard-float-btn-desk"
           >
             <span>📥</span>
             <span>Deposit Desk</span>
@@ -373,20 +298,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
           <button
             type="button"
             onClick={() => onNavigateTab('withdrawal_requests')}
-            style={{
-              background: '#ffffff',
-              border: '1px solid #cbd5e1',
-              color: '#0f172a',
-              padding: '9px 16px',
-              borderRadius: '9999px',
-              fontSize: '12px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
-            }}
+            className="sonic-dashboard-float-btn sonic-dashboard-float-btn-desk"
           >
             <span>📤</span>
             <span>Withdrawal Desk</span>
@@ -409,20 +321,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
           <button
             type="button"
             onClick={() => onNavigateTab('recharge')}
-            style={{
-              background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
-              border: 'none',
-              color: '#000000',
-              padding: '9px 18px',
-              borderRadius: '9999px',
-              fontSize: '12px',
-              fontWeight: 800,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              boxShadow: '0 4px 12px rgba(245, 158, 11, 0.35)'
-            }}
+            className="sonic-dashboard-float-btn sonic-dashboard-float-btn-recharge"
           >
             <i className="fa-solid fa-bolt"></i>
             <span>Recharge Float</span>
@@ -433,58 +332,26 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
       {/* ===================================================================
           3. FOUR KEY METRIC CARDS ROW (ICON ON LEFT, WATERMARK ON RIGHT)
           =================================================================== */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
-          gap: '16px'
-        }}
-      >
+      <div className="sonic-dashboard-metrics-grid">
         {/* Card 1: Active Players */}
-        <div
-          style={{
-            background: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: '16px',
-            padding: '18px 20px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
-        >
-          {/* Icon Halo */}
-          <div
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '50%',
-              background: '#fef3c7',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '22px',
-              flexShrink: 0
-            }}
-          >
+        <div className="sonic-dashboard-metric-card">
+          <div className="sonic-dashboard-metric-icon">
             👥
           </div>
-          <div>
-            <div style={{ fontSize: '24px', fontWeight: 900, color: '#0f172a', lineHeight: 1.1 }}>
+          <div className="sonic-dashboard-metric-content">
+            <div className="sonic-dashboard-metric-value">
               {activePlayers.toLocaleString()}
             </div>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#64748b', marginTop: '2px' }}>
+            <div className="sonic-dashboard-metric-label">
               Active Players
             </div>
-            <div style={{ fontSize: '12px', fontWeight: 800, color: '#16a34a', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+            <div className="sonic-dashboard-metric-trend">
               <span>↑</span> +100%
             </div>
           </div>
 
           {/* Faint Graph Watermark */}
-          <div style={{ position: 'absolute', right: '10px', bottom: '6px', opacity: 0.15, pointerEvents: 'none' }}>
+          <div className="sonic-dashboard-metric-watermark">
             <svg width="60" height="40" viewBox="0 0 60 40" fill="#f59e0b">
               <rect x="5" y="24" width="8" height="16" rx="2" />
               <rect x="18" y="18" width="8" height="22" rx="2" />
@@ -495,50 +362,24 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
         </div>
 
         {/* Card 2: Total Deposits */}
-        <div
-          style={{
-            background: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: '16px',
-            padding: '18px 20px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
-        >
-          {/* Icon Halo */}
-          <div
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '50%',
-              background: '#fef3c7',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '22px',
-              flexShrink: 0
-            }}
-          >
+        <div className="sonic-dashboard-metric-card">
+          <div className="sonic-dashboard-metric-icon">
             🪙
           </div>
-          <div>
-            <div style={{ fontSize: '24px', fontWeight: 900, color: '#0f172a', lineHeight: 1.1 }}>
-              {totalDeposits.toLocaleString()} <span style={{ fontSize: '16px', fontWeight: 700 }}>ETB</span>
+          <div className="sonic-dashboard-metric-content">
+            <div className="sonic-dashboard-metric-value">
+              {totalDeposits.toLocaleString()} <span style={{ fontSize: '15px', fontWeight: 700 }}>ETB</span>
             </div>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#64748b', marginTop: '2px' }}>
+            <div className="sonic-dashboard-metric-label">
               Total Deposits
             </div>
-            <div style={{ fontSize: '12px', fontWeight: 800, color: '#16a34a', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+            <div className="sonic-dashboard-metric-trend">
               <span>↑</span> +15%
             </div>
           </div>
 
           {/* Faint Graph Watermark */}
-          <div style={{ position: 'absolute', right: '10px', bottom: '6px', opacity: 0.15, pointerEvents: 'none' }}>
+          <div className="sonic-dashboard-metric-watermark">
             <svg width="60" height="40" viewBox="0 0 60 40" fill="#f59e0b">
               <rect x="5" y="20" width="8" height="20" rx="2" />
               <rect x="18" y="14" width="8" height="26" rx="2" />
@@ -549,41 +390,15 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
         </div>
 
         {/* Card 3: Commission Earned */}
-        <div
-          style={{
-            background: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: '16px',
-            padding: '18px 20px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
-        >
-          {/* Icon Halo */}
-          <div
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '50%',
-              background: '#fef3c7',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '22px',
-              flexShrink: 0
-            }}
-          >
+        <div className="sonic-dashboard-metric-card">
+          <div className="sonic-dashboard-metric-icon">
             👝
           </div>
-          <div>
-            <div style={{ fontSize: '24px', fontWeight: 900, color: '#0f172a', lineHeight: 1.1 }}>
-              {commissionEarned.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style={{ fontSize: '16px', fontWeight: 700 }}>ETB</span>
+          <div className="sonic-dashboard-metric-content">
+            <div className="sonic-dashboard-metric-value">
+              {commissionEarned.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style={{ fontSize: '15px', fontWeight: 700 }}>ETB</span>
             </div>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#64748b', marginTop: '2px' }}>
+            <div className="sonic-dashboard-metric-label">
               Commission Earned
             </div>
             <button
@@ -610,7 +425,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
           </div>
 
           {/* Faint Graph Watermark */}
-          <div style={{ position: 'absolute', right: '10px', bottom: '6px', opacity: 0.15, pointerEvents: 'none' }}>
+          <div className="sonic-dashboard-metric-watermark">
             <svg width="60" height="40" viewBox="0 0 60 40" fill="#f59e0b">
               <rect x="5" y="26" width="8" height="14" rx="2" />
               <rect x="18" y="20" width="8" height="20" rx="2" />
@@ -621,41 +436,15 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
         </div>
 
         {/* Card 4: Target Progress */}
-        <div
-          style={{
-            background: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: '16px',
-            padding: '18px 20px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
-        >
-          {/* Icon Halo */}
-          <div
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '50%',
-              background: '#fef3c7',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '22px',
-              flexShrink: 0
-            }}
-          >
+        <div className="sonic-dashboard-metric-card">
+          <div className="sonic-dashboard-metric-icon">
             🎯
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '24px', fontWeight: 900, color: '#0f172a', lineHeight: 1.1 }}>
+          <div className="sonic-dashboard-metric-content">
+            <div className="sonic-dashboard-metric-value">
               {targetPercent}%
             </div>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: '#64748b', marginTop: '2px' }}>
+            <div className="sonic-dashboard-metric-label">
               Target Progress
             </div>
             <div style={{ width: '100%', height: '6px', background: '#f1f5f9', borderRadius: '9999px', marginTop: '6px', overflow: 'hidden' }}>
@@ -671,7 +460,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
           </div>
 
           {/* Faint Graph Watermark */}
-          <div style={{ position: 'absolute', right: '10px', bottom: '6px', opacity: 0.15, pointerEvents: 'none' }}>
+          <div className="sonic-dashboard-metric-watermark">
             <svg width="60" height="40" viewBox="0 0 60 40" fill="#f59e0b">
               <rect x="5" y="24" width="8" height="16" rx="2" />
               <rect x="18" y="16" width="8" height="24" rx="2" />
@@ -687,25 +476,14 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
           =================================================================== */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
         {/* Full-Width Dark Obsidian Header */}
-        <div
-          style={{
-            background: '#0f172a',
-            borderRadius: '14px',
-            padding: '14px 20px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '12px'
-          }}
-        >
+        <div className="sonic-dashboard-hub-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ fontSize: '18px' }}>📊</span>
             <div>
-              <div style={{ fontSize: '14px', fontWeight: 800, color: '#ffffff' }}>
+              <div className="sonic-dashboard-hub-title">
                 Cashier Desks & Timeframe Performance Hub
               </div>
-              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '1px' }}>
+              <div className="sonic-dashboard-hub-subtitle">
                 Authoritative Neon DB metrics across Today, This Week, and This Month with 1-click desk access.
               </div>
             </div>
@@ -723,7 +501,9 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              flexShrink: 0,
+              width: 'fit-content'
             }}
           >
             <span>Last 30 Days</span>
@@ -732,27 +512,9 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
         </div>
 
         {/* Two Rich Interactive Cashier Multi-Rail Desks */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-            gap: '16px'
-          }}
-        >
+        <div className="sonic-dashboard-desks-grid">
           {/* Desk 1: Deposit Cashier Desk */}
-          <div
-            style={{
-              background: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '16px',
-              padding: '20px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: '16px'
-            }}
-          >
+          <div className="sonic-dashboard-desk-card">
             <div>
               {/* Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
@@ -778,7 +540,8 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                     fontWeight: 800,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px'
+                    gap: '4px',
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   {pendingDepositCount > 0 ? `⚡ ${pendingDepositCount} Pending` : '✓ All Settled'}
@@ -786,39 +549,39 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
               </div>
 
               {/* 3 Columns: TODAY, THIS WEEK, THIS MONTH (100% Real Live DB Data) */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                <div style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: '10px', padding: '10px 12px' }}>
-                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <div className="sonic-dashboard-desk-timeframes">
+                <div className="sonic-dashboard-desk-box">
+                  <div className="sonic-dashboard-desk-box-title" style={{ color: '#dc2626' }}>
                     <span>v</span> TODAY
                   </div>
-                  <div style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', marginTop: '3px' }}>
+                  <div className="sonic-dashboard-desk-box-amount">
                     {depositAnalytics.today.amount.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
                   </div>
-                  <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 700, marginTop: '2px' }}>
+                  <div className="sonic-dashboard-desk-box-sub" style={{ color: '#16a34a' }}>
                     +{depositAnalytics.today.commission.toFixed(1)} ETB ({depositAnalytics.today.count})
                   </div>
                 </div>
 
-                <div style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: '10px', padding: '10px 12px' }}>
-                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div className="sonic-dashboard-desk-box">
+                  <div className="sonic-dashboard-desk-box-title" style={{ color: '#64748b' }}>
                     <span>★</span> THIS WEEK
                   </div>
-                  <div style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', marginTop: '3px' }}>
+                  <div className="sonic-dashboard-desk-box-amount">
                     {depositAnalytics.week.amount.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
                   </div>
-                  <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 700, marginTop: '2px' }}>
+                  <div className="sonic-dashboard-desk-box-sub" style={{ color: '#16a34a' }}>
                     +{depositAnalytics.week.commission.toFixed(1)} ETB ({depositAnalytics.week.count})
                   </div>
                 </div>
 
-                <div style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: '10px', padding: '10px 12px' }}>
-                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div className="sonic-dashboard-desk-box">
+                  <div className="sonic-dashboard-desk-box-title" style={{ color: '#64748b' }}>
                     <span>★</span> THIS MONTH
                   </div>
-                  <div style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', marginTop: '3px' }}>
+                  <div className="sonic-dashboard-desk-box-amount">
                     {depositAnalytics.month.amount.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
                   </div>
-                  <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 700, marginTop: '2px' }}>
+                  <div className="sonic-dashboard-desk-box-sub" style={{ color: '#16a34a' }}>
                     +{depositAnalytics.month.commission.toFixed(1)} ETB ({depositAnalytics.month.count})
                   </div>
                 </div>
@@ -829,21 +592,10 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
             <button
               type="button"
               onClick={() => onNavigateTab('deposit_requests')}
+              className="sonic-dashboard-desk-jump-btn"
               style={{
-                width: '100%',
                 background: '#fef3c7',
-                border: 'none',
-                color: '#92400e',
-                borderRadius: '10px',
-                padding: '11px',
-                fontSize: '12px',
-                fontWeight: 800,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                transition: 'all 0.15s ease'
+                color: '#92400e'
               }}
             >
               <span>📥</span>
@@ -852,19 +604,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
           </div>
 
           {/* Desk 2: Withdrawal Cashier Desk */}
-          <div
-            style={{
-              background: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '16px',
-              padding: '20px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: '16px'
-            }}
-          >
+          <div className="sonic-dashboard-desk-card">
             <div>
               {/* Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
@@ -890,7 +630,8 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                     fontWeight: 800,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px'
+                    gap: '4px',
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   {pendingWithdrawalCount > 0 ? `⚡ ${pendingWithdrawalCount} Pending` : '✓ All Paid Out'}
@@ -898,39 +639,39 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
               </div>
 
               {/* 3 Columns (100% Real Live DB Data) */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                <div style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: '10px', padding: '10px 12px' }}>
-                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#7c3aed', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <div className="sonic-dashboard-desk-timeframes">
+                <div className="sonic-dashboard-desk-box">
+                  <div className="sonic-dashboard-desk-box-title" style={{ color: '#7c3aed' }}>
                     <span>v</span> TODAY
                   </div>
-                  <div style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', marginTop: '3px' }}>
+                  <div className="sonic-dashboard-desk-box-amount">
                     {withdrawalAnalytics.today.amount.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
                   </div>
-                  <div style={{ fontSize: '11px', color: '#7c3aed', fontWeight: 700, marginTop: '2px' }}>
+                  <div className="sonic-dashboard-desk-box-sub" style={{ color: '#7c3aed' }}>
                     +{withdrawalAnalytics.today.commission.toFixed(1)} ETB ({withdrawalAnalytics.today.count})
                   </div>
                 </div>
 
-                <div style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: '10px', padding: '10px 12px' }}>
-                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div className="sonic-dashboard-desk-box">
+                  <div className="sonic-dashboard-desk-box-title" style={{ color: '#64748b' }}>
                     <span>★</span> THIS WEEK
                   </div>
-                  <div style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', marginTop: '3px' }}>
+                  <div className="sonic-dashboard-desk-box-amount">
                     {withdrawalAnalytics.week.amount.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
                   </div>
-                  <div style={{ fontSize: '11px', color: '#7c3aed', fontWeight: 700, marginTop: '2px' }}>
+                  <div className="sonic-dashboard-desk-box-sub" style={{ color: '#7c3aed' }}>
                     +{withdrawalAnalytics.week.commission.toFixed(1)} ETB ({withdrawalAnalytics.week.count})
                   </div>
                 </div>
 
-                <div style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: '10px', padding: '10px 12px' }}>
-                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div className="sonic-dashboard-desk-box">
+                  <div className="sonic-dashboard-desk-box-title" style={{ color: '#64748b' }}>
                     <span>★</span> THIS MONTH
                   </div>
-                  <div style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', marginTop: '3px' }}>
+                  <div className="sonic-dashboard-desk-box-amount">
                     {withdrawalAnalytics.month.amount.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
                   </div>
-                  <div style={{ fontSize: '11px', color: '#7c3aed', fontWeight: 700, marginTop: '2px' }}>
+                  <div className="sonic-dashboard-desk-box-sub" style={{ color: '#7c3aed' }}>
                     +{withdrawalAnalytics.month.commission.toFixed(1)} ETB ({withdrawalAnalytics.month.count})
                   </div>
                 </div>
@@ -941,21 +682,10 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
             <button
               type="button"
               onClick={() => onNavigateTab('withdrawal_requests')}
+              className="sonic-dashboard-desk-jump-btn"
               style={{
-                width: '100%',
                 background: '#f5f3ff',
-                border: 'none',
-                color: '#6d28d9',
-                borderRadius: '10px',
-                padding: '11px',
-                fontSize: '12px',
-                fontWeight: 800,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                transition: 'all 0.15s ease'
+                color: '#6d28d9'
               }}
             >
               <span>📤</span>
@@ -968,23 +698,9 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
       {/* ===================================================================
           5. TWO-COLUMN FEEDS: MY PLAYERS & RECENT TRANSACTIONS
           =================================================================== */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: '16px'
-        }}
-      >
+      <div className="sonic-dashboard-feeds-grid">
         {/* Left Column: My Players */}
-        <div
-          style={{
-            background: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: '16px',
-            padding: '20px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
-          }}
-        >
+        <div className="sonic-dashboard-feed-card">
           {/* Card Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1024,10 +740,11 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   paddingBottom: idx !== displayPlayers.length - 1 ? '10px' : '0',
-                  borderBottom: idx !== displayPlayers.length - 1 ? '1px solid #f1f5f9' : 'none'
+                  borderBottom: idx !== displayPlayers.length - 1 ? '1px solid #f1f5f9' : 'none',
+                  minWidth: 0
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                   {/* Silhouette User Circle */}
                   <div
                     style={{
@@ -1039,13 +756,16 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                       alignItems: 'center',
                       justifyContent: 'center',
                       color: '#ffffff',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      flexShrink: 0
                     }}
                   >
                     <i className="fa-solid fa-user"></i>
                   </div>
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a' }}>{p.fullName || 'Registered Player'}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {p.fullName || 'Registered Player'}
+                    </div>
                     <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
                       Registered {formatRelativeTime(p.createdAt)}
                     </div>
@@ -1060,7 +780,9 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                     fontSize: '11px',
                     fontWeight: 800,
                     padding: '3px 10px',
-                    borderRadius: '9999px'
+                    borderRadius: '9999px',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0
                   }}
                 >
                   Active
@@ -1071,15 +793,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
         </div>
 
         {/* Right Column: Recent Transactions */}
-        <div
-          style={{
-            background: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: '16px',
-            padding: '20px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
-          }}
-        >
+        <div className="sonic-dashboard-feed-card">
           {/* Card Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1119,10 +833,11 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   paddingBottom: idx !== displayTransactions.length - 1 ? '10px' : '0',
-                  borderBottom: idx !== displayTransactions.length - 1 ? '1px solid #f1f5f9' : 'none'
+                  borderBottom: idx !== displayTransactions.length - 1 ? '1px solid #f1f5f9' : 'none',
+                  minWidth: 0
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                   {/* Green Down-Arrow Circle */}
                   <div
                     style={{
@@ -1135,13 +850,14 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                       justifyContent: 'center',
                       color: '#ffffff',
                       fontSize: '14px',
-                      fontWeight: 800
+                      fontWeight: 800,
+                      flexShrink: 0
                     }}
                   >
                     ↓
                   </div>
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       Deposit via {tx.payment_method || 'Telebirr'}
                     </div>
                     <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '1px' }}>
@@ -1150,8 +866,8 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 900, color: '#16a34a' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                  <span style={{ fontSize: '13px', fontWeight: 900, color: '#16a34a', whiteSpace: 'nowrap' }}>
                     +{tx.amount} ETB
                   </span>
                   <span
@@ -1161,7 +877,8 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                       fontSize: '11px',
                       fontWeight: 800,
                       padding: '3px 10px',
-                      borderRadius: '9999px'
+                      borderRadius: '9999px',
+                      whiteSpace: 'nowrap'
                     }}
                   >
                     Success
@@ -1176,55 +893,18 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
       {/* ===================================================================
           6. BOTTOM REFERRAL CALL-TO-ACTION BANNER (100% CLONE)
           =================================================================== */}
-      <div
-        style={{
-          background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 40%, #fde68a 85%, #f59e0b 100%)',
-          border: '1px solid #fde68a',
-          borderRadius: '20px',
-          padding: '24px 32px',
-          boxShadow: '0 4px 16px rgba(245, 158, 11, 0.12)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '20px',
-          position: 'relative',
-          overflow: 'hidden'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', zIndex: 2 }}>
+      <div className="sonic-dashboard-referral-banner">
+        <div className="sonic-dashboard-referral-left">
           {/* 3D Gift Box */}
-          <div
-            style={{
-              width: '54px',
-              height: '54px',
-              borderRadius: '14px',
-              background: '#fef3c7',
-              border: '2px solid #fde68a',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '28px',
-              flexShrink: 0,
-              boxShadow: '0 4px 10px rgba(245, 158, 11, 0.2)'
-            }}
-          >
+          <div className="sonic-dashboard-referral-gift">
             🎁
           </div>
 
-          <div>
-            <h2
-              style={{
-                fontSize: '20px',
-                fontWeight: 900,
-                color: '#0f172a',
-                margin: '0 0 4px 0',
-                letterSpacing: '-0.3px'
-              }}
-            >
+          <div className="sonic-dashboard-referral-text">
+            <h2 className="sonic-dashboard-referral-title">
               Bring More Players, Earn More!
             </h2>
-            <p style={{ fontSize: '13px', color: '#475569', margin: 0, fontWeight: 600 }}>
+            <p className="sonic-dashboard-referral-desc">
               Share your referral link and get 10% of their first deposit.
             </p>
           </div>
@@ -1233,21 +913,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
           <button
             type="button"
             onClick={handleCopyLink}
-            style={{
-              background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
-              border: 'none',
-              borderRadius: '9999px',
-              padding: '10px 22px',
-              color: '#000000',
-              fontSize: '13px',
-              fontWeight: 800,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              boxShadow: '0 4px 12px rgba(245, 158, 11, 0.35)',
-              marginLeft: '8px'
-            }}
+            className="sonic-dashboard-referral-copy-btn"
           >
             <span>🔗</span>
             <span>{copiedLink ? 'Link Copied!' : 'Copy Referral Link'}</span>
@@ -1255,15 +921,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
         </div>
 
         {/* Right Graphic: Crowned Player Silhouettes & Golden Swirl */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            position: 'relative',
-            zIndex: 1,
-            marginRight: '-10px'
-          }}
-        >
+        <div className="sonic-dashboard-referral-right">
           {/* Luminous Golden Crown above Silhouettes */}
           <div
             style={{
