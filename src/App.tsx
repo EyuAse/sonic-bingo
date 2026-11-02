@@ -39,6 +39,15 @@ export const App: React.FC = () => {
   // Seamless routing: If user is authenticated in Telegram, jump straight into games!
   useEffect(() => {
     if (isAuthenticated && (currentPage === 'landing' || currentPage === 'login' || currentPage === 'signup')) {
+      const isAgentHash = typeof window !== 'undefined' && (
+        window.location.hash.includes('agent') ||
+        window.location.pathname.includes('agent') ||
+        (localStorage.getItem('sonic_active_portal') === 'agent' && !!localStorage.getItem('sonic_agent_token'))
+      );
+      if (isAgentHash) {
+        switchPage('agent');
+        return;
+      }
       switchPage('games');
     }
   }, [isAuthenticated, currentPage, switchPage]);

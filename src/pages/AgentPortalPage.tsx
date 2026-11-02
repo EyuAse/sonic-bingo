@@ -53,15 +53,32 @@ export const AgentPortalPage: React.FC = () => {
   // Navigation & Layout State (with URL hash / param support)
   const getInitialTab = (): AgentDeskTab => {
     if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const tabParam = params.get('tab') as AgentDeskTab;
       const validTabs: AgentDeskTab[] = [
         'overview', 'deposit_requests', 'withdrawal_requests',
-        'cash_in', 'cash_out', 'recharge', 'players', 'statements', 'profile'
+        'cash_in', 'cash_out', 'recharge', 'players', 'statements', 'profile', 'commission'
       ];
+
+      // 1. Check URL query params: ?tab=commission
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab') as AgentDeskTab;
       if (tabParam && validTabs.includes(tabParam)) return tabParam;
-      const hash = window.location.hash.replace('#', '') as AgentDeskTab;
-      if (hash && validTabs.includes(hash)) return hash;
+
+      // 2. Check hash query params: #/agent-portal?tab=commission or #agent?tab=commission
+      const rawHash = window.location.hash || '';
+      const qIndex = rawHash.indexOf('?');
+      if (qIndex !== -1) {
+        const hashParams = new URLSearchParams(rawHash.substring(qIndex));
+        const hashTab = hashParams.get('tab') as AgentDeskTab;
+        if (hashTab && validTabs.includes(hashTab)) return hashTab;
+      }
+
+      // 3. Check plain hash: #commission or #deposit_requests
+      const cleanHash = rawHash.replace(/^[#/]+/, '').replace(/^agent(-portal)?\/?/, '') as AgentDeskTab;
+      if (cleanHash && validTabs.includes(cleanHash)) return cleanHash;
+
+      // 4. Check localStorage saved tab
+      const savedTab = localStorage.getItem('sonic_agent_tab') as AgentDeskTab;
+      if (savedTab && validTabs.includes(savedTab)) return savedTab;
     }
     return 'overview';
   };
@@ -72,7 +89,9 @@ export const AgentPortalPage: React.FC = () => {
     setActiveTabState(tab);
     if (typeof window !== 'undefined') {
       try {
-        window.location.hash = tab;
+        window.location.hash = `/agent-portal?tab=${tab}`;
+        localStorage.setItem('sonic_active_portal', 'agent');
+        localStorage.setItem('sonic_agent_tab', tab);
       } catch (_) {}
     }
   };
@@ -111,6 +130,7 @@ export const AgentPortalPage: React.FC = () => {
       if (profileRes.success && profileRes.profile) {
         setProfile(profileRes.profile as any);
         setIsAgentLoggedIn(true);
+        localStorage.setItem('sonic_active_portal', 'agent');
       }
       if (perfRes.success && perfRes.metrics) {
         setMetrics(perfRes.metrics);
@@ -191,6 +211,7 @@ export const AgentPortalPage: React.FC = () => {
 
       if (res.success && res.token) {
         localStorage.setItem('sonic_agent_token', res.token);
+        localStorage.setItem('sonic_active_portal', 'agent');
         showToast(`🎉 Welcome Agent ${res.agent.agentCode}!`);
         setIsAgentLoggedIn(true);
         loadAgentData();
@@ -204,10 +225,13 @@ export const AgentPortalPage: React.FC = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('sonic_agent_token');
+    localStorage.removeItem('sonic_active_portal');
+    localStorage.removeItem('sonic_agent_tab');
     setIsAgentLoggedIn(false);
     setProfile(null);
     setMetrics(null);
     showToast('🚪 Logged out of Sonic Agent Terminal');
+    switchPage('landing');
   };
 
   const handleQuickDeposit = (player: any) => {
@@ -427,7 +451,7 @@ export const AgentPortalPage: React.FC = () => {
           )}
 
           {/* Desk 3: Commission Wallet */}
-          {activeTab === 'cash_out' && (
+          {(activeTab === 'cash_out' || activeTab === 'commission') && (
             <AgentCommissionDesk
               agentProfile={profile}
               onRefresh={loadAgentData}

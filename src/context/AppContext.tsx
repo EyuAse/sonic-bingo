@@ -32,10 +32,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (typeof window !== 'undefined') {
       const hash = window.location.hash;
       const path = window.location.pathname;
+      const savedPortal = localStorage.getItem('sonic_active_portal');
+      const hasAgentToken = !!localStorage.getItem('sonic_agent_token');
+
       if (hash.includes('lomibingo-Admin-vBingo') || path.includes('lomibingo-Admin-vBingo') || hash.includes('admin')) {
         return 'admin';
       }
-      if (hash.includes('agent') || path.includes('agent')) {
+      if (
+        hash.includes('agent') ||
+        path.includes('agent') ||
+        (savedPortal === 'agent' && hasAgentToken)
+      ) {
         return 'agent';
       }
     }
@@ -49,9 +56,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const handleHashChange = () => {
       const hash = window.location.hash;
       const path = window.location.pathname;
+      const savedPortal = localStorage.getItem('sonic_active_portal');
+      const hasAgentToken = !!localStorage.getItem('sonic_agent_token');
+
       if (hash.includes('lomibingo-Admin-vBingo') || path.includes('lomibingo-Admin-vBingo') || hash.includes('admin')) {
         setCurrentPage('admin');
-      } else if (hash.includes('agent') || path.includes('agent')) {
+      } else if (
+        hash.includes('agent') ||
+        path.includes('agent') ||
+        (savedPortal === 'agent' && hasAgentToken)
+      ) {
         setCurrentPage('agent');
       }
     };
@@ -63,8 +77,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentPage(page);
     if (page === 'admin') {
       window.location.hash = '/lomibingo-Admin-vBingo';
+      localStorage.setItem('sonic_active_portal', 'admin');
     } else if (page === 'agent') {
-      window.location.hash = '/agent-portal';
+      const savedTab = localStorage.getItem('sonic_agent_tab') || 'overview';
+      window.location.hash = `/agent-portal?tab=${savedTab}`;
+      localStorage.setItem('sonic_active_portal', 'agent');
+    } else {
+      localStorage.removeItem('sonic_active_portal');
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };

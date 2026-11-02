@@ -6,6 +6,7 @@ export type AgentDeskTab =
   | 'withdrawal_requests'
   | 'cash_in'
   | 'cash_out'
+  | 'commission'
   | 'recharge'
   | 'players'
   | 'statements'
