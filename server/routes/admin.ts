@@ -737,10 +737,20 @@ router.post('/deposits/:id/approve', requireAdmin, async (req: AuthenticatedRequ
       reference: result.ref
     });
 
+    io.emit(`user_${result.userId}_deposit_approved`, {
+      requestId: depositId,
+      amount: result.amount,
+      newBalance: result.newBalance,
+      transactionCode: result.ref,
+      agentDisplayName: 'Sonic Official Cashier'
+    });
+
     io.emit('user_balance_updated', {
       userId: result.userId,
       amount: result.amount,
-      newBalance: result.newBalance
+      newBalance: result.newBalance,
+      balance: result.newBalance,
+      type: 'deposit_credited'
     });
 
     // If a referral bonus was awarded, notify the referrer in real-time!
@@ -797,7 +807,15 @@ router.post('/deposits/:id/reject', requireAdmin, async (req: AuthenticatedReque
       [adminId, reason || 'Transaction could not be verified by Cashier', depositId]
     );
 
+    const rejectionMsg = reason || 'Transaction could not be verified by Cashier';
     io.emit('deposit_status_updated', { id: depositId, status: 'rejected' });
+    io.emit(`user_${deposit.user_id}_deposit_rejected`, {
+      requestId: depositId,
+      reason: rejectionMsg,
+      agentDisplayName: 'Sonic Official Cashier'
+    });
+    io.emit('user_balance_updated', { userId: deposit.user_id });
+    io.emit(`user_${deposit.user_id}_balance`, { type: 'deposit_rejected', userId: deposit.user_id });
 
     return res.json({ success: true, message: 'Deposit request rejected.' });
   } catch (error: any) {
@@ -857,14 +875,42 @@ router.post('/withdrawals/:id/approve', requireAdmin, async (req: AuthenticatedR
     const withdrawalId = req.params.id;
     const adminId = req.user!.id;
 
-    await query(
+    const wRes = await query(
       `UPDATE withdrawal_requests 
        SET status = 'approved', reviewed_by = $1, reviewed_at = NOW() 
-       WHERE id = $2`,
+       WHERE id = $2
+       RETURNING user_id, amount`,
       [adminId, withdrawalId]
     );
 
+    if (wRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Withdrawal request not found.' });
+    }
+
+    const w = wRes.rows[0];
+    const walRes = await query('SELECT balance FROM wallets WHERE user_id = $1', [w.user_id]);
+    const currentBal = parseFloat(walRes.rows[0]?.balance || '0');
+
     io.emit('withdrawal_status_updated', { id: withdrawalId, status: 'approved' });
+    io.emit(`user_${w.user_id}_withdrawal_approved`, {
+      requestId: withdrawalId,
+      amount: parseFloat(w.amount),
+      newBalance: currentBal,
+      balance: currentBal,
+      agentDisplayName: 'Sonic Official Cashier'
+    });
+    io.emit('user_balance_updated', {
+      userId: w.user_id,
+      newBalance: currentBal,
+      balance: currentBal,
+      type: 'withdrawal_settled'
+    });
+    io.emit(`user_${w.user_id}_balance`, {
+      userId: w.user_id,
+      newBalance: currentBal,
+      balance: currentBal,
+      type: 'withdrawal_settled'
+    });
 
     return res.json({ success: true, message: 'Withdrawal marked as completed/sent.' });
   } catch (error: any) {
@@ -946,7 +992,24 @@ router.post('/withdrawals/:id/reject', requireAdmin, async (req: AuthenticatedRe
     io.emit(`user_${result.userId}_balance`, {
       type: 'withdrawal_refunded',
       amount: result.amount,
-      newBalance: result.newBalance
+      newBalance: result.newBalance,
+      balance: result.newBalance
+    });
+
+    io.emit('user_balance_updated', {
+      userId: result.userId,
+      amount: result.amount,
+      newBalance: result.newBalance,
+      balance: result.newBalance,
+      type: 'withdrawal_refunded'
+    });
+
+    io.emit(`user_${result.userId}_withdrawal_rejected`, {
+      requestId: withdrawalId,
+      reason: reason || 'Invalid account details',
+      newBalance: result.newBalance,
+      amount: result.amount,
+      agentDisplayName: 'Sonic Official Cashier'
     });
 
     io.emit('withdrawal_status_updated', { id: withdrawalId, status: 'rejected' });

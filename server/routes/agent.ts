@@ -1856,12 +1856,17 @@ router.post('/withdrawal-requests/:id/approve', requireAgent, async (req: Authen
         [cleanRef, withReq.player_id, withdrawalAmount, withReq.created_at]
       );
 
+      // Get player current authoritative wallet balance
+      const pWalRes = await client.query('SELECT balance FROM wallets WHERE user_id = $1', [withReq.player_id]);
+      const playerCurrentBal = parseFloat(pWalRes.rows[0]?.balance || '0');
+
       return {
         requestId,
         withdrawalAmount,
         commissionEarned,
         agentBalAfter,
         playerId: withReq.player_id,
+        playerBalance: playerCurrentBal,
         agentCode: agentProfile.agent_code,
         agentTxRef: cleanRef
       };
@@ -1872,7 +1877,9 @@ router.post('/withdrawal-requests/:id/approve', requireAgent, async (req: Authen
       requestId: result.requestId,
       amount: result.withdrawalAmount,
       agentTxRef: result.agentTxRef,
-      agentDisplayName: `Sonic Agent #${result.agentCode}`
+      agentDisplayName: `Sonic Agent #${result.agentCode}`,
+      newBalance: result.playerBalance,
+      balance: result.playerBalance
     };
 
     io.emit(`player_${result.playerId}_withdrawal_approved`, playerAlertPayload);
@@ -1881,6 +1888,18 @@ router.post('/withdrawal-requests/:id/approve', requireAgent, async (req: Authen
       userId: result.playerId,
       requestId: result.requestId,
       status: 'approved'
+    });
+    io.emit('user_balance_updated', {
+      userId: result.playerId,
+      newBalance: result.playerBalance,
+      balance: result.playerBalance,
+      type: 'withdrawal_settled'
+    });
+    io.emit(`user_${result.playerId}_balance`, {
+      userId: result.playerId,
+      newBalance: result.playerBalance,
+      balance: result.playerBalance,
+      type: 'withdrawal_settled'
     });
     io.emit(`agent_${agentId}_request_updated`, {
       type: 'withdrawal',

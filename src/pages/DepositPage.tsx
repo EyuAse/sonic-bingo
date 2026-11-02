@@ -171,6 +171,24 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
     loadAgentData();
   }, []);
 
+  // Active 3-second heartbeat polling while an agent deposit or withdrawal request is pending
+  // Guarantees real-time 0-3 second instant balance & status update without reopening the app
+  useEffect(() => {
+    const isPending = activeAgentRequest?.status === 'pending' || activeWithdrawalRequest?.status === 'pending';
+    if (!isPending) return;
+
+    const interval = setInterval(() => {
+      loadAgentData();
+      apiClient.wallet.getBalance().then(res => {
+        if (res && res.success && typeof res.balance === 'number') {
+          window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: res }));
+        }
+      }).catch(() => null);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [activeAgentRequest?.status, activeWithdrawalRequest?.status]);
+
   // Real-time WebSocket listener for instant deposit & withdrawal approval/rejection
   useEffect(() => {
     if (!user?.id) return;

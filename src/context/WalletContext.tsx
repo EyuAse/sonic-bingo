@@ -170,13 +170,11 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       });
     }
 
-    // Reactive-First Architecture: Rely on WebSocket push events.
-    // 25-second fallback poll only runs when socket is disconnected/reconnecting.
+    // Real-Time Active Balance Sync Architecture
+    // 8-second background poll guarantees 100% authoritative balance sync across all tabs/devices
     const pollInterval = setInterval(() => {
-      if (!socket.connected) {
-        fetchLiveBalance();
-      }
-    }, 25000);
+      fetchLiveBalance();
+    }, 8000);
 
     // Instant refresh when user returns to foreground/app
     const unsubResume = socketService.onForegroundResume(() => {
