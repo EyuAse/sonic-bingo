@@ -478,16 +478,12 @@ router.get('/performance', requireAgent, async (req: AuthenticatedRequest, res: 
         WHERE u.agent_id = $1
       `, [agentId]),
       query(`
-        WITH combined_deposits AS (
-          SELECT amount, created_at FROM agent_deposit_requests WHERE agent_id = $1 AND status = 'approved'
-          UNION ALL
-          SELECT amount, created_at FROM agent_player_deposits WHERE agent_id = $1
-        )
         SELECT 
           COALESCE(SUM(amount), 0) as total_deposited_all_time,
           COALESCE(SUM(amount) FILTER (WHERE (created_at AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date), 0) as today_deposited,
           COALESCE(SUM(amount) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days'), 0) as month_deposited
-        FROM combined_deposits
+        FROM agent_player_deposits
+        WHERE agent_id = $1
       `, [agentId]),
       query(`
         SELECT apd.*, u.full_name as player_name, u.phone as player_phone
@@ -1284,12 +1280,7 @@ router.get('/deposit-requests', requireAgent, async (req: AuthenticatedRequest, 
       query(sql, params),
       query(`SELECT COUNT(*) as count FROM agent_deposit_requests WHERE agent_id = $1 AND status = 'pending'`, [agentId]),
       query(
-        `WITH combined_deposits AS (
-           SELECT amount, created_at FROM agent_deposit_requests WHERE agent_id = $1 AND status = 'approved'
-           UNION ALL
-           SELECT amount, created_at FROM agent_player_deposits WHERE agent_id = $1
-         )
-         SELECT
+        `SELECT
            COALESCE(SUM(amount) FILTER (WHERE (created_at AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date), 0) as today_amount,
            COUNT(*) FILTER (WHERE (created_at AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date) as today_count,
            COALESCE(SUM(amount) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days'), 0) as week_amount,
@@ -1298,7 +1289,8 @@ router.get('/deposit-requests', requireAgent, async (req: AuthenticatedRequest, 
            COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days') as month_count,
            COALESCE(SUM(amount), 0) as all_time_amount,
            COUNT(*) as all_time_count
-         FROM combined_deposits`,
+         FROM agent_player_deposits
+         WHERE agent_id = $1`,
         [agentId]
       )
     ]);
