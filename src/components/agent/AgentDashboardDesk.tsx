@@ -106,6 +106,8 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
   const targetPlayers = 5000;
   const totalDeposits = metrics?.monthDeposited !== undefined ? Number(metrics.monthDeposited) : 750;
   const commissionEarned = metrics?.estimatedCommission !== undefined ? Number(metrics.estimatedCommission) : 32.50;
+  const depCommission = Number(metrics?.commissionBreakdown?.depositCommission || 0);
+  const withCommission = Number(metrics?.commissionBreakdown?.withdrawalCommission || 0);
   const targetPercent = metrics?.targetProgress !== undefined ? Number(metrics.targetProgress) : 2;
 
   const inviteLink = profile?.inviteLink || `https://t.me/SonicGameOfficialBot?start=agent_${agentCode}`;
@@ -399,7 +401,12 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
               {commissionEarned.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style={{ fontSize: '15px', fontWeight: 700 }}>ETB</span>
             </div>
             <div className="sonic-dashboard-metric-label">
-              Commission Earned
+              Total Commission Earned
+            </div>
+            <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 700, marginTop: '2px', display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <span>📥 +{depCommission.toFixed(1)} Dep</span>
+              <span style={{ color: '#cbd5e1' }}>•</span>
+              <span style={{ color: '#0284c7' }}>📤 +{withCommission.toFixed(1)} With</span>
             </div>
             <button
               type="button"

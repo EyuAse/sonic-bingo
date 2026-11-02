@@ -195,47 +195,89 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
         </div>
       </div>
 
-      {/* Commission Rules & Rate Explainer */}
+      {/* Commission Multi-Rail Breakdown & Live Rates */}
       <div
         style={{
           background: '#ffffff',
           borderRadius: '16px',
           border: '1px solid #e2e8f0',
-          padding: '16px 24px',
+          padding: '20px 24px',
           marginBottom: '24px',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
           gap: '16px',
           boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+        {/* Card 1: Deposit Commission */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px', background: '#f0fdf4', borderRadius: '12px', border: '1px solid #dcfce7' }}>
+          <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#dcfce7', color: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
             📥
           </div>
           <div>
-            <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Cashier Deposit Fee</div>
-            <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>+5% on Player Cash-Ins</div>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Deposit Fee (+5%)
+            </div>
+            <div style={{ fontSize: '18px', fontWeight: 900, color: '#14532d', margin: '2px 0' }}>
+              +{Number(overview?.depositCommission || 0).toFixed(2)} <span style={{ fontSize: '12px', fontWeight: 700 }}>ETB</span>
+            </div>
+            <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 700 }}>
+              {overview?.depositCount ?? 0} player cash-ins settled
+            </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+        {/* Card 2: Withdrawal Bonus */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px', background: '#eff6ff', borderRadius: '12px', border: '1px solid #dbeafe' }}>
+          <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#dbeafe', color: '#1d4ed8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
             📤
           </div>
           <div>
-            <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Withdrawal Bonus</div>
-            <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>+2% on Player Cash-Outs</div>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Cashout Fee (+2%)
+            </div>
+            <div style={{ fontSize: '18px', fontWeight: 900, color: '#1e3a8a', margin: '2px 0' }}>
+              +{Number(overview?.withdrawalCommission || 0).toFixed(2)} <span style={{ fontSize: '12px', fontWeight: 700 }}>ETB</span>
+            </div>
+            <div style={{ fontSize: '11px', color: '#2563eb', fontWeight: 700 }}>
+              {overview?.withdrawalCount ?? 0} payouts disbursed
+            </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+        {/* Card 3: Total Lifetime Commission */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px', background: '#fefce8', borderRadius: '12px', border: '1px solid #fef08a' }}>
+          <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#fef08a', color: '#a16207', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
+            🪙
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: '#854d0e', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Total Lifetime Earned
+            </div>
+            <div style={{ fontSize: '18px', fontWeight: 900, color: '#713f12', margin: '2px 0' }}>
+              {Number(overview?.lifetimeEarned || 0).toFixed(2)} <span style={{ fontSize: '12px', fontWeight: 700 }}>ETB</span>
+            </div>
+            <div style={{ fontSize: '11px', color: '#ca8a04', fontWeight: 700 }}>
+              Combined Inbound + Outbound
+            </div>
+          </div>
+        </div>
+
+        {/* Card 4: Float Conversion Rules */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+          <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#e2e8f0', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
             ⚡
           </div>
           <div>
-            <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Instant Conversion</div>
-            <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>Min 50 ETB to Float</div>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Conversion & Payout
+            </div>
+            <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', margin: '2px 0' }}>
+              Min 50 ETB to Float
+            </div>
+            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700 }}>
+              Min 100 ETB for Bank Payout
+            </div>
           </div>
         </div>
       </div>

@@ -512,8 +512,10 @@ router.get('/performance', requireAgent, async (req: AuthenticatedRequest, res: 
         SELECT 
           COALESCE(SUM(commission_earned), 0) as total_comm_earned,
           COALESCE(SUM(commission_earned) FILTER (WHERE source_type IN ('deposit', 'cash_in')), 0) as deposit_comm_earned,
+          COUNT(*) FILTER (WHERE source_type IN ('deposit', 'cash_in')) as deposit_comm_count,
           COALESCE(SUM(commission_earned) FILTER (WHERE source_type = 'cashout_voucher'), 0) as voucher_comm_earned,
-          COALESCE(SUM(commission_earned) FILTER (WHERE source_type = 'withdrawal'), 0) as withdrawal_comm_earned
+          COALESCE(SUM(commission_earned) FILTER (WHERE source_type = 'withdrawal'), 0) as withdrawal_comm_earned,
+          COUNT(*) FILTER (WHERE source_type = 'withdrawal') as withdrawal_comm_count
         FROM agent_commissions
         WHERE agent_id = $1
       `, [agentId])
@@ -531,13 +533,12 @@ router.get('/performance', requireAgent, async (req: AuthenticatedRequest, res: 
 
     // Strict Commission Accounting from agent_commissions ledger or verified transactions
     const ledgerTotal = parseFloat(c.total_comm_earned || '0');
-    const depositCommission = ledgerTotal > 0
-      ? parseFloat(c.deposit_comm_earned || '0')
-      : Math.round(monthDeposited * (commissionRate / 100) * 100) / 100;
-    const voucherCommission = ledgerTotal > 0
-      ? parseFloat(c.voucher_comm_earned || '0')
-      : parseFloat(v.voucher_commission || '0');
-    const totalCommission = ledgerTotal > 0 ? ledgerTotal : (depositCommission + voucherCommission);
+    const depositCommission = parseFloat(c.deposit_comm_earned || '0');
+    const depositCount = parseInt(c.deposit_comm_count || '0', 10);
+    const withdrawalCommission = parseFloat(c.withdrawal_comm_earned || '0');
+    const withdrawalCount = parseInt(c.withdrawal_comm_count || '0', 10);
+    const voucherCommission = parseFloat(c.voucher_comm_earned || '0');
+    const totalCommission = ledgerTotal > 0 ? ledgerTotal : (depositCommission + withdrawalCommission + voucherCommission);
 
     // Real commission percentages
     const fromPlayersPercent = totalCommission > 0
@@ -591,8 +592,12 @@ router.get('/performance', requireAgent, async (req: AuthenticatedRequest, res: 
         estimatedCommission: totalCommission > 0 ? totalCommission : depositCommission,
         commissionBreakdown: {
           depositCommission,
+          depositCount,
+          withdrawalCommission,
+          withdrawalCount,
           voucherCommission,
           totalCommission,
+          availableCommission: parseFloat(agent.commission_balance || '0'),
           fromPlayersPercent,
           fromReferralsPercent
         },
@@ -2090,29 +2095,55 @@ router.get('/commission/overview', requireAgent, async (req: AuthenticatedReques
     );
 
     let lifetimeEarned = 0;
+    let depositCommission = 0;
+    let depositCount = 0;
+    let withdrawalCommission = 0;
+    let withdrawalCount = 0;
+
     const breakdown: Record<string, number> = {
       deposit: 0,
       withdrawal: 0,
+      cash_in: 0,
+      cashout_voucher: 0,
       referral_first_deposit: 0
     };
 
     commStats.rows.forEach(r => {
       const earned = parseFloat(r.total_earned || '0');
+      const count = parseInt(r.count || '0', 10);
       lifetimeEarned += earned;
       if (r.source_type) {
         breakdown[r.source_type] = earned;
+        if (r.source_type === 'deposit' || r.source_type === 'cash_in') {
+          depositCommission += earned;
+          depositCount += count;
+        } else if (r.source_type === 'withdrawal') {
+          withdrawalCommission += earned;
+          withdrawalCount += count;
+        }
       }
     });
 
-    // Recent payout requests
+    // Recent payout requests (including admin notes and full tracking)
     const payoutsRes = await query(
-      `SELECT id, amount, payout_method, payout_account, status, created_at, settled_at
+      `SELECT id, amount, payout_method, payout_account, status, admin_notes, created_at, settled_at
        FROM agent_commission_payout_requests
        WHERE agent_id = $1
        ORDER BY created_at DESC
-       LIMIT 10`,
+       LIMIT 20`,
       [agentId]
     );
+
+    const formattedPayouts = payoutsRes.rows.map(p => ({
+      id: p.id,
+      amount: parseFloat(p.amount),
+      payoutMethod: p.payout_method,
+      payoutAccount: p.payout_account,
+      status: p.status,
+      adminNotes: p.admin_notes || null,
+      createdAt: p.created_at,
+      settledAt: p.settled_at
+    }));
 
     return res.json({
       success: true,
@@ -2120,16 +2151,13 @@ router.get('/commission/overview', requireAgent, async (req: AuthenticatedReques
       walletBalance: parseFloat(agent.wallet_balance || '0'),
       lifetimeEarned,
       commissionRate: parseFloat(agent.commission_rate || '5.0'),
+      depositCommission,
+      depositCount,
+      withdrawalCommission,
+      withdrawalCount,
       breakdown,
-      recentPayouts: payoutsRes.rows.map(p => ({
-        id: p.id,
-        amount: parseFloat(p.amount),
-        payoutMethod: p.payout_method,
-        payoutAccount: p.payout_account,
-        status: p.status,
-        createdAt: p.created_at,
-        settledAt: p.settled_at
-      }))
+      recentPayoutRequests: formattedPayouts,
+      recentPayouts: formattedPayouts
     });
   } catch (error: any) {
     console.error('❌ [Agent Commission Overview Error]:', error);
