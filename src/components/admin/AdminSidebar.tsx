@@ -25,15 +25,33 @@ interface AdminSidebarProps {
   closeMobileSidebar: () => void;
 }
 
+// Exact Minimalist SVG Stroke Icons from Enqu Game Admin (1).html
+const IC = {
+  dash: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
+  p2p: 'M4 8h14l-3-3M20 16H6l3 3',
+  flow: 'M4 20V12M10 20V4M16 20V9M21 20H3',
+  pl: 'M12 4a4 4 0 100 8 4 4 0 000-8zM4 20c0-4 4-6 8-6s8 2 8 6',
+  bot: 'M6 8h12v10H6zM12 4v4M9 13h.01M15 13h.01',
+  eng: 'M12 8a4 4 0 100 8 4 4 0 000-8zM12 2v3M12 19v3M2 12h3M19 12h3',
+  room: 'M3 5h18v14H3zM3 10h18M9 5v14',
+  tg: 'M21 4L3 11l6 2 2 6 3-4 4 3z',
+  ads: 'M3 10v4h4l6 4V6L7 10zM17 9a4 4 0 010 6',
+  ag: 'M3 7h18v13H3zM8 7V4h8v3',
+  rc: 'M12 3v18M7 8h7a3 3 0 010 6H8',
+  po: 'M4 6h16v12H4zM4 10h16M8 15h3',
+  of: 'M4 10l8-6 8 6M6 10v8M10 10v8M14 10v8M18 10v8M3 20h18',
+  jp: 'M12 3l3 6 6 1-4.5 4.5L18 21l-6-3-6 3 1.5-6.5L3 10l6-1z',
+  co: 'M12 3a9 9 0 100 18 9 9 0 000-18zM9 12h6M12 9v6',
+  set: 'M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z',
+  out: 'M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9'
+};
+
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   activeTab,
   setActiveTab,
-  isMobileOpen,
   closeMobileSidebar
 }) => {
   const {
-    isSidebarCollapsed,
-    toggleSidebar,
     logoutAdmin,
     transactions,
     users,
@@ -52,266 +70,90 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const navItems: Array<{
     id: AdminTab;
     label: string;
-    icon: string;
-    badge?: React.ReactNode;
+    path: string;
+    n?: string | number;
+    s?: string;
+    urgentBadge?: boolean;
   }> = [
-    {
-      id: 'overview',
-      label: 'Dashboard',
-      icon: 'fa-solid fa-house'
-    },
+    { id: 'overview', label: 'Dashboard', path: IC.dash },
     {
       id: 'cashier',
       label: 'P2P Cashier',
-      icon: 'fa-solid fa-shield-halved',
-      badge: pendingCount > 0 ? (
-        <span className="obsidian-nav-badge red-urgent-badge">{pendingCount}</span>
-      ) : undefined
+      path: IC.p2p,
+      n: pendingCount > 0 ? pendingCount : undefined,
+      urgentBadge: pendingCount > 0
     },
-    {
-      id: 'cashflow',
-      label: 'Cash Flow & Revenue',
-      icon: 'fa-solid fa-scale-balanced'
-    },
-    {
-      id: 'users',
-      label: 'Player Accounts',
-      icon: 'fa-solid fa-user-group',
-      badge: <span className="obsidian-nav-badge">{totalUsersCount || users.length}</span>
-    },
-    {
-      id: 'bots',
-      label: 'Bot Player Accounts',
-      icon: 'fa-solid fa-robot',
-      badge: <span className="obsidian-nav-badge">200</span>
-    },
-    {
-      id: 'bot-engine',
-      label: 'Bot Engine (0-50)',
-      icon: 'fa-solid fa-sliders',
-      badge: <span className="obsidian-nav-badge green-badge">Room 10</span>
-    },
-    {
-      id: 'cartelas',
-      label: '600 Cartelas',
-      icon: 'fa-solid fa-layer-group',
-      badge: <span className="obsidian-nav-badge">600</span>
-    },
-    {
-      id: 'telegram-bot',
-      label: 'Telegram Bot & Ads',
-      icon: 'fa-brands fa-telegram',
-      badge: <span className="obsidian-nav-badge blue-badge">📢 Ads</span>
-    },
-    {
-      id: 'agents',
-      label: 'Agents Directory',
-      icon: 'fa-solid fa-handshake',
-      badge: <span className="obsidian-nav-badge green-badge">Portal</span>
-    },
-    {
-      id: 'agent-recharges',
-      label: 'Agent Recharges',
-      icon: 'fa-solid fa-bolt',
-      badge: <span className="obsidian-nav-badge yellow-badge">Float</span>
-    },
-    {
-      id: 'agent-payouts',
-      label: 'Agent Payouts',
-      icon: 'fa-solid fa-money-bill-transfer',
-      badge: <span className="obsidian-nav-badge green-badge">Cashout</span>
-    },
-    {
-      id: 'official-accounts',
-      label: 'Official Accounts',
-      icon: 'fa-solid fa-building-columns',
-      badge: <span className="obsidian-nav-badge blue-badge">Rails</span>
-    },
-    {
-      id: 'jackpots',
-      label: 'Progressive Jackpots',
-      icon: 'fa-solid fa-trophy',
-      badge: <span className="obsidian-nav-badge yellow-badge">Vault</span>
-    },
-    {
-      id: 'coins',
-      label: 'Coins & Rewards',
-      icon: 'fa-solid fa-coins',
-      badge: <span className="obsidian-nav-badge yellow-badge">1.5x</span>
-    }
+    { id: 'cashflow', label: 'Cash Flow & Revenue', path: IC.flow },
+    { id: 'users', label: 'Player Accounts', path: IC.pl, n: totalUsersCount || users.length || 7 },
+    { id: 'bots', label: 'Bot Player Accounts', path: IC.bot, n: 200 },
+    { id: 'bot-engine', label: 'Bot Engine', path: IC.eng, s: '0-50' },
+    { id: 'cartelas', label: 'Room 10', path: IC.room, n: '600 Cartelas' },
+    { id: 'telegram-bot', label: 'Telegram Bot & Ads', path: IC.tg },
+    { id: 'agents', label: 'Agents Directory', path: IC.ag, s: 'Portal' },
+    { id: 'agent-recharges', label: 'Agent Recharges', path: IC.rc, s: 'Float' },
+    { id: 'agent-payouts', label: 'Agent Payouts', path: IC.po, s: 'Cashout' },
+    { id: 'official-accounts', label: 'Official Accounts', path: IC.of, s: 'Rails' },
+    { id: 'jackpots', label: 'Progressive Jackpots', path: IC.jp, s: 'Vault' },
+    { id: 'coins', label: 'Coins & Rewards', path: IC.co, n: '1.5x' }
   ];
 
   return (
-    <>
-      {/* Mobile Backdrop Overlay */}
-      {isMobileOpen && (
-        <div className="admin-sidebar-backdrop" onClick={closeMobileSidebar} />
-      )}
+    <aside className="enqu-sidebar">
+      {/* Exact Brand Logo matching Enqu Game Admin */}
+      <div className="logo">Sonic Bingo</div>
 
-      {/* Main Sticky Sidebar (Luxury Obsidian Dark Theme matching Agent Sidebar) */}
-      <aside
-        className={`admin-sidebar-obsidian ${isSidebarCollapsed ? 'collapsed' : ''} ${
-          isMobileOpen ? 'mobile-open' : ''
-        }`}
-      >
-        {/* 1. Brand Logo Header */}
-        <div className="sidebar-obsidian-brand-box">
-          <div className="sidebar-obsidian-brand-content">
-            {/* Luminous 3D Royal Crown */}
-            <span className="sidebar-obsidian-crown">👑</span>
-
-            {!isSidebarCollapsed && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <span className="sidebar-obsidian-title-sonic">Sonic</span>
-                <span className="sidebar-obsidian-title-bingo">Bingo</span>
-                <span className="sidebar-obsidian-subdots">• ADMIN PANEL •</span>
-              </div>
-            )}
-          </div>
-
-          {/* Collapse/Expand Toggle Button */}
-          <button
-            type="button"
-            className="sidebar-obsidian-toggle-btn"
-            onClick={toggleSidebar}
-            title={isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-          >
-            <i
-              className={`fa-solid ${
-                isSidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'
-              }`}
-            />
-          </button>
-        </div>
-
-        {/* 2. Admin Panel Status Badges */}
-        {!isSidebarCollapsed && (
-          <div className="sidebar-obsidian-status-wrap">
-            <div className="sidebar-obsidian-admin-tag">
-              <i className="fa-solid fa-crown gold-crown" />
-              <span>ADMIN PANEL</span>
-            </div>
-
-            <div className="sidebar-obsidian-uptime-tag">
-              <div className="pulse-green-dot-obsidian" />
-              <span className="uptime-title-obsidian">Engine V3 Live</span>
-              <span className="uptime-pill-obsidian">99.9% Uptime</span>
-            </div>
-          </div>
-        )}
-
-        {/* 3. Navigation Menu Items */}
-        <nav className="sidebar-obsidian-nav-menu">
-          {navItems.map((item, index) => {
-            const isActive = activeTab === item.id;
-
-            return (
-              <button
-                key={`${item.id}-${index}`}
-                type="button"
-                className={`obsidian-nav-item ${isActive ? 'active' : ''}`}
-                onClick={() => handleSelectTab(item.id)}
-                title={isSidebarCollapsed ? item.label : undefined}
-              >
-                <div className="obsidian-nav-icon">
-                  <i className={item.icon} />
-                </div>
-
-                {!isSidebarCollapsed && (
-                  <>
-                    <span className="obsidian-nav-text">{item.label}</span>
-                    {item.badge}
-                  </>
-                )}
-
-                {/* Collapsed dot indicators for urgent items */}
-                {isSidebarCollapsed && item.id === 'cashier' && pendingCount > 0 && (
-                  <span
-                    style={{
-                      position: 'absolute',
-                      top: '6px',
-                      right: '10px',
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      background: '#ef4444',
-                      boxShadow: '0 0 6px #ef4444'
-                    }}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* 4. Bottom 3D Golden Sonic Control Card */}
-        {!isSidebarCollapsed && (
-          <div
-            className="sidebar-obsidian-feature-card"
-            onClick={() => showToast('🎉 Sonic Bingo Live Engine Operational')}
-            style={{ cursor: 'pointer' }}
-          >
-            <div className="obsidian-card-glow" />
-
-            <div className="obsidian-card-inner">
-              <div style={{ fontSize: '20px', marginBottom: '2px' }}>👑</div>
-              <div style={{ fontSize: '13px', fontWeight: 900, color: '#ffffff', lineHeight: 1.2 }}>
-                Grow Together
-              </div>
-              <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700 }}>
-                with Sonic
-              </div>
-
-              {/* 3D Bingo Ball Graphic with Glowing Halo */}
-              <div style={{ margin: '10px auto 6px auto', display: 'flex', justifyContent: 'center' }}>
-                <div
-                  style={{
-                    width: '52px',
-                    height: '52px',
-                    borderRadius: '50%',
-                    background: 'radial-gradient(circle at 35% 35%, #fef08a 0%, #f59e0b 50%, #b45309 100%)',
-                    boxShadow: '0 6px 18px rgba(245, 158, 11, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.7)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '2px solid rgba(255, 255, 255, 0.4)'
-                  }}
+      {/* Main Navigation List */}
+      <nav className="enqu-nav">
+        {navItems.map(item => {
+          const isActive = activeTab === item.id;
+          return (
+            <a
+              key={item.id}
+              className={isActive ? 'on' : ''}
+              onClick={() => handleSelectTab(item.id)}
+            >
+              <svg viewBox="0 0 24 24">
+                <path d={item.path} />
+              </svg>
+              <span>{item.label}</span>
+              {item.n != null && (
+                <span
+                  className="n"
+                  style={item.urgentBadge ? { background: '#b0302f', color: '#ffffff' } : undefined}
                 >
-                  <span style={{ fontSize: '22px', fontWeight: 900, color: '#000000', fontFamily: 'sans-serif' }}>
-                    B
-                  </span>
-                </div>
-              </div>
+                  {item.n}
+                </span>
+              )}
+              {item.s && <span className="s">{item.s}</span>}
+            </a>
+          );
+        })}
+      </nav>
 
-              {/* Gold Swirl Ribbon Arc */}
-              <div
-                style={{
-                  height: '3px',
-                  background: 'linear-gradient(90deg, transparent, #f59e0b, transparent)',
-                  borderRadius: '2px',
-                  marginTop: '8px'
-                }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* 5. Bottom Logout Action */}
-        <div className="sidebar-obsidian-footer-logout">
-          <button
-            type="button"
-            className="btn-obsidian-logout"
+      {/* Exact Footer Actions matching Enqu Game Admin */}
+      <div className="foot nav">
+        <nav>
+          <a
+            onClick={() => showToast('⚙️ System Settings & Security')}
+          >
+            <svg viewBox="0 0 24 24">
+              <path d={IC.set} />
+            </svg>
+            <span>Settings</span>
+          </a>
+          <a
             onClick={() => {
               logoutAdmin();
               showToast('👋 Logged out from Admin Portal');
             }}
-            title="Logout of Admin"
           >
-            <i className="fa-solid fa-arrow-right-from-bracket" />
-            {!isSidebarCollapsed && <span>Logout</span>}
-          </button>
-        </div>
-      </aside>
-    </>
+            <svg viewBox="0 0 24 24">
+              <path d={IC.out} />
+            </svg>
+            <span>Log out</span>
+          </a>
+        </nav>
+      </div>
+    </aside>
   );
 };
