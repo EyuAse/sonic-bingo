@@ -502,9 +502,13 @@ adminPlayersRouter.post('/:id/status', requireAdmin, async (req: AuthenticatedRe
 
     // Send Telegram notification if requested and telegram_id exists
     if (notify && u.telegram_id) {
+      const reasonSafe = (reason || 'Account review')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
       const msg = newStatus === 'suspended'
-        ? `⚠️ <b>Your Sonic Bingo account has been suspended</b>\n\n<b>Reason:</b> ${reason || 'Account review'}\n\nSuspending blocks play, deposits, and withdrawals. If you believe this was done in error, please contact official support.`
-        : `✅ <b>Your Sonic Bingo account has been reactivated</b>\n\nYou may now resume playing, deposits, and withdrawals!`;
+        ? `⚠️ <b>Your Sonic Bingo account has been suspended</b>\n\n<b>Reason:</b> ${reasonSafe}\n\nSuspending blocks play, deposits, and withdrawals. If you believe this was done in error, please contact official support.\n\n<i>Action recorded in security compliance ledger.</i>`
+        : `✅ <b>Your Sonic Bingo account has been reactivated</b>\n\nYou may now resume playing, deposits, and withdrawals! Welcome back.`;
       try {
         await TelegramBotService.getInstance().sendMessage(u.telegram_id, msg, { parseMode: 'HTML' });
       } catch (tgErr) {
@@ -612,12 +616,20 @@ adminPlayersRouter.post('/:id/adjust-balance', requireAdmin, async (req: Authent
         const u = userRow.rows[0];
         const actionIcon = isCredit ? '➕' : '➖';
         const actionLabel = isCredit ? 'Credit (ተቀማጭ)' : 'Debit (ተቀናሽ)';
+        const safeName = (u.full_name || 'Player')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+        const safeReason = (reason || 'Administrative adjustment')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
         const msg = `💰 <b>Sonic Bingo Wallet Update</b>\n\n` +
-          `Hello <b>${u.full_name}</b>, your account balance has been updated by administration:\n` +
+          `Hello <b>${safeName}</b>, your account balance has been updated by administration:\n` +
           `• <b>Action:</b> ${actionLabel} ${actionIcon}\n` +
           `• <b>Amount:</b> ${numAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ETB\n` +
           `• <b>Wallet:</b> ${wlLabel} Wallet\n` +
-          `• <b>Reason:</b> ${reason}\n` +
+          `• <b>Reason:</b> ${safeReason}\n` +
           `• <b>Updated Balance:</b> ${(isBonus ? newBon : newBal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ETB\n\n` +
           `<i>Thank you for choosing Sonic Bingo!</i>`;
         await TelegramBotService.getInstance().sendMessage(u.telegram_id, msg, { parseMode: 'HTML' });
@@ -704,7 +716,13 @@ adminPlayersRouter.post('/:id/message', requireAdmin, async (req: AuthenticatedR
       return res.status(400).json({ success: false, error: 'This player does not have an attached Telegram account' });
     }
 
-    await TelegramBotService.getInstance().sendMessage(user.telegram_id, message.trim(), { parseMode: 'HTML' });
+    const safeContent = message.trim()
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    const formattedMsg = `📩 <b>Official Notice from Sonic Bingo Administration</b>\n\n${safeContent}\n\n<i>This is a direct message sent via @SonicGameOfficialBot. For help, contact support.</i>`;
+
+    await TelegramBotService.getInstance().sendMessage(user.telegram_id, formattedMsg, { parseMode: 'HTML' });
 
     // Record in audit log
     await query(`
