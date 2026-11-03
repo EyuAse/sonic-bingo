@@ -851,15 +851,18 @@ export const apiClient = {
       const res = await fetch(`${API_BASE}/admin/agents`, {
         headers: { ...adminHeaders }
       });
-      return handleResponse<{ success: boolean; agents: any[] }>(res);
+      return handleResponse<{ success: boolean; agents: any[]; summary?: any }>(res);
     },
 
     async createAgent(payload: {
       fullName: string;
       phone: string;
+      city?: string;
       initialDeposit?: number;
       targetMonthly?: number;
+      targetPlayers?: number;
       commissionRate?: number;
+      cashoutCommissionRate?: number;
       customCode?: string;
       initialFloat?: number;
       agentCode?: string;
@@ -872,14 +875,35 @@ export const apiClient = {
         body: JSON.stringify({
           fullName: payload.fullName,
           phone: payload.phone,
+          city: payload.city || 'Addis Ababa',
           initialDeposit: payload.initialDeposit ?? payload.initialFloat ?? 10000,
           targetMonthly: payload.targetMonthly ?? 50000,
-          commissionRate: payload.commissionRate ?? 5,
+          targetPlayers: payload.targetPlayers ?? 50,
+          commissionRate: payload.commissionRate ?? 3,
+          cashoutCommissionRate: payload.cashoutCommissionRate ?? 2,
           customCode: payload.customCode || payload.agentCode || undefined,
           password: payload.password
         })
       });
       return handleResponse<{ success: boolean; agent?: any; message?: string; error?: string }>(res);
+    },
+
+    async getAgentDetails(id: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agents/${id}/details`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; agent: any; stats: any; players: any[]; recentTransactions: any[] }>(res);
+    },
+
+    async toggleAgentPortal(id: string, portalAccess: boolean) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agents/${id}/portal-toggle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify({ portalAccess })
+      });
+      return handleResponse<{ success: boolean; agent?: any; error?: string }>(res);
     },
 
     async updateAgent(id: string, payload: {

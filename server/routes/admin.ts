@@ -1537,29 +1537,55 @@ router.post('/coins/adjust', requireAdmin, async (req: AuthenticatedRequest, res
  */
 router.get('/agents', requireAdmin, async (_req, res) => {
   try {
-    const agentsRes = await query(`
-      SELECT 
-        ap.*,
-        u.full_name,
-        u.phone,
-        u.created_at as user_created_at,
-        COALESCE((SELECT COUNT(*) FROM users WHERE agent_id = ap.id), 0) as total_players,
-        COALESCE((SELECT COUNT(*) FROM users WHERE agent_id = ap.id AND has_deposited = true), 0) as active_players,
-        COALESCE((SELECT SUM(amount) FROM agent_player_deposits WHERE agent_id = ap.id), 0) as total_volume_deposited
-      FROM agent_profiles ap
-      JOIN users u ON ap.user_id = u.id
-      ORDER BY ap.created_at DESC
-    `);
+    const [agentsRes, summaryRes] = await Promise.all([
+      query(`
+        SELECT 
+          ap.*,
+          u.full_name,
+          u.phone,
+          u.created_at as user_created_at,
+          COALESCE((SELECT COUNT(*) FROM users WHERE agent_id = ap.id), 0) as total_players,
+          COALESCE((SELECT COUNT(*) FROM users WHERE agent_id = ap.id AND has_deposited = true), 0) as active_players,
+          COALESCE((SELECT SUM(amount) FROM agent_player_deposits WHERE agent_id = ap.id), 0) as total_volume_deposited
+        FROM agent_profiles ap
+        JOIN users u ON ap.user_id = u.id
+        ORDER BY ap.created_at DESC
+      `),
+      query(`
+        SELECT 
+          COUNT(*) as total_agents,
+          COUNT(*) FILTER (WHERE status = 'active') as active_agents,
+          COUNT(*) FILTER (WHERE status = 'pending') as pending_agents,
+          COUNT(*) FILTER (WHERE status = 'suspended') as suspended_agents,
+          COALESCE(SUM(wallet_balance), 0) as total_float,
+          COUNT(*) FILTER (WHERE wallet_balance < low_balance_threshold AND status = 'active') as low_balance_alerts
+        FROM agent_profiles
+      `)
+    ]);
+
+    const s = summaryRes.rows[0] || {};
 
     return res.json({
       success: true,
+      summary: {
+        totalAgents: parseInt(s.total_agents || '0', 10),
+        activeAgents: parseInt(s.active_agents || '0', 10),
+        pendingAgents: parseInt(s.pending_agents || '0', 10),
+        suspendedAgents: parseInt(s.suspended_agents || '0', 10),
+        totalFloat: parseFloat(s.total_float || '0'),
+        lowBalanceAlerts: parseInt(s.low_balance_alerts || '0', 10)
+      },
       agents: agentsRes.rows.map(row => ({
         ...row,
+        city: row.city || 'Addis Ababa',
+        target_players: parseInt(row.target_players || '50', 10),
+        portal_access: row.portal_access ?? true,
         wallet_balance: parseFloat(row.wallet_balance || '0'),
         initial_deposit: parseFloat(row.initial_deposit || '10000'),
         low_balance_threshold: parseFloat(row.low_balance_threshold || '1000'),
         target_monthly: parseFloat(row.target_monthly || '50000'),
-        commission_rate: parseFloat(row.commission_rate || '5'),
+        commission_rate: parseFloat(row.commission_rate || '3.00'),
+        cashout_commission_rate: parseFloat(row.cashout_commission_rate || '2.00'),
         total_players: parseInt(row.total_players || '0', 10),
         active_players: parseInt(row.active_players || '0', 10),
         total_volume_deposited: parseFloat(row.total_volume_deposited || '0'),
@@ -1573,11 +1599,108 @@ router.get('/agents', requireAdmin, async (_req, res) => {
 });
 
 /**
+ * Agents Desk: Get Detailed Agent Profile, Recruited Players & Cash Flow
+ */
+router.get('/agents/:id/details', requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const agentRes = await query(`
+      SELECT ap.*, u.full_name, u.phone, u.created_at as user_created_at
+      FROM agent_profiles ap
+      JOIN users u ON ap.user_id = u.id
+      WHERE ap.id = $1
+    `, [id]);
+
+    if (agentRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent profile not found' });
+    }
+    const agent = agentRes.rows[0];
+
+    const [playersRes, depositsRes, payoutsRes, recentTxRes] = await Promise.all([
+      query(`
+        SELECT u.id, u.full_name, u.phone, u.created_at, u.has_deposited,
+               COALESCE(w.balance, 0) as wallet_balance,
+               COALESCE((SELECT SUM(amount) FROM deposit_requests WHERE user_id = u.id AND status = 'approved'), 0) as total_deposited
+        FROM users u
+        LEFT JOIN wallets w ON u.id = w.user_id
+        WHERE u.agent_id = $1
+        ORDER BY u.created_at DESC
+        LIMIT 50
+      `, [id]),
+      query(`
+        SELECT COALESCE(SUM(amount), 0) as total_deposits, COUNT(*) as total_deposit_count
+        FROM agent_player_deposits
+        WHERE agent_id = $1
+      `, [id]),
+      query(`
+        SELECT COALESCE(SUM(amount), 0) as total_payouts, COUNT(*) as total_payout_count
+        FROM agent_commission_payout_requests
+        WHERE agent_id = $1 AND status = 'approved'
+      `, [id]),
+      query(`
+        SELECT id, player_name, player_phone, amount, deposit_method, status, created_at
+        FROM agent_player_deposits
+        WHERE agent_id = $1
+        ORDER BY created_at DESC
+        LIMIT 10
+      `, [id])
+    ]);
+
+    return res.json({
+      success: true,
+      agent: {
+        ...agent,
+        city: agent.city || 'Addis Ababa',
+        target_players: parseInt(agent.target_players || '50', 10),
+        portal_access: agent.portal_access ?? true,
+        wallet_balance: parseFloat(agent.wallet_balance || '0'),
+        commission_rate: parseFloat(agent.commission_rate || '3.00'),
+        cashout_commission_rate: parseFloat(agent.cashout_commission_rate || '2.00'),
+        target_monthly: parseFloat(agent.target_monthly || '50000.00'),
+        low_balance_threshold: parseFloat(agent.low_balance_threshold || '1000.00'),
+        refLink: `https://t.me/SonicGameOfficialBot?start=agent_${agent.agent_code}`
+      },
+      stats: {
+        totalDeposits: parseFloat(depositsRes.rows[0]?.total_deposits || '0'),
+        depositCount: parseInt(depositsRes.rows[0]?.total_deposit_count || '0', 10),
+        totalPayouts: parseFloat(payoutsRes.rows[0]?.total_payouts || '0'),
+        payoutCount: parseInt(payoutsRes.rows[0]?.total_payout_count || '0', 10),
+        totalPlayers: playersRes.rows.length
+      },
+      players: playersRes.rows.map(p => ({
+        id: p.id,
+        fullName: p.full_name || 'Player',
+        phone: p.phone,
+        balance: parseFloat(p.wallet_balance || '0'),
+        totalDeposited: parseFloat(p.total_deposited || '0'),
+        hasDeposited: p.has_deposited || false,
+        createdAt: p.created_at
+      })),
+      recentTransactions: recentTxRes.rows
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Agent Details Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve agent details' });
+  }
+});
+
+/**
  * Agents Desk: Create / Register New Agent
  */
 router.post('/agents/create', requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const { fullName, phone, initialDeposit, targetMonthly, commissionRate, customCode, password } = req.body;
+    const {
+      fullName,
+      phone,
+      city,
+      initialDeposit,
+      targetMonthly,
+      targetPlayers,
+      commissionRate,
+      cashoutCommissionRate,
+      customCode,
+      password
+    } = req.body;
 
     if (!fullName || !phone) {
       return res.status(400).json({ success: false, error: 'Full name and phone number are required' });
@@ -1585,9 +1708,12 @@ router.post('/agents/create', requireAdmin, async (req: AuthenticatedRequest, re
 
     const cleanPhone = phone.trim();
     const cleanName = fullName.trim();
-    const initDeposit = typeof initialDeposit === 'number' && initialDeposit >= 1000 ? initialDeposit : 10000.00;
+    const cleanCity = (city || 'Addis Ababa').trim();
+    const initDeposit = typeof initialDeposit === 'number' && initialDeposit >= 0 ? initialDeposit : 10000.00;
     const target = typeof targetMonthly === 'number' && targetMonthly > 0 ? targetMonthly : 50000.00;
-    const commission = typeof commissionRate === 'number' && commissionRate > 0 ? commissionRate : 5.00;
+    const playersTarget = typeof targetPlayers === 'number' && targetPlayers > 0 ? targetPlayers : 50;
+    const depCommission = typeof commissionRate === 'number' && commissionRate >= 0 ? commissionRate : 3.00;
+    const withCommission = typeof cashoutCommissionRate === 'number' && cashoutCommissionRate >= 0 ? cashoutCommissionRate : 2.00;
 
     // Use admin-supplied password or generate secure default
     const rawPassword = (typeof password === 'string' && password.trim().length >= 4)
@@ -1600,7 +1726,6 @@ router.post('/agents/create', requireAdmin, async (req: AuthenticatedRequest, re
       : `AGT-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const result = await withTransaction(async (client) => {
-      // 1. Check or create user
       let userId: string;
       const userCheck = await client.query('SELECT id FROM users WHERE phone = $1', [cleanPhone]);
 
@@ -1616,22 +1741,23 @@ router.post('/agents/create', requireAdmin, async (req: AuthenticatedRequest, re
           [cleanPhone, cleanName, hashedPassword]
         );
         userId = newUserRes.rows[0].id;
-        // Seed player wallet with welcome bonus
         await client.query("INSERT INTO wallets (user_id, balance, bonus) VALUES ($1, 0.00, 20.00)", [userId]);
       }
 
-      // 2. Check if agent profile already exists
       const profileCheck = await client.query('SELECT id FROM agent_profiles WHERE user_id = $1', [userId]);
       if (profileCheck.rows.length > 0) {
         throw new Error('This user is already registered as an agent.');
       }
 
-      // 3. Create agent profile
       const apRes = await client.query(
-        `INSERT INTO agent_profiles (user_id, agent_code, status, wallet_balance, initial_deposit, low_balance_threshold, target_monthly, commission_rate)
-         VALUES ($1, $2, 'active', $3, $3, 1000.00, $4, $5)
-         RETURNING *`,
-        [userId, agentCode, initDeposit, target, commission]
+        `INSERT INTO agent_profiles (
+          user_id, agent_code, status, wallet_balance, initial_deposit,
+          low_balance_threshold, target_monthly, target_players,
+          commission_rate, cashout_commission_rate, city, portal_access
+        )
+        VALUES ($1, $2, 'active', $3, $3, 1000.00, $4, $5, $6, $7, $8, true)
+        RETURNING *`,
+        [userId, agentCode, initDeposit, target, playersTarget, depCommission, withCommission, cleanCity]
       );
 
       return {
@@ -1647,6 +1773,7 @@ router.post('/agents/create', requireAdmin, async (req: AuthenticatedRequest, re
         ...result.profile,
         fullName: cleanName,
         phone: cleanPhone,
+        city: cleanCity,
         initialPassword: rawPassword,
         refLink: `https://t.me/SonicGameOfficialBot?start=agent_${result.profile.agent_code}`
       }
@@ -1669,12 +1796,16 @@ router.put('/agents/:id', requireAdmin, async (req: AuthenticatedRequest, res) =
     const {
       fullName,
       phone,
+      city,
       commissionRate,
+      cashoutCommissionRate,
       targetMonthly,
+      targetPlayers,
       lowBalanceThreshold,
       walletBalance,
       password,
-      status
+      status,
+      portalAccess
     } = req.body;
 
     const agentRes = await query('SELECT * FROM agent_profiles WHERE id = $1', [id]);
@@ -1707,7 +1838,7 @@ router.put('/agents/:id', requireAdmin, async (req: AuthenticatedRequest, res) =
       }
 
       if (userUpdates.length > 0) {
-        userUpdates.push(`updated_at = NOW()`);
+        userUpdates.push('updated_at = NOW()');
         userValues.push(userId);
         await client.query(
           `UPDATE users SET ${userUpdates.join(', ')} WHERE id = $${uIdx}`,
@@ -1724,9 +1855,21 @@ router.put('/agents/:id', requireAdmin, async (req: AuthenticatedRequest, res) =
         profUpdates.push(`commission_rate = $${pIdx++}`);
         profValues.push(commissionRate);
       }
+      if (typeof cashoutCommissionRate === 'number' && cashoutCommissionRate >= 0) {
+        profUpdates.push(`cashout_commission_rate = $${pIdx++}`);
+        profValues.push(cashoutCommissionRate);
+      }
+      if (typeof city === 'string' && city.trim()) {
+        profUpdates.push(`city = $${pIdx++}`);
+        profValues.push(city.trim());
+      }
       if (typeof targetMonthly === 'number' && targetMonthly >= 0) {
         profUpdates.push(`target_monthly = $${pIdx++}`);
         profValues.push(targetMonthly);
+      }
+      if (typeof targetPlayers === 'number' && targetPlayers >= 0) {
+        profUpdates.push(`target_players = $${pIdx++}`);
+        profValues.push(targetPlayers);
       }
       if (typeof lowBalanceThreshold === 'number' && lowBalanceThreshold >= 0) {
         profUpdates.push(`low_balance_threshold = $${pIdx++}`);
@@ -1740,9 +1883,13 @@ router.put('/agents/:id', requireAdmin, async (req: AuthenticatedRequest, res) =
         profUpdates.push(`status = $${pIdx++}`);
         profValues.push(status);
       }
+      if (typeof portalAccess === 'boolean') {
+        profUpdates.push(`portal_access = $${pIdx++}`);
+        profValues.push(portalAccess);
+      }
 
       if (profUpdates.length > 0) {
-        profUpdates.push(`updated_at = NOW()`);
+        profUpdates.push('updated_at = NOW()');
         profValues.push(id);
         await client.query(
           `UPDATE agent_profiles SET ${profUpdates.join(', ')} WHERE id = $${pIdx}`,
@@ -1771,6 +1918,26 @@ router.put('/agents/:id', requireAdmin, async (req: AuthenticatedRequest, res) =
 });
 
 /**
+ * Agents Desk: Toggle Portal Access
+ */
+router.post('/agents/:id/portal-toggle', requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { portalAccess } = req.body;
+    const updateRes = await query(
+      'UPDATE agent_profiles SET portal_access = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      [Boolean(portalAccess), id]
+    );
+    if (updateRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent not found' });
+    }
+    return res.json({ success: true, agent: updateRes.rows[0] });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * Agents Desk: Delete Agent (Safe Revocation)
  */
 router.delete('/agents/:id', requireAdmin, async (req: AuthenticatedRequest, res) => {
@@ -1785,11 +1952,8 @@ router.delete('/agents/:id', requireAdmin, async (req: AuthenticatedRequest, res
     const userId = agent.user_id;
 
     await withTransaction(async (client) => {
-      // 1. Delete pending recharge requests
       await client.query("DELETE FROM agent_recharge_requests WHERE agent_id = $1 AND status = 'pending'", [id]);
-      // 2. Delete agent profile
       await client.query('DELETE FROM agent_profiles WHERE id = $1', [id]);
-      // 3. Downgrade user role back to player to preserve history
       await client.query("UPDATE users SET role = 'player', updated_at = NOW() WHERE id = $1", [userId]);
     });
 
@@ -1831,13 +1995,10 @@ router.post('/agents/:id/status', requireAdmin, async (req: AuthenticatedRequest
     });
   } catch (error: any) {
     console.error('❌ [Admin Agent Status Error]:', error);
-    return res.status(500).json({ success: false, error: 'Failed to update agent status' });
+    return res.status(500).json({ success: false, error: error.message });
   }
 });
 
-/**
- * Agents Desk: Get Agent Recharge Requests
- */
 router.get('/agents/recharges', requireAdmin, async (req, res) => {
   try {
     const status = req.query.status as string;

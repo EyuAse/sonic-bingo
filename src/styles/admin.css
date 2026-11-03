@@ -8894,3 +8894,203 @@ input:checked + .slider-round:before {
     justify-content: center !important;
   }
 }
+
+
+/* ===== Enqu Agents Directory UI Styles ===== */
+.av2 {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--chip);
+  display: inline-grid;
+  place-items: center;
+  font-size: 12.5px;
+  font-weight: 800;
+  flex: none;
+  color: var(--ink);
+}
+.av2.big {
+  width: 48px;
+  height: 48px;
+  font-size: 16px;
+}
+.lk {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  border-radius: 0;
+  color: var(--ink);
+  cursor: pointer;
+}
+.lk:hover {
+  text-decoration: underline;
+}
+tr.sel td {
+  background: #f0f0f2 !important;
+}
+.prog {
+  height: 7px;
+  border-radius: 4px;
+  background: var(--chip);
+  width: 90px;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 6px;
+  overflow: hidden;
+}
+.prog i {
+  display: block;
+  height: 100%;
+  background: var(--grey);
+  border-radius: 4px;
+}
+.tog {
+  width: 42px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--chip);
+  position: relative;
+  cursor: pointer;
+  display: inline-block;
+  vertical-align: middle;
+  border: 0;
+  padding: 0;
+  transition: background .15s;
+}
+.tog::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+  transition: left .15s;
+}
+.tog.on {
+  background: var(--dark);
+}
+.tog.on::after {
+  left: 21px;
+}
+.modalbg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .45);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+  padding: 16px;
+  backdrop-filter: blur(2px);
+}
+.modal {
+  background: var(--card);
+  border-radius: 24px;
+  padding: 24px;
+  width: min(580px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+.steps {
+  display: flex;
+  gap: 8px;
+  margin: 14px 0 16px;
+}
+.steps span {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mute);
+  border-top: 3px solid var(--chip);
+  padding-top: 6px;
+}
+.steps span.on {
+  color: var(--ink);
+  border-color: var(--dark);
+}
+.sec {
+  border-top: 1px solid var(--line);
+  margin-top: 18px;
+  padding-top: 12px;
+}
+.sec h4 {
+  font-size: 14.5px;
+  font-weight: 700;
+  margin: 12px 0 6px;
+  color: var(--ink);
+}
+.two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.four {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.cred-box {
+  background: var(--panel);
+  border-radius: 16px;
+  padding: 16px;
+  margin: 16px 0;
+  font-size: 13.5px;
+}
+.cred-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.cred-row:last-child {
+  border-bottom: none;
+}
+.cred-lab {
+  color: var(--mute);
+  font-weight: 500;
+}
+.cred-val {
+  font-weight: 700;
+  color: var(--ink);
+}
+.share-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+.share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: transform .1s, opacity .15s;
+}
+.share-btn:active {
+  transform: scale(0.98);
+}
+.share-btn.tg {
+  background: #24A1DE;
+  color: #fff;
+}
+.share-btn.wa {
+  background: #25D366;
+  color: #fff;
+}
+.share-btn.cp {
+  background: var(--dark);
+  color: #fff;
+  grid-column: span 2;
+}
