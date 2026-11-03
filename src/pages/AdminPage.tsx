@@ -44,7 +44,7 @@ export const AdminPage: React.FC = () => {
       {/* 2. Admin Content Viewport */}
       <div className={`admin-main-viewport ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         {/* Top Header Bar (Shown on non-Enqu desks) */}
-        {activeTab !== 'overview' && activeTab !== 'telegram-bot' && activeTab !== 'agents' && (
+        {activeTab !== 'overview' && activeTab !== 'telegram-bot' && activeTab !== 'agents' && activeTab !== 'users' && (
           <header className="admin-viewport-header-light">
             <div className="viewport-header-left-light">
               {isSidebarCollapsed && (
@@ -73,7 +73,6 @@ export const AdminPage: React.FC = () => {
                   <i className="fa-solid fa-bolt-lightning header-gold-bolt"></i>
                   {activeTab === 'cashier' && 'P2P Cashier Surveillance & Network Audit Ledger'}
                   {activeTab === 'cashflow' && 'Cash Flow & Revenue Analytics'}
-                  {activeTab === 'users' && 'Player Accounts & Wallets Directory'}
                   {activeTab === 'bots' && '200 Bot Player Accounts & Wallets'}
                   {activeTab === 'bot-engine' && 'Room 10 Dynamic Bot Engine (0-50 Control Desk)'}
                   {activeTab === 'cartelas' && '600 Serial Cartela Cards Library'}
@@ -86,7 +85,6 @@ export const AdminPage: React.FC = () => {
                 <p className="viewport-page-amharic-sub">
                   {activeTab === 'cashier' && 'የወኪሎች P2P ተቀማጭ እና ክፍያ ክትትል፣ የሞባይል ገንዘብ ኦዲት መዝገብ እና የፍሎት ቁጥጥር'}
                   {activeTab === 'cashflow' && 'የቀን ተቀማጭ፣ የክፍያ ወጪ እና የተጣራ የሶኒክ ቢንጎ ገቢ ዝርዝር'}
-                  {activeTab === 'users' && 'የተመዘገቡ ተጫዋቾች፣ የዋሌት ቀሪ ሂሳብ እና የቦነስ ማበረታቻዎች'}
                   {activeTab === 'bots' && 'እውነተኛ የውሂብ ጎታ ያላቸው 200 የቦቶች ዋሌቶች፣ ራስ-ሰር ተወራራጅነት እና የቀጥታ አሸናፊነት መዝገብ'}
                   {activeTab === 'bot-engine' && 'የክፍል 10 ተለዋዋጭ ቦቶች ቁጥጥር ማዕከል - ከ 0 እስከ 50 ቦቶች በቀጥታ ያስተካክሉ'}
                   {activeTab === 'cartelas' && '600 የቢንጎ ካርቴላ ካርዶች ቤተ-መጽሐፍት'}
@@ -133,7 +131,7 @@ export const AdminPage: React.FC = () => {
         )}
 
         {/* Quick Tab Switcher Ribbon (Shown on non-Enqu desks) */}
-        {activeTab !== 'overview' && activeTab !== 'telegram-bot' && activeTab !== 'agents' && (
+        {activeTab !== 'overview' && activeTab !== 'telegram-bot' && activeTab !== 'agents' && activeTab !== 'users' && (
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -206,7 +204,7 @@ export const AdminPage: React.FC = () => {
         )}
 
         {/* Tab Content Panes */}
-        <main className={`admin-tab-content ${activeTab === 'overview' || activeTab === 'telegram-bot' || activeTab === 'agents' ? 'enqu-overview-mode' : ''}`}>
+        <main className={`admin-tab-content ${activeTab === 'overview' || activeTab === 'telegram-bot' || activeTab === 'agents' || activeTab === 'users' ? 'enqu-overview-mode' : ''}`}>
           {/* TAB 1: OVERVIEW & ANALYTICS */}
           {activeTab === 'overview' && <DashboardOverview onNavigateTab={setActiveTab} />}
 

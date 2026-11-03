@@ -6,8 +6,12 @@ import { io } from '../io.ts';
 import { gameEngine } from '../game/BingoGameEngine.ts';
 import { exportDatabaseBackup } from '../scripts/backup_database.ts';
 import { coinService } from '../services/coinService.ts';
+import { adminPlayersRouter } from './admin_players.ts';
 
 const router = Router();
+
+// Mount Dedicated Player Accounts Router
+router.use('/players', adminPlayersRouter);
 
 /**
  * Get All Real Users from Neon DB
