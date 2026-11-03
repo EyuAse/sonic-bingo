@@ -16,7 +16,7 @@ import { AgentsDesk } from '../components/admin/AgentsDesk.tsx';
 import { AgentRechargesDesk } from '../components/admin/AgentRechargesDesk.tsx';
 import { AgentPayoutsDesk } from '../components/admin/AgentPayoutsDesk.tsx';
 import { JackpotDesk } from '../components/admin/JackpotDesk.tsx';
-import { CoinsRewardsDesk } from '../components/admin/CoinsRewardsDesk.tsx';
+import { BonusRewardsDesk } from '../components/admin/BonusRewardsDesk.tsx';
 import { OfficialAccountsDesk } from '../components/admin/OfficialAccountsDesk.tsx';
 import '../styles/admin.css';
 
@@ -44,7 +44,7 @@ export const AdminPage: React.FC = () => {
       {/* 2. Admin Content Viewport */}
       <div className={`admin-main-viewport ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         {/* Top Header Bar (Shown on non-Enqu desks) */}
-        {activeTab !== 'overview' && activeTab !== 'telegram-bot' && activeTab !== 'agents' && activeTab !== 'users' && (
+        {activeTab !== 'overview' && activeTab !== 'telegram-bot' && activeTab !== 'agents' && activeTab !== 'users' && activeTab !== 'coins' && (
           <header className="admin-viewport-header-light">
             <div className="viewport-header-left-light">
               {isSidebarCollapsed && (
@@ -80,7 +80,6 @@ export const AdminPage: React.FC = () => {
                   {activeTab === 'agent-payouts' && 'Agent Commission Cashouts & Settlement (የወኪሎች ኮሚሽን ክፍያ)'}
                   {activeTab === 'official-accounts' && 'Official Platform Receiving Accounts (የክፍያ መቀበያ ሂሳቦች)'}
                   {activeTab === 'jackpots' && 'Progressive Jackpot Pools & Settlement'}
-                  {activeTab === 'coins' && 'Coins Loyalty & Rewards Engine (1.5x)'}
                 </h2>
                 <p className="viewport-page-amharic-sub">
                   {activeTab === 'cashier' && 'የወኪሎች P2P ተቀማጭ እና ክፍያ ክትትል፣ የሞባይል ገንዘብ ኦዲት መዝገብ እና የፍሎት ቁጥጥር'}
@@ -92,7 +91,6 @@ export const AdminPage: React.FC = () => {
                   {activeTab === 'agent-payouts' && 'የወኪሎች የኮሚሽን ወጪ ጥያቄዎችን በ Telebirr ወይም CBE ይክፈሉ፣ ያጽድቁ ወይም ይመልሱ'}
                   {activeTab === 'official-accounts' && 'የቢንጎ እና የፍሎት ክፍያ መቀበያ ኦፊሴላዊ ሂሳቦች (Telebirr, CBE, M-Pesa)'}
                   {activeTab === 'jackpots' && 'የ 4ቱ ክፍሎች ፕሮግረሲቭ ጃክፖት ሳጥን፣ የ 10% ድልድል እና የ 18 ኳስ አሸናፊዎች'}
-                  {activeTab === 'coins' && 'የተጠቃሚዎች የኮይን ነጥቦች (1.5x)፣ የመቀየሪያ ህጎች እና የቦነስ ልውውጥ'}
                 </p>
               </div>
             </div>
@@ -131,7 +129,7 @@ export const AdminPage: React.FC = () => {
         )}
 
         {/* Quick Tab Switcher Ribbon (Shown on non-Enqu desks) */}
-        {activeTab !== 'overview' && activeTab !== 'telegram-bot' && activeTab !== 'agents' && activeTab !== 'users' && (
+        {activeTab !== 'overview' && activeTab !== 'telegram-bot' && activeTab !== 'agents' && activeTab !== 'users' && activeTab !== 'coins' && (
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -159,7 +157,7 @@ export const AdminPage: React.FC = () => {
               { id: 'agent-recharges', label: '⚡ Recharges' },
               { id: 'agent-payouts', label: '💸 Payouts' },
               { id: 'jackpots', label: '🎰 Jackpots' },
-              { id: 'coins', label: '🪙 Coins' }
+              { id: 'coins', label: '🎁 Bonus & Rewards' }
             ].map(t => (
               <button
                 key={t.id}
@@ -204,7 +202,7 @@ export const AdminPage: React.FC = () => {
         )}
 
         {/* Tab Content Panes */}
-        <main className={`admin-tab-content ${activeTab === 'overview' || activeTab === 'telegram-bot' || activeTab === 'agents' || activeTab === 'users' ? 'enqu-overview-mode' : ''}`}>
+        <main className={`admin-tab-content ${activeTab === 'overview' || activeTab === 'telegram-bot' || activeTab === 'agents' || activeTab === 'users' || activeTab === 'coins' ? 'enqu-overview-mode' : ''}`}>
           {/* TAB 1: OVERVIEW & ANALYTICS */}
           {activeTab === 'overview' && <DashboardOverview onNavigateTab={setActiveTab} />}
 
@@ -244,8 +242,8 @@ export const AdminPage: React.FC = () => {
           {/* TAB 10: PROGRESSIVE JACKPOTS */}
           {activeTab === 'jackpots' && <JackpotDesk />}
 
-          {/* TAB 11: COINS & REWARDS */}
-          {activeTab === 'coins' && <CoinsRewardsDesk />}
+          {/* TAB 11: BONUS & REWARD MANAGEMENT */}
+          {activeTab === 'coins' && <BonusRewardsDesk />}
         </main>
       </div>
     </div>

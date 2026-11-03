@@ -845,6 +845,98 @@ export const apiClient = {
       return handleResponse<{ success: boolean; newBalance?: number; balance?: number; message?: string; error?: string }>(res);
     },
 
+    // Bonus & Reward Management (Enqu Engine)
+    rewards: {
+      async getKpis() {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/rewards/kpis`, {
+          headers: { ...adminHeaders }
+        });
+        return handleResponse<{ success: boolean; kpis: any }>(res);
+      },
+      async getSettings() {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/rewards/settings`, {
+          headers: { ...adminHeaders }
+        });
+        return handleResponse<{ success: boolean; settings: any; auditLogs: any[] }>(res);
+      },
+      async saveSettings(payload: any) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/rewards/settings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders },
+          body: JSON.stringify(payload)
+        });
+        return handleResponse<{ success: boolean; message: string }>(res);
+      },
+      async getBonusWallets(params?: { page?: number; limit?: number; search?: string }) {
+        const adminHeaders = await getAdminAuthHeader();
+        const q = new URLSearchParams();
+        if (params?.page) q.append('page', String(params.page));
+        if (params?.limit) q.append('limit', String(params.limit));
+        if (params?.search) q.append('search', params.search);
+        const res = await fetch(`${API_BASE}/admin/rewards/bonus-wallets?${q.toString()}`, {
+          headers: { ...adminHeaders }
+        });
+        return handleResponse<{ success: boolean; players: any[]; pagination: any }>(res);
+      },
+      async getTopCoinHolders() {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/rewards/top-coin-holders`, {
+          headers: { ...adminHeaders }
+        });
+        return handleResponse<{ success: boolean; holders: any[] }>(res);
+      },
+      async getRedemptions() {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/rewards/redemptions`, {
+          headers: { ...adminHeaders }
+        });
+        return handleResponse<{ success: boolean; redemptions: any[] }>(res);
+      },
+      async approveRedemption(id: string) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/rewards/redemptions/${id}/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders }
+        });
+        return handleResponse<{ success: boolean; message: string }>(res);
+      },
+      async rejectRedemption(id: string) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/rewards/redemptions/${id}/reject`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders }
+        });
+        return handleResponse<{ success: boolean; message: string }>(res);
+      },
+      async getWinners() {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/rewards/winners`, {
+          headers: { ...adminHeaders }
+        });
+        return handleResponse<{ success: boolean; winners: any[] }>(res);
+      },
+      async payWinner(id: string) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/rewards/winners/${id}/pay`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders }
+        });
+        return handleResponse<{ success: boolean; message: string }>(res);
+      },
+      async adjust(payload: { target: 'bonus' | 'coins'; type: string; userId: string; amount: number; reason?: string; note?: string }) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/rewards/adjust`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders },
+          body: JSON.stringify(payload)
+        });
+        return handleResponse<{ success: boolean; message: string; newBalance?: number; bonus?: number }>(res);
+      }
+    },
+
     // Decentralized Agents
     async getAgents() {
       const adminHeaders = await getAdminAuthHeader();

@@ -96,7 +96,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     { id: 'agent-payouts', label: 'Agent Payouts', path: IC.po, s: 'Cashout' },
     { id: 'official-accounts', label: 'Official Accounts', path: IC.of, s: 'Rails' },
     { id: 'jackpots', label: 'Progressive Jackpots', path: IC.jp, s: 'Vault' },
-    { id: 'coins', label: 'Coins & Rewards', path: IC.co, n: '1.5x' }
+    { id: 'coins', label: 'Bonus & Rewards', path: IC.co, s: 'Live' }
   ];
 
   return (
