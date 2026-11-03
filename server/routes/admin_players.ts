@@ -1,7 +1,8 @@
 import { Router, Response } from 'express';
 import { query } from '../db.ts';
-import { requireAdmin, AuthenticatedRequest } from '../middleware/auth.ts';
+import { requireAdmin, AuthenticatedRequest, markUserSuspended, markUserActive } from '../middleware/auth.ts';
 import { TelegramBotService } from '../services/telegramBotService.ts';
+import { io } from '../io.ts';
 
 export const adminPlayersRouter = Router();
 
@@ -454,7 +455,37 @@ adminPlayersRouter.post('/:id/status', requireAdmin, async (req: AuthenticatedRe
     }
     const u = userRes.rows[0];
 
-    await query(`UPDATE users SET status = $1 WHERE id = $2`, [newStatus, id]);
+    if (newStatus === 'suspended') {
+      await query(
+        `UPDATE users SET status = 'suspended', suspend_reason = $1, suspended_at = NOW() WHERE id = $2`,
+        [reason || 'Suspicious activity or terms violation', id]
+      );
+      markUserSuspended(id, reason || 'Suspicious activity or terms violation');
+
+      // Real-time WebSocket kick & notification to active client
+      io.to(`user_${id}`).emit('user_account_suspended', {
+        reason: reason || 'Suspicious activity or terms violation'
+      });
+      io.emit(`user_${id}_suspended`, {
+        suspended: true,
+        reason: reason || 'Suspicious activity or terms violation'
+      });
+      io.emit('user_account_status_changed', { userId: id, status: 'suspended' });
+    } else {
+      await query(
+        `UPDATE users SET status = 'active', suspend_reason = NULL, suspended_at = NULL WHERE id = $1`,
+        [id]
+      );
+      markUserActive(id);
+
+      io.to(`user_${id}`).emit('user_account_activated', {
+        message: 'Your account has been reactivated.'
+      });
+      io.emit(`user_${id}_suspended`, {
+        suspended: false
+      });
+      io.emit('user_account_status_changed', { userId: id, status: 'active' });
+    }
 
     // Record audit log
     const action = newStatus === 'suspended' ? 'Suspended' : 'Activated';
@@ -472,10 +503,10 @@ adminPlayersRouter.post('/:id/status', requireAdmin, async (req: AuthenticatedRe
     // Send Telegram notification if requested and telegram_id exists
     if (notify && u.telegram_id) {
       const msg = newStatus === 'suspended'
-        ? `⚠️ Your Sonic Bingo account has been temporarily suspended. Reason: ${reason || 'Account review'}. Please contact support.`
-        : `✅ Your Sonic Bingo account has been successfully reactivated. You may now resume playing!`;
+        ? `⚠️ <b>Your Sonic Bingo account has been suspended</b>\n\n<b>Reason:</b> ${reason || 'Account review'}\n\nSuspending blocks play, deposits, and withdrawals. If you believe this was done in error, please contact official support.`
+        : `✅ <b>Your Sonic Bingo account has been reactivated</b>\n\nYou may now resume playing, deposits, and withdrawals!`;
       try {
-        await TelegramBotService.sendMessage(u.telegram_id, msg);
+        await TelegramBotService.getInstance().sendMessage(u.telegram_id, msg, { parseMode: 'HTML' });
       } catch (tgErr) {
         console.warn('Telegram notify notice:', tgErr);
       }
@@ -569,6 +600,32 @@ adminPlayersRouter.post('/:id/adjust-balance', requireAdmin, async (req: Authent
       'Admin'
     ]);
 
+    // Real-time WebSocket sync to player client
+    io.to(`user_${id}`).emit('user_balance_updated', { userId: id, balance: newBal, bonus: newBon });
+    io.emit(`user_${id}_balance`, { type: 'admin_adjustment', balance: newBal, bonus: newBon, delta, reason });
+    io.emit('user_balance_updated', { userId: id, balance: newBal, bonus: newBon });
+
+    // Send official Telegram Bot alert to player
+    try {
+      const userRow = await query(`SELECT telegram_id, full_name FROM users WHERE id = $1`, [id]);
+      if (userRow.rows.length > 0 && userRow.rows[0].telegram_id) {
+        const u = userRow.rows[0];
+        const actionIcon = isCredit ? '➕' : '➖';
+        const actionLabel = isCredit ? 'Credit (ተቀማጭ)' : 'Debit (ተቀናሽ)';
+        const msg = `💰 <b>Sonic Bingo Wallet Update</b>\n\n` +
+          `Hello <b>${u.full_name}</b>, your account balance has been updated by administration:\n` +
+          `• <b>Action:</b> ${actionLabel} ${actionIcon}\n` +
+          `• <b>Amount:</b> ${numAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ETB\n` +
+          `• <b>Wallet:</b> ${wlLabel} Wallet\n` +
+          `• <b>Reason:</b> ${reason}\n` +
+          `• <b>Updated Balance:</b> ${(isBonus ? newBon : newBal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ETB\n\n` +
+          `<i>Thank you for choosing Sonic Bingo!</i>`;
+        await TelegramBotService.getInstance().sendMessage(u.telegram_id, msg, { parseMode: 'HTML' });
+      }
+    } catch (tgErr) {
+      console.warn('Telegram balance adjust notify notice:', tgErr);
+    }
+
     return res.json({
       success: true,
       message: `Successfully adjusted balance by ${isCredit ? '+' : '-'}${numAmount.toFixed(2)} ETB!`,
@@ -647,7 +704,7 @@ adminPlayersRouter.post('/:id/message', requireAdmin, async (req: AuthenticatedR
       return res.status(400).json({ success: false, error: 'This player does not have an attached Telegram account' });
     }
 
-    await TelegramBotService.sendMessage(user.telegram_id, message.trim());
+    await TelegramBotService.getInstance().sendMessage(user.telegram_id, message.trim(), { parseMode: 'HTML' });
 
     // Record in audit log
     await query(`
@@ -749,3 +806,4 @@ adminPlayersRouter.get('/export-csv', requireAdmin, async (req: AuthenticatedReq
     return res.status(500).json({ success: false, error: 'Failed to export players CSV' });
   }
 });
+

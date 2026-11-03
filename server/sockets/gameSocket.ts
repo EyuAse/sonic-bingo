@@ -1,5 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import { gameEngine } from '../game/BingoGameEngine.ts';
+import { query } from '../db.ts';
+import { checkIfUserSuspended } from '../middleware/auth.ts';
 
 // Single Active Device Session Registry: userId -> { socketId, connectedAt }
 const activeUserSessions = new Map<string, { socketId: string; connectedAt: number }>();
@@ -51,6 +53,15 @@ export function setupGameSockets(io: Server) {
 
       socket.join(`user_${userId}`);
       console.log(`⚡ [Socket.IO] User ${userId} joined room user_${userId} on socket ${socket.id}`);
+
+      // Verify real-time account status
+      checkIfUserSuspended(userId).then(suspension => {
+        if (suspension.suspended) {
+          socket.emit('user_account_suspended', {
+            reason: suspension.reason || 'Account suspended by compliance.'
+          });
+        }
+      }).catch(() => {});
 
       // Check for Disconnect Protection wins that occurred while offline
       const unackedWins = gameEngine.getUnacknowledgedWins(userId);
@@ -212,6 +223,25 @@ export function setupGameSockets(io: Server) {
         callback?: (res: any) => void
       ) => {
         const { roomId, userId, userName, cartelaIds, stakeAmount, isAutoPlay } = data;
+
+        // Block gameplay for suspended players
+        if (userId) {
+          const suspension = await checkIfUserSuspended(userId);
+          if (suspension.suspended) {
+            const errRes = {
+              success: false,
+              error: 'ACCOUNT_SUSPENDED',
+              message: 'Your account has been suspended. Suspending blocks play, deposits, and withdrawals.',
+              reason: suspension.reason || 'Account suspended by compliance.'
+            };
+            if (callback) callback(errRes);
+            else socket.emit('buy_ticket_response', errRes);
+            socket.emit('user_account_suspended', {
+              reason: suspension.reason || 'Account suspended by compliance.'
+            });
+            return;
+          }
+        }
         if (!isAuthorizedSession(socket.id, userId)) {
           const errRes = { success: false, error: 'Session active on another device. Simultaneous play is prohibited.' };
           if (callback) callback(errRes);
