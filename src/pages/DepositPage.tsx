@@ -49,6 +49,8 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
     isOnline: boolean;
     avgApprovalMinutes: number;
   }>>([]);
+  const [isLoadingAgents, setIsLoadingAgents] = useState<boolean>(true);
+  const [agentLoadError, setAgentLoadError] = useState<string | null>(null);
 
   // Interactive Agent Deposit Flow State
   const [selectedAgent, setSelectedAgent] = useState<{
@@ -133,14 +135,13 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
 
   // Load active agents & existing pending requests for both Deposit & Withdrawal
   const loadAgentData = async () => {
-    try {
-      const [agentsRes, myReqsRes, myWithRes] = await Promise.all([
-        apiClient.wallet.getActiveAgents(),
-        apiClient.wallet.getMyAgentDeposits(),
-        apiClient.wallet.getMyAgentWithdrawals()
-      ]);
+    setIsLoadingAgents(true);
+    setAgentLoadError(null);
 
-      if (agentsRes.success && agentsRes.agents) {
+    // 1. Load active certified agents independently (public endpoint, never blocked by auth)
+    try {
+      const agentsRes = await apiClient.wallet.getActiveAgents();
+      if (agentsRes && agentsRes.success && Array.isArray(agentsRes.agents)) {
         setActiveAgents(agentsRes.agents);
         if (agentsRes.agents.length > 0 && !selectedAgent) {
           handleSelectDepositAgent(agentsRes.agents[0]);
@@ -148,23 +149,38 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
         if (agentsRes.agents.length > 0 && !selectedWithdrawAgent) {
           handleSelectWithdrawAgent(agentsRes.agents[0]);
         }
+      } else {
+        setAgentLoadError('No certified agents currently available');
       }
+    } catch (err: any) {
+      console.warn('Failed to load active agents list:', err);
+      setAgentLoadError('Failed to load active agents. Tap to retry.');
+    } finally {
+      setIsLoadingAgents(false);
+    }
 
-      if (myReqsRes.success && myReqsRes.requests && myReqsRes.requests.length > 0) {
-        const pending = myReqsRes.requests.find(r => r.status === 'pending');
+    // 2. Load pending deposit / withdrawal requests independently (requires auth)
+    try {
+      const [myReqsRes, myWithRes] = await Promise.allSettled([
+        apiClient.wallet.getMyAgentDeposits(),
+        apiClient.wallet.getMyAgentWithdrawals()
+      ]);
+
+      if (myReqsRes.status === 'fulfilled' && myReqsRes.value?.success && myReqsRes.value?.requests) {
+        const pending = myReqsRes.value.requests.find(r => r.status === 'pending');
         if (pending) {
           setActiveAgentRequest(pending);
         }
       }
 
-      if (myWithRes.success && myWithRes.requests && myWithRes.requests.length > 0) {
-        const pendingWith = myWithRes.requests.find(r => r.status === 'pending');
+      if (myWithRes.status === 'fulfilled' && myWithRes.value?.success && myWithRes.value?.requests) {
+        const pendingWith = myWithRes.value.requests.find(r => r.status === 'pending');
         if (pendingWith) {
           setActiveWithdrawalRequest(pendingWith);
         }
       }
     } catch (err) {
-      console.warn('Failed to load agent cashier data:', err);
+      console.warn('Failed to load player pending requests:', err);
     }
   };
 
@@ -776,9 +792,22 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
 
                 {/* 4. Agents List: Light Card for unselected, Obsidian Luxury Card for selected */}
                 <div className="sonic-agents-stack">
-                  {activeAgents.length === 0 ? (
-                    <div className="sonic-agent-light-card" style={{ justifyContent: 'center', textAlign: 'center', color: '#64748b' }}>
+                  {isLoadingAgents ? (
+                    <div className="sonic-agent-light-card" style={{ justifyContent: 'center', textAlign: 'center', color: '#64748b', padding: '16px' }}>
+                      <i className="fa-solid fa-circle-notch fa-spin" style={{ marginRight: '8px', color: '#0088cc' }}></i>
                       <span>Loading active certified agents...</span>
+                    </div>
+                  ) : activeAgents.length === 0 ? (
+                    <div className="sonic-agent-light-card" style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '20px 16px', gap: '8px' }}>
+                      <i className="fa-solid fa-user-clock" style={{ fontSize: '24px', color: '#94a3b8' }}></i>
+                      <span style={{ fontSize: '13.5px', color: '#64748b', fontWeight: 600 }}>{agentLoadError || 'No certified agents currently online.'}</span>
+                      <button
+                        type="button"
+                        onClick={loadAgentData}
+                        style={{ marginTop: '6px', padding: '6px 14px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', color: '#1e293b' }}
+                      >
+                        <i className="fa-solid fa-rotate-right" style={{ marginRight: '6px' }}></i> Retry / እንደገና ሞክር
+                      </button>
                     </div>
                   ) : (
                     activeAgents.map(ag => {
@@ -1370,11 +1399,24 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
 
                   {/* Agents Stack: Obsidian Luxury Card for Selected, Light Card for Unselected */}
                   <div className="sonic-agents-stack">
-                    {activeAgents.length === 0 ? (
-                      <div className="sonic-agent-light-card" style={{ justifyContent: 'center', textAlign: 'center', color: '#64748b' }}>
-                        <span>Loading active certified agents...</span>
-                      </div>
-                    ) : (
+                  {isLoadingAgents ? (
+                    <div className="sonic-agent-light-card" style={{ justifyContent: 'center', textAlign: 'center', color: '#64748b', padding: '16px' }}>
+                      <i className="fa-solid fa-circle-notch fa-spin" style={{ marginRight: '8px', color: '#0088cc' }}></i>
+                      <span>Loading active certified agents...</span>
+                    </div>
+                  ) : activeAgents.length === 0 ? (
+                    <div className="sonic-agent-light-card" style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '20px 16px', gap: '8px' }}>
+                      <i className="fa-solid fa-user-clock" style={{ fontSize: '24px', color: '#94a3b8' }}></i>
+                      <span style={{ fontSize: '13.5px', color: '#64748b', fontWeight: 600 }}>{agentLoadError || 'No certified agents currently online.'}</span>
+                      <button
+                        type="button"
+                        onClick={loadAgentData}
+                        style={{ marginTop: '6px', padding: '6px 14px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', color: '#1e293b' }}
+                      >
+                        <i className="fa-solid fa-rotate-right" style={{ marginRight: '6px' }}></i> Retry / እንደገና ሞክር
+                      </button>
+                    </div>
+                  ) : (
                       activeAgents.map(ag => {
                         const isSelected = selectedWithdrawAgent?.agentCode === ag.agentCode;
                         if (isSelected) {
