@@ -243,7 +243,7 @@
   grid-template-columns: 68px 1fr !important;
 }
 
-.enqu-sidebar, aside {
+.enqu-sidebar, .admin-layout-shell aside {
   background: var(--side) !important;
   display: flex !important;
   flex-direction: column !important;
@@ -259,7 +259,7 @@
   box-shadow: none !important;
 }
 
-.enqu-sidebar .logo, .logo {
+.enqu-sidebar .logo {
   font-size: 25px !important;
   font-weight: 800 !important;
   letter-spacing: -1.2px !important;
@@ -268,7 +268,7 @@
   font-family: Urbanist, "Helvetica Neue", Arial, sans-serif !important;
 }
 
-.enqu-nav, nav {
+.enqu-nav, .enqu-sidebar nav, .admin-layout-shell nav {
   flex: 1 !important;
   overflow-y: auto !important;
   scrollbar-width: thin !important;
@@ -276,7 +276,7 @@
   flex-direction: column !important;
 }
 
-.enqu-nav a, nav a {
+.enqu-nav a, .enqu-sidebar nav a, .admin-layout-shell nav a {
   white-space: nowrap !important;
   display: flex !important;
   align-items: center !important;
@@ -297,7 +297,7 @@
   transition: all 0.1s ease !important;
 }
 
-.enqu-nav a svg, nav a svg {
+.enqu-nav a svg, .enqu-sidebar nav a svg, .admin-layout-shell nav a svg {
   width: 18px !important;
   height: 18px !important;
   flex: none !important;
@@ -308,14 +308,14 @@
   stroke-linejoin: round !important;
 }
 
-.enqu-nav a .s, nav a .s {
+.enqu-nav a .s, .enqu-sidebar nav a .s, .admin-layout-shell nav a .s {
   margin-left: auto !important;
   font-size: 11.5px !important;
   color: var(--mute) !important;
   font-weight: 600 !important;
 }
 
-.enqu-nav a .n, nav a .n {
+.enqu-nav a .n, .enqu-sidebar nav a .n, .admin-layout-shell nav a .n {
   margin-left: auto !important;
   font-size: 11.5px !important;
   background: var(--chip) !important;
@@ -325,28 +325,27 @@
   color: var(--ink) !important;
 }
 
-.enqu-nav a.on, nav a.on {
+.enqu-nav a.on, .enqu-sidebar nav a.on, .admin-layout-shell nav a.on {
   background: var(--grey) !important;
   color: #fff !important;
 }
 
-.enqu-nav a.on svg, nav a.on svg {
+.enqu-nav a.on svg, .enqu-sidebar nav a.on svg, .admin-layout-shell nav a.on svg {
   stroke: #fff !important;
 }
 
-.enqu-nav a.on .s, nav a.on .s,
-.enqu-nav a.on .n, nav a.on .n {
+.enqu-nav a.on .s, .enqu-sidebar nav a.on .s, .admin-layout-shell nav a.on .s, .enqu-nav a.on .n, .enqu-sidebar nav a.on .n, .admin-layout-shell nav a.on .n {
   color: #fff !important;
   background: rgba(255, 255, 255, .2) !important;
 }
 
-.foot {
+.enqu-sidebar .foot {
   margin-top: auto !important;
   padding-top: 10px !important;
   border-top: 1px solid var(--line) !important;
 }
 
-.foot a {
+.enqu-sidebar .foot a {
   color: var(--ink) !important;
 }
 

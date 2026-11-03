@@ -1099,12 +1099,13 @@ router.get(['/agents/active', '/agents/available'], async (_req, res) => {
   try {
     const agentsRes = await query(
       `SELECT ap.id, ap.agent_code, ap.status, 
-              COALESCE(ap.telebirr_phone, u.phone) as telebirr_phone, 
-              COALESCE(ap.telebirr_name, u.full_name, 'Agent') as telebirr_name, 
-              COALESCE(ap.cbe_account, '1000' || SUBSTRING(COALESCE(u.phone, '0900000000') FROM 2)) as cbe_account, 
-              COALESCE(ap.cbe_name, u.full_name, 'Sonic Gaming Agent') as cbe_name, 
-              ap.mpesa_phone, ap.mpesa_name,
-              COALESCE(ap.active_rails, 'Telebirr,CBE') as active_rails, 
+              ap.telebirr_phone, 
+              ap.telebirr_name, 
+              ap.cbe_account, 
+              ap.cbe_name, 
+              ap.mpesa_phone, 
+              ap.mpesa_name,
+              ap.active_rails, 
               COALESCE(ap.is_online, true) as is_online, 
               ap.wallet_balance,
               u.full_name, u.phone as user_phone
@@ -1118,30 +1119,45 @@ router.get(['/agents/active', '/agents/available'], async (_req, res) => {
     );
 
     const formattedAgents = agentsRes.rows.map(a => {
-      const activeList = (a.active_rails || 'Telebirr,CBE').split(',').map((s: string) => s.trim());
-      const supportedRails = activeList.filter((r: string) => {
-        if (r === 'Telebirr') return Boolean(a.telebirr_phone);
-        if (r === 'CBE') return Boolean(a.cbe_account);
-        if (r === 'M-Pesa') return Boolean(a.mpesa_phone);
-        return false;
-      });
+      const activeList = (a.active_rails || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+      const supportedRails: string[] = [];
+      
+      const cleanTelebirr = a.telebirr_phone ? String(a.telebirr_phone).trim() : '';
+      if (activeList.includes('Telebirr') && cleanTelebirr.length >= 8) {
+        supportedRails.push('Telebirr');
+      }
+
+      const cleanCbe = a.cbe_account ? String(a.cbe_account).trim() : '';
+      if (activeList.includes('CBE') && cleanCbe.length >= 8) {
+        supportedRails.push('CBE');
+      }
+
+      const cleanMpesa = a.mpesa_phone ? String(a.mpesa_phone).trim() : '';
+      if (activeList.includes('M-Pesa') && cleanMpesa.length >= 8) {
+        supportedRails.push('M-Pesa');
+      }
+
+      const effectiveTelebirrName = (a.telebirr_name && a.telebirr_name.trim()) || a.full_name || 'Sonic Agent';
+      const effectiveCbeName = (a.cbe_name && a.cbe_name.trim()) || a.full_name || 'Sonic Agent';
+      const effectiveMpesaName = (a.mpesa_name && a.mpesa_name.trim()) || a.full_name || 'Sonic Agent';
 
       return {
         id: a.id,
         agentCode: a.agent_code,
         displayName: `Sonic Agent #${a.agent_code}`,
-        phone: a.telebirr_phone || a.mpesa_phone || a.user_phone || null,
-        telebirrPhone: a.telebirr_phone || a.user_phone || null,
-        telebirrName: a.telebirr_name || a.full_name || 'Agent',
-        cbeAccount: a.cbe_account || null,
-        cbeName: a.cbe_name || a.full_name || 'Sonic Gaming Agent',
-        mpesaPhone: a.mpesa_phone || null,
-        mpesaName: a.mpesa_name || a.full_name || 'Agent',
-        supportedRails: supportedRails.length > 0 ? supportedRails : ['Telebirr', 'CBE'],
+        phone: cleanTelebirr || cleanMpesa || a.user_phone || null,
+        telebirrPhone: cleanTelebirr || null,
+        telebirrName: effectiveTelebirrName,
+        cbeAccount: cleanCbe || null,
+        cbeName: effectiveCbeName,
+        mpesaPhone: cleanMpesa || null,
+        mpesaName: effectiveMpesaName,
+        supportedRails,
+        hasConfiguredRails: supportedRails.length > 0,
         isOnline: a.is_online !== false,
         avgApprovalMinutes: 2
       };
-    }).filter(a => a.supportedRails.length > 0);
+    });
 
     return res.json({
       success: true,

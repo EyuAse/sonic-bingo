@@ -175,29 +175,32 @@
 }
 
 .lobby-fresh-balance-bar {
-  background: #ffffff;
-  border: 1px solid #f1f5f9;
-  border-radius: 9999px;
-  padding: 6px 8px 6px 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
-  width: 100%;
+  background: #ffffff !important;
+  border: 1px solid #f1f5f9 !important;
+  border-radius: 9999px !important;
+  padding: 6px 8px 6px 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  gap: 8px !important;
 }
 
 .balance-wallet-obsidian-squircle {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: #0f172a;
-  color: #facc15;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
-  flex-shrink: 0;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 12px !important;
+  background: #0f172a !important;
+  color: #facc15 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.1rem !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25) !important;
+  flex-shrink: 0 !important;
+  margin-right: 2px !important;
 }
 
 .balance-wallet-obsidian-squircle i {
@@ -206,23 +209,29 @@
 }
 
 .balance-amount-center {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
 }
 
 .balance-val-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  min-width: 0 !important;
+  flex-shrink: 1 !important;
 }
 
 .balance-val-text {
-  font-size: 1.25rem;
-  font-weight: 900;
-  color: #0f172a;
-  letter-spacing: -0.3px;
-  font-family: var(--font-display), 'Outfit', sans-serif;
+  font-size: clamp(0.95rem, 3.6vw, 1.25rem) !important;
+  font-weight: 900 !important;
+  color: #0f172a !important;
+  letter-spacing: -0.3px !important;
+  font-family: var(--font-display), 'Outfit', sans-serif !important;
+  white-space: nowrap !important;
 }
 
 .balance-bonus-badge {
@@ -818,36 +827,43 @@
 /* ============================================================
    7. 4-TAB BOTTOM NAVIGATION BAR
    ============================================================ */
-.lobby-fresh-bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
-  background: #ffffff;
-  border-top: 1px solid #f1f5f9;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
-  padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  z-index: 90;
+.lobby-fresh-bottom-nav,
+nav.lobby-fresh-bottom-nav {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 100% !important;
+  max-width: 480px !important;
+  background: #ffffff !important;
+  border-top: 1px solid #f1f5f9 !important;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05) !important;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  z-index: 90 !important;
+  box-sizing: border-box !important;
 }
 
-.fresh-nav-item {
-  background: transparent;
-  border: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  color: #64748b;
-  cursor: pointer;
-  padding: 4px;
-  transition: all 0.15s ease;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
+.fresh-nav-item,
+nav.lobby-fresh-bottom-nav .fresh-nav-item {
+  background: transparent !important;
+  border: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  color: #64748b !important;
+  cursor: pointer !important;
+  padding: 4px !important;
+  transition: all 0.15s ease !important;
+  user-select: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .nav-icon-wrapper {
