@@ -194,3 +194,4 @@ export const AccountSuspendedModal: React.FC = () => {
     </div>
   );
 };
+

@@ -380,14 +380,6 @@ export const PlayerAccountsDesk: React.FC = () => {
     }
   };
 
-  // Handle Reset Password / Credentials
-  const handleResetPassword = () => {
-    if (!selectedDetails) return;
-    const tempPassword = `Sonic@${Math.floor(100000 + Math.random() * 900000)}`;
-    navigator.clipboard.writeText(`Player: ${selectedDetails.phone}\nTemporary Password: ${tempPassword}`);
-    showToast(`🔑 Temporary credentials generated and copied for ${selectedDetails.name}!`);
-  };
-
   // Handle Export CSV
   const handleExportCSV = () => {
     const params = new URLSearchParams({
@@ -728,7 +720,7 @@ export const PlayerAccountsDesk: React.FC = () => {
               </div>
             </div>
 
-            {/* 4 Action Buttons */}
+            {/* 3 Action Buttons */}
             <div className="row" style={{ margin: '14px 0 12px', gap: '8px' }}>
               <button
                 type="button"
@@ -751,14 +743,6 @@ export const PlayerAccountsDesk: React.FC = () => {
                 onClick={() => setShowAdjustModal(true)}
               >
                 Adjust balance
-              </button>
-              <button
-                type="button"
-                className="enqu-btn-secondary"
-                style={{ padding: '8px 16px', fontSize: '13px' }}
-                onClick={handleResetPassword}
-              >
-                Reset password
               </button>
               <button
                 type="button"
@@ -999,10 +983,11 @@ export const PlayerAccountsDesk: React.FC = () => {
               className="enqu-modal-input"
             >
               <option value="Suspicious activity">Suspicious activity</option>
-              <option value="Duplicate account">Duplicate account</option>
-              <option value="Payment dispute">Payment dispute</option>
-              <option value="Responsible gaming">Responsible gaming</option>
-              <option value="Other">Other</option>
+              <option value="Multi-accounting">Multi-accounting</option>
+              <option value="Terms of service violation">Terms of service violation</option>
+              <option value="Payment dispute / Chargeback">Payment dispute / Chargeback</option>
+              <option value="Responsible gaming / User request">Responsible gaming / User request</option>
+              <option value="Other / Manual investigation">Other / Manual investigation</option>
             </select>
 
             <label className="enqu-form-label" style={{ marginTop: '14px' }}>
@@ -1177,6 +1162,57 @@ export const PlayerAccountsDesk: React.FC = () => {
               Sends an official direct notification from <strong>@SonicGameOfficialBot</strong> to the player&apos;s Telegram client.
             </div>
 
+            {!selectedDetails.telegramId && (
+              <div style={{
+                background: '#fef3c7',
+                border: '1px solid #fde68a',
+                color: '#92400e',
+                borderRadius: '12px',
+                padding: '10px 12px',
+                fontSize: '12.5px',
+                marginBottom: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <i className="fa-solid fa-triangle-exclamation"></i>
+                <span>This player does not have a linked Telegram account. Direct messages can only be delivered to players who joined via @SonicGameOfficialBot.</span>
+              </div>
+            )}
+
+            {/* Quick Templates */}
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mute)', marginBottom: '6px' }}>
+                Quick message templates:
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {[
+                  { label: '👋 Verification Required', text: 'Hello, this is Sonic Bingo Compliance. Please reply to this message with your phone verification details to complete your account review.' },
+                  { label: '🎉 Congratulations on Win', text: 'Congratulations on your recent win on Sonic Bingo! Your winnings are now available in your withdrawable wallet. Enjoy!' },
+                  { label: '💳 Deposit Support', text: 'Hello! We noticed your recent deposit request. Our team is here to assist if you need any help with your transaction.' },
+                  { label: '⚠️ Security Notice', text: 'Hello, please be advised that our compliance team noticed unusual activity on your account. Please confirm your details with support.' }
+                ].map((tpl) => (
+                  <button
+                    key={tpl.label}
+                    type="button"
+                    onClick={() => setDirectMessageText(tpl.text)}
+                    style={{
+                      background: 'var(--chip)',
+                      border: 'none',
+                      borderRadius: '12px',
+                      padding: '4px 10px',
+                      fontSize: '11.5px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      color: 'var(--ink)'
+                    }}
+                  >
+                    {tpl.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <label className="enqu-form-label">Message Content</label>
             <textarea
               value={directMessageText}
@@ -1185,6 +1221,10 @@ export const PlayerAccountsDesk: React.FC = () => {
               className="enqu-modal-input"
               style={{ minHeight: '110px' }}
             />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+              <span style={{ fontSize: '11px', color: 'var(--mute)' }}>HTML formatting &amp; Telegram Markdown supported</span>
+              <span style={{ fontSize: '11.5px', color: 'var(--mute)', fontWeight: 600 }}>{directMessageText.length} chars</span>
+            </div>
 
             <div className="row" style={{ justifyContent: 'flex-end', marginTop: '20px', gap: '10px' }}>
               <button
@@ -1197,10 +1237,10 @@ export const PlayerAccountsDesk: React.FC = () => {
               <button
                 type="button"
                 className="enqu-btn-primary"
-                disabled={isSendingMessage || !directMessageText.trim()}
+                disabled={isSendingMessage || !directMessageText.trim() || !selectedDetails.telegramId}
                 onClick={handleSendMessage}
               >
-                {isSendingMessage ? 'Sending...' : 'Send message'}
+                {isSendingMessage ? 'Sending...' : 'Send Telegram Message'}
               </button>
             </div>
           </div>
