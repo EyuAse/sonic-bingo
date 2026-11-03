@@ -76,6 +76,29 @@ export function getAgentAuthHeader(): Record<string, string> {
 }
 
 export const apiClient = {
+  // Public Endpoints
+  public: {
+    async getBonusConfig() {
+      const res = await fetch(`${API_BASE}/public/bonus-config`);
+      return handleResponse<{
+        success: boolean;
+        regBonusEnabled: boolean;
+        regBonusAmount: number;
+        regBonusExpiresDays: number;
+        refBonusEnabled: boolean;
+        refBonusPercent: number;
+        refMinDeposit: number;
+        refMaxCap: number;
+        coinEarningEnabled: boolean;
+        coinEarningRate: number;
+        coinRedemptionCoinsPerBlock: number;
+        coinRedemptionRewardEtb: number;
+        coinRedemptionMinCoins: number;
+        coinCreditTarget: string;
+      }>(res);
+    }
+  },
+
   // 1. Authentication Endpoints
   auth: {
     async adminLogin(pin: string) {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext.tsx';
 import { getApiBase, LIVE_BACKEND_ORIGIN } from '../../config/env.ts';
 import { getAdminAuthHeader } from '../../services/apiClient.ts';
+import { useAdmin } from '../../context/AdminContext.tsx';
 
 interface BotStatus {
   isConnected: boolean;
@@ -64,13 +65,14 @@ export const TelegramBotDesk: React.FC = () => {
   } | null>(null);
 
   // Campaign Form State
+  const { registerBonus } = useAdmin();
   const [campaignTitle, setCampaignTitle] = useState<string>('Weekend 10,000 ETB Mega Pot Tournament! 🏆');
   const [bannerUrl, setBannerUrl] = useState<string>('');
   const [caption, setCaption] = useState<string>(
     '🎉 <b>Weekend Mega Pot Bingo Tournament!</b>\n\n' +
     '💰 Total prize: <b>10,000 ETB!</b>\n' +
     '⚡ Fast deposits by Telebirr and M-Pesa\n' +
-    '🎁 New players get <b>20 ETB free bonus!</b>\n\n' +
+    `🎁 New players get <b>${registerBonus} ETB free bonus!</b>\n\n` +
     'ይጫወቱ እና ያሸንፉ! (Play and win!)'
   );
   const [btnText, setBtnText] = useState<string>('🎮 Play Bingo Now');
@@ -82,7 +84,7 @@ export const TelegramBotDesk: React.FC = () => {
   const [welcomeGreeting, setWelcomeGreeting] = useState<string>(
     '👋 <b>Welcome to Sonic Bingo!</b> 👑🎁\n\n' +
     'Ethiopia’s #1 Live Real-Time Multiplayer Bingo in Telegram.\n' +
-    '💰 <b>20 ETB Free Welcome Bonus</b> for all new players!\n' +
+    `💰 <b>${registerBonus} ETB Free Welcome Bonus</b> for all new players!\n` +
     '⚡ Instant Cashier Deposits & Withdrawals via Telebirr and CBE.\n\n' +
     'Tap the button below to join live rooms now! 👇'
   );
@@ -100,18 +102,18 @@ export const TelegramBotDesk: React.FC = () => {
     {
       id: 'welcome',
       icon: '🎁',
-      name: '20 ETB Welcome Bonus',
+      name: `${registerBonus} ETB Welcome Bonus`,
       sub: 'Popular Gift · Amharic & English',
-      title: '🎁 20 ETB Welcome Bonus for New Players!',
+      title: `🎁 ${registerBonus} ETB Welcome Bonus for New Players!`,
       banner: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=800&auto=format&fit=crop&q=80',
       caption:
         '👋 <b>እንኳን ወደ ሶኒክ ቢንጎ በደህና መጡ!</b> 👑🎁\n' +
-        '<b>20 ETB Free Welcome Gift!</b>\n\n' +
-        '💰 አዲስ ለተመዘገቡ ተጫዋቾች <b>20 ETB ነፃ ቦነስ</b> ተዘጋጅቷል!\n' +
+        `<b>${registerBonus} ETB Free Welcome Gift!</b>\n\n` +
+        `💰 አዲስ ለተመዘገቡ ተጫዋቾች <b>${registerBonus} ETB ነፃ ቦነስ</b> ተዘጋጅቷል!\n` +
         '⚡ ፈጣን ተቀማጭ እና ወጪ ክፍያዎች በቴሌብር እና በሲቢኢ ብር\n' +
         '🎙️ የቀጥታ የድምፅ ጠሪ በአማርኛ እና በእንግሊዝኛ!\n\n' +
         'ካርቴላዎን አሁኑኑ ቆርጠው ይሸለሙ! 👇',
-      btn: '🎁 Claim 20 ETB Bonus'
+      btn: `🎁 Claim ${registerBonus} ETB Bonus`
     },
     {
       id: 'tournament',
@@ -124,7 +126,7 @@ export const TelegramBotDesk: React.FC = () => {
         '🎉 <b>Weekend Mega Pot Bingo Tournament!</b>\n\n' +
         '💰 Total prize: <b>10,000 ETB!</b>\n' +
         '⚡ Fast deposits by Telebirr and M-Pesa\n' +
-        '🎁 New players get <b>20 ETB free bonus!</b>\n\n' +
+        `🎁 New players get <b>${registerBonus} ETB free bonus!</b>\n\n` +
         'ይጫወቱ እና ያሸንፉ! (Play and win!)',
       btn: '🏆 Join Tournament Now'
     },
@@ -580,7 +582,7 @@ export const TelegramBotDesk: React.FC = () => {
                 {activePromo?.title || 'Weekend 10,000 ETB Mega Pot Tournament! 🏆'}
               </div>
               <div className="tr" style={{ fontSize: '13px', color: 'var(--mute)' }}>
-                Button: {activePromo?.buttonText || '🎮 Play Bingo Now & Get 20 ETB'}
+                Button: {activePromo?.buttonText || `🎮 Play Bingo Now & Get ${registerBonus} ETB`}
               </div>
             </div>
             <button

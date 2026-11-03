@@ -684,8 +684,21 @@ router.post('/deposits/:id/approve', requireAdmin, async (req: AuthenticatedRequ
         if (refRes.rows.length > 0) {
           const refRecord = refRes.rows[0];
           referrerId = refRecord.referrer_id;
-          // Calculate 10% flat bonus
-          referralBonusAmount = Math.round(amount * 0.10 * 100) / 100;
+          // Query dynamic referral bonus settings from bonus_reward_settings
+          const refSettingsRes = await client.query(
+            `SELECT ref_bonus_enabled, ref_bonus_percent, ref_min_deposit, ref_max_cap FROM bonus_reward_settings WHERE id = 1`
+          );
+          const refSettings = refSettingsRes.rows[0];
+          const isRefEnabled = refSettings ? refSettings.ref_bonus_enabled !== false : true;
+          const refPercent = refSettings ? parseFloat(refSettings.ref_bonus_percent || '10') : 10;
+          const refMinDeposit = refSettings ? parseFloat(refSettings.ref_min_deposit || '50') : 50;
+          const refMaxCap = refSettings ? parseFloat(refSettings.ref_max_cap || '500') : 500;
+
+          if (isRefEnabled && amount >= refMinDeposit) {
+            referralBonusAmount = Math.min(refMaxCap, Math.round(amount * (refPercent / 100) * 100) / 100);
+          } else {
+            referralBonusAmount = 0;
+          }
 
           if (referralBonusAmount > 0 && referrerId) {
             // Credit referrer's BONUS wallet (for gameplay only, non-withdrawable directly)
@@ -705,7 +718,7 @@ router.post('/deposits/:id/approve', requireAdmin, async (req: AuthenticatedRequ
                 referrerId,
                 referralBonusAmount,
                 refBonusRef,
-                `Referral Bonus (10% of friend's 1st deposit of ${amount.toFixed(2)} ETB) - Game Play Bonus`
+                `Referral Bonus (${refPercent}% of friend's 1st deposit of ${amount.toFixed(2)} ETB) - Game Play Bonus`
               ]
             );
 
@@ -718,7 +731,7 @@ router.post('/deposits/:id/approve', requireAdmin, async (req: AuthenticatedRequ
             );
 
             referralBonusPaid = true;
-            console.log(`🎁 [Referral Bonus] Credited 10% (${referralBonusAmount} ETB) bonus to referrer ${referrerId}`);
+            console.log(`🎁 [Referral Bonus] Credited ${refPercent}% (${referralBonusAmount} ETB) bonus to referrer ${referrerId}`);
           }
         }
       }

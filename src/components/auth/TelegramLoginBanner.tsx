@@ -105,8 +105,8 @@ export const TelegramLoginBanner: React.FC<TelegramLoginBannerProps> = ({ onSucc
                   : 'Connecting to Telegram...'
                 : !isExistingAccount
                 ? lang === 'am'
-                  ? '🎁 በቴሌግራም ተመዝገብ (+20 ETB)'
-                  : '🎁 Register via Telegram (+20 ETB)'
+                  ? `🎁 በቴሌግራም ተመዝገብ (+${registerBonus} ETB)`
+                  : `🎁 Register via Telegram (+${registerBonus} ETB)`
                 : isInsideTelegram && telegramUser
                 ? lang === 'am'
                   ? `እንደ ${displayName} ግባ ⚡`
@@ -118,8 +118,8 @@ export const TelegramLoginBanner: React.FC<TelegramLoginBannerProps> = ({ onSucc
             <span className="tg-btn-user-sub">
               {!isExistingAccount
                 ? lang === 'am'
-                  ? 'አዲስ መለያ ይፍጠሩ እና 20 ብር ነፃ ቦነስ ያግኙ'
-                  : 'Instant registration • +20 ETB Free Welcome Bonus'
+                  ? `አዲስ መለያ ይፍጠሩ እና ${registerBonus} ብር ነፃ ቦነስ ያግኙ`
+                  : `Instant registration • +${registerBonus} ETB Free Welcome Bonus`
                 : isInsideTelegram
                 ? lang === 'am'
                   ? 'የተረጋገጠ መለያዎን ይቀጥሉ'
@@ -130,7 +130,7 @@ export const TelegramLoginBanner: React.FC<TelegramLoginBannerProps> = ({ onSucc
             </span>
           </div>
           <div className="tg-btn-free-badge">
-            <span>{!isExistingAccount ? '+20 ETB' : 'LOGIN'}</span>
+            <span>{!isExistingAccount ? `+${registerBonus} ETB` : 'LOGIN'}</span>
           </div>
         </button>
 

@@ -182,21 +182,36 @@ router.post('/telegram', async (req, res) => {
           console.log(`🎁 [Referral Link] User ${newUser.id} attributed to referrer ${referrerId}`);
         }
 
-        // Create Wallet with 20 ETB Welcome Bonus (Sonic Bingo Requirements)
+        // Query dynamic registration bonus settings from database
+        const bonusSettingsRes = await client.query(
+          `SELECT reg_bonus_enabled, reg_bonus_amount FROM bonus_reward_settings WHERE id = 1`
+        );
+        const bonusSettings = bonusSettingsRes.rows[0];
+        const isRegBonusEnabled = bonusSettings ? bonusSettings.reg_bonus_enabled !== false : true;
+        const dynamicRegBonus = isRegBonusEnabled ? parseFloat(bonusSettings?.reg_bonus_amount || '20.00') : 0.00;
+
+        // Create Wallet with dynamic Welcome Bonus (Configured via Admin Bonus Settings)
         const newWalletRes = await client.query(
           `INSERT INTO wallets (user_id, balance, bonus, locked_balance)
-           VALUES ($1, 0.00, 20.00, 0.00)
+           VALUES ($1, 0.00, $2, 0.00)
            RETURNING *`,
-          [newUser.id]
+          [newUser.id, dynamicRegBonus]
         );
         const newWallet = newWalletRes.rows[0];
 
-        // Record Welcome Bonus Ledger Transaction
-        await client.query(
-          `INSERT INTO wallet_transactions (user_id, type, amount, balance_after, reference_code, status, payment_method, description)
-           VALUES ($1, 'bonus', 20.00, 20.00, $2, 'completed', 'welcome_reward', 'Sonic Bingo 20 ETB Registration Bonus')`,
-          [newUser.id, `BONUS-TG-${tgIdNum}-${Date.now().toString().slice(-6)}`]
-        );
+        // Record Welcome Bonus Ledger Transaction if bonus > 0
+        if (dynamicRegBonus > 0) {
+          await client.query(
+            `INSERT INTO wallet_transactions (user_id, type, amount, balance_after, reference_code, status, payment_method, description)
+             VALUES ($1, 'bonus', $2, $2, $3, 'completed', 'welcome_reward', $4)`,
+            [
+              newUser.id,
+              dynamicRegBonus,
+              `BONUS-TG-${tgIdNum}-${Date.now().toString().slice(-6)}`,
+              `Sonic Bingo ${dynamicRegBonus.toFixed(2)} ETB Registration Bonus`
+            ]
+          );
+        }
 
         // Initialize Coin Wallet (Loyalty System)
         await client.query(
@@ -330,19 +345,34 @@ router.post('/register', async (req, res) => {
         console.log(`🎁 [Referral Link Web] User ${newUser.id} attributed to referrer ${referrerId}`);
       }
 
+      // Query dynamic registration bonus settings from database
+      const bonusSettingsRes = await client.query(
+        `SELECT reg_bonus_enabled, reg_bonus_amount FROM bonus_reward_settings WHERE id = 1`
+      );
+      const bonusSettings = bonusSettingsRes.rows[0];
+      const isRegBonusEnabled = bonusSettings ? bonusSettings.reg_bonus_enabled !== false : true;
+      const dynamicRegBonus = isRegBonusEnabled ? parseFloat(bonusSettings?.reg_bonus_amount || '20.00') : 0.00;
+
       const newWalletRes = await client.query(
         `INSERT INTO wallets (user_id, balance, bonus, locked_balance)
-         VALUES ($1, 0.00, 20.00, 0.00)
+         VALUES ($1, 0.00, $2, 0.00)
          RETURNING *`,
-        [newUser.id]
+        [newUser.id, dynamicRegBonus]
       );
       const newWallet = newWalletRes.rows[0];
 
-      await client.query(
-        `INSERT INTO wallet_transactions (user_id, type, amount, balance_after, reference_code, status, payment_method, description)
-         VALUES ($1, 'bonus', 20.00, 20.00, $2, 'completed', 'welcome_reward', 'Sonic Bingo 20 ETB Registration Bonus')`,
-        [newUser.id, `BONUS-WEB-${Date.now().toString().slice(-6)}`]
-      );
+      if (dynamicRegBonus > 0) {
+        await client.query(
+          `INSERT INTO wallet_transactions (user_id, type, amount, balance_after, reference_code, status, payment_method, description)
+           VALUES ($1, 'bonus', $2, $2, $3, 'completed', 'welcome_reward', $4)`,
+          [
+            newUser.id,
+            dynamicRegBonus,
+            `BONUS-WEB-${Date.now().toString().slice(-6)}`,
+            `Sonic Bingo ${dynamicRegBonus.toFixed(2)} ETB Registration Bonus`
+          ]
+        );
+      }
 
       // Initialize Coin Wallet (Loyalty System)
       await client.query(

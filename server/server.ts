@@ -278,6 +278,33 @@ app.use('/api/admin', adminRouter);
 app.use('/api/admin/telegram', telegramBotRouter);
 app.use('/api/telegram', telegramBotRouter);
 
+// Public endpoint for live dynamic bonus & reward configuration
+app.get('/api/public/bonus-config', async (_req, res) => {
+  try {
+    const r = await query(`SELECT * FROM bonus_reward_settings WHERE id = 1`);
+    const s = r.rows[0] || {};
+    return res.json({
+      success: true,
+      regBonusEnabled: Boolean(s.reg_bonus_enabled),
+      regBonusAmount: parseFloat(s.reg_bonus_amount || '20'),
+      regBonusExpiresDays: parseInt(s.reg_bonus_expires_days || '0', 10),
+      refBonusEnabled: Boolean(s.ref_bonus_enabled),
+      refBonusPercent: parseFloat(s.ref_bonus_percent || '10'),
+      refMinDeposit: parseFloat(s.ref_min_deposit || '50'),
+      refMaxCap: parseFloat(s.ref_max_cap || '500'),
+      coinEarningEnabled: Boolean(s.coin_earning_enabled),
+      coinEarningRate: parseFloat(s.coin_earning_rate || '1.5'),
+      coinRedemptionCoinsPerBlock: parseInt(s.coin_redemption_coins_per_block || '1000', 10),
+      coinRedemptionRewardEtb: parseFloat(s.coin_redemption_reward_etb || '10'),
+      coinRedemptionMinCoins: parseInt(s.coin_redemption_min_coins || '1000', 10),
+      coinCreditTarget: s.coin_credit_target || 'Bonus wallet'
+    });
+  } catch (err: any) {
+    console.error('❌ [Public Bonus Config Error]:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch bonus config' });
+  }
+});
+
 // Public Inbound Telegram Webhook aliases (accepts /api/telegram-webhook, /api/telegram/webhook, /telegram-webhook)
 app.post(['/api/telegram-webhook', '/api/telegram/webhook', '/telegram-webhook'], async (req, res) => {
   try {

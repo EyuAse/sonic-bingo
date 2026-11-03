@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../services/apiClient.ts';
+import { useAdmin } from '../../context/AdminContext.tsx';
 import { TelebirrLogo, CBELogo, MpesaLogo } from '../wallet/PaymentLogos.tsx';
 
 interface AgentProfileDeskProps {
@@ -15,6 +16,7 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
   onRefreshProfile,
   onNavigateTab
 }) => {
+  const { registerBonus } = useAdmin();
   // Security PIN State
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
@@ -425,12 +427,12 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
                   color: '#b45309'
                 }}
               >
-                +20 ETB Player Bonus
+                +{registerBonus} ETB Player Bonus
               </span>
             </div>
 
             <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.5, margin: '0 0 18px 0' }}>
-              Display this official QR code at your shop counter. When players scan, they are instantly registered to your agency and receive a <strong>20 ETB bonus</strong>! You earn lifetime commissions on all tickets.
+              Display this official QR code at your shop counter. When players scan, they are instantly registered to your agency and receive a <strong>{registerBonus} ETB bonus</strong>! You earn lifetime commissions on all tickets.
             </p>
 
             {/* High-Res QR Code Frame */}

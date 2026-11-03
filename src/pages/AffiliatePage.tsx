@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useWallet } from '../context/WalletContext.tsx';
 import { useLanguage } from '../context/LanguageContext.tsx';
+import { useAdmin } from '../context/AdminContext.tsx';
 import { telegramService } from '../services/telegramService.ts';
 import { apiClient } from '../services/apiClient.ts';
 
@@ -22,6 +23,7 @@ export const AffiliatePage: React.FC = () => {
   const { user } = useAuth();
   const { balance, bonus, coins, redeemCoins } = useWallet();
   const { lang } = useLanguage();
+  const { registerBonus, referralBonusRate } = useAdmin();
 
   const [isRedeemingCoins, setIsRedeemingCoins] = useState(false);
 
@@ -116,7 +118,7 @@ export const AffiliatePage: React.FC = () => {
   const handleInviteTelegramFriends = () => {
     telegramService.triggerHaptic('medium');
     const shareText = encodeURIComponent(
-      `⚡ Join me on Sonic Bingo! Get 20 ETB Free Welcome Bonus to play live 75-Ball Express Bingo with instant Telebirr payouts! 🎁💰\n\nPlay here:`
+      `⚡ Join me on Sonic Bingo! Get ${registerBonus} ETB Free Welcome Bonus to play live 75-Ball Express Bingo with instant Telebirr payouts! 🎁💰\n\nPlay here:`
     );
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${shareText}`;
     telegramService.openTelegramLink(shareUrl);
@@ -305,13 +307,13 @@ export const AffiliatePage: React.FC = () => {
                 }}
               >
                 {lang === 'am' ? 'ጓደኞችን ይጋብዙና ' : 'Invite Friends & '}
-                <span style={{ color: '#16a34a' }}>{lang === 'am' ? '10% ቦነስ ያግኙ!' : 'Earn 10% Bonus!'}</span>
+                <span style={{ color: '#16a34a' }}>{lang === 'am' ? `${referralBonusRate}% ቦነስ ያግኙ!` : `Earn ${referralBonusRate}% Bonus!`}</span>
               </h1>
 
               <p style={{ fontSize: '12px', color: '#475569', margin: 0, lineHeight: '1.4', fontWeight: '500' }}>
                 {lang === 'am'
-                  ? 'የሚጋብዙት ሰው ለመጀመሪያ ጊዜ ካስገባው ገንዘብ 10% የአንድ ጊዜ ቦነስ ያግኙ! ቦነሱ ለቢንጎ ጨዋታ የሚውል ሲሆን ያሸነፉትን ማውጣት ይችላሉ።'
-                  : "Earn a 10% bonus on your friend's first deposit! Credited strictly for gameplay — all winnings are 100% withdrawable cash."}
+                  ? `የሚጋብዙት ሰው ለመጀመሪያ ጊዜ ካስገባው ገንዘብ ${referralBonusRate}% የአንድ ጊዜ ቦነስ ያግኙ! ቦነሱ ለቢንጎ ጨዋታ የሚውል ሲሆን ያሸነፉትን ማውጣት ይችላሉ።`
+                  : `Earn a ${referralBonusRate}% bonus on your friend's first deposit! Credited strictly for gameplay — all winnings are 100% withdrawable cash.`}
               </p>
             </div>
 
@@ -393,7 +395,7 @@ export const AffiliatePage: React.FC = () => {
               flexShrink: 0
             }}
           >
-            10% BONUS
+            {referralBonusRate}% BONUS
           </span>
         </button>
 
@@ -513,7 +515,7 @@ export const AffiliatePage: React.FC = () => {
             </strong>
 
             <div style={{ fontSize: '22px', fontWeight: '900', color: '#16a34a', letterSpacing: '-0.3px' }}>
-              10% BONUS
+              {referralBonusRate}% BONUS
             </div>
 
             <span style={{ fontSize: '11px', color: '#64748b' }}>
@@ -683,7 +685,7 @@ export const AffiliatePage: React.FC = () => {
           <span>
             {lang === 'am'
               ? 'ቦነሱ ለጨዋታ መጫወቻ የሚውል ሲሆን (ወዲያውኑ አይወጣም)፣ በጨዋታ ያሸነፉትን ግን 100% ሙሉ በሙሉ ማውጣት ይችላሉ!'
-              : "Referral bonus (10%) is strictly for gameplay and cannot be withdrawn directly. All winnings from playing are 100% withdrawable cash!"}
+              : `Referral bonus (${referralBonusRate}%) is strictly for gameplay and cannot be withdrawn directly. All winnings from playing are 100% withdrawable cash!`}
           </span>
         </div>
 
@@ -724,8 +726,8 @@ export const AffiliatePage: React.FC = () => {
               </div>
               <div style={{ fontSize: '11.5px', color: '#64748b', maxWidth: '280px', margin: '0 auto' }}>
                 {lang === 'am'
-                  ? 'የእርስዎን ሊንክ ለጓደኞችዎ ያጋሩ፤ ለመጀመሪያ ጊዜ ሲያስገቡ 10% ቦነስ ያግኙ!'
-                  : 'Share your invite link above. When friends register and make their first deposit, you instantly receive 10% in your game bonus!'}
+                  ? `የእርስዎን ሊንክ ለጓደኞችዎ ያጋሩ፤ ለመጀመሪያ ጊዜ ሲያስገቡ ${referralBonusRate}% ቦነስ ያግኙ!`
+                  : `Share your invite link above. When friends register and make their first deposit, you instantly receive ${referralBonusRate}% in your game bonus!`}
               </div>
             </div>
           ) : (
@@ -780,7 +782,7 @@ export const AffiliatePage: React.FC = () => {
                           +{friend.bonusEarned.toFixed(2)} ETB
                         </div>
                         <span style={{ fontSize: '10px', color: '#15803d', background: '#dcfce7', padding: '2px 8px', borderRadius: '999px', fontWeight: '700' }}>
-                          {lang === 'am' ? 'ተከፍሏል (10%)' : 'Rewarded (10%)'}
+                          {lang === 'am' ? `ተከፍሏል (${referralBonusRate}%)` : `Rewarded (${referralBonusRate}%)`}
                         </span>
                       </>
                     ) : (
@@ -789,7 +791,7 @@ export const AffiliatePage: React.FC = () => {
                           {lang === 'am' ? 'ተቀማጭ ይጠበቃል' : 'Waiting 1st Deposit'}
                         </div>
                         <span style={{ fontSize: '10px', color: '#b45309', background: '#fef3c7', padding: '2px 8px', borderRadius: '999px', fontWeight: '700' }}>
-                          {lang === 'am' ? '10% ቦነስ' : '10% Pending'}
+                          {lang === 'am' ? `${referralBonusRate}% ቦነስ` : `${referralBonusRate}% Pending`}
                         </span>
                       </>
                     )}

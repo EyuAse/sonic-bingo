@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAdmin } from '../../context/AdminContext';
 import { telegramService } from '../../services/telegramService';
 
 interface BlumOnboardingCarouselProps {
@@ -14,6 +15,7 @@ export const BlumOnboardingCarousel: React.FC<BlumOnboardingCarouselProps> = ({
   onSkip
 }) => {
   const { lang } = useLanguage();
+  const { registerBonus } = useAdmin();
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const slides = [
@@ -80,18 +82,18 @@ export const BlumOnboardingCarousel: React.FC<BlumOnboardingCarouselProps> = ({
     {
       id: 2,
       badge: lang === 'am' ? '🎁 👑 የነፃ መመዝገቢያ ስጦታ' : '🎁 👑 STARTER REWARD PACK',
-      title1: lang === 'am' ? 'በ20 ብር ቦነስ ይጀምሩ' : 'Start With 20 ETB',
+      title1: lang === 'am' ? `በ${registerBonus} ብር ቦነስ ይጀምሩ` : `Start With ${registerBonus} ETB`,
       title2: lang === 'am' ? 'ያለ ምንም ቅድመ ክፍያ' : 'Zero Deposit Needed',
       sub: lang === 'am'
-        ? 'በቴሌግራም በአንድ ንክኪ ይመዝገቡና የ20 ብር ነፃ ቦነስዎን ወዲያውኑ ተቀብለው ይጫወቱ!'
-        : 'Create account in 1-tap via Telegram and claim 20 ETB welcome bonus now.',
+        ? `በቴሌግራም በአንድ ንክኪ ይመዝገቡና የ${registerBonus} ብር ነፃ ቦነስዎን ወዲያውኑ ተቀብለው ይጫወቱ!`
+        : `Create account in 1-tap via Telegram and claim ${registerBonus} ETB welcome bonus now.`,
       art: '/assets/images/sonic-hero-75-vip.jpg',
       features: [
         {
           icon: '🎁',
           iconBg: '#fef9c3',
-          title: lang === 'am' ? 'የ20 ብር ነፃ ስጦታ' : 'Free Starter Pack',
-          desc: lang === 'am' ? '+20.00 ብር ቦነስ ወደ ቦርሳዎ ገቢ ይሆናል' : '+20.00 ETB added directly to wallet'
+          title: lang === 'am' ? `የ${registerBonus} ብር ነፃ ስጦታ` : 'Free Starter Pack',
+          desc: lang === 'am' ? `+${registerBonus.toFixed(2)} ብር ቦነስ ወደ ቦርሳዎ ገቢ ይሆናል` : `+${registerBonus.toFixed(2)} ETB added directly to wallet`
         },
         {
           icon: '⚡',
@@ -369,8 +371,8 @@ export const BlumOnboardingCarousel: React.FC<BlumOnboardingCarouselProps> = ({
                   ? 'በመግባት ላይ...'
                   : 'Connecting...'
                 : lang === 'am'
-                ? '🎁 የ20 ብር ቦነስዎን ተቀብለው ይጫወቱ ➔'
-                : '🎁 Claim 20 ETB Bonus & Play ➔'}
+                ? `🎁 የ${registerBonus} ብር ቦነስዎን ተቀብለው ይጫወቱ ➔`
+                : `🎁 Claim ${registerBonus} ETB Bonus & Play ➔`}
             </span>
           ) : (
             <>

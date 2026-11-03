@@ -185,7 +185,7 @@ export const LandingPage: React.FC = () => {
               </div>
               <div className="vip-bonus-text-content">
                 <span className="vip-promo-lbl">{lang === 'am' ? 'የነፃ መመዝገቢያ ስጦታ' : 'FREE SIGN UP BONUS'}</span>
-                <div className="vip-bonus-huge">+20.00 ETB</div>
+                <div className="vip-bonus-huge">+{registerBonus.toFixed(2)} ETB</div>
                 <div className="vip-bonus-divider">
                   <span className="vip-divider-line"></span>
                   <span className="vip-divider-text">{lang === 'am' ? 'ቦነስ' : 'BONUS'}</span>

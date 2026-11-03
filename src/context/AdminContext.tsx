@@ -288,6 +288,45 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [registerBonus, setRegisterBonus] = useState<number>(20);
   const [referralBonusRate, setReferralBonusRate] = useState<number>(10);
 
+  // Load dynamic bonus settings from Neon DB & listen for live admin updates
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLiveBonusConfig = async () => {
+      try {
+        const res = await apiClient.public.getBonusConfig();
+        if (isMounted && res && res.success) {
+          if (typeof res.regBonusAmount === 'number') {
+            setRegisterBonus(res.regBonusAmount);
+          }
+          if (typeof res.refBonusPercent === 'number') {
+            setReferralBonusRate(res.refBonusPercent);
+          }
+        }
+      } catch (err) {
+        // Fallback remains active
+      }
+    };
+
+    fetchLiveBonusConfig();
+
+    const handleBonusSettingsUpdated = (data: any) => {
+      if (data) {
+        if (typeof data.regBonusAmount === 'number') {
+          setRegisterBonus(data.regBonusAmount);
+        }
+        if (typeof data.refBonusPercent === 'number') {
+          setReferralBonusRate(data.refBonusPercent);
+        }
+      }
+    };
+
+    const unsubscribe = socketService.on('bonus_settings_updated', handleBonusSettingsUpdated);
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
+
   // 50-Player Room Density & Win Rates
   const [simulatedPlayerCount, setSimulatedPlayerCount] = useState<number>(50);
   const [botWinRate, setBotWinRateState] = useState<number>(30);

@@ -35,7 +35,7 @@ adminRewardsRouter.get('/kpis', requireAdmin, async (_req: AuthenticatedRequest,
         JOIN users u ON cw.user_id = u.id
         WHERE u.role = 'player' AND (u.is_bot IS NULL OR u.is_bot = false)
       `),
-      // Pending Redemptions
+      // Pending Redemptions (0 if table is clean)
       query(`
         SELECT 
           COUNT(*) as pending_count,
@@ -43,11 +43,12 @@ adminRewardsRouter.get('/kpis', requireAdmin, async (_req: AuthenticatedRequest,
         FROM coin_redemptions
         WHERE status = 'pending'
       `),
-      // Rewards Paid Total (Approved redemptions + Paid bonus winners)
+      // Rewards Paid Total (100% Real from wallet_transactions where type = 'bonus')
       query(`
         SELECT 
-          COALESCE((SELECT SUM(reward_amount) FROM coin_redemptions WHERE status = 'approved'), 0) +
-          COALESCE((SELECT SUM(prize_amount) FROM bonus_winners WHERE status = 'paid'), 0) as total_paid
+          COALESCE(SUM(amount), 0) as total_paid
+        FROM wallet_transactions
+        WHERE type = 'bonus' AND status = 'completed'
       `)
     ]);
 
@@ -241,6 +242,23 @@ adminRewardsRouter.post('/settings', requireAdmin, async (req: AuthenticatedRequ
       INSERT INTO bonus_rule_audit_logs (admin_username, change_description, created_at)
       VALUES ($1, $2, NOW())
     `, ['Admin', changesSummary]);
+
+    // Real-time broadcast to all clients so UI updates instantly
+    io.emit('bonus_settings_updated', {
+      regBonusEnabled: Boolean(regBonusEnabled),
+      regBonusAmount: numRegAmount,
+      regBonusExpiresDays: isNaN(numRegDays) ? 0 : numRegDays,
+      refBonusEnabled: Boolean(refBonusEnabled),
+      refBonusPercent: numRefPercent,
+      refMinDeposit: isNaN(numRefMin) ? 50 : numRefMin,
+      refMaxCap: isNaN(numRefMax) ? 500 : numRefMax,
+      coinEarningEnabled: Boolean(coinEarningEnabled),
+      coinEarningRate: numCoinRate,
+      coinRedemptionCoinsPerBlock: numRedCoins,
+      coinRedemptionRewardEtb: numRedEtb,
+      coinRedemptionMinCoins: isNaN(numRedMin) ? 1000 : numRedMin,
+      coinCreditTarget: creditTarget
+    });
 
     return res.json({
       success: true,
@@ -647,25 +665,30 @@ adminRewardsRouter.post('/redemptions/:id/reject', requireAdmin, async (req: Aut
  */
 adminRewardsRouter.get('/winners', requireAdmin, async (_req: AuthenticatedRequest, res: Response) => {
   try {
+    // 100% Real bonus winner records from wallet_transactions (Registration bonuses, Referral bonuses, Coin rewards)
     const winRes = await query(`
       SELECT 
-        bw.id,
-        bw.user_id,
+        wt.id,
+        wt.user_id,
         u.full_name,
         u.phone,
         u.telegram_username,
         u.telegram_id,
-        bw.promotion_name,
-        bw.prize_amount,
-        bw.status,
-        bw.paid_by,
-        bw.paid_at,
-        bw.created_at
-      FROM bonus_winners bw
-      JOIN users u ON bw.user_id = u.id
-      ORDER BY 
-        CASE WHEN bw.status = 'pending' THEN 0 ELSE 1 END,
-        bw.created_at DESC
+        CASE 
+          WHEN wt.payment_method = 'welcome_reward' THEN 'Welcome Registration Bonus'
+          WHEN wt.payment_method = 'referral_reward' THEN 'Referral Commission Bonus'
+          WHEN wt.payment_method = 'coin_reward' THEN 'Coin Exchange Reward'
+          ELSE COALESCE(wt.description, 'Promotional Bonus')
+        END as promotion_name,
+        wt.amount as prize_amount,
+        'paid' as status,
+        'System' as paid_by,
+        wt.created_at as paid_at,
+        wt.created_at
+      FROM wallet_transactions wt
+      JOIN users u ON wt.user_id = u.id
+      WHERE wt.type = 'bonus'
+      ORDER BY wt.created_at DESC
       LIMIT 50
     `);
 
@@ -675,9 +698,9 @@ adminRewardsRouter.get('/winners', requireAdmin, async (_req: AuthenticatedReque
         id: w.id,
         userId: w.user_id,
         winnerName: w.full_name || 'Player',
-        phone: w.phone || `09${String(w.telegram_id || '').slice(-8)}`,
+        phone: w.phone || (w.telegram_id ? `09${String(w.telegram_id).slice(-8)}` : 'Direct'),
         promotionName: w.promotion_name,
-        prizeAmount: parseFloat(w.prize_amount),
+        prizeAmount: parseFloat(w.prize_amount || '0'),
         status: w.status,
         paidBy: w.paid_by,
         paidAt: w.paid_at,

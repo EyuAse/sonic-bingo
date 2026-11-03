@@ -30,7 +30,7 @@ export class CoinService {
 
   /**
    * Award Coins on Approved Deposit
-   * Rate: 1.5 coins per 1 ETB eligible deposit (e.g. 50 ETB -> 75 coins)
+   * Dynamically loads rate from bonus_reward_settings (default 1.5x)
    */
   public async awardCoinsForDeposit(
     userId: string,
@@ -38,12 +38,24 @@ export class CoinService {
     transactionRef?: string,
     dbClient?: any
   ): Promise<{ coinsAwarded: number; newBalance: number }> {
-    const coinsAwarded = Math.floor(depositAmount * 1.5);
-    if (coinsAwarded <= 0) {
+    const runner = dbClient || { query };
+
+    // Query dynamic coin earning rules from database
+    const settingsRes = await runner.query(
+      `SELECT coin_earning_enabled, coin_earning_rate FROM bonus_reward_settings WHERE id = 1`
+    );
+    const s = settingsRes.rows[0];
+    const isEarningEnabled = s ? s.coin_earning_enabled !== false : true;
+    const rate = s ? parseFloat(s.coin_earning_rate || '1.5') : 1.5;
+
+    if (!isEarningEnabled || rate <= 0) {
       return { coinsAwarded: 0, newBalance: 0 };
     }
 
-    const runner = dbClient || { query };
+    const coinsAwarded = Math.floor(depositAmount * rate);
+    if (coinsAwarded <= 0) {
+      return { coinsAwarded: 0, newBalance: 0 };
+    }
 
     // Upsert coin wallet
     const walletRes = await runner.query(
@@ -68,7 +80,7 @@ export class CoinService {
         coinsAwarded,
         newBalance,
         transactionRef || null,
-        `Earned ${coinsAwarded} coins from ${depositAmount.toFixed(2)} ETB deposit (1.5x rate)`
+        `Earned ${coinsAwarded} coins from ${depositAmount.toFixed(2)} ETB deposit (${rate}x rate)`
       ]
     );
 
@@ -89,9 +101,8 @@ export class CoinService {
   }
 
   /**
-   * Redeem Coins for Game Bonus Balance
-   * Rate: 1,000 coins = 10.00 ETB Bonus
-   * Must be redeemed in multiples of 1,000 coins (1000, 2000, 3000, etc.)
+   * Redeem Coins for Game Bonus or Withdrawable Balance
+   * Dynamically loads conversion block size and target wallet from bonus_reward_settings
    */
   public async redeemCoinsForBonus(
     userId: string,
@@ -104,14 +115,24 @@ export class CoinService {
     newCoinBalance?: number;
     newBonusBalance?: number;
   }> {
-    if (coinsToRedeem < 1000 || coinsToRedeem % 1000 !== 0) {
+    // Query dynamic redemption rules
+    const settingsRes = await query(
+      `SELECT coin_redemption_coins_per_block, coin_redemption_reward_etb, coin_redemption_min_coins, coin_credit_target FROM bonus_reward_settings WHERE id = 1`
+    );
+    const s = settingsRes.rows[0] || {};
+    const coinsPerBlock = parseInt(s.coin_redemption_coins_per_block || '1000', 10);
+    const rewardPerBlock = parseFloat(s.coin_redemption_reward_etb || '10');
+    const minCoins = parseInt(s.coin_redemption_min_coins || '1000', 10);
+    const isWithdrawable = s.coin_credit_target === 'Withdrawable wallet';
+
+    if (coinsToRedeem < minCoins || coinsToRedeem % coinsPerBlock !== 0) {
       return {
         success: false,
-        error: 'Coins must be redeemed in increments of 1,000 (1,000 coins = 10 ETB)'
+        error: `Coins must be redeemed in increments of ${coinsPerBlock.toLocaleString()} (${coinsPerBlock.toLocaleString()} coins = ${rewardPerBlock} ETB)`
       };
     }
 
-    const bonusAmount = (coinsToRedeem / 1000) * 10.00;
+    const bonusAmount = (coinsToRedeem / coinsPerBlock) * rewardPerBlock;
 
     try {
       const result = await withTransaction(async (client) => {
@@ -142,14 +163,12 @@ export class CoinService {
         );
         const newCoinBalance = parseInt(updatedCoinsRes.rows[0].balance, 10);
 
-        // 3. Credit user's BONUS wallet
-        const updatedWalletRes = await client.query(
-          `UPDATE wallets 
-           SET bonus = bonus + $1, updated_at = NOW() 
-           WHERE user_id = $2 
-           RETURNING balance, bonus`,
-          [bonusAmount, userId]
-        );
+        // 3. Credit target wallet (withdrawable balance or bonus)
+        const updateWalletSql = isWithdrawable
+          ? `UPDATE wallets SET balance = balance + $1, updated_at = NOW() WHERE user_id = $2 RETURNING balance, bonus`
+          : `UPDATE wallets SET bonus = bonus + $1, updated_at = NOW() WHERE user_id = $2 RETURNING balance, bonus`;
+
+        const updatedWalletRes = await client.query(updateWalletSql, [bonusAmount, userId]);
         const newBonusBalance = parseFloat(updatedWalletRes.rows[0].bonus);
         const realBalance = parseFloat(updatedWalletRes.rows[0].balance);
 
@@ -164,20 +183,21 @@ export class CoinService {
             -coinsToRedeem,
             newCoinBalance,
             refCode,
-            `Redeemed ${coinsToRedeem} coins for ${bonusAmount.toFixed(2)} ETB Bonus`
+            `Redeemed ${coinsToRedeem} coins for ${bonusAmount.toFixed(2)} ETB (${isWithdrawable ? 'Withdrawable' : 'Bonus'})`
           ]
         );
 
         // 5. Log to wallet_transactions
         await client.query(
           `INSERT INTO wallet_transactions (user_id, type, amount, balance_after, reference_code, status, payment_method, description)
-           VALUES ($1, 'bonus', $2, $3, $4, 'completed', 'coin_reward', $5)`,
+           VALUES ($1, $2, $3, $4, $5, 'completed', 'coin_reward', $6)`,
           [
             userId,
+            isWithdrawable ? 'deposit' : 'bonus',
             bonusAmount,
-            realBalance + newBonusBalance,
+            isWithdrawable ? realBalance : newBonusBalance,
             refCode,
-            `Coin Reward: Exchanged ${coinsToRedeem} coins for ${bonusAmount.toFixed(2)} ETB game play bonus`
+            `Coin Reward: Exchanged ${coinsToRedeem} coins for ${bonusAmount.toFixed(2)} ETB (${isWithdrawable ? 'Withdrawable' : 'Bonus'})`
           ]
         );
 
