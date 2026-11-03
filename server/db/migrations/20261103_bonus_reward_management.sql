@@ -75,3 +75,4 @@ CREATE TABLE IF NOT EXISTS bonus_winners (
 CREATE INDEX IF NOT EXISTS idx_bonus_winners_user ON bonus_winners(user_id);
 CREATE INDEX IF NOT EXISTS idx_bonus_winners_status ON bonus_winners(status);
 CREATE INDEX IF NOT EXISTS idx_bonus_winners_created ON bonus_winners(created_at DESC);
+

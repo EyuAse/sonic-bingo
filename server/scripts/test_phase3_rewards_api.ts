@@ -123,3 +123,4 @@ testPhase3()
     console.error('❌ Phase 3 test failed:', err);
     process.exit(1);
   });
+
