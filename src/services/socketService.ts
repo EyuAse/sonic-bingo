@@ -109,15 +109,34 @@ class SocketService {
     });
   }
 
-    public setAuthenticatedUser(userId: string | null, userName?: string | null) {
+  public setAuthenticatedUser(userId: string | null, userName?: string | null) {
     this.currentUserId = userId;
     this.currentUserName = userName || 'Sonic Player';
-    if (this.socket && this.socket.connected && userId) {
-      this.socket.emit('identify_user', {
-        userId,
+
+    if (this.socket) {
+      (this.socket as any).auth = {
+        userId: this.currentUserId,
         userName: this.currentUserName
-      });
-      console.log('🔌 [SocketService] Identified user:', userId);
+      };
+
+      if (this.socket.connected && userId) {
+        this.socket.emit('identify_user', {
+          userId,
+          userName: this.currentUserName
+        });
+        console.log('🔌 [SocketService] Identified user to active socket:', userId);
+      } else if (userId) {
+        // Ensure identify_user is dispatched as soon as socket connects
+        this.socket.once('connect', () => {
+          if (this.currentUserId === userId) {
+            this.socket?.emit('identify_user', {
+              userId,
+              userName: this.currentUserName
+            });
+            console.log('🔌 [SocketService] Identified user on newly connected socket:', userId);
+          }
+        });
+      }
     }
   }
 

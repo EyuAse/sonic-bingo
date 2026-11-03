@@ -120,23 +120,48 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setSuspensionNotice(null);
   };
 
-  // Real-time Account Suspension Listener
+  // Real-time Account Suspension & Socket User Binding
   useEffect(() => {
+    if (user?.id) {
+      socketService.setAuthenticatedUser(user.id, user.fullName);
+      socketService.connect();
+    }
+
     const handleSuspended = (data: any) => {
       console.warn('🚫 [AuthContext] Real-time Account Suspension received:', data);
       const reason = data?.reason || 'Account under compliance review';
       setSuspensionNotice({ reason });
-      setUser(prev => prev ? ({ ...prev, status: 'suspended' }) : null);
+      setUser(prev => {
+        if (!prev) return null;
+        const updated = { ...prev, status: 'suspended' as const };
+        localStorage.setItem('sonic_user', JSON.stringify(updated));
+        return updated;
+      });
     };
 
     const handleActivated = () => {
       console.log('✅ [AuthContext] Account Reactivated received');
       setSuspensionNotice(null);
-      setUser(prev => prev ? ({ ...prev, status: 'active' }) : null);
+      setUser(prev => {
+        if (!prev) return null;
+        const updated = { ...prev, status: 'active' as const };
+        localStorage.setItem('sonic_user', JSON.stringify(updated));
+        return updated;
+      });
     };
 
     const unsubGeneric = socketService.on('user_account_suspended', handleSuspended);
     const unsubActivated = socketService.on('user_account_activated', handleActivated);
+    const unsubStatusChanged = socketService.on('user_account_status_changed', (data: any) => {
+      if (data?.userId === user?.id) {
+        if (data.status === 'suspended') {
+          handleSuspended(data);
+        } else if (data.status === 'active') {
+          handleActivated();
+        }
+      }
+    });
+
     const unsubDirect = user?.id ? socketService.on(`user_${user.id}_suspended`, (data: any) => {
       if (data?.suspended === false) {
         handleActivated();
@@ -148,9 +173,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => {
       unsubGeneric();
       unsubActivated();
+      unsubStatusChanged();
       if (unsubDirect) unsubDirect();
     };
-  }, [user?.id]);
+  }, [user?.id, user?.fullName]);
 
   const reclaimSessionOnThisDevice = async () => {
     setConcurrentSessionNotice(null);

@@ -23,6 +23,8 @@ export interface User {
   pin?: string;
   isPhoneVerified: boolean;
   role: 'player' | 'admin';
+  status?: 'active' | 'suspended' | 'under_review';
+  suspendReason?: string;
   referralCode?: string;
   attachedAccounts?: AttachedAccount[];
   createdAt: string;
