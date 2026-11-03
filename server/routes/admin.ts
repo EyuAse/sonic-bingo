@@ -7,11 +7,15 @@ import { gameEngine } from '../game/BingoGameEngine.ts';
 import { exportDatabaseBackup } from '../scripts/backup_database.ts';
 import { coinService } from '../services/coinService.ts';
 import { adminPlayersRouter } from './admin_players.ts';
+import { adminRewardsRouter } from './admin_rewards.ts';
 
 const router = Router();
 
 // Mount Dedicated Player Accounts Router
 router.use('/players', adminPlayersRouter);
+
+// Mount Dedicated Bonus & Reward Management Router
+router.use('/rewards', adminRewardsRouter);
 
 /**
  * Get All Real Users from Neon DB
