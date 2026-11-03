@@ -605,9 +605,10 @@ adminPlayersRouter.post('/:id/adjust-balance', requireAdmin, async (req: Authent
     ]);
 
     // Real-time WebSocket sync to player client
-    io.to(`user_${id}`).emit('user_balance_updated', { userId: id, balance: newBal, bonus: newBon });
-    io.emit(`user_${id}_balance`, { type: 'admin_adjustment', balance: newBal, bonus: newBon, delta, reason });
-    io.emit('user_balance_updated', { userId: id, balance: newBal, bonus: newBon });
+    const balancePayload = { userId: id, balance: newBal, bonus: newBon, newBalance: newBal, delta, reason };
+    io.to(`user_${id}`).emit('user_balance_updated', balancePayload);
+    io.emit(`user_${id}_balance`, balancePayload);
+    io.emit('user_balance_updated', balancePayload);
 
     // Send official Telegram Bot alert to player
     try {

@@ -110,9 +110,18 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     const socket = socketService.connect();
     const handleBalanceEvent = (data: any) => {
-      // If event is scoped to a specific userId, ignore if it's not for current user
-      if (data && data.userId && user?.id && data.userId !== user.id) {
-        return;
+      // If event is scoped to a specific userId, verify match against active user or stored session
+      const currentId = user?.id || (() => {
+        try {
+          const s = localStorage.getItem('sonic_user');
+          return s ? JSON.parse(s)?.id : null;
+        } catch { return null; }
+      })();
+
+      if (data && data.userId && currentId) {
+        if (String(data.userId).toLowerCase() !== String(currentId).toLowerCase()) {
+          return;
+        }
       }
       console.log('⚡ [Live Real Balance Event Received]:', data);
       
