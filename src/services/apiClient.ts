@@ -206,6 +206,23 @@ export const apiClient = {
       return data;
     },
 
+    async checkStatus(userId?: string) {
+      const headers = { ...getAuthHeader() };
+      const queryParam = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+      try {
+        const res = await fetch(`${API_BASE}/auth/status${queryParam}`, { headers });
+        if (!res.ok) {
+          try {
+            return await res.json();
+          } catch {}
+          return { success: false, error: `HTTP ${res.status}` };
+        }
+        return await res.json();
+      } catch (err: any) {
+        return { success: false, error: err.message };
+      }
+    },
+
     async getMe() {
       const res = await fetch(`${API_BASE}/auth/me`, {
         headers: { ...getAuthHeader() }

@@ -34,6 +34,8 @@ export const AccountSuspendedModal: React.FC = () => {
       if (!isActive) {
         setCheckFeedback('Account is still suspended by compliance.');
         setTimeout(() => setCheckFeedback(null), 3000);
+      } else {
+        dismissSuspensionNotice();
       }
     } finally {
       setTimeout(() => setIsChecking(false), 400);

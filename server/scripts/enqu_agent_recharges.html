@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Enqu Game Agent Recharges</title>
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+color-scheme:light;--bg:#fff;--side:#fff;--panel:#e8e6e9;--card:#fff;--ink:#1b1b1b;--mute:#707070;--line:#d9d9db;--chip:#e9e9ea;--dark:#1f2220;--grey:#858585;--g:#2e9e4f;--r:#b0302f}
+*{box-sizing:border-box;margin:0;padding:0}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{min-height:100%;background:var(--bg);color:var(--ink);font-family:Urbanist,"Helvetica Neue",Arial,sans-serif;font-size:15px;padding:0}
+.shell{display:grid;grid-template-columns:272px 1fr;width:100%;height:100vh;margin:0;background:var(--panel);overflow:hidden}
+aside{background:var(--side);display:flex;flex-direction:column;padding:16px 14px;overflow:hidden;min-width:0}
+.logo{font-size:25px;font-weight:800;letter-spacing:-1.2px;padding:0 6px 12px}
+nav{flex:1;overflow-y:auto;scrollbar-width:thin}
+nav a{white-space:nowrap;display:flex;align-items:center;gap:11px;padding:9px 8px;margin-bottom:1px;border-radius:12px;color:var(--ink);text-decoration:none;font-weight:500;font-size:15.5px;cursor:pointer}
+nav a svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+nav a .s{margin-left:auto;font-size:11.5px;color:var(--mute);font-weight:600}
+nav a .n{margin-left:auto;font-size:11.5px;background:var(--chip);border-radius:10px;padding:1px 8px;font-weight:700}
+nav a.on{background:var(--grey);color:#fff}nav a.on .s,nav a.on .n{color:#fff;background:rgba(255,255,255,.2)}
+.foot a{color:var(--ink)}
+main{padding:22px 24px;overflow-y:auto}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.top h1{font-size:29px;font-weight:600;letter-spacing:-.3px;flex:1}
+.pillbox{background:var(--card);border-radius:20px;padding:7px 14px;font-size:13.5px;font-weight:500;color:var(--mute)}
+.av{width:31px;height:31px;border-radius:50%;background:linear-gradient(#a8573c,#7d3524)}
+.grid{display:grid;gap:15px;margin-bottom:15px}
+.g4{grid-template-columns:repeat(4,1fr)}.g2{grid-template-columns:1.7fr 1fr}.g1{grid-template-columns:1fr}.g3{grid-template-columns:repeat(3,1fr)}
+.card{background:var(--card);border-radius:20px;padding:15px 16px;min-width:0}
+.card.d{background:linear-gradient(135deg,#1c1e1d,#2a2d2b 55%,#1a1c1b);color:#fff}
+.card h3{font-size:16.5px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card h3 .r{margin-left:auto}
+.lab{font-size:14px;color:var(--mute);font-weight:500}.d .lab{color:#e5e5e5}
+.val{font-size:23px;font-weight:700;margin:8px 0}
+.tr{font-size:12px;color:var(--mute);font-weight:500}.up{color:var(--g)}.dn{color:var(--r)}.d .up{color:#3fbf62}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;color:var(--mute);font-weight:500;font-size:14px;padding:9px 8px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+td{padding:10px 8px;font-weight:600;border-bottom:1px solid var(--line);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.wrap{overflow-x:auto}
+.b{display:inline-block;padding:4px 12px;border-radius:14px;background:var(--grey);color:#fff;font-size:12.5px;font-weight:600}
+.b.o{background:transparent;color:var(--mute);box-shadow:inset 0 0 0 1px var(--line)}.b.k{background:var(--dark);color:#fff}.b.w{background:var(--r)}
+button,.btn{font:inherit;font-size:12.5px;font-weight:600;border:0;border-radius:14px;padding:5px 13px;background:var(--chip);color:var(--ink);cursor:pointer}
+button.p{background:var(--grey);color:#fff}button.k{background:var(--dark);color:#fff}button:focus-visible,nav a:focus-visible,input:focus-visible{outline:2px solid var(--grey);outline-offset:2px}
+.bars{display:flex;align-items:flex-end;gap:16px;height:190px;padding:6px 6px 0 40px;position:relative}
+.bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px;font-size:13px;color:var(--mute);font-weight:500}
+.bar i{width:100%;max-width:43px;border-radius:9px;background:repeating-linear-gradient(115deg,var(--dark) 0 14px,#262a28 14px 28px)}
+.bar.h i{background:var(--grey)}.bar.h{color:var(--ink);font-weight:700}
+.yl{position:absolute;left:0;font-size:12.5px;color:var(--mute);width:34px;text-align:right}
+.donut{width:120px;height:120px;border-radius:50%;margin:4px auto 12px;display:grid;place-items:center;background:conic-gradient(var(--dark) 0 70%,var(--grey) 70% 90%,#cdcdd0 90%)}
+.donut b{width:78px;height:78px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-size:14px}
+.lg{display:flex;justify-content:space-between;font-size:13.5px;font-weight:600;padding:4px 0}
+.lg span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;background:var(--c)}
+.note{background:var(--card);border-radius:16px;padding:12px 16px;font-size:13.5px;color:var(--mute);margin-bottom:15px;box-shadow:inset 3px 0 0 var(--grey)}
+.cart{display:grid;grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:5px;max-height:330px;overflow:auto}
+.cart span{padding:7px 0;text-align:center;border-radius:9px;background:var(--chip);font-size:12px;font-weight:700}
+.cart span.t{background:var(--dark);color:#fff}
+label{display:block;font-size:13px;color:var(--mute);font-weight:500;margin:10px 0 5px}
+input[type=number],input[type=text]{width:100%;background:var(--chip);border:0;border-radius:12px;padding:9px 12px;font:inherit;font-weight:600;color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--grey)}
+.tog{width:42px;height:24px;border-radius:12px;background:var(--chip);position:relative;cursor:pointer;display:inline-block;vertical-align:middle;border:0;padding:0}
+.tog::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:.15s}
+.tog.on{background:var(--dark)}.tog.on::after{left:21px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.prog{height:7px;border-radius:4px;background:var(--chip);width:90px;display:inline-block;vertical-align:middle;margin-right:6px;overflow:hidden}.prog i{display:block;height:100%;background:var(--grey)}
+.tabs{display:flex;gap:8px;overflow-x:auto;margin-bottom:15px;padding-bottom:2px}.tabs button{background:var(--card);padding:8px 16px;font-size:14px;border-radius:20px;white-space:nowrap}.tabs button.on{background:var(--grey);color:#fff}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.seg button{padding:10px;border-radius:14px;font-size:13.5px}.seg button.on{background:var(--dark);color:#fff}
+.tpl{background:var(--card);border-radius:20px;padding:14px 16px;cursor:pointer;border:0;text-align:left;font:inherit;color:inherit}.tpl:hover{box-shadow:0 0 0 2px var(--grey)}.tpl b{display:block;font-size:15.5px;margin:10px 0 4px;font-weight:600}.tpl small{color:var(--mute);font-size:12.5px;font-weight:500}
+.tag{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:10px;background:var(--chip)}.b.ok{background:#e4f1e8;color:#1f6a37}
+.cap{font-size:12.5px;font-weight:700;letter-spacing:.04em;color:var(--mute);margin:4px 2px 10px;text-transform:uppercase}
+.promo{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.thumb{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#f2c230,#e08a1e)}
+textarea{width:100%;background:var(--chip);border:0;border-radius:12px;padding:10px 12px;font:inherit;font-weight:500;color:var(--ink);resize:vertical;min-height:130px;line-height:1.5}textarea:focus-visible{outline:2px solid var(--grey)}
+.tg2{display:grid;grid-template-columns:1.5fr 1fr;gap:15px;align-items:start}.pvw{background:var(--dark);color:#fff;border-radius:26px;padding:16px;position:sticky;top:0}
+.tgh{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.08);border-radius:16px;padding:10px 12px;margin-bottom:14px}.tga{width:34px;height:34px;border-radius:50%;background:#f2c230;color:#222;display:grid;place-items:center;font-weight:800}.tgs{font-size:11.5px;color:#a8a8a8}.tgb{font-style:normal;background:rgba(255,255,255,.18);border-radius:5px;padding:0 6px;font-size:10.5px}
+.tgm{background:#2d302e;border-radius:16px;padding:8px}.tgi{height:150px;border-radius:12px;background:radial-gradient(circle at 70% 30%,#ffe27a,transparent 45%),linear-gradient(135deg,#f2b01e,#d9831a)}.tgc{padding:10px 6px;font-size:13px;line-height:1.55;word-break:break-word}.tgt{text-align:right;font-size:11px;color:#a8a8a8;padding:0 4px 4px}
+.tgbtn{margin-top:6px;background:var(--grey);text-align:center;padding:10px;border-radius:10px;font-weight:600;font-size:13px}
+.dbtn{display:block;width:100%;padding:9px;border-radius:12px;margin-top:8px;font-size:13px}.dbtn.w{background:#fff;color:#111}.dbtn.t{background:rgba(255,255,255,.14);color:#fff}
+.pubb{width:100%;padding:13px;border-radius:14px;background:var(--dark);color:#fff;font-size:14.5px;margin-top:16px}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--dark);color:#fff;padding:11px 20px;border-radius:20px;font-weight:600;font-size:13.5px;z-index:20}
+.modalbg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:grid;place-items:center;z-index:30;padding:16px}.modal{background:var(--card);border-radius:24px;padding:22px;width:min(580px,100%);max-height:90vh;overflow:auto}
+.steps{display:flex;gap:8px;margin:12px 0 6px}.steps span{flex:1;font-size:12px;font-weight:600;color:var(--mute);border-top:3px solid var(--chip);padding-top:6px}.steps span.on{color:var(--ink);border-color:var(--dark)}
+.av2{width:34px;height:34px;border-radius:50%;background:var(--chip);display:inline-grid;place-items:center;font-size:12.5px;font-weight:800;flex:none}.av2.big{width:48px;height:48px;font-size:16px}
+.lk{background:none;padding:0;font-size:14px;font-weight:700;text-align:left;border-radius:0}.lk:hover{text-decoration:underline}
+tr.sel td{background:var(--chip)}
+.sec{border-top:1px solid var(--line);margin-top:16px;padding-top:2px}.sec h4{font-size:14px;font-weight:700;margin:12px 0 2px}
+code{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;background:var(--chip);padding:3px 8px;border-radius:8px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.four{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+select{width:100%;background:var(--chip);border:0;border-radius:12px;padding:9px 12px;font:inherit;font-weight:600;color:var(--ink)}button:disabled{opacity:.4;cursor:default}
+input[type=date]{background:var(--chip);border:0;border-radius:12px;padding:8px 12px;font:inherit;font-weight:600;color:var(--ink)}
+.rcp{background:#fff;color:#111;border-radius:16px;padding:16px;border:1px solid var(--line);max-width:330px;margin:14px auto}.rcp .rh{font-weight:800;letter-spacing:.5px}.rcp .ro{color:#1f6a37;font-size:12.5px;margin:4px 0 10px;font-weight:600}.rcp .ra{font-size:26px;font-weight:800;margin-bottom:10px}.rcp .rr{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:7px 0;border-top:1px solid #eee}.rcp .rr span{color:#777}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.fs{display:flex;gap:10px;align-items:center;background:var(--panel);border-radius:16px;padding:12px}.fs b{font-size:14px}.fn{width:26px;height:26px;border-radius:50%;background:var(--dark);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px;flex:none}.fc{margin-left:auto;font-size:21px;font-weight:700}
+@media (max-width:760px){.flow{grid-template-columns:1fr 1fr}}
+.sr{display:grid;grid-template-columns:210px 1fr;gap:20px;padding:20px 0;border-top:1px solid var(--line)}.sr:first-of-type{border-top:0;padding-top:6px}.sr h4{font-size:15px;font-weight:700}.sr p{font-size:12.5px;color:var(--mute);line-height:1.5;margin-top:4px;font-weight:500}.sf{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;align-content:start}.sf label{margin-top:0}
+@media (max-width:700px){.sr{grid-template-columns:1fr;gap:12px}}
+
+@media (max-width:560px){.four{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}}
+@media (max-width:980px){.tg2{grid-template-columns:1fr}.pvw{position:static}}
+@media (max-width:980px){body{padding:0}.shell{grid-template-columns:1fr;height:auto;min-height:100vh}aside{max-height:none}nav{display:flex;overflow-x:auto;flex:none}nav a{flex:none}.foot{display:none}.g4,.g3{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}main{overflow:visible}}
+@media (max-width:560px){.g4,.g3{grid-template-columns:1fr}}
+</style>
+<body>
+<div class="shell" style="grid-template-columns:1fr"><main id="m"></main></div>
+<script>
+var $=function(s){return document.querySelector(s)},E=function(n){return Number(n).toLocaleString('en-US')};
+var TRD='<svg width="13" height="9" viewBox="0 0 14 10"><path d="M1 8l4-4 3 3 5-5M9 2h4v4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+var S={ag:[['A-01','Kebede Alemu','Addis Ababa',8450,64,70,72],['A-02','Tigist Haile','Adama',920,41,50,48],['A-03','Mulugeta B.','Harar',5200,22,40,31]]};
+var V={};
+function stat(l,v,t,d){return '<div class="card'+(d?' d':'')+'"><div class="lab">'+l+'</div><div class="val">'+v+'</div><div class="tr">'+(t||'')+'</div></div>'}
+function up(p,t){return '<span class="up">'+TRD+' '+p+'</span> '+(t||'from last month')}
+function card(h,b,r){return '<div class="card"><h3>'+h+(r?'<span class="r">'+r+'</span>':'')+'</h3>'+b+'</div>'}
+function tbl(h,rows){return '<div class="wrap"><table><tr>'+h.map(function(x){return '<th>'+x+'</th>'}).join('')+'</tr>'+rows.map(function(r){return '<tr>'+r.map(function(c){return '<td>'+c+'</td>'}).join('')+'</tr>'}).join('')+'</table></div>'}
+function bdg(s){return '<span class="b'+(s=='Pending'?' o':s=='Suspended'||s=='Rejected'?' w':'')+'">'+s+'</span>'}
+function btn(a,i,t,c){return '<button class="'+(c||'')+'" data-a="'+a+'" data-i="'+i+'">'+t+'</button>'}
+function tog(a,i,on){return '<button class="tog'+(on?' on':'')+'" data-a="'+a+'" data-i="'+i+'" aria-label="toggle"></button>'}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+function toast(m){var t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(function(){t.remove()},2400)}
+function qa(s){return esc(s).replace(/"/g,'&quot;')}
+function ini(n){return n.split(' ').map(function(w){return w[0]||''}).slice(0,2).join('').toUpperCase()}
+function pnow(){var d=new Date();return '3 Nov '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)}
+S.AX={'A-01':{st:'Active',ph:'0911 204 118',cm:[3,4,5,2],tp:70,td:80000,po:true,code:'KEB101',jd:'12 Jan 2026',tk:'k3x9a1'},'A-02':{st:'Active',ph:'0922 555 310',cm:[3,4,5,2],tp:50,td:60000,po:true,code:'TIG102',jd:'3 Mar 2026',tk:'t7m2q8'},'A-03':{st:'Active',ph:'0933 871 042',cm:[2,3,4,2],tp:40,td:40000,po:true,code:'MUL103',jd:'21 May 2026',tk:'m4p0z6'}};
+S.ag.push(['A-04','Rahel Tesfaye','Bahir Dar',0,0,40,0],['A-05','Biniam Girma','Hawassa',1500,17,30,9]);
+S.AX['A-04']={st:'Pending',ph:'0944 120 667',cm:[3,4,5,2],tp:40,td:40000,po:false,code:'RAH104',jd:'1 Nov 2026',tk:'r8v1c5'};
+S.AX['A-05']={st:'Suspended',ph:'0955 302 911',cm:[2,3,4,1],tp:30,td:30000,po:false,code:'BIN105',jd:'9 Aug 2026',tk:'b2n6d0'};
+S.rc=[
+{id:'R-301',ag:'Tigist Haile',amt:10000,m:'Telebirr',ref:'TB99X20',st:'Requested',t:'12 min ago',iso:'2026-11-03',shot:1,chk:{},recv:null,tl:[['3 Nov 08:48','Request submitted with screenshot and transaction ID']]},
+{id:'R-302',ag:'Mulugeta B.',amt:5000,m:'M-Pesa',ref:'MP55K10',st:'Under review',t:'1 h ago',iso:'2026-11-03',shot:1,chk:{},recv:null,tl:[['3 Nov 08:05','Review started by Admin A'],['3 Nov 08:00','Request submitted with screenshot and transaction ID']]},
+{id:'R-303',ag:'Kebede Alemu',amt:25000,m:'Telebirr',ref:'TB77Q31',st:'Requested',t:'35 min ago',iso:'2026-11-03',shot:1,chk:{},recv:null,tl:[['3 Nov 08:25','Request submitted with screenshot and transaction ID']]},
+{id:'R-305',ag:'Mulugeta B.',amt:2000,m:'Telebirr',ref:'TB44A18',st:'Requested',t:'5 min ago',iso:'2026-11-03',shot:1,chk:{},recv:null,tl:[['3 Nov 08:55','Request submitted with screenshot and transaction ID']]},
+{id:'R-304',ag:'Tigist Haile',amt:3000,m:'Telebirr',ref:'TB10K77',st:'Credited',t:'3 h ago',iso:'2026-11-03',shot:1,chk:{},recv:null,tl:[['3 Nov 09:20','Credited 3,000 ETB. Transaction TX-9003. Agent notified'],['3 Nov 09:12','Review started by Admin A'],['3 Nov 09:05','Request submitted with screenshot and transaction ID']]},
+{id:'R-288',ag:'Kebede Alemu',amt:4000,m:'Telebirr',ref:'TB12Z90',st:'Rejected',t:'6 d ago',iso:'2026-10-28',shot:1,chk:{},recv:null,tl:[['28 Oct 11:30','Rejected: Amount mismatch. Agent notified'],['28 Oct 10:50','Request submitted with screenshot and transaction ID']]},
+{id:'R-270',ag:'Biniam Girma',amt:2500,m:'M-Pesa',ref:'MP20X44',st:'Rejected',t:'1 mo ago',iso:'2026-10-02',shot:1,chk:{},recv:null,tl:[['2 Oct 15:10','Rejected: Payment not found. Agent notified'],['2 Oct 14:40','Request submitted with screenshot and transaction ID']]}];
+S.rl=[{d:'3 Nov 09:20',iso:'2026-11-03',tx:'TX-9003',rq:'R-304',ag:'Tigist Haile',ref:'TB10K77',m:'Telebirr',amt:3000,b:150,a:3150,by:'Admin A'},
+{d:'2 Nov 16:40',iso:'2026-11-02',tx:'TX-9002',rq:'R-291',ag:'Kebede Alemu',ref:'TB55D02',m:'Telebirr',amt:10000,b:2300,a:12300,by:'Admin A'},
+{d:'2 Nov 10:05',iso:'2026-11-02',tx:'TX-9001',rq:'R-290',ag:'Mulugeta B.',ref:'TB44A18',m:'Telebirr',amt:5000,b:800,a:5800,by:'Admin B'},
+{d:'30 Oct 14:12',iso:'2026-10-30',tx:'TX-8998',rq:'R-285',ag:'Tigist Haile',ref:'MP90A11',m:'M-Pesa',amt:8000,b:700,a:8700,by:'Admin A'},
+{d:'24 Oct 09:41',iso:'2026-10-24',tx:'TX-8990',rq:'R-281',ag:'Kebede Alemu',ref:'TB30C52',m:'Telebirr',amt:10000,b:1500,a:11500,by:'Admin B'},
+{d:'15 Oct 17:03',iso:'2026-10-15',tx:'TX-8975',rq:'R-276',ag:'Mulugeta B.',ref:'MP71B04',m:'M-Pesa',amt:6000,b:400,a:6400,by:'Admin A'},
+{d:'6 Oct 10:30',iso:'2026-10-06',tx:'TX-8960',rq:'R-271',ag:'Biniam Girma',ref:'TB08F33',m:'Telebirr',amt:5000,b:300,a:5300,by:'Admin A'},
+{d:'22 Sep 15:15',iso:'2026-09-22',tx:'TX-8931',rq:'R-262',ag:'Tigist Haile',ref:'TB66E71',m:'Telebirr',amt:10000,b:900,a:10900,by:'Admin B'},
+{d:'3 Sep 12:00',iso:'2026-09-03',tx:'TX-8902',rq:'R-250',ag:'Kebede Alemu',ref:'TB11A09',m:'Telebirr',amt:15000,b:3200,a:18200,by:'Admin A'}];
+S.txn=9003;S.rsel='R-302';S.rtab='req';S.rf='Open';S.rm=null;S.rp='all';S.rfrom='';S.rto='';S.rhq='';S.rha='';
+function rcNorm(){S.rc=S.rc.map(function(r){return Array.isArray(r)?{id:r[0],ag:r[1],amt:r[2],m:r[3],ref:r[4],st:r[5]=='Pending'?'Requested':r[5]=='Paid'?'Credited':r[5],t:'Just now',iso:'2026-11-03',shot:0,chk:{},recv:null,tl:[['3 Nov','Request submitted']]}:r})}
+function rcAg(n){return S.ag.filter(function(g){return g[1]==n})[0]}
+function rcEv(r,t){r.tl.unshift([pnow(),t])}
+function rst(s){return '<span class="b'+(s=='Credited'?' k':s=='Rejected'?' w':' o')+'">'+s+'</span>'}
+function rcDup(r){var x=(r.ref||'').trim().toLowerCase();if(!x||x=='awaiting code')return {ok:false,msg:'No transaction ID submitted'};var o=S.rl.filter(function(l){return l.ref.toLowerCase()==x})[0];if(o)return {ok:false,msg:'Already credited in '+o.rq+' ('+o.tx+')'};o=S.rc.filter(function(q){return q.id!=r.id&&q.st!='Rejected'&&(q.ref||'').toLowerCase()==x})[0];return o?{ok:false,msg:'Also used in '+o.id}:{ok:true,msg:''}}
+function rcCredit(r){var g=rcAg(r.ag),amt=r.recv||r.amt;if(amt>20000&&r.st!='Awaiting 2nd approval'){r.st='Awaiting 2nd approval';rcEv(r,'Verified by Admin A. Needs a second approval (above 20,000 ETB)');return 'Sent for second approval'}var b=g?g[3]:0;if(g)g[3]+=amt;var tx='TX-'+(++S.txn);S.rl.unshift({d:pnow(),iso:'2026-11-03',tx:tx,rq:r.id,ag:r.ag,ref:r.ref,m:r.m,amt:amt,b:b,a:b+amt,by:r.st=='Awaiting 2nd approval'?'Admin A and Admin B':'Admin A'});r.st='Credited';rcEv(r,'Credited '+E(amt)+' ETB'+(amt!=r.amt?' (received amount, requested '+E(r.amt)+')':'')+'. Balance '+E(b)+' to '+E(b+amt)+'. Transaction '+tx+'. Agent notified');return 'Wallet credited: '+E(amt)+' ETB'}
+function rcFind(src){var p=src.split(':'),id=p.slice(1).join(':');if(p[0]=='l'){var l=S.rl.filter(function(x){return x.tx==id})[0];return {m:l.m,ref:l.ref,amt:l.amt,ag:l.ag,d:l.d}}var r=S.rc.filter(function(x){return x.id==id})[0];return {m:r.m,ref:r.ref,amt:r.amt,ag:r.ag,d:r.tl[r.tl.length-1][0]}}
+function rcRcpt(o){var g=rcAg(o.ag),ph=g&&S.AX[g[0]]?S.AX[g[0]].ph:'09-- --- ---';return '<div class="rcp"><div class="rh">'+esc(o.m)+'</div><div class="ro">Transaction successful</div><div class="ra">ETB '+E(o.amt)+'.00</div><div class="rr"><span>Transaction ID</span><b>'+esc(o.ref)+'</b></div><div class="rr"><span>Date</span><b>'+esc(o.d)+'</b></div><div class="rr"><span>From</span><b>'+ph+'</b></div><div class="rr"><span>To</span><b>Enqu Game PLC</b></div></div>'}
+function rcRange(){var p=S.rp;return p=='today'?['2026-11-03','2026-11-03']:p=='week'?['2026-11-02','2026-11-08']:p=='month'?['2026-11-01','2026-11-30']:p=='custom'?[S.rfrom||'0000-00-00',S.rto||'9999-99-99']:['0000-00-00','9999-99-99']}
+function rcRangeTxt(){var R=rcRange();return S.rp=='all'?'All dates':R[0]==R[1]?R[0]:R[0]+' to '+R[1]}
+function rhRows(){var R=rcRange(),q=(S.rhq||'').toLowerCase(),a=S.rha,rows=[];
+S.rl.forEach(function(l){rows.push({k:'l',id:l.tx,iso:l.iso,d:l.d,ag:l.ag,ref:l.ref,m:l.m,amt:l.amt,b:l.b,a:l.a,st:'Credited'})});
+S.rc.forEach(function(r){if(r.st=='Rejected')rows.push({k:'q',id:r.id,iso:r.iso||'2026-11-03',d:r.tl[0]?r.tl[0][0]:'',ag:r.ag,ref:r.ref,m:r.m,amt:r.amt,b:null,a:null,st:'Rejected'})});
+rows=rows.filter(function(x){return x.iso>=R[0]&&x.iso<=R[1]&&(!a||x.ag==a)&&(a||!q||(x.ag+x.ref+x.id).toLowerCase().indexOf(q)>=0)});
+rows.sort(function(x,y){return y.iso<x.iso?-1:y.iso>x.iso?1:0});return rows}
+function rhRes(){if(S.rha)return '<div class="row" style="margin-top:10px"><span class="b k">'+esc(S.rha)+'</span>'+btn('r_agx','0','Clear')+'</div>';var q=(S.rhq||'').toLowerCase();if(!q)return '';var m=S.ag.filter(function(g){return (g[1]+g[0]).toLowerCase().indexOf(q)>=0}).slice(0,5);return '<div class="row" style="margin-top:10px">'+(m.length?m.map(function(g){return btn('r_ag',g[1],esc(g[1])+' ('+g[0]+')')}).join(''):'<span class="tr">No agent found. Showing matches by transaction ID.</span>')+'</div>'}
+function rhBody(){var rows=rhRows(),cr=rows.filter(function(x){return x.st=='Credited'}),tot=cr.reduce(function(a,x){return a+x.amt},0),rj=rows.length-cr.length,mx=cr.reduce(function(a,x){return Math.max(a,x.amt)},0),
+h='<div class="grid g4" style="margin-top:15px">'+stat('Total Credited','ETB '+E(tot),cr.length+' recharges',1)+stat('Rejected',rj,'In this period')+stat('Average Recharge','ETB '+E(cr.length?Math.round(tot/cr.length):0),'Per credited request')+stat('Largest Recharge','ETB '+E(mx),'In this period')+'</div>';
+if(S.rha){var g=rcAg(S.rha);if(g){var all=S.rl.filter(function(l){return l.ag==g[1]}),ls=all[0],sm=all.reduce(function(a,l){return a+l.amt},0);h+='<div class="card" style="margin-bottom:15px"><div class="row" style="justify-content:space-between"><div class="row" style="flex-wrap:nowrap"><span class="av2 big">'+ini(g[1])+'</span><div><div style="font-size:18px;font-weight:700">'+esc(g[1])+'</div><div class="tr">'+g[0]+' \u00b7 '+esc(g[2])+'</div></div></div><div class="row" style="gap:28px"><div><div class="lab">Wallet now</div><b>'+E(g[3])+' ETB</b></div><div><div class="lab">All-time recharged</div><b>'+E(sm)+' ETB ('+all.length+')</b></div><div><div class="lab">Last recharge</div><b>'+(ls?ls.d:'Never')+'</b></div></div></div></div>'}}
+return h+card('Transaction History <span class="tr">'+rcRangeTxt()+'</span>',rows.length?tbl(['Date','Transaction','Agent','Transaction ID','Method','Amount','Balance','Status','Proof'],rows.map(function(x){return [x.d,x.id,esc(x.ag),esc(x.ref),x.m,E(x.amt),x.b==null?'-':E(x.b)+' to '+E(x.a),rst(x.st),btn('r_pf',x.k+':'+x.id,'View')]})):'<div class="tr">No recharges found for this selection.</div>','<button data-a="r_exp" data-i="0">Export CSV</button>')}
+function rcDet(){var r=S.rc.filter(function(q){return q.id==S.rsel})[0];if(!r)return '<div class="card"><div class="tr">Select a request to review.</div></div>';
+var g=rcAg(r.ag),w=g?g[3]:0,amt=r.recv||r.amt,d=rcDup(r),act=['Under review','Awaiting 2nd approval'].indexOf(r.st)>=0,can=act&&r.chk.c1&&r.chk.c2&&r.chk.c3&&(!r.shot||r.chk.c4)&&d.ok&&amt>0,R=function(a,b){return '<div class="lg"><span style="--c:var(--grey)">'+a+'</span><b>'+b+'</b></div>'},
+ck=function(k,t){return '<label class="row" style="margin:8px 0;color:var(--ink);font-weight:600;flex-wrap:nowrap"><input type="checkbox" data-a="r_ck" data-i="'+k+'"'+(r.chk[k]?' checked':'')+'> '+t+'</label>'},bt='';
+if(r.st=='Requested')bt=btn('r_start',r.id,'Start review','k')+btn('r_rej',r.id,'Reject');
+else if(r.st=='Under review')bt='<button class="k" data-a="r_credit" data-i="0"'+(can?'':' disabled')+'>Verify &amp; credit wallet</button>'+btn('r_rej',r.id,'Reject');
+else if(r.st=='Awaiting 2nd approval')bt='<button class="k" data-a="r_credit" data-i="0"'+(can?'':' disabled')+'>Approve as second admin &amp; credit</button>'+btn('r_rej',r.id,'Reject');
+return '<div class="card"><div class="row" style="justify-content:space-between"><div><div style="font-size:18px;font-weight:700">'+r.id+' \u00b7 '+esc(r.ag)+'</div><div class="tr">Requested '+r.t+'</div></div>'+rst(r.st)+'</div>'+
+'<div style="margin-top:12px">'+R('Amount requested',E(r.amt)+' ETB')+R('Method',r.m)+R('Transaction ID','<code>'+esc(r.ref||'-')+'</code>')+R('Wallet now',E(w)+' ETB')+R('Wallet after credit',E(w+amt)+' ETB')+'</div>'+
+'<div class="sec"><h4>Payment proof from agent</h4>'+(r.shot?'<div class="row" style="margin-top:8px"><button class="k" data-a="r_pf" data-i="q:'+r.id+'">View screenshot</button><span class="tr">Sent with transaction ID '+esc(r.ref)+'</span></div>':'<div class="tr" style="margin-top:8px">No screenshot submitted.</div>')+'</div>'+
+(act?'<div class="sec"><h4>Verify payment</h4>'+ck('c1','Transaction ID found in the '+r.m+' statement')+ck('c2','Amount matches what the agent sent')+ck('c3','Sender phone matches the agent')+(r.shot?ck('c4','Screenshot matches the transaction ID and amount'):'')+'<div class="row" style="margin:8px 0;font-weight:600">'+(d.ok?'\u2713 Transaction ID not used before':'<span class="dn">\u2717 '+esc(d.msg)+'</span>')+'</div><label>Amount received in the account (ETB)</label><input type="number" id="rc_recv" value="'+(r.recv||r.amt)+'"><div class="tr" style="margin-top:6px">If it differs from the request, the received amount is credited.</div></div>':'<div class="tr" style="margin-top:10px">'+(r.st=='Requested'?'Start the review to verify the payment.':'This request is closed.')+'</div>')+
+(bt?'<div class="row" style="margin-top:14px">'+bt+'</div>':'')+
+'<div class="sec"><h4>Timeline</h4>'+r.tl.map(function(x){return '<div class="tr" style="margin-top:6px"><b style="color:var(--ink)">'+x[0]+'</b> '+esc(x[1])+'</div>'}).join('')+'</div>'+
+'<div class="sec"><div class="tr" style="margin-top:10px">Rules: each transaction ID works once. Recharges above 20,000 ETB need a second admin. Requests expire after 48 hours.</div></div></div>'}
+function rcModal(){var m=S.rm;if(!m)return '';var ti,b,ft;
+if(m.t=='rej'){ti='Reject request';b='<label>Reason</label><select id="rr_r">'+['Payment not found','Amount mismatch','Duplicate transaction ID','Wrong account','Other'].map(function(x){return '<option>'+x+'</option>'}).join('')+'</select><label>Note to agent</label><textarea id="rr_n" style="min-height:80px"></textarea>';ft='<button data-a="r_close" data-i="0">Cancel</button><button class="k" data-a="r_dorej" data-i="0">Reject request</button>'}
+else{var o=rcFind(m.src);ti='Payment screenshot';b=rcRcpt(o)+'<div class="tr" style="text-align:center">Submitted by the agent. Compare it with your '+esc(o.m)+' statement.</div>';ft='<button class="k" data-a="r_close" data-i="0">Close</button>'}
+return '<div class="modalbg"><div class="modal"><div class="row" style="justify-content:space-between"><h3 style="margin:0">'+ti+'</h3><button data-a="r_close" data-i="0" aria-label="Close">\u2715</button></div>'+b+'<div class="row" style="justify-content:flex-end;margin-top:18px">'+ft+'</div></div></div>'}
+V.rc=function(){rcNorm();var Q=S.rc,OP=['Requested','Under review','Awaiting 2nd approval'],op=Q.filter(function(r){return OP.indexOf(r.st)>=0}),oa=op.reduce(function(a,r){return a+r.amt},0),td=S.rl.filter(function(l){return l.iso=='2026-11-03'}),ta=td.reduce(function(a,l){return a+l.amt},0),lw=S.ag.filter(function(g){return S.AX[g[0]]&&S.AX[g[0]].st=='Active'&&g[3]<1000}),t=S.rtab,
+n=function(f){return Q.filter(f).length},
+h='<div class="grid g3">'+stat('Open Requests',op.length,'ETB '+E(oa)+' awaiting',1)+stat('Credited Today','ETB '+E(ta),td.length+' wallet recharges')+stat('Low-balance Agents',lw.length,lw.length?'<span class="dn">Below 1,000 ETB</span>':'All healthy')+'</div>'+
+'<div class="card" style="margin-bottom:15px"><div class="flow">'+[['Request','Agent sends screenshot and ID',n(function(r){return r.st=='Requested'})],['Verify payment','Admin checks the statement',n(function(r){return r.st=='Under review'})],['Credit wallet','Second approval if large',n(function(r){return r.st=='Awaiting 2nd approval'})],['Record and notify','Ledger entry and agent alert',td.length]].map(function(x,i){return '<div class="fs"><span class="fn">'+(i+1)+'</span><div><b>'+x[0]+'</b><div class="tr">'+x[1]+'</div></div><span class="fc">'+x[2]+'</span></div>'}).join('')+'</div></div>'+
+'<div class="tabs">'+[['req','Requests ('+op.length+')'],['hist','History'],['low','Low Balance ('+lw.length+')']].map(function(x){return '<button class="'+(t==x[0]?'on':'')+'" data-a="r_tab" data-i="'+x[0]+'">'+x[1]+'</button>'}).join('')+'</div>';
+if(t=='req'){var f=S.rf,rows=Q.filter(function(r){return f=='All'||(f=='Open'?OP.indexOf(r.st)>=0:r.st==f)});
+h+='<div class="grid g2">'+card('Recharge Requests','<div class="tabs" style="margin-bottom:8px">'+['Open','Credited','Rejected','All'].map(function(s){return '<button class="'+(f==s?'on':'')+'" data-a="r_f" data-i="'+s+'">'+s+'</button>'}).join('')+'</div><div class="wrap"><table><tr><th>Request</th><th>Amount</th><th>Method</th><th>Transaction ID</th><th>Requested</th><th>Status</th></tr>'+(rows.map(function(r){var d=rcDup(r);return '<tr class="'+(S.rsel==r.id?'sel':'')+'"><td><button class="lk" data-a="r_sel" data-i="'+r.id+'">'+r.id+'</button><div class="tr">'+esc(r.ag)+'</div></td><td>'+E(r.amt)+' ETB'+(r.amt>20000?' <span class="b o">2 approvals</span>':'')+'</td><td>'+r.m+'</td><td>'+esc(r.ref||'-')+(!d.ok&&OP.indexOf(r.st)>=0?' <span class="b w">Check</span>':'')+'</td><td>'+r.t+'</td><td>'+rst(r.st)+'</td></tr>'}).join('')||'<tr><td colspan="6" style="color:var(--mute)">No requests here.</td></tr>')+'</table></div>')+rcDet()+'</div>'}
+else if(t=='hist'){h+='<div class="card"><label style="margin-top:0">Search agents</label><input type="text" id="rh_q" placeholder="Agent name, agent ID or transaction ID" value="'+qa(S.rhq)+'"><div id="rhres">'+rhRes()+'</div><div class="row" style="margin-top:16px;justify-content:space-between"><span class="tabs" style="margin:0">'+[['today','Daily'],['week','Weekly'],['month','Monthly'],['all','All time']].map(function(x){return '<button class="'+(S.rp==x[0]?'on':'')+'" data-a="r_per" data-i="'+x[0]+'">'+x[1]+'</button>'}).join('')+'</span><div class="row"><input type="date" id="rh_from" value="'+S.rfrom+'"><span class="tr">to</span><input type="date" id="rh_to" value="'+S.rto+'"><button class="k" data-a="r_apply" data-i="0">Fetch</button></div></div></div><div id="rhbody">'+rhBody()+'</div>'}
+else{h+=card('Agents below 1,000 ETB',tbl(['Agent','Wallet','Last recharge',''],lw.map(function(g){var l=S.rl.filter(function(x){return x.ag==g[1]})[0];return [esc(g[1]),E(g[3])+' ETB',l?l.d:'Never',btn('r_remind',g[0],'Send reminder')+' '+btn('r_ag',g[1],'See history')]})))}
+return {t:'Agent Recharges',h:h+rcModal()}};
+document.addEventListener('click',function(e){var bt=e.target.closest('[data-a]');if(!bt)return;var a=bt.dataset.a,i=bt.dataset.i;if(a.indexOf('r_')!=0)return;e.stopPropagation();var m=1,r=S.rc.filter(function(q){return q.id==S.rsel})[0];
+if(a=='r_tab')S.rtab=i;
+else if(a=='r_f')S.rf=i;
+else if(a=='r_sel'){S.rsel=i;S.rtab='req'}
+else if(a=='r_ck')r.chk[i]=!r.chk[i];
+else if(a=='r_start'){r.st='Under review';rcEv(r,'Review started by Admin A')}
+else if(a=='r_credit')toast(rcCredit(r));
+else if(a=='r_rej')S.rm={t:'rej'};
+else if(a=='r_dorej'){var rs=$('#rr_r').value,n=$('#rr_n').value.trim();r.st='Rejected';rcEv(r,'Rejected: '+rs+(n?'. '+n:'')+'. Agent notified');S.rm=null;toast('Request rejected')}
+else if(a=='r_pf')S.rm={t:'pf',src:i};
+else if(a=='r_ag'){S.rha=i;S.rhq='';S.rtab='hist'}
+else if(a=='r_agx'){S.rha='';S.rhq=''}
+else if(a=='r_per'){S.rp=i;S.rfrom='';S.rto=''}
+else if(a=='r_apply'){var fr=$('#rh_from').value,to=$('#rh_to').value;if(!fr&&!to){toast('Pick a start or end date');m=0}else if(fr&&to&&fr>to){toast('Start date must be before end date');m=0}else{S.rfrom=fr;S.rto=to;S.rp='custom'}}
+else if(a=='r_close')S.rm=null;
+else if(a=='r_remind'){var g=S.ag.filter(function(x){return x[0]==i})[0];toast('Reminder sent to '+g[1]+' by Telegram and SMS');m=0}
+else if(a=='r_exp'){toast('Exporting history as CSV');m=0}
+else m=0;
+if(m)render()},true);
+document.addEventListener('input',function(e){var id=e.target.id;if(id=='rc_recv'){var r=S.rc.filter(function(q){return q.id==S.rsel})[0];if(r)r.recv=+e.target.value||null}else if(id=='rh_q'){S.rhq=e.target.value;var x=$('#rhres'),y=$('#rhbody');if(x)x.innerHTML=rhRes();if(y)y.innerHTML=rhBody()}});
+function render(){var v=V.rc();$('#m').innerHTML='<div class="top"><h1>'+v.t+'</h1><span class="av"></span></div>'+v.h}
+render();
+</script>
+</body>
+</html>
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-11-03T16:04:39+03:00.
+
+The user's current state is as follows:
+Other open documents:
+- c:\Users\asefa\Desktop\clone-this repo\server\services\telegramBotService.ts (LANGUAGE_UNSPECIFIED)
+- c:\Users\asefa\Desktop\clone-this repo\server\server.ts (LANGUAGE_UNSPECIFIED)
+- c:\Users\asefa\Desktop\clone-this repo\src\config\env.ts (LANGUAGE_UNSPECIFIED)
+- c:\Users\asefa\Desktop\clone-this repo\.env (LANGUAGE_UNSPECIFIED)
+- c:\Users\asefa\Desktop\clone-this repo\index.html (LANGUAGE_UNSPECIFIED)
+
+The user has uploaded 1 image(s):
+- C:/Users/asefa/.gemini/antigravity/brain/4a81f67a-1007-42a2-ac69-b0143bdf16d9/.user_uploaded/media_1793711076498_b363fbff.png
+You can embed this image in an artifact if you need the USER to review it.
+</ADDITIONAL_METADATA>

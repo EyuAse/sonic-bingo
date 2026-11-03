@@ -456,19 +456,20 @@ adminPlayersRouter.post('/:id/status', requireAdmin, async (req: AuthenticatedRe
     const u = userRes.rows[0];
     const strId = String(id);
     const tgId = u.telegram_id ? String(u.telegram_id) : null;
+    const phone = u.phone ? String(u.phone) : null;
 
     if (newStatus === 'suspended') {
       await query(
         `UPDATE users SET status = 'suspended', suspend_reason = $1, suspended_at = NOW() WHERE id = $2`,
         [reason || 'Suspicious activity or terms violation', id]
       );
-      markUserSuspended(strId, reason || 'Suspicious activity or terms violation');
-      if (tgId) markUserSuspended(tgId, reason || 'Suspicious activity or terms violation');
+      markUserSuspended(strId, reason || 'Suspicious activity or terms violation', tgId, phone);
 
       // Real-time WebSocket kick & notification to active client
       const suspendPayload = {
         userId: strId,
         telegramId: tgId,
+        phone,
         reason: reason || 'Suspicious activity or terms violation'
       };
       io.to(`user_${strId}`).emit('user_account_suspended', suspendPayload);
@@ -476,22 +477,28 @@ adminPlayersRouter.post('/:id/status', requireAdmin, async (req: AuthenticatedRe
       if (tgId) {
         io.to(`user_${tgId}`).emit('user_account_suspended', suspendPayload);
       }
+      if (phone) {
+        io.to(`user_${phone}`).emit('user_account_suspended', suspendPayload);
+      }
       io.emit(`user_${strId}_suspended`, { suspended: true, reason: suspendPayload.reason });
       if (tgId) {
         io.emit(`user_${tgId}_suspended`, { suspended: true, reason: suspendPayload.reason });
       }
-      io.emit('user_account_status_changed', { userId: strId, telegramId: tgId, status: 'suspended', reason: suspendPayload.reason });
+      if (phone) {
+        io.emit(`user_${phone}_suspended`, { suspended: true, reason: suspendPayload.reason });
+      }
+      io.emit('user_account_status_changed', { userId: strId, telegramId: tgId, phone, status: 'suspended', reason: suspendPayload.reason });
     } else {
       await query(
         `UPDATE users SET status = 'active', suspend_reason = NULL, suspended_at = NULL WHERE id = $1`,
         [id]
       );
-      markUserActive(strId);
-      if (tgId) markUserActive(tgId);
+      markUserActive(strId, tgId, phone);
 
       const activatePayload = {
         userId: strId,
         telegramId: tgId,
+        phone,
         message: 'Your account has been reactivated.'
       };
       io.to(`user_${strId}`).emit('user_account_activated', activatePayload);
@@ -499,11 +506,17 @@ adminPlayersRouter.post('/:id/status', requireAdmin, async (req: AuthenticatedRe
       if (tgId) {
         io.to(`user_${tgId}`).emit('user_account_activated', activatePayload);
       }
+      if (phone) {
+        io.to(`user_${phone}`).emit('user_account_activated', activatePayload);
+      }
       io.emit(`user_${strId}_suspended`, { suspended: false });
       if (tgId) {
         io.emit(`user_${tgId}_suspended`, { suspended: false });
       }
-      io.emit('user_account_status_changed', { userId: strId, telegramId: tgId, status: 'active' });
+      if (phone) {
+        io.emit(`user_${phone}_suspended`, { suspended: false });
+      }
+      io.emit('user_account_status_changed', { userId: strId, telegramId: tgId, phone, status: 'active' });
     }
 
     // Record audit log

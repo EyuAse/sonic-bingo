@@ -136,15 +136,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const checkSuspensionStatus = async (): Promise<boolean> => {
     try {
       const storedToken = localStorage.getItem('sonic_auth_token');
-      if (!storedToken) return false;
-      const meRes = await apiClient.auth.getMe();
-      if (meRes && meRes.user) {
-        if (meRes.user.status === 'suspended') {
-          const reason = meRes.user.suspendReason || 'Account suspended by compliance.';
+      const storedUser = localStorage.getItem('sonic_user');
+      let targetUserId: string | undefined = user?.id || (user as any)?.telegramId;
+
+      if (!targetUserId && storedUser) {
+        try {
+          const parsed = JSON.parse(storedUser);
+          targetUserId = parsed?.id || parsed?.telegramId;
+        } catch {}
+      }
+
+      // 1. Direct unblocked status check from DB
+      const statusRes = await apiClient.auth.checkStatus(targetUserId);
+      if (statusRes && statusRes.success) {
+        if (statusRes.isSuspended || statusRes.status === 'suspended') {
+          const reason = statusRes.suspendReason || 'Account suspended by compliance.';
           setSuspensionNotice({ reason });
           setUser(prev => prev ? { ...prev, status: 'suspended', suspendReason: reason } : null);
           return false;
         } else {
+          // Account is ACTIVE!
           setSuspensionNotice(null);
           setUser(prev => {
             if (!prev) return null;
@@ -157,7 +168,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return true;
         }
       }
-    } catch (err) {
+
+      // 2. Fallback check via /auth/me if status endpoint is unavailable
+      if (storedToken) {
+        const meRes = await apiClient.auth.getMe();
+        if (meRes && meRes.user) {
+          if (meRes.user.status === 'suspended') {
+            const reason = meRes.user.suspendReason || 'Account suspended by compliance.';
+            setSuspensionNotice({ reason });
+            setUser(prev => prev ? { ...prev, status: 'suspended', suspendReason: reason } : null);
+            return false;
+          } else {
+            setSuspensionNotice(null);
+            setUser(prev => {
+              if (!prev) return null;
+              const updated = { ...prev, status: 'active' as const, suspendReason: undefined };
+              try {
+                localStorage.setItem('sonic_user', JSON.stringify(updated));
+              } catch {}
+              return updated;
+            });
+            return true;
+          }
+        }
+      }
+    } catch (err: any) {
+      if (err?.message?.includes('ACCOUNT_SUSPENDED')) {
+        return false;
+      }
       console.warn('Silent suspension re-check notice:', err);
     }
     return false;
@@ -208,7 +246,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const unsubStatusChanged = socketService.on('user_account_status_changed', (data: any) => {
       const isMatch = (data?.userId && user?.id && String(data.userId) === String(user.id)) ||
                       (data?.telegramId && user?.telegramId && String(data.telegramId) === String(user.telegramId)) ||
-                      (data?.userId && user?.telegramId && String(data.userId) === String(user.telegramId));
+                      (data?.userId && user?.telegramId && String(data.userId) === String(user.telegramId)) ||
+                      (data?.phone && user?.phone && String(data.phone) === String(user.phone));
       if (isMatch) {
         if (data.status === 'suspended') {
           handleSuspended(data);
@@ -234,12 +273,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     }) : null;
 
+    const unsubDirectPhone = user?.phone ? socketService.on(`user_${user.phone}_suspended`, (data: any) => {
+      if (data?.suspended === false) {
+        handleActivated();
+      } else {
+        handleSuspended(data);
+      }
+    }) : null;
+
     return () => {
       unsubGeneric();
       unsubActivated();
       unsubStatusChanged();
       if (unsubDirect) unsubDirect();
       if (unsubDirectTg) unsubDirectTg();
+      if (unsubDirectPhone) unsubDirectPhone();
     };
   }, [user?.id, user?.telegramId, user?.fullName]);
 

@@ -22,12 +22,31 @@ export interface AuthenticatedRequest extends Request {
 // In-memory status cache for instant real-time suspension checks without DB bottleneck
 const userStatusCache = new Map<string, { status: string; reason?: string; checkedAt: number }>();
 
-export function markUserSuspended(userId: string, reason?: string) {
-  userStatusCache.set(userId, { status: 'suspended', reason, checkedAt: Date.now() });
+export function markUserSuspended(userId: string, reason?: string, ...extraIds: (string | number | undefined | null)[]) {
+  const all = [userId, ...extraIds];
+  for (const id of all) {
+    if (!id) continue;
+    const str = String(id);
+    userStatusCache.set(str, { status: 'suspended', reason, checkedAt: Date.now() });
+  }
 }
 
-export function markUserActive(userId: string) {
-  userStatusCache.set(userId, { status: 'active', checkedAt: Date.now() });
+export function markUserActive(userId: string, ...extraIds: (string | number | undefined | null)[]) {
+  const all = [userId, ...extraIds];
+  for (const id of all) {
+    if (!id) continue;
+    const str = String(id);
+    userStatusCache.delete(str);
+    userStatusCache.set(str, { status: 'active', checkedAt: Date.now() });
+  }
+}
+
+export function clearUserStatusCache(userId?: string) {
+  if (userId) {
+    userStatusCache.delete(String(userId));
+  } else {
+    userStatusCache.clear();
+  }
 }
 
 /**
@@ -47,18 +66,21 @@ export async function requireAuth(req: AuthenticatedRequest, res: Response, next
     // Check suspension status for non-admin/non-cashier users (e.g. players & agents)
     if (decoded.role !== 'admin' && decoded.role !== 'cashier') {
       const cached = userStatusCache.get(decoded.id);
-      const isFresh = cached && (Date.now() - cached.checkedAt < 30000); // 30s cache TTL
+      const isFresh = cached && (Date.now() - cached.checkedAt < 10000); // 10s fresh window
 
       let isSuspended = false;
       let suspendReason = '';
 
-      if (cached && (cached.status === 'suspended' || isFresh)) {
+      if (cached && isFresh) {
         if (cached.status === 'suspended') {
           isSuspended = true;
           suspendReason = cached.reason || 'Account suspended by compliance.';
         }
       } else {
-        const statusRes = await query('SELECT status, suspend_reason FROM users WHERE id = $1', [decoded.id]);
+        const statusRes = await query(
+          'SELECT status, suspend_reason FROM users WHERE id::text = $1 OR telegram_id::text = $1 LIMIT 1',
+          [decoded.id]
+        );
         if (statusRes.rows.length > 0) {
           const row = statusRes.rows[0];
           const st = row.status || 'active';
@@ -118,20 +140,26 @@ export function generateToken(user: AuthUser): string {
 
 export async function checkIfUserSuspended(userId: string): Promise<{ suspended: boolean; reason?: string }> {
   if (!userId) return { suspended: false };
-  const cached = userStatusCache.get(userId);
-  const isFresh = cached && (Date.now() - cached.checkedAt < 30000);
-  if (cached && (cached.status === 'suspended' || isFresh)) {
+  const strId = String(userId);
+  const cached = userStatusCache.get(strId);
+  const isFresh = cached && (Date.now() - cached.checkedAt < 10000);
+  if (cached && isFresh) {
     if (cached.status === 'suspended') {
       return { suspended: true, reason: cached.reason || 'Account suspended by compliance.' };
     }
     return { suspended: false };
   }
   try {
-    const statusRes = await query('SELECT status, suspend_reason FROM users WHERE id = $1', [userId]);
+    const statusRes = await query(
+      `SELECT status, suspend_reason FROM users 
+       WHERE id::text = $1 OR telegram_id::text = $1 OR phone = $1 
+       LIMIT 1`,
+      [strId]
+    );
     if (statusRes.rows.length > 0) {
       const row = statusRes.rows[0];
       const st = row.status || 'active';
-      userStatusCache.set(userId, { status: st, reason: row.suspend_reason, checkedAt: Date.now() });
+      userStatusCache.set(strId, { status: st, reason: row.suspend_reason, checkedAt: Date.now() });
       if (st === 'suspended') {
         return { suspended: true, reason: row.suspend_reason || 'Account suspended by compliance.' };
       }

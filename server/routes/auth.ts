@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { query, withTransaction } from '../db.ts';
-import { generateToken, requireAuth, AuthenticatedRequest } from '../middleware/auth.ts';
+import { generateToken, requireAuth, AuthenticatedRequest, markUserSuspended, markUserActive } from '../middleware/auth.ts';
 import { io } from '../io.ts';
 
 const router = Router();
@@ -492,6 +493,64 @@ router.post('/login', async (req, res) => {
   } catch (error: any) {
     console.error('❌ [Auth Login Error]:', error);
     return res.status(500).json({ success: false, error: error.message || 'Login failed' });
+  }
+});
+
+/**
+ * Unblocked Account Status Check
+ * Direct Neon DB read to verify if account is active or suspended without HTTP 403 blocking
+ */
+router.get('/status', async (req, res) => {
+  try {
+    let userId: string | null = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const decoded = jwt.decode(authHeader.split(' ')[1]) as any;
+        if (decoded && decoded.id) {
+          userId = String(decoded.id);
+        }
+      } catch {}
+    }
+
+    if (!userId && req.query.userId) {
+      userId = String(req.query.userId);
+    }
+
+    if (!userId) {
+      return res.status(400).json({ success: false, error: 'User identifier required' });
+    }
+
+    const userRes = await query(
+      `SELECT id, status, suspend_reason, telegram_id, phone FROM users 
+       WHERE id::text = $1 OR telegram_id::text = $1 OR phone = $1 
+       LIMIT 1`,
+      [userId]
+    );
+
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    const row = userRes.rows[0];
+    const isSuspended = row.status === 'suspended' || row.status === 'banned';
+
+    // Synchronize in-memory cache directly from DB source of truth
+    if (isSuspended) {
+      markUserSuspended(row.id, row.suspend_reason || 'Account suspended by compliance.', row.telegram_id, row.phone);
+    } else {
+      markUserActive(row.id, row.telegram_id, row.phone);
+    }
+
+    return res.json({
+      success: true,
+      userId: row.id,
+      status: row.status || 'active',
+      isSuspended,
+      suspendReason: row.suspend_reason || null
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err.message || 'Status check failed' });
   }
 });
 
