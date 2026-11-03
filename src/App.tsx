@@ -9,6 +9,7 @@ import { BottomNav } from './components/common/BottomNav.tsx';
 import { Toast } from './components/common/Toast.tsx';
 import { NewPlayerWelcomeModal } from './components/auth/NewPlayerWelcomeModal.tsx';
 import { ConcurrentSessionModal } from './components/auth/ConcurrentSessionModal.tsx';
+import { AccountSuspendedModal } from './components/common/AccountSuspendedModal.tsx';
 
 // Pages
 import { LandingPage } from './pages/LandingPage.tsx';
@@ -154,6 +155,9 @@ export const App: React.FC = () => {
 
       {/* Single-device enforcement notice */}
       <ConcurrentSessionModal />
+
+      {/* Real-time Account Suspension Notice */}
+      <AccountSuspendedModal />
 
       {/* Global Toast */}
       <Toast />

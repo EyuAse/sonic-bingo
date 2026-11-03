@@ -18,6 +18,8 @@ interface AuthContextType {
   dismissFirstTimeModal: () => void;
   concurrentSessionNotice: { reason: string; message: string } | null;
   dismissConcurrentSessionNotice: () => void;
+  suspensionNotice: { reason: string } | null;
+  dismissSuspensionNotice: () => void;
   reclaimSessionOnThisDevice: () => Promise<void>;
   sendOtp: (phone: string) => Promise<OtpChallengeResponse>;
   verifyOtp: (phone: string, code: string) => OtpVerificationResult;
@@ -108,10 +110,47 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
   const [isFirstTimeTelegramUser, setIsFirstTimeTelegramUser] = useState<boolean>(false);
   const [concurrentSessionNotice, setConcurrentSessionNotice] = useState<{ reason: string; message: string } | null>(null);
+  const [suspensionNotice, setSuspensionNotice] = useState<{ reason: string } | null>(null);
 
   const dismissConcurrentSessionNotice = () => {
     setConcurrentSessionNotice(null);
   };
+
+  const dismissSuspensionNotice = () => {
+    setSuspensionNotice(null);
+  };
+
+  // Real-time Account Suspension Listener
+  useEffect(() => {
+    const handleSuspended = (data: any) => {
+      console.warn('🚫 [AuthContext] Real-time Account Suspension received:', data);
+      const reason = data?.reason || 'Account under compliance review';
+      setSuspensionNotice({ reason });
+      setUser(prev => prev ? ({ ...prev, status: 'suspended' }) : null);
+    };
+
+    const handleActivated = () => {
+      console.log('✅ [AuthContext] Account Reactivated received');
+      setSuspensionNotice(null);
+      setUser(prev => prev ? ({ ...prev, status: 'active' }) : null);
+    };
+
+    const unsubGeneric = socketService.on('user_account_suspended', handleSuspended);
+    const unsubActivated = socketService.on('user_account_activated', handleActivated);
+    const unsubDirect = user?.id ? socketService.on(`user_${user.id}_suspended`, (data: any) => {
+      if (data?.suspended === false) {
+        handleActivated();
+      } else {
+        handleSuspended(data);
+      }
+    }) : null;
+
+    return () => {
+      unsubGeneric();
+      unsubActivated();
+      if (unsubDirect) unsubDirect();
+    };
+  }, [user?.id]);
 
   const reclaimSessionOnThisDevice = async () => {
     setConcurrentSessionNotice(null);
@@ -593,6 +632,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         dismissFirstTimeModal,
         concurrentSessionNotice,
         dismissConcurrentSessionNotice,
+        suspensionNotice,
+        dismissSuspensionNotice,
         reclaimSessionOnThisDevice,
         sendOtp,
         verifyOtp,
