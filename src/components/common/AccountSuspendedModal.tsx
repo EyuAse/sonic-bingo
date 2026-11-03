@@ -1,12 +1,44 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 
 export const AccountSuspendedModal: React.FC = () => {
-  const { suspensionNotice, dismissSuspensionNotice, logout } = useAuth();
+  const { suspensionNotice, dismissSuspensionNotice, logout, checkSuspensionStatus } = useAuth();
   const { switchPage } = useApp();
+  const [isChecking, setIsChecking] = useState(false);
+  const [checkFeedback, setCheckFeedback] = useState<string | null>(null);
+
+  // Active 1.5-second heartbeat poll while modal is visible
+  // Guarantees sub-second auto-dismiss without requiring an app reload
+  useEffect(() => {
+    if (!suspensionNotice) return;
+    const interval = setInterval(async () => {
+      try {
+        const isActive = await checkSuspensionStatus();
+        if (isActive) {
+          console.log('⚡ [AccountSuspendedModal] Heartbeat detected active status — auto-dismissing modal!');
+        }
+      } catch {}
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [suspensionNotice, checkSuspensionStatus]);
 
   if (!suspensionNotice) return null;
+
+  const handleManualCheck = async () => {
+    setIsChecking(true);
+    setCheckFeedback(null);
+    try {
+      const isActive = await checkSuspensionStatus();
+      if (!isActive) {
+        setCheckFeedback('Account is still suspended by compliance.');
+        setTimeout(() => setCheckFeedback(null), 3000);
+      }
+    } finally {
+      setTimeout(() => setIsChecking(false), 400);
+    }
+  };
 
   const handleContactSupport = () => {
     if (typeof window !== 'undefined') {
@@ -147,6 +179,40 @@ export const AccountSuspendedModal: React.FC = () => {
 
         {/* Action Buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {/* Instant Re-check / Refresh Status Button */}
+          <button
+            type="button"
+            onClick={handleManualCheck}
+            disabled={isChecking}
+            style={{
+              width: '100%',
+              padding: '13px 18px',
+              backgroundColor: '#10b981',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '14px',
+              fontWeight: 700,
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              cursor: isChecking ? 'not-allowed' : 'pointer',
+              opacity: isChecking ? 0.75 : 1,
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <i className={`fa-solid fa-arrows-rotate ${isChecking ? 'fa-spin' : ''}`} style={{ fontSize: '16px' }}></i>
+            {isChecking ? 'Checking status... / በማጣራት ላይ...' : 'Check Status / ሁኔታን አረጋግጥ'}
+          </button>
+
+          {checkFeedback && (
+            <div style={{ fontSize: '12px', color: '#ef4444', fontWeight: 600 }}>
+              {checkFeedback}
+            </div>
+          )}
+
           <button
             type="button"
             onClick={handleContactSupport}

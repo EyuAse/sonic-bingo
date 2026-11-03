@@ -118,8 +118,10 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         } catch { return null; }
       })();
 
-      if (data && data.userId && currentId) {
-        if (String(data.userId).toLowerCase() !== String(currentId).toLowerCase()) {
+      if (data && currentId) {
+        const matchesId = data.userId && String(data.userId).toLowerCase() === String(currentId).toLowerCase();
+        const matchesTg = data.telegramId && user?.telegramId && String(data.telegramId) === String(user.telegramId);
+        if (data.userId && !matchesId && !matchesTg) {
           return;
         }
       }
@@ -158,6 +160,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const unsubWithStatus = socketService.on('withdrawal_status_updated', () => fetchLiveBalance());
 
     let unsubUserBalance: (() => void) | null = null;
+    let unsubUserTgBalance: (() => void) | null = null;
     let unsubUserDepositApproved: (() => void) | null = null;
     let unsubUserWithdrawalApproved: (() => void) | null = null;
     let unsubUserWithdrawalRejected: (() => void) | null = null;
@@ -165,6 +168,9 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     if (user?.id) {
       socketService.setAuthenticatedUser(user.id, user.fullName);
       unsubUserBalance = socketService.on(`user_${user.id}_balance`, handleBalanceEvent);
+      if (user.telegramId) {
+        unsubUserTgBalance = socketService.on(`user_${user.telegramId}_balance`, handleBalanceEvent);
+      }
       unsubUserDepositApproved = socketService.on(`user_${user.id}_deposit_approved`, (data: any) => {
         console.log('⚡ [WalletContext] User Deposit Approved Push:', data);
         if (typeof data?.newBalance === 'number') {
@@ -212,6 +218,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       unsubDepStatus();
       unsubWithStatus();
       if (unsubUserBalance) unsubUserBalance();
+      if (unsubUserTgBalance) unsubUserTgBalance();
       if (unsubUserDepositApproved) unsubUserDepositApproved();
       if (unsubUserWithdrawalApproved) unsubUserWithdrawalApproved();
       if (unsubUserWithdrawalRejected) unsubUserWithdrawalRejected();

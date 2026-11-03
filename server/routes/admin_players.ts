@@ -454,37 +454,56 @@ adminPlayersRouter.post('/:id/status', requireAdmin, async (req: AuthenticatedRe
       return res.status(404).json({ success: false, error: 'Player not found' });
     }
     const u = userRes.rows[0];
+    const strId = String(id);
+    const tgId = u.telegram_id ? String(u.telegram_id) : null;
 
     if (newStatus === 'suspended') {
       await query(
         `UPDATE users SET status = 'suspended', suspend_reason = $1, suspended_at = NOW() WHERE id = $2`,
         [reason || 'Suspicious activity or terms violation', id]
       );
-      markUserSuspended(id, reason || 'Suspicious activity or terms violation');
+      markUserSuspended(strId, reason || 'Suspicious activity or terms violation');
+      if (tgId) markUserSuspended(tgId, reason || 'Suspicious activity or terms violation');
 
       // Real-time WebSocket kick & notification to active client
-      io.to(`user_${id}`).emit('user_account_suspended', {
+      const suspendPayload = {
+        userId: strId,
+        telegramId: tgId,
         reason: reason || 'Suspicious activity or terms violation'
-      });
-      io.emit(`user_${id}_suspended`, {
-        suspended: true,
-        reason: reason || 'Suspicious activity or terms violation'
-      });
-      io.emit('user_account_status_changed', { userId: id, status: 'suspended' });
+      };
+      io.to(`user_${strId}`).emit('user_account_suspended', suspendPayload);
+      io.to(`user_${u.id}`).emit('user_account_suspended', suspendPayload);
+      if (tgId) {
+        io.to(`user_${tgId}`).emit('user_account_suspended', suspendPayload);
+      }
+      io.emit(`user_${strId}_suspended`, { suspended: true, reason: suspendPayload.reason });
+      if (tgId) {
+        io.emit(`user_${tgId}_suspended`, { suspended: true, reason: suspendPayload.reason });
+      }
+      io.emit('user_account_status_changed', { userId: strId, telegramId: tgId, status: 'suspended', reason: suspendPayload.reason });
     } else {
       await query(
         `UPDATE users SET status = 'active', suspend_reason = NULL, suspended_at = NULL WHERE id = $1`,
         [id]
       );
-      markUserActive(id);
+      markUserActive(strId);
+      if (tgId) markUserActive(tgId);
 
-      io.to(`user_${id}`).emit('user_account_activated', {
+      const activatePayload = {
+        userId: strId,
+        telegramId: tgId,
         message: 'Your account has been reactivated.'
-      });
-      io.emit(`user_${id}_suspended`, {
-        suspended: false
-      });
-      io.emit('user_account_status_changed', { userId: id, status: 'active' });
+      };
+      io.to(`user_${strId}`).emit('user_account_activated', activatePayload);
+      io.to(`user_${u.id}`).emit('user_account_activated', activatePayload);
+      if (tgId) {
+        io.to(`user_${tgId}`).emit('user_account_activated', activatePayload);
+      }
+      io.emit(`user_${strId}_suspended`, { suspended: false });
+      if (tgId) {
+        io.emit(`user_${tgId}_suspended`, { suspended: false });
+      }
+      io.emit('user_account_status_changed', { userId: strId, telegramId: tgId, status: 'active' });
     }
 
     // Record audit log
@@ -604,20 +623,44 @@ adminPlayersRouter.post('/:id/adjust-balance', requireAdmin, async (req: Authent
       'Admin'
     ]);
 
-    // Real-time WebSocket sync to player client
-    const balancePayload = { userId: id, balance: newBal, bonus: newBon, newBalance: newBal, delta, reason };
-    io.to(`user_${id}`).emit('user_balance_updated', balancePayload);
-    io.emit(`user_${id}_balance`, balancePayload);
+    // Query user profile for Telegram notification & ID normalization
+    const strId = String(id);
+    let tgId: string | null = null;
+    let playerName = 'Player';
+    try {
+      const userRow = await query(`SELECT telegram_id, full_name FROM users WHERE id = $1`, [id]);
+      if (userRow.rows.length > 0) {
+        if (userRow.rows[0].telegram_id) tgId = String(userRow.rows[0].telegram_id);
+        if (userRow.rows[0].full_name) playerName = userRow.rows[0].full_name;
+      }
+    } catch {}
+
+    // Real-time WebSocket sync to player client with dual-tier targeting
+    const balancePayload = {
+      userId: strId,
+      telegramId: tgId,
+      balance: newBal,
+      bonus: newBon,
+      newBalance: newBal,
+      delta,
+      reason
+    };
+    io.to(`user_${strId}`).emit('user_balance_updated', balancePayload);
+    if (tgId) {
+      io.to(`user_${tgId}`).emit('user_balance_updated', balancePayload);
+    }
+    io.emit(`user_${strId}_balance`, balancePayload);
+    if (tgId) {
+      io.emit(`user_${tgId}_balance`, balancePayload);
+    }
     io.emit('user_balance_updated', balancePayload);
 
     // Send official Telegram Bot alert to player
-    try {
-      const userRow = await query(`SELECT telegram_id, full_name FROM users WHERE id = $1`, [id]);
-      if (userRow.rows.length > 0 && userRow.rows[0].telegram_id) {
-        const u = userRow.rows[0];
+    if (tgId) {
+      try {
         const actionIcon = isCredit ? '➕' : '➖';
         const actionLabel = isCredit ? 'Credit (ተቀማጭ)' : 'Debit (ተቀናሽ)';
-        const safeName = (u.full_name || 'Player')
+        const safeName = playerName
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;');
@@ -633,10 +676,10 @@ adminPlayersRouter.post('/:id/adjust-balance', requireAdmin, async (req: Authent
           `• <b>Reason:</b> ${safeReason}\n` +
           `• <b>Updated Balance:</b> ${(isBonus ? newBon : newBal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ETB\n\n` +
           `<i>Thank you for choosing Sonic Bingo!</i>`;
-        await TelegramBotService.getInstance().sendMessage(u.telegram_id, msg, { parseMode: 'HTML' });
+        await TelegramBotService.getInstance().sendMessage(tgId, msg, { parseMode: 'HTML' });
+      } catch (tgErr) {
+        console.warn('Telegram balance adjust notify notice:', tgErr);
       }
-    } catch (tgErr) {
-      console.warn('Telegram balance adjust notify notice:', tgErr);
     }
 
     return res.json({

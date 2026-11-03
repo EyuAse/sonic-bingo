@@ -225,8 +225,9 @@ export function setupGameSockets(io: Server) {
         const { roomId, userId, userName, cartelaIds, stakeAmount, isAutoPlay } = data;
 
         // Block gameplay for suspended players
-        if (userId) {
-          const suspension = await checkIfUserSuspended(userId);
+        const targetUserId = userId || authUserId;
+        if (targetUserId) {
+          const suspension = await checkIfUserSuspended(targetUserId);
           if (suspension.suspended) {
             const errRes = {
               success: false,
