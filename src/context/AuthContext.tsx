@@ -110,7 +110,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
   const [isFirstTimeTelegramUser, setIsFirstTimeTelegramUser] = useState<boolean>(false);
   const [concurrentSessionNotice, setConcurrentSessionNotice] = useState<{ reason: string; message: string } | null>(null);
-  const [suspensionNotice, setSuspensionNotice] = useState<{ reason: string } | null>(null);
+  const [suspensionNotice, setSuspensionNotice] = useState<{ reason: string } | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const stored = localStorage.getItem('sonic_user');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.status === 'suspended') {
+          return { reason: parsed.suspendReason || 'Account suspended by compliance.' };
+        }
+      }
+    } catch {}
+    return null;
+  });
 
   const dismissConcurrentSessionNotice = () => {
     setConcurrentSessionNotice(null);
@@ -309,12 +321,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 carrier: isRealServerPhone ? (apiResult.user.carrier || 'ethiotelecom') : undefined,
                 isPhoneVerified: !!isRealServerPhone,
                 role: apiResult.user.role || 'player',
+                status: (apiResult.user.status as any) || 'active',
+                suspendReason: apiResult.user.suspendReason || undefined,
                 referralCode: apiResult.user.referralCode,
                 attachedAccounts: apiResult.user.attachedAccounts || [],
                 pin: '1234',
                 createdAt: apiResult.user.createdAt || new Date().toISOString(),
                 lastLogin: new Date().toISOString()
               };
+
+              // Enforce or clear suspension state authoritatively from DB
+              if (apiResult.user.status === 'suspended') {
+                const reason = apiResult.user.suspendReason || 'Account suspended by compliance.';
+                setSuspensionNotice({ reason });
+                mappedUser.status = 'suspended';
+                mappedUser.suspendReason = reason;
+              } else {
+                setSuspensionNotice(null);
+                mappedUser.status = 'active';
+                mappedUser.suspendReason = undefined;
+              }
 
               setUser(mappedUser);
               setToken(apiResult.token);
@@ -373,12 +399,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 carrier: isRealWebPhone ? (u.carrier || 'ethiotelecom') : undefined,
                 isPhoneVerified: !!isRealWebPhone,
                 role: u.role || 'player',
+                status: (u.status as any) || 'active',
+                suspendReason: u.suspendReason || undefined,
                 referralCode: u.referralCode,
                 attachedAccounts: u.attachedAccounts || [],
                 pin: '1234',
                 createdAt: u.createdAt || new Date().toISOString(),
                 lastLogin: new Date().toISOString()
               };
+
+              if (u.status === 'suspended') {
+                const reason = u.suspendReason || 'Account suspended by compliance.';
+                setSuspensionNotice({ reason });
+                mappedUser.status = 'suspended';
+                mappedUser.suspendReason = reason;
+              } else {
+                setSuspensionNotice(null);
+                mappedUser.status = 'active';
+                mappedUser.suspendReason = undefined;
+              }
+
               setUser(mappedUser);
               setToken(storedToken);
               if (meRes.wallet) {

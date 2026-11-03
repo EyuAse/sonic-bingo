@@ -256,6 +256,8 @@ router.post('/telegram', async (req, res) => {
         avatar: userRow.avatar || '👤',
         photoUrl: userRow.photo_url,
         role: userRow.role,
+        status: userRow.status || 'active',
+        suspendReason: userRow.suspend_reason || null,
         referralCode: userRow.referral_code,
         attachedAccounts: userRow.attached_accounts || [],
         createdAt: userRow.created_at
@@ -447,7 +449,9 @@ router.post('/login', async (req, res) => {
         phone: userRow.phone,
         avatar: userRow.avatar || '👤',
         photoUrl: userRow.photo_url,
-        role: userRow.role
+        role: userRow.role,
+        status: userRow.status || 'active',
+        suspendReason: userRow.suspend_reason || null
       },
       wallet: {
         balance: parseFloat(userRow.balance || '0'),
@@ -494,6 +498,8 @@ router.get('/me', requireAuth, async (req: AuthenticatedRequest, res) => {
         avatar: userRow.avatar || '👤',
         photoUrl: userRow.photo_url,
         role: userRow.role,
+        status: userRow.status || 'active',
+        suspendReason: userRow.suspend_reason || null,
         attachedAccounts: userRow.attached_accounts || [],
         createdAt: userRow.created_at
       },
@@ -572,6 +578,8 @@ router.put('/profile', requireAuth, async (req: AuthenticatedRequest, res) => {
         avatar: userRow.avatar || '👤',
         photoUrl: userRow.photo_url,
         role: userRow.role,
+        status: userRow.status || 'active',
+        suspendReason: userRow.suspend_reason || null,
         attachedAccounts: userRow.attached_accounts || [],
         createdAt: userRow.created_at
       },
