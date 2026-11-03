@@ -1638,10 +1638,18 @@ router.get('/agents/:id/details', requireAdmin, async (req: AuthenticatedRequest
         WHERE agent_id = $1 AND status = 'approved'
       `, [id]),
       query(`
-        SELECT id, player_name, player_phone, amount, deposit_method, status, created_at
-        FROM agent_player_deposits
-        WHERE agent_id = $1
-        ORDER BY created_at DESC
+        SELECT 
+          apd.id, 
+          COALESCE(u.full_name, 'Player') as player_name, 
+          COALESCE(u.phone, '—') as player_phone, 
+          apd.amount, 
+          apd.payment_method as deposit_method, 
+          'completed' as status, 
+          apd.created_at
+        FROM agent_player_deposits apd
+        LEFT JOIN users u ON apd.player_user_id = u.id
+        WHERE apd.agent_id = $1
+        ORDER BY apd.created_at DESC
         LIMIT 10
       `, [id])
     ]);
