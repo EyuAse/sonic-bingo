@@ -9094,3 +9094,88 @@ tr.sel td {
   color: #fff;
   grid-column: span 2;
 }
+
+
+/* ===== Polished Enqu Inputs & Form Controls ===== */
+.enqu-modal-input,
+.enqu-panel-input {
+  display: block !important;
+  width: 100% !important;
+  background: #f4f4f5 !important;
+  border: 1.5px solid transparent !important;
+  border-radius: 12px !important;
+  padding: 11px 14px !important;
+  font-size: 14.5px !important;
+  font-weight: 600 !important;
+  color: #1b1b1b !important;
+  font-family: inherit !important;
+  box-sizing: border-box !important;
+  transition: border-color .15s, background .15s !important;
+}
+
+.enqu-modal-input:focus,
+.enqu-panel-input:focus {
+  outline: 0 !important;
+  background: #ffffff !important;
+  border-color: #1679ad !important;
+  box-shadow: 0 0 0 4px #e6f3fa !important;
+}
+
+.enqu-form-label {
+  display: block !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: var(--ink) !important;
+  margin: 14px 0 6px !important;
+}
+
+.enqu-form-hint {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--mute) !important;
+  margin-top: 5px !important;
+}
+
+.enqu-btn-secondary {
+  padding: 10px 18px !important;
+  border-radius: 14px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  background: #f0f0f2 !important;
+  color: #1b1b1b !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: background .15s !important;
+}
+
+.enqu-btn-secondary:hover {
+  background: #e4e4e6 !important;
+}
+
+.enqu-btn-primary {
+  padding: 11px 22px !important;
+  border-radius: 14px !important;
+  font-size: 14.5px !important;
+  font-weight: 700 !important;
+  background: #1f2220 !important;
+  color: #ffffff !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: background .15s !important;
+}
+
+.enqu-btn-primary:hover {
+  background: #000000 !important;
+}
+
+.enqu-btn-primary:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+
+/* Ensure full width on .enqu-dashboard-main */
+.enqu-dashboard-main {
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+}

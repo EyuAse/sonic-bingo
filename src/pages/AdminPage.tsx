@@ -44,7 +44,7 @@ export const AdminPage: React.FC = () => {
       {/* 2. Admin Content Viewport */}
       <div className={`admin-main-viewport ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         {/* Top Header Bar (Shown on non-Enqu desks) */}
-        {activeTab !== 'overview' && activeTab !== 'telegram-bot' && (
+        {activeTab !== 'overview' && activeTab !== 'telegram-bot' && activeTab !== 'agents' && (
           <header className="admin-viewport-header-light">
             <div className="viewport-header-left-light">
               {isSidebarCollapsed && (
@@ -77,7 +77,6 @@ export const AdminPage: React.FC = () => {
                   {activeTab === 'bots' && '200 Bot Player Accounts & Wallets'}
                   {activeTab === 'bot-engine' && 'Room 10 Dynamic Bot Engine (0-50 Control Desk)'}
                   {activeTab === 'cartelas' && '600 Serial Cartela Cards Library'}
-                  {activeTab === 'agents' && 'Decentralized Agents Network & Wallets'}
                   {activeTab === 'agent-recharges' && 'Agent Float Recharge Requests'}
                   {activeTab === 'agent-payouts' && 'Agent Commission Cashouts & Settlement (የወኪሎች ኮሚሽን ክፍያ)'}
                   {activeTab === 'official-accounts' && 'Official Platform Receiving Accounts (የክፍያ መቀበያ ሂሳቦች)'}
@@ -91,7 +90,6 @@ export const AdminPage: React.FC = () => {
                   {activeTab === 'bots' && 'እውነተኛ የውሂብ ጎታ ያላቸው 200 የቦቶች ዋሌቶች፣ ራስ-ሰር ተወራራጅነት እና የቀጥታ አሸናፊነት መዝገብ'}
                   {activeTab === 'bot-engine' && 'የክፍል 10 ተለዋዋጭ ቦቶች ቁጥጥር ማዕከል - ከ 0 እስከ 50 ቦቶች በቀጥታ ያስተካክሉ'}
                   {activeTab === 'cartelas' && '600 የቢንጎ ካርቴላ ካርዶች ቤተ-መጽሐፍት'}
-                  {activeTab === 'agents' && 'የወኪሎች መረብ፣ የዋሌት ቀሪ ሂሳብ፣ የኮሚሽን እና የደንበኞች ተቀማጭ መዝገብ'}
                   {activeTab === 'agent-recharges' && 'የወኪሎች የዋሌት መሙያ ጥያቄዎችን ይገምግሙ እና ያጽድቁ'}
                   {activeTab === 'agent-payouts' && 'የወኪሎች የኮሚሽን ወጪ ጥያቄዎችን በ Telebirr ወይም CBE ይክፈሉ፣ ያጽድቁ ወይም ይመልሱ'}
                   {activeTab === 'official-accounts' && 'የቢንጎ እና የፍሎት ክፍያ መቀበያ ኦፊሴላዊ ሂሳቦች (Telebirr, CBE, M-Pesa)'}
@@ -135,7 +133,7 @@ export const AdminPage: React.FC = () => {
         )}
 
         {/* Quick Tab Switcher Ribbon (Shown on non-Enqu desks) */}
-        {activeTab !== 'overview' && activeTab !== 'telegram-bot' && (
+        {activeTab !== 'overview' && activeTab !== 'telegram-bot' && activeTab !== 'agents' && (
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -208,7 +206,7 @@ export const AdminPage: React.FC = () => {
         )}
 
         {/* Tab Content Panes */}
-        <main className={`admin-tab-content ${activeTab === 'overview' || activeTab === 'telegram-bot' ? 'enqu-overview-mode' : ''}`}>
+        <main className={`admin-tab-content ${activeTab === 'overview' || activeTab === 'telegram-bot' || activeTab === 'agents' ? 'enqu-overview-mode' : ''}`}>
           {/* TAB 1: OVERVIEW & ANALYTICS */}
           {activeTab === 'overview' && <DashboardOverview onNavigateTab={setActiveTab} />}
 

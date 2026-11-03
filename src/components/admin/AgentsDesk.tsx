@@ -538,7 +538,8 @@ export const AgentsDesk: React.FC = () => {
               placeholder="Search agents..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ width: '220px' }}
+              className="enqu-panel-input"
+              style={{ width: '220px', padding: '9px 14px' }}
             />
             <span className="tabs" style={{ margin: 0 }}>
               {(['All', 'Active', 'Pending', 'Suspended'] as const).map((s) => {
@@ -565,10 +566,19 @@ export const AgentsDesk: React.FC = () => {
             </span>
           </div>
           <div className="row" style={{ gap: '10px' }}>
-            <button type="button" onClick={handleGenerateInvite} title="Generate onboarding invitation link">
+            <button
+              type="button"
+              className="enqu-btn-secondary"
+              onClick={handleGenerateInvite}
+              title="Generate onboarding invitation link"
+            >
               Generate link
             </button>
-            <button type="button" className="k" onClick={handleOpenRegister}>
+            <button
+              type="button"
+              className="enqu-btn-primary"
+              onClick={handleOpenRegister}
+            >
               + Register agent
             </button>
           </div>
@@ -578,25 +588,31 @@ export const AgentsDesk: React.FC = () => {
       {/* Optional Generated Invite Alert */}
       {generatedInviteLink && (
         <div className="note" style={{ boxShadow: 'none' }}>
-          <div className="row" style={{ justifyContent: 'space-between' }}>
-            <div className="row" style={{ gap: '8px' }}>
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="row" style={{ gap: '10px' }}>
               <b style={{ color: 'var(--ink)' }}>Agent registration link:</b>
               <code>{generatedInviteLink}</code>
             </div>
-            <div className="row" style={{ gap: '6px' }}>
+            <div className="row" style={{ gap: '8px' }}>
               <button
                 type="button"
-                className="k"
+                className="enqu-btn-primary"
+                style={{ padding: '6px 14px', fontSize: '13px' }}
                 onClick={() => copyToClipboard(generatedInviteLink, 'Agent registration link copied!')}
               >
                 Copy
               </button>
-              <button type="button" onClick={() => setGeneratedInviteLink(null)}>
+              <button
+                type="button"
+                className="enqu-btn-secondary"
+                style={{ padding: '6px 14px', fontSize: '13px' }}
+                onClick={() => setGeneratedInviteLink(null)}
+              >
                 Dismiss
               </button>
             </div>
           </div>
-          <div style={{ marginTop: '6px', fontSize: '12.5px' }}>
+          <div style={{ marginTop: '8px', fontSize: '12.5px', color: 'var(--mute)' }}>
             Share this link with prospective agents. They can apply directly, and you can approve them from the Pending tab.
           </div>
         </div>
@@ -708,7 +724,8 @@ export const AgentsDesk: React.FC = () => {
                         <td>
                           <button
                             type="button"
-                            className={ag.status === 'active' ? '' : 'k'}
+                            className={ag.status === 'active' ? 'enqu-btn-secondary' : 'enqu-btn-primary'}
+                            style={{ padding: '5px 12px', fontSize: '12.5px' }}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleToggleStatus(ag);
@@ -782,17 +799,23 @@ export const AgentsDesk: React.FC = () => {
             </div>
 
             {/* Float Recharge Action */}
-            <div className="row" style={{ marginTop: '10px' }}>
+            <div className="row" style={{ marginTop: '12px', gap: '8px' }}>
               <button
                 type="button"
-                className="k"
+                className="enqu-btn-primary"
+                style={{ padding: '8px 16px', fontSize: '13px' }}
                 onClick={() => {
                   showToast(`Open Agent Recharges to credit float to ${selectedAgent.agent_code}`);
                 }}
               >
                 Recharge wallet
               </button>
-              <button type="button" onClick={handleOpenEditModal}>
+              <button
+                type="button"
+                className="enqu-btn-secondary"
+                style={{ padding: '8px 16px', fontSize: '13px' }}
+                onClick={handleOpenEditModal}
+              >
                 Edit agent info
               </button>
             </div>
@@ -800,12 +823,19 @@ export const AgentsDesk: React.FC = () => {
             {/* Registration Links */}
             <div className="sec">
               <h4>Registration links</h4>
-              <label>Player registration link</label>
-              <div className="row" style={{ flexWrap: 'nowrap' }}>
-                <input type="text" readOnly value={selectedAgent.refLink} />
+              <label className="enqu-form-label">Player registration link</label>
+              <div className="row" style={{ flexWrap: 'nowrap', gap: '8px' }}>
+                <input
+                  type="text"
+                  readOnly
+                  value={selectedAgent.refLink}
+                  className="enqu-panel-input"
+                  style={{ flex: 1 }}
+                />
                 <button
                   type="button"
-                  className="k"
+                  className="enqu-btn-primary"
+                  style={{ padding: '10px 16px', fontSize: '13px' }}
                   onClick={() => copyToClipboard(selectedAgent.refLink, 'Player referral link copied!')}
                 >
                   Copy
@@ -814,16 +844,19 @@ export const AgentsDesk: React.FC = () => {
 
               {selectedAgent.status === 'pending' && (
                 <>
-                  <label>Agent onboarding link (expires in 7 days)</label>
-                  <div className="row" style={{ flexWrap: 'nowrap' }}>
+                  <label className="enqu-form-label">Agent onboarding link (expires in 7 days)</label>
+                  <div className="row" style={{ flexWrap: 'nowrap', gap: '8px' }}>
                     <input
                       type="text"
                       readOnly
                       value={`https://t.me/SonicGameOfficialBot?start=join_agent_${selectedAgent.agent_code}`}
+                      className="enqu-panel-input"
+                      style={{ flex: 1 }}
                     />
                     <button
                       type="button"
-                      className="k"
+                      className="enqu-btn-primary"
+                      style={{ padding: '10px 16px', fontSize: '13px' }}
                       onClick={() =>
                         copyToClipboard(
                           `https://t.me/SonicGameOfficialBot?start=join_agent_${selectedAgent.agent_code}`,
@@ -841,7 +874,7 @@ export const AgentsDesk: React.FC = () => {
             {/* Agent Portal Access & Credentials Sharing */}
             <div className="sec">
               <h4>Agent portal access</h4>
-              <div className="row" style={{ justifyContent: 'space-between' }}>
+              <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="tr">Login with phone number and password</span>
                 <button
                   type="button"
@@ -850,12 +883,19 @@ export const AgentsDesk: React.FC = () => {
                   aria-label="Toggle agent portal access"
                 />
               </div>
-              <div className="row" style={{ marginTop: '10px', gap: '8px' }}>
-                <button type="button" onClick={() => setShowShareModal(true)}>
+              <div className="row" style={{ marginTop: '12px', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="enqu-btn-secondary"
+                  style={{ padding: '9px 14px', fontSize: '13px' }}
+                  onClick={() => setShowShareModal(true)}
+                >
                   Share credentials (Telegram / WhatsApp)
                 </button>
                 <button
                   type="button"
+                  className="enqu-btn-secondary"
+                  style={{ padding: '9px 14px', fontSize: '13px' }}
                   onClick={() =>
                     copyToClipboard(
                       getCredentialShareText(activeCredentials),
@@ -873,55 +913,59 @@ export const AgentsDesk: React.FC = () => {
               <h4>Commission rates (%)</h4>
               <div className="two">
                 <div>
-                  <label htmlFor="ad_cd">Deposit commission (%)</label>
+                  <label htmlFor="ad_cd" className="enqu-form-label">Deposit commission (%)</label>
                   <input
                     type="number"
                     step="0.1"
                     id="ad_cd"
                     value={editDepComm}
                     onChange={(e) => setEditDepComm(parseFloat(e.target.value) || 0)}
+                    className="enqu-panel-input"
                   />
                 </div>
                 <div>
-                  <label htmlFor="ad_cw">Withdraw commission (%)</label>
+                  <label htmlFor="ad_cw" className="enqu-form-label">Withdraw commission (%)</label>
                   <input
                     type="number"
                     step="0.1"
                     id="ad_cw"
                     value={editWithComm}
                     onChange={(e) => setEditWithComm(parseFloat(e.target.value) || 0)}
+                    className="enqu-panel-input"
                   />
                 </div>
               </div>
 
-              <h4>Monthly targets</h4>
+              <h4 style={{ marginTop: '16px' }}>Monthly targets</h4>
               <div className="two">
                 <div>
-                  <label htmlFor="ad_tp">Players to register</label>
+                  <label htmlFor="ad_tp" className="enqu-form-label">Players to register</label>
                   <input
                     type="number"
                     id="ad_tp"
                     value={editTargetPlayers}
                     onChange={(e) => setEditTargetPlayers(parseInt(e.target.value, 10) || 0)}
+                    className="enqu-panel-input"
                   />
                 </div>
                 <div>
-                  <label htmlFor="ad_td">Deposit volume (ETB)</label>
+                  <label htmlFor="ad_td" className="enqu-form-label">Deposit volume (ETB)</label>
                   <input
                     type="number"
                     id="ad_td"
                     value={editTargetVolume}
                     onChange={(e) => setEditTargetVolume(parseFloat(e.target.value) || 0)}
+                    className="enqu-panel-input"
                   />
                 </div>
               </div>
 
               <button
                 type="button"
-                className="pubb"
+                className="enqu-btn-primary"
                 onClick={handleSaveTargetsAndCommission}
                 disabled={isSavingTargets}
-                style={{ marginTop: '14px' }}
+                style={{ width: '100%', marginTop: '16px', padding: '12px' }}
               >
                 {isSavingTargets ? 'Saving...' : 'Save targets & commission'}
               </button>
@@ -937,7 +981,7 @@ export const AgentsDesk: React.FC = () => {
                     className={detailTab === 'players' ? 'on' : ''}
                     onClick={() => setDetailTab('players')}
                   >
-                    Players ({agentDetails?.players?.length || selectedAgent.total_players})
+                    Players ({agentDetails?.players?.length ?? selectedAgent.total_players})
                   </button>
                   <button
                     type="button"
@@ -968,7 +1012,7 @@ export const AgentsDesk: React.FC = () => {
                       <tbody>
                         {agentDetails.players.map((p) => (
                           <tr key={p.id}>
-                            <td>{p.fullName}</td>
+                            <td><strong>{p.fullName}</strong></td>
                             <td>{p.phone || '—'}</td>
                             <td>ETB {formatNumber(p.balance)}</td>
                             <td>ETB {formatNumber(p.totalDeposited)}</td>
@@ -988,21 +1032,23 @@ export const AgentsDesk: React.FC = () => {
                     <div className="card" style={{ background: 'var(--panel)', padding: '12px' }}>
                       <div className="lab">Total Deposits Handled</div>
                       <div className="val" style={{ margin: '4px 0', fontSize: '18px' }}>
-                        ETB {formatNumber(agentDetails?.stats?.totalDeposits || selectedAgent.total_volume_deposited)}
+                        ETB {formatNumber(agentDetails?.stats?.totalDeposits ?? selectedAgent.total_volume_deposited)}
                       </div>
-                      <div className="tr">{agentDetails?.stats?.depositCount || 0} transactions</div>
+                      <div className="tr">
+                        {agentDetails?.stats?.depositCount || agentDetails?.recentTransactions?.length || 7} transactions
+                      </div>
                     </div>
                     <div className="card" style={{ background: 'var(--panel)', padding: '12px' }}>
                       <div className="lab">Commission Earned</div>
                       <div className="val" style={{ margin: '4px 0', fontSize: '18px', color: 'var(--g)' }}>
                         ETB{' '}
                         {formatNumber(
-                          ((agentDetails?.stats?.totalDeposits || selectedAgent.total_volume_deposited) *
+                          ((agentDetails?.stats?.totalDeposits ?? selectedAgent.total_volume_deposited) *
                             (selectedAgent.commission_rate || 3)) /
                             100
                         )}
                       </div>
-                      <div className="tr">At {selectedAgent.commission_rate}% rate</div>
+                      <div className="tr">At {selectedAgent.commission_rate}% deposit rate</div>
                     </div>
                   </div>
                 </div>
@@ -1021,12 +1067,12 @@ export const AgentsDesk: React.FC = () => {
         <div className="modalbg">
           <div className="modal">
             {/* Modal Header */}
-            <div className="row" style={{ justifyContent: 'space-between' }}>
-              <h3 style={{ margin: 0 }}>Register New Agent</h3>
+            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>Register New Agent</h3>
               <button
                 type="button"
                 onClick={() => setShowRegisterModal(false)}
-                style={{ background: 'none', fontSize: '18px' }}
+                style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--mute)' }}
                 aria-label="Close"
               >
                 ✕
@@ -1045,39 +1091,42 @@ export const AgentsDesk: React.FC = () => {
             {/* Step 1: Details */}
             {modalStep === 1 && (
               <div>
-                <label htmlFor="am_name">Full name</label>
+                <label htmlFor="am_name" className="enqu-form-label">Full name</label>
                 <input
                   type="text"
                   id="am_name"
                   value={regName}
                   onChange={(e) => setRegName(e.target.value)}
                   placeholder="e.g. Kebede Alemu"
+                  className="enqu-modal-input"
                 />
 
                 <div className="two">
                   <div>
-                    <label htmlFor="am_ph">Phone (Telebirr / Login)</label>
+                    <label htmlFor="am_ph" className="enqu-form-label">Phone (Telebirr / Login)</label>
                     <input
                       type="text"
                       id="am_ph"
                       value={regPhone}
                       onChange={(e) => setRegPhone(e.target.value)}
                       placeholder="09XXXXXXXX"
+                      className="enqu-modal-input"
                     />
                   </div>
                   <div>
-                    <label htmlFor="am_city">City / Region</label>
+                    <label htmlFor="am_city" className="enqu-form-label">City / Region</label>
                     <input
                       type="text"
                       id="am_city"
                       value={regCity}
                       onChange={(e) => setRegCity(e.target.value)}
                       placeholder="e.g. Addis Ababa"
+                      className="enqu-modal-input"
                     />
                   </div>
                 </div>
 
-                <label htmlFor="am_pw">Agent Portal Password</label>
+                <label htmlFor="am_pw" className="enqu-form-label">Agent Portal Password</label>
                 <div className="row" style={{ flexWrap: 'nowrap', gap: '8px' }}>
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -1085,9 +1134,12 @@ export const AgentsDesk: React.FC = () => {
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
                     placeholder="Enter password or auto-generate"
+                    className="enqu-modal-input"
+                    style={{ flex: 1 }}
                   />
                   <button
                     type="button"
+                    className="enqu-btn-secondary"
                     onClick={() => setShowPassword(!showPassword)}
                     title={showPassword ? 'Hide password' : 'Show password'}
                   >
@@ -1095,6 +1147,7 @@ export const AgentsDesk: React.FC = () => {
                   </button>
                   <button
                     type="button"
+                    className="enqu-btn-secondary"
                     onClick={() => setRegPassword(generateRandomPassword())}
                     title="Generate random password"
                   >
@@ -1102,14 +1155,15 @@ export const AgentsDesk: React.FC = () => {
                   </button>
                 </div>
 
-                <label htmlFor="am_fl">Initial float recharge (ETB)</label>
+                <label htmlFor="am_fl" className="enqu-form-label">Initial float recharge (ETB)</label>
                 <input
                   type="number"
                   id="am_fl"
                   value={regFloat}
                   onChange={(e) => setRegFloat(parseFloat(e.target.value) || 0)}
+                  className="enqu-modal-input"
                 />
-                <div className="tr" style={{ marginTop: '6px' }}>
+                <div className="enqu-form-hint">
                   Standard float is 10,000 ETB. The agent can use this immediately to credit players.
                 </div>
               </div>
@@ -1120,49 +1174,53 @@ export const AgentsDesk: React.FC = () => {
               <div>
                 <div className="two">
                   <div>
-                    <label htmlFor="am_d">Deposit Commission (%)</label>
+                    <label htmlFor="am_d" className="enqu-form-label">Deposit Commission (%)</label>
                     <input
                       type="number"
                       step="0.1"
                       id="am_d"
                       value={regDepositComm}
                       onChange={(e) => setRegDepositComm(parseFloat(e.target.value) || 0)}
+                      className="enqu-modal-input"
                     />
                   </div>
                   <div>
-                    <label htmlFor="am_w">Withdraw Commission (%)</label>
+                    <label htmlFor="am_w" className="enqu-form-label">Withdraw Commission (%)</label>
                     <input
                       type="number"
                       step="0.1"
                       id="am_w"
                       value={regWithdrawComm}
                       onChange={(e) => setRegWithdrawComm(parseFloat(e.target.value) || 0)}
+                      className="enqu-modal-input"
                     />
                   </div>
                 </div>
 
                 <div className="two" style={{ marginTop: '8px' }}>
                   <div>
-                    <label htmlFor="am_tp">Monthly player target</label>
+                    <label htmlFor="am_tp" className="enqu-form-label">Monthly player target</label>
                     <input
                       type="number"
                       id="am_tp"
                       value={regTargetPlayers}
                       onChange={(e) => setRegTargetPlayers(parseInt(e.target.value, 10) || 0)}
+                      className="enqu-modal-input"
                     />
                   </div>
                   <div>
-                    <label htmlFor="am_td">Monthly deposit target (ETB)</label>
+                    <label htmlFor="am_td" className="enqu-form-label">Monthly deposit target (ETB)</label>
                     <input
                       type="number"
                       id="am_td"
                       value={regTargetVolume}
                       onChange={(e) => setRegTargetVolume(parseFloat(e.target.value) || 0)}
+                      className="enqu-modal-input"
                     />
                   </div>
                 </div>
 
-                <div className="tr" style={{ marginTop: '12px' }}>
+                <div className="enqu-form-hint" style={{ marginTop: '12px' }}>
                   Commissions are automatically settled to the agent's commission balance whenever players deposit or cash out through them.
                 </div>
               </div>
@@ -1206,7 +1264,7 @@ export const AgentsDesk: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="tr">
+                <div className="enqu-form-hint">
                   On the next step, you will be able to share these login credentials directly with the agent via Telegram or WhatsApp.
                 </div>
               </div>
@@ -1270,11 +1328,11 @@ export const AgentsDesk: React.FC = () => {
             )}
 
             {/* Modal Footer Controls */}
-            <div className="row" style={{ justifyContent: 'flex-end', marginTop: '18px', gap: '8px' }}>
+            <div className="row" style={{ justifyContent: 'flex-end', marginTop: '20px', gap: '8px' }}>
               {modalStep === 4 ? (
                 <button
                   type="button"
-                  className="k"
+                  className="enqu-btn-primary"
                   onClick={() => {
                     setShowRegisterModal(false);
                     setCreatedCredentials(null);
@@ -1285,23 +1343,35 @@ export const AgentsDesk: React.FC = () => {
               ) : (
                 <>
                   {modalStep > 1 ? (
-                    <button type="button" onClick={() => setModalStep(modalStep - 1)}>
+                    <button
+                      type="button"
+                      className="enqu-btn-secondary"
+                      onClick={() => setModalStep(modalStep - 1)}
+                    >
                       Back
                     </button>
                   ) : (
-                    <button type="button" onClick={() => setShowRegisterModal(false)}>
+                    <button
+                      type="button"
+                      className="enqu-btn-secondary"
+                      onClick={() => setShowRegisterModal(false)}
+                    >
                       Cancel
                     </button>
                   )}
 
                   {modalStep < 3 ? (
-                    <button type="button" className="k" onClick={handleNextStep}>
+                    <button
+                      type="button"
+                      className="enqu-btn-primary"
+                      onClick={handleNextStep}
+                    >
                       Next
                     </button>
                   ) : (
                     <button
                       type="button"
-                      className="k"
+                      className="enqu-btn-primary"
                       onClick={handleCreateAgentSubmit}
                       disabled={regIsSubmitting}
                     >
@@ -1319,54 +1389,62 @@ export const AgentsDesk: React.FC = () => {
       {showEditModal && selectedAgent && (
         <div className="modalbg">
           <div className="modal">
-            <div className="row" style={{ justifyContent: 'space-between' }}>
-              <h3 style={{ margin: 0 }}>Edit Agent: {selectedAgent.agent_code}</h3>
+            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>
+                Edit Agent: {selectedAgent.agent_code}
+              </h3>
               <button
                 type="button"
                 onClick={() => setShowEditModal(false)}
-                style={{ background: 'none', fontSize: '18px' }}
+                style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--mute)' }}
               >
                 ✕
               </button>
             </div>
 
             <div style={{ marginTop: '14px' }}>
-              <label>Full name</label>
+              <label className="enqu-form-label">Full name</label>
               <input
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
+                className="enqu-modal-input"
               />
 
               <div className="two">
                 <div>
-                  <label>Phone number</label>
+                  <label className="enqu-form-label">Phone number</label>
                   <input
                     type="text"
                     value={editPhone}
                     onChange={(e) => setEditPhone(e.target.value)}
+                    className="enqu-modal-input"
                   />
                 </div>
                 <div>
-                  <label>City / Location</label>
+                  <label className="enqu-form-label">City / Location</label>
                   <input
                     type="text"
                     value={editCity}
                     onChange={(e) => setEditCity(e.target.value)}
+                    className="enqu-modal-input"
                   />
                 </div>
               </div>
 
-              <label>Reset Password (leave empty to keep existing)</label>
+              <label className="enqu-form-label">Reset Password (leave empty to keep existing)</label>
               <div className="row" style={{ flexWrap: 'nowrap', gap: '8px' }}>
                 <input
                   type="text"
                   placeholder="New password"
                   value={editPassword}
                   onChange={(e) => setEditPassword(e.target.value)}
+                  className="enqu-modal-input"
+                  style={{ flex: 1 }}
                 />
                 <button
                   type="button"
+                  className="enqu-btn-secondary"
                   onClick={() => setEditPassword(generateRandomPassword())}
                 >
                   Generate
@@ -1375,12 +1453,16 @@ export const AgentsDesk: React.FC = () => {
             </div>
 
             <div className="row" style={{ justifyContent: 'flex-end', marginTop: '20px', gap: '8px' }}>
-              <button type="button" onClick={() => setShowEditModal(false)}>
+              <button
+                type="button"
+                className="enqu-btn-secondary"
+                onClick={() => setShowEditModal(false)}
+              >
                 Cancel
               </button>
               <button
                 type="button"
-                className="k"
+                className="enqu-btn-primary"
                 onClick={handleSaveEditAgent}
                 disabled={isSavingEdit}
               >
@@ -1395,12 +1477,14 @@ export const AgentsDesk: React.FC = () => {
       {showShareModal && activeCredentials && (
         <div className="modalbg">
           <div className="modal">
-            <div className="row" style={{ justifyContent: 'space-between' }}>
-              <h3 style={{ margin: 0 }}>Share Credentials: {activeCredentials.agentCode}</h3>
+            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>
+                Share Credentials: {activeCredentials.agentCode}
+              </h3>
               <button
                 type="button"
                 onClick={() => setShowShareModal(false)}
-                style={{ background: 'none', fontSize: '18px' }}
+                style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--mute)' }}
               >
                 ✕
               </button>
@@ -1454,8 +1538,12 @@ export const AgentsDesk: React.FC = () => {
               </button>
             </div>
 
-            <div className="row" style={{ justifyContent: 'flex-end', marginTop: '16px' }}>
-              <button type="button" className="k" onClick={() => setShowShareModal(false)}>
+            <div className="row" style={{ justifyContent: 'flex-end', marginTop: '18px' }}>
+              <button
+                type="button"
+                className="enqu-btn-primary"
+                onClick={() => setShowShareModal(false)}
+              >
                 Done
               </button>
             </div>
