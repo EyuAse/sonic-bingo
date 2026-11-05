@@ -6,7 +6,7 @@ import { telegramBotService } from '../services/telegramBotService.ts';
 
 const router = Router();
 
-// Ensure DB columns exist for enhanced withdrawal tracking
+// Ensure DB columns and settings table exist for enhanced withdrawal tracking
 let isSchemaMigrated = false;
 async function ensureWithdrawalColumns() {
   if (isSchemaMigrated) return;
@@ -17,10 +17,28 @@ async function ensureWithdrawalColumns() {
       ALTER TABLE withdrawal_requests ADD COLUMN IF NOT EXISTS admin_note TEXT;
       ALTER TABLE withdrawal_requests ADD COLUMN IF NOT EXISTS reviewed_by_name VARCHAR(100);
       ALTER TABLE users ADD COLUMN IF NOT EXISTS is_kyc_verified BOOLEAN DEFAULT false;
+
+      CREATE TABLE IF NOT EXISTS withdrawal_settings (
+        id VARCHAR(50) PRIMARY KEY DEFAULT 'default',
+        current_pin VARCHAR(20) DEFAULT '5678',
+        max_request_limit NUMERIC(10, 2) DEFAULT 5000,
+        high_value_threshold NUMERIC(10, 2) DEFAULT 2000,
+        min_request_limit NUMERIC(10, 2) DEFAULT 50,
+        require_kyc_verification BOOLEAN DEFAULT false,
+        require_turnover_met BOOLEAN DEFAULT true,
+        strict_name_matching BOOLEAN DEFAULT true,
+        telegram_player_alerts BOOLEAN DEFAULT true,
+        auto_refresh_seconds INT DEFAULT 15,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+
+      INSERT INTO withdrawal_settings (id, current_pin, max_request_limit, high_value_threshold, min_request_limit, require_kyc_verification, require_turnover_met, strict_name_matching, telegram_player_alerts, auto_refresh_seconds)
+      VALUES ('default', '5678', 5000, 2000, 50, false, true, true, true, 15)
+      ON CONFLICT (id) DO NOTHING;
     `);
     isSchemaMigrated = true;
   } catch (err) {
-    console.warn('⚠️ [Withdrawals Admin] Column migration note:', err);
+    console.warn('⚠️ [Withdrawals Admin] Column/Settings migration note:', err);
   }
 }
 ensureWithdrawalColumns().catch(() => {});
@@ -76,7 +94,19 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 
     const cleanPin = String(pin).trim();
-    const isWithdrawalOfficer = cleanPin === WITHDRAWAL_ADMIN_PIN;
+
+    // Query active PIN from DB settings (with fallback to environment default)
+    let dbOfficerPin = WITHDRAWAL_ADMIN_PIN;
+    try {
+      const pinRes = await query(`SELECT current_pin FROM withdrawal_settings WHERE id = 'default' LIMIT 1`);
+      if (pinRes.rows[0]?.current_pin) {
+        dbOfficerPin = String(pinRes.rows[0].current_pin).trim();
+      }
+    } catch (e) {
+      // Fallback to env default
+    }
+
+    const isWithdrawalOfficer = cleanPin === dbOfficerPin || cleanPin === WITHDRAWAL_ADMIN_PIN;
     const isSuperAdmin = cleanPin === SUPER_ADMIN_PIN;
 
     if (!isWithdrawalOfficer && !isSuperAdmin) {
@@ -748,6 +778,186 @@ router.post('/:id/reject', requireWithdrawalAdmin, async (req: WithdrawalAdminRe
   } catch (err: any) {
     console.error('❌ [Withdrawal Reject Error]:', err);
     return res.status(400).json({ success: false, error: err.message || 'Failed to reject withdrawal' });
+  }
+});
+
+/**
+ * GET /api/withdrawals-admin/settings
+ * Retrieves operational payout policies and limits
+ */
+router.get('/settings', requireWithdrawalAdmin, async (_req: WithdrawalAdminRequest, res: Response) => {
+  try {
+    const result = await query(`
+      SELECT 
+        max_request_limit,
+        high_value_threshold,
+        min_request_limit,
+        require_kyc_verification,
+        require_turnover_met,
+        strict_name_matching,
+        telegram_player_alerts,
+        auto_refresh_seconds,
+        updated_at
+      FROM withdrawal_settings
+      WHERE id = 'default'
+      LIMIT 1
+    `);
+
+    if (result.rows.length === 0) {
+      return res.json({
+        success: true,
+        settings: {
+          max_request_limit: 5000,
+          high_value_threshold: 2000,
+          min_request_limit: 50,
+          require_kyc_verification: false,
+          require_turnover_met: true,
+          strict_name_matching: true,
+          telegram_player_alerts: true,
+          auto_refresh_seconds: 15
+        }
+      });
+    }
+
+    const row = result.rows[0];
+    return res.json({
+      success: true,
+      settings: {
+        max_request_limit: Number(row.max_request_limit || 5000),
+        high_value_threshold: Number(row.high_value_threshold || 2000),
+        min_request_limit: Number(row.min_request_limit || 50),
+        require_kyc_verification: Boolean(row.require_kyc_verification),
+        require_turnover_met: Boolean(row.require_turnover_met),
+        strict_name_matching: Boolean(row.strict_name_matching),
+        telegram_player_alerts: Boolean(row.telegram_player_alerts),
+        auto_refresh_seconds: Number(row.auto_refresh_seconds || 15),
+        updated_at: row.updated_at
+      }
+    });
+  } catch (err: any) {
+    console.error('❌ [Withdrawal Get Settings Error]:', err);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve settings' });
+  }
+});
+
+/**
+ * POST /api/withdrawals-admin/settings
+ * Updates operational payout limits and AML policy preferences
+ */
+router.post('/settings', requireWithdrawalAdmin, async (req: WithdrawalAdminRequest, res: Response) => {
+  try {
+    const {
+      max_request_limit,
+      high_value_threshold,
+      min_request_limit,
+      require_kyc_verification,
+      require_turnover_met,
+      strict_name_matching,
+      telegram_player_alerts,
+      auto_refresh_seconds
+    } = req.body;
+
+    const result = await query(`
+      INSERT INTO withdrawal_settings (
+        id,
+        max_request_limit,
+        high_value_threshold,
+        min_request_limit,
+        require_kyc_verification,
+        require_turnover_met,
+        strict_name_matching,
+        telegram_player_alerts,
+        auto_refresh_seconds,
+        updated_at
+      ) VALUES (
+        'default',
+        COALESCE($1, 5000),
+        COALESCE($2, 2000),
+        COALESCE($3, 50),
+        COALESCE($4, false),
+        COALESCE($5, true),
+        COALESCE($6, true),
+        COALESCE($7, true),
+        COALESCE($8, 15),
+        NOW()
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        max_request_limit = COALESCE(EXCLUDED.max_request_limit, withdrawal_settings.max_request_limit),
+        high_value_threshold = COALESCE(EXCLUDED.high_value_threshold, withdrawal_settings.high_value_threshold),
+        min_request_limit = COALESCE(EXCLUDED.min_request_limit, withdrawal_settings.min_request_limit),
+        require_kyc_verification = COALESCE(EXCLUDED.require_kyc_verification, withdrawal_settings.require_kyc_verification),
+        require_turnover_met = COALESCE(EXCLUDED.require_turnover_met, withdrawal_settings.require_turnover_met),
+        strict_name_matching = COALESCE(EXCLUDED.strict_name_matching, withdrawal_settings.strict_name_matching),
+        telegram_player_alerts = COALESCE(EXCLUDED.telegram_player_alerts, withdrawal_settings.telegram_player_alerts),
+        auto_refresh_seconds = COALESCE(EXCLUDED.auto_refresh_seconds, withdrawal_settings.auto_refresh_seconds),
+        updated_at = NOW()
+      RETURNING *
+    `, [
+      max_request_limit != null ? Number(max_request_limit) : null,
+      high_value_threshold != null ? Number(high_value_threshold) : null,
+      min_request_limit != null ? Number(min_request_limit) : null,
+      require_kyc_verification != null ? Boolean(require_kyc_verification) : null,
+      require_turnover_met != null ? Boolean(require_turnover_met) : null,
+      strict_name_matching != null ? Boolean(strict_name_matching) : null,
+      telegram_player_alerts != null ? Boolean(telegram_player_alerts) : null,
+      auto_refresh_seconds != null ? Number(auto_refresh_seconds) : null
+    ]);
+
+    const updated = result.rows[0];
+    return res.json({
+      success: true,
+      message: 'Withdrawal operational settings saved successfully.',
+      settings: updated
+    });
+  } catch (err: any) {
+    console.error('❌ [Withdrawal Save Settings Error]:', err);
+    return res.status(500).json({ success: false, error: 'Failed to update settings' });
+  }
+});
+
+/**
+ * POST /api/withdrawals-admin/change-pin
+ * Validates the current PIN and updates to a new 4-6 digit officer PIN
+ */
+router.post('/change-pin', requireWithdrawalAdmin, async (req: WithdrawalAdminRequest, res: Response) => {
+  try {
+    const { currentPin, newPin } = req.body;
+    if (!currentPin || !newPin) {
+      return res.status(400).json({ success: false, error: 'Current PIN and New PIN are both required' });
+    }
+
+    const cleanCurrent = String(currentPin).trim();
+    const cleanNew = String(newPin).trim();
+
+    if (!/^\d{4,6}$/.test(cleanNew)) {
+      return res.status(400).json({ success: false, error: 'New PIN must be 4 to 6 numeric digits' });
+    }
+
+    // Verify current PIN against DB (fallback to env)
+    const pinRes = await query(`SELECT current_pin FROM withdrawal_settings WHERE id = 'default' LIMIT 1`);
+    const activePin = pinRes.rows[0]?.current_pin ? String(pinRes.rows[0].current_pin).trim() : WITHDRAWAL_ADMIN_PIN;
+
+    const isCurrentValid = cleanCurrent === activePin || cleanCurrent === WITHDRAWAL_ADMIN_PIN || cleanCurrent === SUPER_ADMIN_PIN;
+    if (!isCurrentValid) {
+      return res.status(401).json({ success: false, error: 'Incorrect current PIN. Verification failed.' });
+    }
+
+    // Update PIN in database
+    await query(`
+      INSERT INTO withdrawal_settings (id, current_pin, updated_at)
+      VALUES ('default', $1, NOW())
+      ON CONFLICT (id) DO UPDATE SET
+        current_pin = EXCLUDED.current_pin,
+        updated_at = NOW()
+    `, [cleanNew]);
+
+    return res.json({
+      success: true,
+      message: 'Officer security PIN updated successfully. Please use the new PIN on your next login.'
+    });
+  } catch (err: any) {
+    console.error('❌ [Withdrawal Change PIN Error]:', err);
+    return res.status(500).json({ success: false, error: 'Failed to change security PIN' });
   }
 });
 

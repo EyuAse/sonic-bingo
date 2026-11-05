@@ -240,3 +240,4 @@ export const WithdrawalsPINModal: React.FC<WithdrawalsPINModalProps> = ({ onSucc
     </div>
   );
 };
+

@@ -691,3 +691,4 @@ export const WithdrawalsHistoryDesk: React.FC<WithdrawalsHistoryDeskProps> = ({ 
     </div>
   );
 };
+

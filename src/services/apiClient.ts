@@ -2123,6 +2123,66 @@ export const apiClient = {
         message: string;
         request: any;
       }>(res);
+    },
+
+    async getSettings() {
+      const res = await fetch(`${API_BASE}/withdrawals-admin/settings`, {
+        headers: { ...getWithdrawalsAdminAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        settings: {
+          max_request_limit: number;
+          high_value_threshold: number;
+          min_request_limit: number;
+          require_kyc_verification: boolean;
+          require_turnover_met: boolean;
+          strict_name_matching: boolean;
+          telegram_player_alerts: boolean;
+          auto_refresh_seconds: number;
+          updated_at?: string;
+        };
+      }>(res);
+    },
+
+    async updateSettings(settings: Partial<{
+      max_request_limit: number;
+      high_value_threshold: number;
+      min_request_limit: number;
+      require_kyc_verification: boolean;
+      require_turnover_met: boolean;
+      strict_name_matching: boolean;
+      telegram_player_alerts: boolean;
+      auto_refresh_seconds: number;
+    }>) {
+      const res = await fetch(`${API_BASE}/withdrawals-admin/settings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getWithdrawalsAdminAuthHeader()
+        },
+        body: JSON.stringify(settings)
+      });
+      return handleResponse<{
+        success: boolean;
+        message: string;
+        settings: any;
+      }>(res);
+    },
+
+    async changePin(currentPin: string, newPin: string) {
+      const res = await fetch(`${API_BASE}/withdrawals-admin/change-pin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getWithdrawalsAdminAuthHeader()
+        },
+        body: JSON.stringify({ currentPin, newPin })
+      });
+      return handleResponse<{
+        success: boolean;
+        message: string;
+      }>(res);
     }
   }
 };

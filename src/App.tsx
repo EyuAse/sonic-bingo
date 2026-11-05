@@ -92,7 +92,7 @@ export const App: React.FC = () => {
   // If on Dedicated Player Withdrawals Admin portal route, render full-screen
   if (currentPage === 'withdrawals') {
     return (
-      <div className="withdrawals-fullscreen-root">
+      <div className="admin-fullscreen-root">
         <WithdrawalsAdminPage />
         <Toast />
       </div>
