@@ -16,6 +16,7 @@ import agentRouter from './routes/agent.ts';
 import adminRechargesRouter from './routes/admin_recharges.ts';
 import { adminPayoutsRouter } from './routes/admin_payouts.ts';
 import telegramBotRouter from './routes/telegramBot.ts';
+import withdrawalsAdminRouter from './routes/withdrawalsAdmin.ts';
 import { setupGameSockets } from './sockets/gameSocket.ts';
 import { gameEngine } from './game/BingoGameEngine.ts';
 import { telegramBotService } from './services/telegramBotService.ts';
@@ -107,6 +108,7 @@ app.use((req, res, next) => {
     req.path.startsWith('/api/health') ||
     req.path.startsWith('/api/admin') ||
     req.path.startsWith('/admin') ||
+    req.path.startsWith('/api/withdrawals-admin') ||
     req.path.startsWith('/api/telegram-webhook') ||
     req.path.startsWith('/api/telegram/webhook') ||
     req.path.startsWith('/telegram-webhook')
@@ -281,6 +283,7 @@ app.use('/api/admin/agent-recharges', adminRechargesRouter);
 app.use('/api/admin/agent-payouts', adminPayoutsRouter);
 app.use('/api/admin/telegram', telegramBotRouter);
 app.use('/api/telegram', telegramBotRouter);
+app.use('/api/withdrawals-admin', withdrawalsAdminRouter);
 
 // Public endpoint for live dynamic bonus & reward configuration
 app.get('/api/public/bonus-config', async (_req, res) => {
