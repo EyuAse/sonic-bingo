@@ -7,7 +7,6 @@ interface WithdrawalsHeaderProps {
   adminName?: string;
   onRefresh: () => void;
   onLogout: () => void;
-  onExitToPortal?: () => void;
   isRefreshing?: boolean;
 }
 
@@ -18,7 +17,6 @@ export const WithdrawalsHeader: React.FC<WithdrawalsHeaderProps> = ({
   adminName = 'Withdrawal Officer',
   onRefresh,
   onLogout,
-  onExitToPortal,
   isRefreshing = false
 }) => {
   return (
@@ -122,17 +120,6 @@ export const WithdrawalsHeader: React.FC<WithdrawalsHeaderProps> = ({
           <span className="w-hide-mobile">Refresh</span>
         </button>
 
-        {onExitToPortal && (
-          <button
-            type="button"
-            className="w-btn"
-            onClick={onExitToPortal}
-            title="Switch Portal"
-          >
-            Switch Portal
-          </button>
-        )}
-
         <button
           type="button"
           className="w-btn"
@@ -146,3 +133,4 @@ export const WithdrawalsHeader: React.FC<WithdrawalsHeaderProps> = ({
     </header>
   );
 };
+

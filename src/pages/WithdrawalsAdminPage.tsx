@@ -131,7 +131,6 @@ export const WithdrawalsAdminPage: React.FC = () => {
         adminName={adminUser?.name || 'Withdrawal Officer'}
         onRefresh={loadQueueData}
         onLogout={handleLogout}
-        onExitToPortal={() => switchPage('admin')}
         isRefreshing={isRefreshing}
       />
 
@@ -157,3 +156,4 @@ export const WithdrawalsAdminPage: React.FC = () => {
 };
 
 export default WithdrawalsAdminPage;
+
