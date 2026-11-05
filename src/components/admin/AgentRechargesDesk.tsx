@@ -48,12 +48,12 @@ export const AgentRechargesDesk: React.FC = () => {
   const handleApprove = async (id: string, agentCode: string, amount: number | string) => {
     try {
       setProcessingId(id);
-      const data = await apiClient.admin.approveAgentRecharge(id);
+      const data = await apiClient.admin.creditAgentRecharge(id);
       if (data && data.success) {
         showToast(`🎉 Approved ${amount} ETB recharge for agent ${agentCode}!`);
         fetchRecharges();
       } else {
-        showToast(`❌ ${data?.error || 'Approval failed'}`);
+        showToast('❌ Approval failed');
       }
     } catch (err: any) {
       showToast(`❌ Error: ${err.message}`);
@@ -73,7 +73,7 @@ export const AgentRechargesDesk: React.FC = () => {
         showToast('Recharge request rejected');
         fetchRecharges();
       } else {
-        showToast(`❌ ${data?.error || 'Rejection failed'}`);
+        showToast('❌ Rejection failed');
       }
     } catch (err: any) {
       showToast(`❌ Error: ${err.message}`);

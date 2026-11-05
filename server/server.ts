@@ -13,6 +13,7 @@ import authRouter from './routes/auth.ts';
 import walletRouter from './routes/wallet.ts';
 import adminRouter from './routes/admin.ts';
 import agentRouter from './routes/agent.ts';
+import adminRechargesRouter from './routes/admin_recharges.ts';
 import telegramBotRouter from './routes/telegramBot.ts';
 import { setupGameSockets } from './sockets/gameSocket.ts';
 import { gameEngine } from './game/BingoGameEngine.ts';
@@ -275,6 +276,7 @@ app.use('/api/auth', authLimiter, authRouter);
 app.use('/api/wallet', walletLimiter, walletRouter);
 app.use('/api/agent', agentRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/admin/agent-recharges', adminRechargesRouter);
 app.use('/api/admin/telegram', telegramBotRouter);
 app.use('/api/telegram', telegramBotRouter);
 

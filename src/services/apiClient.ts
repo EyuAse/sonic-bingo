@@ -1077,6 +1077,127 @@ export const apiClient = {
     },
 
     // Agent Float Recharges
+    async getAgentRechargeKPIs() {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agent-recharges/kpis`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{
+        success: boolean;
+        kpis: {
+          openRequests: { count: number; awaitingAmount: number };
+          creditedToday: { count: number; totalAmount: number };
+          lowBalanceAgents: { count: number };
+        };
+      }>(res);
+    },
+
+    async getAgentRechargeFlow() {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agent-recharges/flow`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{
+        success: boolean;
+        flow: { step1: number; step2: number; step3: number; step4: number };
+      }>(res);
+    },
+
+    async getAgentRechargeRequests(filter = 'Open') {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agent-recharges/requests?filter=${encodeURIComponent(filter)}`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{
+        success: boolean;
+        requests: any[];
+      }>(res);
+    },
+
+    async startAgentRechargeReview(id: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agent-recharges/${id}/start-review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; status: string; timeline: any[] }>(res);
+    },
+
+    async updateAgentRechargeChecklist(id: string, checklist: any, receivedAmount?: number) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agent-recharges/${id}/checklist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify({ checklist, receivedAmount })
+      });
+      return handleResponse<{ success: boolean }>(res);
+    },
+
+    async creditAgentRecharge(id: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agent-recharges/${id}/credit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; status: string; message: string; timeline?: any[] }>(res);
+    },
+
+    async rejectAgentRecharge(id: string, reason: string, note?: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agent-recharges/${id}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify({ reason, note })
+      });
+      return handleResponse<{ success: boolean; status: string; message: string; timeline?: any[] }>(res);
+    },
+
+    async getAgentRechargeHistory(params: { period?: string; from?: string; to?: string; search?: string; agent?: string } = {}) {
+      const adminHeaders = await getAdminAuthHeader();
+      const qs = new URLSearchParams();
+      if (params.period) qs.set('period', params.period);
+      if (params.from) qs.set('from', params.from);
+      if (params.to) qs.set('to', params.to);
+      if (params.search) qs.set('search', params.search);
+      if (params.agent) qs.set('agent', params.agent);
+
+      const res = await fetch(`${API_BASE}/admin/agent-recharges/history?${qs.toString()}`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{
+        success: boolean;
+        stats: {
+          totalCredited: number;
+          creditedCount: number;
+          rejectedCount: number;
+          averageRecharge: number;
+          largestRecharge: number;
+        };
+        rows: any[];
+      }>(res);
+    },
+
+    async getLowBalanceAgents() {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agent-recharges/low-balance`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{
+        success: boolean;
+        agents: any[];
+      }>(res);
+    },
+
+    async sendLowBalanceReminder(agentId: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agent-recharges/remind`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify({ agentId })
+      });
+      return handleResponse<{ success: boolean; message: string }>(res);
+    },
+
     async getAgentRecharges(status?: string) {
       const adminHeaders = await getAdminAuthHeader();
       const qs = status ? `?status=${encodeURIComponent(status)}` : '';
@@ -1084,25 +1205,6 @@ export const apiClient = {
         headers: { ...adminHeaders }
       });
       return handleResponse<{ success: boolean; recharges: any[] }>(res);
-    },
-
-    async approveAgentRecharge(id: string) {
-      const adminHeaders = await getAdminAuthHeader();
-      const res = await fetch(`${API_BASE}/admin/agents/recharges/${id}/approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...adminHeaders }
-      });
-      return handleResponse<{ success: boolean; message?: string; error?: string }>(res);
-    },
-
-    async rejectAgentRecharge(id: string, adminNotes?: string) {
-      const adminHeaders = await getAdminAuthHeader();
-      const res = await fetch(`${API_BASE}/admin/agents/recharges/${id}/reject`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...adminHeaders },
-        body: JSON.stringify({ adminNotes: adminNotes || 'Rejected by admin' })
-      });
-      return handleResponse<{ success: boolean; message?: string; error?: string }>(res);
     },
 
     // Agent Commission Payouts
