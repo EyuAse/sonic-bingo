@@ -537,26 +537,255 @@
   flex: none;
 }
 
-/* Responsive Breakpoints */
+/* Responsive Navigation & Mobile Layout Enhancements */
+.withdrawals-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.withdrawals-page-heading {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.5px;
+  color: var(--ink);
+}
+
+.withdrawals-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+
+.withdrawals-nav-pill-group {
+  display: inline-flex;
+  background: #ffffff;
+  padding: 4px;
+  border-radius: 9999px;
+  gap: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.withdrawals-nav-pill-group::-webkit-scrollbar {
+  display: none;
+}
+
+.withdrawals-nav-pill-btn {
+  border: 0;
+  padding: 7px 14px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  background: transparent;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.withdrawals-nav-pill-btn:hover {
+  color: var(--ink);
+}
+
+.withdrawals-nav-pill-btn.active {
+  background: #1c1e1d;
+  color: #ffffff;
+}
+
+.withdrawals-nav-pill-btn .pill-badge {
+  font-size: 10.5px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-weight: 800;
+  background: #e2e8f0;
+  color: #1e293b;
+  line-height: 1.3;
+}
+
+.withdrawals-nav-pill-btn.active .pill-badge {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.withdrawals-nav-pill-btn .pill-badge.urgent {
+  background: #b0302f;
+  color: #ffffff;
+}
+
+.w-refresh-btn {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+}
+
+/* Horizontal scrollable tabs ribbon */
+.w-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.w-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.w-tabs button {
+  flex-shrink: 0;
+}
+
+/* Responsive Breakpoints & Mobile Optimization */
 @media (max-width: 980px) {
+  .admin-content-scroller {
+    padding: 14px 12px !important;
+  }
+
+  .withdrawals-main {
+    padding: 14px 12px !important;
+  }
+
   .w-g4 {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
   }
+
   .w-g2 {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
   }
+
   .w-det {
-    position: static;
-    max-height: none;
+    position: static !important;
+    max-height: none !important;
+    width: 100% !important;
+    margin-top: 14px;
+  }
+
+  .w-btn-action {
+    min-height: 44px !important;
+    font-size: 14px !important;
+  }
+
+  .withdrawals-page-heading {
+    font-size: 22px;
+  }
+
+  .withdrawals-top-bar {
+    margin-bottom: 12px;
+  }
+
+  /* Large touch targets inside drawer on mobile */
+  .enqu-sidebar .enqu-nav a {
+    min-height: 48px !important;
+    padding: 12px 14px !important;
+    font-size: 15.5px !important;
+    border-radius: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .enqu-sidebar .enqu-nav a svg {
+    width: 20px !important;
+    height: 20px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .enqu-sidebar .foot nav a {
+    min-height: 44px !important;
+    padding: 11px 14px !important;
+    font-size: 15px !important;
+    display: flex !important;
+    align-items: center !important;
   }
 }
 
-@media (max-width: 560px) {
-  .w-g4 {
-    grid-template-columns: 1fr;
+@media (max-width: 640px) {
+  .withdrawals-controls-row {
+    width: 100%;
+    justify-content: space-between;
   }
-  .withdrawals-main {
-    padding: 16px 12px;
+
+  .withdrawals-nav-pill-group {
+    width: 100%;
+  }
+
+  .withdrawals-nav-pill-btn {
+    padding: 6px 11px;
+    font-size: 12px;
+  }
+
+  .w-g4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .w-card {
+    padding: 12px 10px !important;
+    border-radius: 14px !important;
+  }
+
+  .w-lab {
+    font-size: 12px !important;
+  }
+
+  .w-val {
+    font-size: 19px !important;
+    margin: 4px 0 !important;
+  }
+
+  .w-tr {
+    font-size: 11px !important;
+  }
+
+  .w-table th,
+  .w-table td {
+    padding: 8px 6px !important;
+    font-size: 12.5px !important;
+  }
+
+  .w-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 440px) {
+  .refresh-label {
+    display: none;
+  }
+
+  .w-refresh-btn {
+    padding: 7px 10px;
+  }
+
+  .withdrawals-nav-pill-btn span:first-child {
+    font-size: 11.5px;
   }
 }
 

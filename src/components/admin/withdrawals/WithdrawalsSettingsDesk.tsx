@@ -49,7 +49,7 @@ export const WithdrawalsSettingsDesk: React.FC<WithdrawalsSettingsDeskProps> = (
   };
 
   return (
-    <div style={{ maxWidth: '520px', margin: '20px auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div style={{ maxWidth: '520px', width: '100%', margin: '14px auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
       {/* Top Banner Notice */}
       <div className="w-note" style={{ margin: 0 }}>
         Change your officer security PIN to protect the withdrawal terminal. Never share your cashier credentials.
@@ -85,6 +85,7 @@ export const WithdrawalsSettingsDesk: React.FC<WithdrawalsSettingsDeskProps> = (
             </label>
             <input
               type="password"
+              inputMode="numeric"
               maxLength={6}
               value={currentPin}
               onChange={e => setCurrentPin(e.target.value)}
@@ -96,19 +97,20 @@ export const WithdrawalsSettingsDesk: React.FC<WithdrawalsSettingsDeskProps> = (
                 borderRadius: '12px',
                 padding: '11px 14px',
                 fontWeight: 600,
-                fontSize: '14px',
+                fontSize: '16px',
                 color: 'var(--ink)'
               }}
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, color: 'var(--mute)', marginBottom: '6px' }}>
                 New PIN (4-6 digits)
               </label>
               <input
                 type="password"
+                inputMode="numeric"
                 maxLength={6}
                 value={newPin}
                 onChange={e => setNewPin(e.target.value)}
@@ -120,7 +122,7 @@ export const WithdrawalsSettingsDesk: React.FC<WithdrawalsSettingsDeskProps> = (
                   borderRadius: '12px',
                   padding: '11px 14px',
                   fontWeight: 600,
-                  fontSize: '14px',
+                  fontSize: '16px',
                   color: 'var(--ink)'
                 }}
               />
@@ -132,6 +134,7 @@ export const WithdrawalsSettingsDesk: React.FC<WithdrawalsSettingsDeskProps> = (
               </label>
               <input
                 type="password"
+                inputMode="numeric"
                 maxLength={6}
                 value={confirmPin}
                 onChange={e => setConfirmPin(e.target.value)}
@@ -143,7 +146,7 @@ export const WithdrawalsSettingsDesk: React.FC<WithdrawalsSettingsDeskProps> = (
                   borderRadius: '12px',
                   padding: '11px 14px',
                   fontWeight: 600,
-                  fontSize: '14px',
+                  fontSize: '16px',
                   color: 'var(--ink)'
                 }}
               />
@@ -156,10 +159,11 @@ export const WithdrawalsSettingsDesk: React.FC<WithdrawalsSettingsDeskProps> = (
             className="w-btn k"
             style={{
               marginTop: '10px',
-              padding: '12px',
+              padding: '13px',
               borderRadius: '12px',
               fontWeight: 700,
               fontSize: '14px',
+              minHeight: '44px',
               cursor: isChangingPin || !currentPin || !newPin ? 'not-allowed' : 'pointer'
             }}
           >

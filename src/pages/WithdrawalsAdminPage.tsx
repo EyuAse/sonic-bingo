@@ -216,18 +216,9 @@ export const WithdrawalsAdminPage: React.FC = () => {
             minHeight: 0
           }}
         >
-          {/* Top Title & Tab Pill Navigation matching exact screenshot */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '16px',
-              flexWrap: 'wrap',
-              gap: '12px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Top Title & Tab Pill Navigation with Full Mobile Responsiveness */}
+          <div className="withdrawals-top-bar">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {isCollapsed && (
                 <button
                   type="button"
@@ -251,89 +242,51 @@ export const WithdrawalsAdminPage: React.FC = () => {
                   </svg>
                 </button>
               )}
-              <h1
-                style={{
-                  fontSize: '28px',
-                  fontWeight: 800,
-                  margin: 0,
-                  letterSpacing: '-0.5px',
-                  color: 'var(--ink)'
-                }}
-              >
+              <h1 className="withdrawals-page-heading">
                 {activeTab === 'settings' ? 'Cashier Settings' : 'Withdrawals'}
               </h1>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div
-                style={{
-                  display: 'inline-flex',
-                  background: '#ffffff',
-                  padding: '4px',
-                  borderRadius: '9999px',
-                  gap: '4px',
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                  border: '1px solid #e2e8f0'
-                }}
-              >
+            <div className="withdrawals-controls-row">
+              <div className="withdrawals-nav-pill-group">
                 <button
                   type="button"
+                  className={`withdrawals-nav-pill-btn ${activeTab === 'queue' ? 'active' : ''}`}
                   onClick={() => setActiveTab('queue')}
-                  style={{
-                    border: 0,
-                    padding: '7px 16px',
-                    borderRadius: '9999px',
-                    fontSize: '13.5px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    background: activeTab === 'queue' ? '#1c1e1d' : 'transparent',
-                    color: activeTab === 'queue' ? '#ffffff' : '#64748b',
-                    transition: 'all 0.15s ease'
-                  }}
                 >
-                  Requests {kpis.pendingCount > 0 ? `(${kpis.pendingCount})` : '(0)'}
+                  <span>Requests Queue</span>
+                  {kpis.pendingCount > 0 && (
+                    <span className="pill-badge urgent">{kpis.pendingCount}</span>
+                  )}
                 </button>
                 <button
                   type="button"
+                  className={`withdrawals-nav-pill-btn ${activeTab === 'history' ? 'active' : ''}`}
                   onClick={() => setActiveTab('history')}
-                  style={{
-                    border: 0,
-                    padding: '7px 16px',
-                    borderRadius: '9999px',
-                    fontSize: '13.5px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    background: activeTab === 'history' ? '#1c1e1d' : 'transparent',
-                    color: activeTab === 'history' ? '#ffffff' : '#64748b',
-                    transition: 'all 0.15s ease'
-                  }}
                 >
-                  History
+                  <span>Payout History</span>
+                  <span className="pill-badge">Audit</span>
+                </button>
+                <button
+                  type="button"
+                  className={`withdrawals-nav-pill-btn ${activeTab === 'settings' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('settings')}
+                >
+                  <span>Settings & Security</span>
+                  <span className="pill-badge">Config</span>
                 </button>
               </div>
 
               <button
                 type="button"
-                className="w-btn"
+                className="w-refresh-btn"
                 onClick={loadQueueData}
                 title="Refresh Queue"
-                style={{
-                  padding: '7px 14px',
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  borderRadius: '12px',
-                  background: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
-                }}
               >
                 <span style={{ display: 'inline-block', transform: isRefreshing ? 'rotate(180deg)' : 'none', transition: 'transform 0.4s ease' }}>
                   🔄
                 </span>
-                Refresh
+                <span className="refresh-label">Refresh</span>
               </button>
             </div>
           </div>

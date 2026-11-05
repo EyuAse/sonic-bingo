@@ -75,6 +75,18 @@ export const WithdrawalsQueueDesk: React.FC<WithdrawalsQueueDeskProps> = ({
   const [methodFilter, setMethodFilter] = useState('All');
   const [selectedId, setSelectedId] = useState<string | number>(() => queue[0]?.id || '');
 
+  const handleSelectQueueItem = (id: string | number) => {
+    setSelectedId(id);
+    if (typeof window !== 'undefined' && window.innerWidth <= 980) {
+      setTimeout(() => {
+        const el = document.getElementById('withdrawal-inspector-card');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 50);
+    }
+  };
+
   // Modals state
   const [activeModal, setActiveModal] = useState<'approve' | 'reject' | null>(null);
   const [modalItem, setModalItem] = useState<QueueItem | null>(null);
@@ -340,14 +352,15 @@ export const WithdrawalsQueueDesk: React.FC<WithdrawalsQueueDeskProps> = ({
                       <tr
                         key={item.id}
                         className={`wr ${isSelected ? 'sel' : ''}`}
-                        onClick={() => setSelectedId(item.id)}
+                        onClick={() => handleSelectQueueItem(item.id)}
+                        style={{ cursor: 'pointer' }}
                       >
                         <td>
                           <button
                             type="button"
                             className="w-btn"
                             style={{ background: 'none', padding: 0, fontSize: '14px', fontWeight: 700 }}
-                            onClick={() => setSelectedId(item.id)}
+                            onClick={() => handleSelectQueueItem(item.id)}
                           >
                             {item.displayId}
                           </button>
@@ -390,7 +403,7 @@ export const WithdrawalsQueueDesk: React.FC<WithdrawalsQueueDeskProps> = ({
         </div>
 
         {/* Right Side: Sticky Inspector (.w-det) */}
-        <div className="w-det">
+        <div id="withdrawal-inspector-card" className="w-det">
           {activeItem ? (
             <div className="w-card">
               {/* Header & Status */}
