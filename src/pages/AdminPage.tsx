@@ -20,6 +20,23 @@ import { BonusRewardsDesk } from '../components/admin/BonusRewardsDesk.tsx';
 import { OfficialAccountsDesk } from '../components/admin/OfficialAccountsDesk.tsx';
 import '../styles/admin.css';
 
+const TAB_TITLES: Record<AdminTab, string> = {
+  overview: '📊 Dashboard',
+  cashier: '🛡️ P2P Cashier',
+  cashflow: '⚖️ Cash Flow',
+  users: '👥 Players',
+  bots: '🤖 200 Bots',
+  'bot-engine': '🎚️ Bot Engine (0-50)',
+  cartelas: '🗂️ 600 Cards',
+  'telegram-bot': '📢 Telegram Bot',
+  agents: '🤝 Agents',
+  'agent-recharges': '⚡ Recharges',
+  'agent-payouts': '💸 Payouts',
+  'official-accounts': '🏛️ Official Accounts',
+  jackpots: '🎰 Jackpots',
+  coins: '🎁 Bonus & Rewards'
+};
+
 export const AdminPage: React.FC = () => {
   const { isAuthenticated, isSidebarCollapsed, toggleSidebar } = useAdmin();
   const { showToast } = useApp();
@@ -53,7 +70,39 @@ export const AdminPage: React.FC = () => {
 
       {/* 2. Admin Content Viewport */}
       <div className={`admin-main-viewport ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-        {/* Top Header Bar (Shown on non-Enqu desks) */}
+        {/* Universal Sleek Mobile Topbar (Shown on mobile for ALL desks) */}
+        <header className="admin-mobile-global-topbar">
+          <div className="admin-mobile-topbar-left">
+            <button
+              type="button"
+              className="admin-mobile-hamburger-btn"
+              onClick={() => setIsMobileSidebarOpen(true)}
+              aria-label="Open Navigation Drawer"
+            >
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
+            <div className="admin-mobile-brand-group">
+              <span className="admin-mobile-brand-title">Sonic Bingo</span>
+              <span className="admin-mobile-desk-badge">{TAB_TITLES[activeTab]}</span>
+            </div>
+          </div>
+
+          <div className="admin-mobile-topbar-right">
+            <div className="admin-mobile-lang-chip" title="Ethiopian Amharic">
+              <span style={{ fontSize: '13px' }}>🇪🇹</span>
+              <span>አማ</span>
+            </div>
+            <div className="admin-mobile-profile-avatar" title="Super Admin">
+              <i className="fa-solid fa-crown gold" style={{ fontSize: '11px', color: '#f59e0b' }}></i>
+            </div>
+          </div>
+        </header>
+
+        {/* Top Header Bar (Shown on non-Enqu desks on desktop) */}
         {!isEnquTab && (
           <header className="admin-viewport-header-light">
             <div className="viewport-header-left-light">

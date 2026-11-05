@@ -49,6 +49,7 @@ const IC = {
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   activeTab,
   setActiveTab,
+  isMobileOpen,
   closeMobileSidebar
 }) => {
   const {
@@ -100,28 +101,50 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   ];
 
   return (
-    <aside className={`enqu-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
-      {/* Header Row: Logo & ChatGPT Collapse Toggle Button */}
-      <div className={`sidebar-header-row ${isSidebarCollapsed ? 'collapsed' : ''}`}>
-        {!isSidebarCollapsed ? (
-          <div className="logo">Sonic Bingo</div>
-        ) : (
-          <div className="logo-compact" title="Sonic Bingo">
-            SB
-          </div>
-        )}
-        <button
-          type="button"
-          className="btn-chatgpt-toggle"
-          onClick={toggleSidebar}
-          title={isSidebarCollapsed ? 'Open sidebar' : 'Close sidebar'}
-        >
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-            <line x1="9" y1="3" x2="9" y2="21" />
-          </svg>
-        </button>
-      </div>
+    <>
+      {/* Mobile Drawer Backdrop */}
+      <div
+        className={`admin-mobile-backdrop ${isMobileOpen ? 'active' : ''}`}
+        onClick={closeMobileSidebar}
+        aria-hidden="true"
+      />
+
+      <aside className={`enqu-sidebar ${isSidebarCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}>
+        {/* Header Row: Logo, Desktop Collapse Toggle Button & Mobile Drawer Close Button */}
+        <div className={`sidebar-header-row ${isSidebarCollapsed ? 'collapsed' : ''}`}>
+          {!isSidebarCollapsed ? (
+            <div className="logo">Sonic Bingo</div>
+          ) : (
+            <div className="logo-compact" title="Sonic Bingo">
+              SB
+            </div>
+          )}
+          <button
+            type="button"
+            className="btn-chatgpt-toggle hide-on-mobile"
+            onClick={toggleSidebar}
+            title={isSidebarCollapsed ? 'Open sidebar' : 'Close sidebar'}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <line x1="9" y1="3" x2="9" y2="21" />
+            </svg>
+          </button>
+
+          {/* Mobile Drawer Dismiss Button */}
+          <button
+            type="button"
+            className="btn-mobile-drawer-close"
+            onClick={closeMobileSidebar}
+            title="Close navigation"
+            aria-label="Close navigation"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
 
       {/* Main Navigation List */}
       <nav className="enqu-nav">
@@ -182,5 +205,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         </nav>
       </div>
     </aside>
+    </>
   );
 };
