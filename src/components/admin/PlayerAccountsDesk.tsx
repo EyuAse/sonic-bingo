@@ -458,7 +458,7 @@ export const PlayerAccountsDesk: React.FC = () => {
       </div>
 
       {/* 3. Filter & Action Ribbon */}
-      <div className="card" style={{ marginBottom: '15px' }}>
+      <div className="card filter-ribbon-card" style={{ marginBottom: '15px' }}>
         <div className="row" style={{ justifyContent: 'space-between', width: '100%' }}>
           <div className="row" style={{ gap: '10px' }}>
             <input
@@ -469,8 +469,8 @@ export const PlayerAccountsDesk: React.FC = () => {
                 setSearchQuery(e.target.value);
                 setPage(1);
               }}
-              className="enqu-panel-input"
-              style={{ width: '230px', padding: '9px 12px' }}
+              className="enqu-panel-input players-search-input"
+              style={{ padding: '9px 12px' }}
             />
             <span className="tabs" style={{ margin: 0 }}>
               {(['All', 'Active', 'Suspended', 'Under review'] as const).map(s => {
@@ -496,7 +496,7 @@ export const PlayerAccountsDesk: React.FC = () => {
             </span>
           </div>
 
-          <div className="row" style={{ gap: '10px' }}>
+          <div className="row player-filter-actions-row" style={{ gap: '10px' }}>
             <select
               value={sourceFilter}
               onChange={e => {

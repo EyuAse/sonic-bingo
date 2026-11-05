@@ -1055,7 +1055,7 @@ export const AgentPayoutsDesk: React.FC = () => {
                 ))}
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div className="date-picker-row" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <input
                   type="date"
                   value={historyFrom}
@@ -1104,7 +1104,7 @@ export const AgentPayoutsDesk: React.FC = () => {
                   {historyPeriod === 'all' ? 'All dates' : `${historyFrom || 'Start'} to ${historyTo || 'End'}`}
                 </span>
               </h3>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div className="history-action-buttons-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <button onClick={handleExportCSV}>Export CSV</button>
                 <button
                   className="k"

@@ -529,7 +529,7 @@ export const AgentsDesk: React.FC = () => {
       </div>
 
       {/* 3. Filter & Action Ribbon Card */}
-      <div className="card" style={{ marginBottom: '15px' }}>
+      <div className="card filter-ribbon-card" style={{ marginBottom: '15px' }}>
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <div className="row" style={{ gap: '12px' }}>
             <input
@@ -538,8 +538,8 @@ export const AgentsDesk: React.FC = () => {
               placeholder="Search agents..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="enqu-panel-input"
-              style={{ width: '220px', padding: '9px 14px' }}
+              className="enqu-panel-input agents-search-input"
+              style={{ padding: '9px 14px' }}
             />
             <span className="tabs" style={{ margin: 0 }}>
               {(['All', 'Active', 'Pending', 'Suspended'] as const).map((s) => {

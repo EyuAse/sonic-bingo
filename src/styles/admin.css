@@ -9427,3 +9427,154 @@ tr.sel td {
   max-width: none !important;
   box-sizing: border-box !important;
 }
+
+/* ============================================================
+   PHASE 3: RESPONSIVE TABLES, TOUCH SCROLLING & FILTER RIBBONS
+   ============================================================ */
+
+/* 1. Global Touch-Scroll Containers for all Data Tables */
+.wrap,
+.enqu-dashboard-main .wrap,
+.enqu-recharges-desk .wrap,
+.enqu-payouts-desk .wrap {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  display: block !important;
+  margin-bottom: 6px !important;
+  position: relative !important;
+  scrollbar-width: thin !important;
+}
+
+/* 2. Standardized Minimum Table Widths across all Desks */
+.wrap table,
+.enqu-dashboard-main table,
+.enqu-recharges-desk table,
+.enqu-payouts-desk table {
+  min-width: 640px !important;
+  border-collapse: collapse !important;
+  width: 100% !important;
+}
+
+/* 3. Horizontal Scrollable Chip Ribbons */
+.tabs,
+.enqu-dashboard-main .tabs,
+.enqu-recharges-desk .tabs,
+.enqu-payouts-desk .tabs {
+  display: flex !important;
+  gap: 8px !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  white-space: nowrap !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  padding-bottom: 4px !important;
+}
+
+.tabs::-webkit-scrollbar,
+.enqu-dashboard-main .tabs::-webkit-scrollbar,
+.enqu-recharges-desk .tabs::-webkit-scrollbar,
+.enqu-payouts-desk .tabs::-webkit-scrollbar {
+  display: none !important;
+}
+
+.tabs button,
+.enqu-dashboard-main .tabs button,
+.enqu-recharges-desk .tabs button,
+.enqu-payouts-desk .tabs button {
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+}
+
+/* 4. Responsive Filter Ribbons & Date Pickers for Tablets and Phones */
+@media (max-width: 768px) {
+  .filter-ribbon-card .row,
+  .enqu-dashboard-main .card > .row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .agents-search-input,
+  .players-search-input {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .date-picker-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    width: 100% !important;
+    align-items: center !important;
+  }
+
+  .date-picker-row input[type="date"] {
+    flex: 1 1 120px !important;
+    min-width: 110px !important;
+    box-sizing: border-box !important;
+  }
+
+  .date-picker-row button {
+    flex-shrink: 0 !important;
+    padding: 8px 16px !important;
+  }
+
+  .history-action-buttons-group {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin-top: 8px !important;
+  }
+
+  .history-action-buttons-group button {
+    flex: 1 1 auto !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .player-filter-actions-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .player-filter-actions-row select {
+    flex: 1 1 130px !important;
+    min-width: 120px !important;
+    box-sizing: border-box !important;
+  }
+
+  .player-filter-actions-row button {
+    flex: 1 1 100% !important;
+    text-align: center !important;
+    justify-content: center !important;
+  }
+
+  /* 5. Inspection Panels on Mobile */
+  .grid.g2,
+  .enqu-dashboard-main .g2,
+  .enqu-recharges-desk .g2,
+  .enqu-payouts-desk .g2 {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .g2 > .card:nth-child(2),
+  .enqu-recharges-desk .g2 > .card:nth-child(2),
+  .enqu-payouts-desk .g2 > .card:nth-child(2) {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin-top: 4px !important;
+  }
+
+  .enqu-recharges-desk button.k,
+  .enqu-payouts-desk button.k {
+    min-height: 42px !important;
+    font-size: 13.5px !important;
+  }
+}
