@@ -383,24 +383,35 @@
   font-weight: 600;
 }
 
-/* Volume Chart */
+/* Volume Chart Outer Scroll Wrapper for Mobile */
+.w-chart-outer-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  padding-bottom: 6px;
+}
+
 .w-ch {
   position: relative;
   height: 214px;
-  padding: 8px 0 28px 44px;
+  min-width: 100%;
+  padding: 8px 12px 28px 48px;
+  box-sizing: border-box;
 }
 
 .w-gl {
   position: absolute;
   left: 0;
-  right: 0;
+  right: 12px;
   top: 8px;
   bottom: 28px;
+  pointer-events: none;
 }
 
 .w-gl i {
   position: absolute;
-  left: 44px;
+  left: 48px;
   right: 0;
   border-top: 1px dashed var(--line);
 }
@@ -408,12 +419,12 @@
 .w-gl span {
   position: absolute;
   left: 0;
-  width: 38px;
+  width: 40px;
   text-align: right;
   font-size: 11.5px;
   color: var(--mute);
   transform: translateY(-50%);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .w-bars {
@@ -421,18 +432,18 @@
   height: 100%;
   display: flex;
   align-items: flex-end;
-  gap: 5px;
+  gap: 8px;
 }
 
 .w-col {
   flex: 1;
+  min-width: 32px;
   height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
   position: relative;
-  min-width: 0;
 }
 
 .w-col .st {
@@ -443,6 +454,7 @@
   border-radius: 7px 7px 2px 2px;
   overflow: hidden;
   min-height: 2px;
+  transition: opacity 0.15s ease;
 }
 
 .w-col .st i {
@@ -466,10 +478,11 @@
   position: absolute;
   top: 100%;
   margin-top: 7px;
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--mute);
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
+  text-align: center;
 }
 
 .w-lg-legend {
@@ -478,6 +491,81 @@
   font-size: 12.5px;
   font-weight: 600;
   color: var(--mute);
+}
+
+/* History Desk Search & Filters */
+.w-history-filter-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.w-history-period-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.w-history-date-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.w-date-inputs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.w-date-input {
+  background: var(--chip);
+  border: 0;
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.w-date-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.w-search-method-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.w-search-input {
+  flex: 1;
+  min-width: 160px;
+  background: var(--chip);
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.w-method-select {
+  width: auto;
+  background: var(--chip);
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink);
 }
 
 .w-lg-legend span::before {
@@ -698,6 +786,64 @@
 
   .withdrawals-top-bar {
     margin-bottom: 12px;
+  }
+
+  /* History Top Filter Card Mobile Flex */
+  .w-history-filter-top {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  .w-history-period-row {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+
+  .w-history-date-row {
+    width: 100% !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  .w-date-inputs {
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    gap: 6px !important;
+  }
+
+  .w-date-input {
+    flex: 1 !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .w-date-actions {
+    display: flex !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+
+  .w-date-actions button {
+    flex: 1 !important;
+    padding: 9px 12px !important;
+    text-align: center !important;
+    justify-content: center !important;
+  }
+
+  /* Search & Method Row Responsive */
+  .w-search-method-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  .w-search-input,
+  .w-method-select {
+    width: 100% !important;
+    font-size: 16px !important; /* Prevents auto-zoom on mobile */
   }
 
   /* Large touch targets inside drawer on mobile */

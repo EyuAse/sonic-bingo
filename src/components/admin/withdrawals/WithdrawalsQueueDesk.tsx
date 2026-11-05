@@ -286,35 +286,18 @@ export const WithdrawalsQueueDesk: React.FC<WithdrawalsQueueDeskProps> = ({
           </div>
 
           {/* Search + Method Filter Row */}
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '12px' }}>
+          <div className="w-search-method-row">
             <input
               type="text"
               placeholder="Search request, player, ID or number"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              style={{
-                flex: 1,
-                minWidth: '160px',
-                background: 'var(--chip)',
-                border: 0,
-                borderRadius: '12px',
-                padding: '9px 12px',
-                fontWeight: 600,
-                color: 'var(--ink)'
-              }}
+              className="w-search-input"
             />
             <select
               value={methodFilter}
               onChange={e => setMethodFilter(e.target.value)}
-              style={{
-                width: 'auto',
-                background: 'var(--chip)',
-                border: 0,
-                borderRadius: '12px',
-                padding: '9px 12px',
-                fontWeight: 600,
-                color: 'var(--ink)'
-              }}
+              className="w-method-select"
             >
               <option value="All">All methods</option>
               <option value="Telebirr">Telebirr</option>

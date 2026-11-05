@@ -57,6 +57,18 @@ export const WithdrawalsHistoryDesk: React.FC<WithdrawalsHistoryDeskProps> = ({ 
   const [total, setTotal] = useState(0);
   const [selectedRecord, setSelectedRecord] = useState<HistoryRecord | null>(null);
 
+  const handleSelectRecord = (record: HistoryRecord) => {
+    setSelectedRecord(record);
+    if (typeof window !== 'undefined' && window.innerWidth <= 980) {
+      setTimeout(() => {
+        const el = document.getElementById('history-inspector-card');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 50);
+    }
+  };
+
   const [kpis, setKpis] = useState({
     requestedCount: 0,
     requestedAmount: 0,
@@ -216,9 +228,9 @@ export const WithdrawalsHistoryDesk: React.FC<WithdrawalsHistoryDeskProps> = ({ 
     <div>
       {/* Top Filter Card */}
       <div className="w-card" style={{ marginBottom: '15px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div className="w-history-filter-top">
           {/* Period Tabs */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <div className="w-history-period-row">
             <div className="w-tabs" style={{ margin: 0 }}>
               {[
                 ['day', 'Daily'],
@@ -251,50 +263,40 @@ export const WithdrawalsHistoryDesk: React.FC<WithdrawalsHistoryDeskProps> = ({ 
           </div>
 
           {/* Date Pickers + Export */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <input
-              type="date"
-              value={fromDate}
-              onChange={e => setFromDate(e.target.value)}
-              aria-label="From date"
-              style={{
-                background: 'var(--chip)',
-                border: 0,
-                borderRadius: '12px',
-                padding: '8px 10px',
-                fontWeight: 600,
-                fontSize: '13px'
-              }}
-            />
-            <span className="w-tr">to</span>
-            <input
-              type="date"
-              value={toDate}
-              onChange={e => setToDate(e.target.value)}
-              aria-label="To date"
-              style={{
-                background: 'var(--chip)',
-                border: 0,
-                borderRadius: '12px',
-                padding: '8px 10px',
-                fontWeight: 600,
-                fontSize: '13px'
-              }}
-            />
-            <button
-              type="button"
-              className="w-btn"
-              onClick={handleApplyCustomDates}
-            >
-              Apply
-            </button>
-            <button
-              type="button"
-              className="w-btn k"
-              onClick={handleExportCSV}
-            >
-              Export CSV
-            </button>
+          <div className="w-history-date-row">
+            <div className="w-date-inputs">
+              <input
+                type="date"
+                value={fromDate}
+                onChange={e => setFromDate(e.target.value)}
+                aria-label="From date"
+                className="w-date-input"
+              />
+              <span className="w-tr" style={{ padding: '0 2px' }}>to</span>
+              <input
+                type="date"
+                value={toDate}
+                onChange={e => setToDate(e.target.value)}
+                aria-label="To date"
+                className="w-date-input"
+              />
+            </div>
+            <div className="w-date-actions">
+              <button
+                type="button"
+                className="w-btn"
+                onClick={handleApplyCustomDates}
+              >
+                Apply
+              </button>
+              <button
+                type="button"
+                className="w-btn k"
+                onClick={handleExportCSV}
+              >
+                Export CSV
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -343,41 +345,43 @@ export const WithdrawalsHistoryDesk: React.FC<WithdrawalsHistoryDeskProps> = ({ 
               {grouping} &bull; ETB
             </div>
 
-            {/* Stacked Bar Chart */}
-            <div className="w-ch">
-              {/* Y Gridlines */}
-              <div className="w-gl">
-                {[0, 1, 2, 3, 4].map(k => (
-                  <React.Fragment key={k}>
-                    <i style={{ top: `${100 - k * 25}%` }} />
-                    <span style={{ top: `${100 - k * 25}%` }}>
-                      {normMax * k / 4 >= 1000
-                        ? `${(normMax * k / 4 / 1000).toFixed(0)}k`
-                        : `${normMax * k / 4}`}
-                    </span>
-                  </React.Fragment>
-                ))}
-              </div>
+            {/* Stacked Bar Chart with Responsive Outer Scroll Wrap */}
+            <div className="w-chart-outer-wrap">
+              <div className="w-ch" style={{ minWidth: buckets.length > 8 ? `${buckets.length * 42 + 60}px` : '100%' }}>
+                {/* Y Gridlines */}
+                <div className="w-gl">
+                  {[0, 1, 2, 3, 4].map(k => (
+                    <React.Fragment key={k}>
+                      <i style={{ top: `${100 - k * 25}%` }} />
+                      <span style={{ top: `${100 - k * 25}%` }}>
+                        {normMax * k / 4 >= 1000
+                          ? `${(normMax * k / 4 / 1000).toFixed(0)}k`
+                          : `${normMax * k / 4}`}
+                      </span>
+                    </React.Fragment>
+                  ))}
+                </div>
 
-              {/* Bar Columns */}
-              <div className="w-bars">
-                {buckets.map((b, i) => {
-                  const totalAmt = (b.approvedAmount || 0) + (b.rejectedAmount || 0);
-                  const heightPercent = normMax > 0 ? (totalAmt / normMax) * 100 : 0;
-                  return (
-                    <div
-                      key={i}
-                      className="w-col"
-                      title={`${b.tooltip} · ${b.count} requests · Approved ETB ${formatETB(b.approvedAmount)} · Rejected ETB ${formatETB(b.rejectedAmount)}`}
-                    >
-                      <div className="st" style={{ height: `${Math.min(100, heightPercent)}%` }}>
-                        <i className="r" style={{ flex: `${b.rejectedAmount} 1 0%` }} />
-                        <i className="a" style={{ flex: `${b.approvedAmount} 1 0%` }} />
+                {/* Bar Columns */}
+                <div className="w-bars">
+                  {buckets.map((b, i) => {
+                    const totalAmt = (b.approvedAmount || 0) + (b.rejectedAmount || 0);
+                    const heightPercent = normMax > 0 ? (totalAmt / normMax) * 100 : 0;
+                    return (
+                      <div
+                        key={i}
+                        className="w-col"
+                        title={`${b.tooltip} · ${b.count} requests · Approved ETB ${formatETB(b.approvedAmount)} · Rejected ETB ${formatETB(b.rejectedAmount)}`}
+                      >
+                        <div className="st" style={{ height: `${Math.min(100, heightPercent)}%` }}>
+                          <i className="r" style={{ flex: `${b.rejectedAmount} 1 0%` }} />
+                          <i className="a" style={{ flex: `${b.approvedAmount} 1 0%` }} />
+                        </div>
+                        <span className="wl">{b.label}</span>
                       </div>
-                      <span className="wl">{b.label}</span>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
@@ -405,36 +409,19 @@ export const WithdrawalsHistoryDesk: React.FC<WithdrawalsHistoryDeskProps> = ({ 
             </div>
 
             {/* Search + Method Filter Row */}
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '12px' }}>
+            <div className="w-search-method-row">
               <input
                 type="text"
                 placeholder="Search request, player, number or reference"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { setPage(0); loadHistory(); } }}
-                style={{
-                  flex: 1,
-                  minWidth: '160px',
-                  background: 'var(--chip)',
-                  border: 0,
-                  borderRadius: '12px',
-                  padding: '9px 12px',
-                  fontWeight: 600,
-                  color: 'var(--ink)'
-                }}
+                className="w-search-input"
               />
               <select
                 value={methodFilter}
                 onChange={e => { setMethodFilter(e.target.value); setPage(0); }}
-                style={{
-                  width: 'auto',
-                  background: 'var(--chip)',
-                  border: 0,
-                  borderRadius: '12px',
-                  padding: '9px 12px',
-                  fontWeight: 600,
-                  color: 'var(--ink)'
-                }}
+                className="w-method-select"
               >
                 <option value="All">All methods</option>
                 <option value="Telebirr">Telebirr</option>
@@ -471,14 +458,15 @@ export const WithdrawalsHistoryDesk: React.FC<WithdrawalsHistoryDeskProps> = ({ 
                         <tr
                           key={record.id}
                           className={`wr ${isSelected ? 'sel' : ''}`}
-                          onClick={() => setSelectedRecord(record)}
+                          onClick={() => handleSelectRecord(record)}
+                          style={{ cursor: 'pointer' }}
                         >
                           <td>
                             <button
                               type="button"
                               className="w-btn"
                               style={{ background: 'none', padding: 0, fontSize: '14px', fontWeight: 700 }}
-                              onClick={() => setSelectedRecord(record)}
+                              onClick={() => handleSelectRecord(record)}
                             >
                               {record.displayId}
                             </button>
@@ -539,7 +527,7 @@ export const WithdrawalsHistoryDesk: React.FC<WithdrawalsHistoryDeskProps> = ({ 
         </div>
 
         {/* Right Sticky Inspector (.w-det) */}
-        <div className="w-det">
+        <div id="history-inspector-card" className="w-det">
           {selectedRecord ? (
             <div className="w-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'nowrap' }}>
@@ -668,7 +656,7 @@ export const WithdrawalsHistoryDesk: React.FC<WithdrawalsHistoryDeskProps> = ({ 
                         {new Date(selectedRecord.reviewedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
                       </b>
                       {selectedRecord.status === 'approved'
-                        ? `Approved by ${selectedRecord.reviewedByName || 'Admin'}. Paid to ${selectedRecord.method} ${selectedRecord.accountPhone}${selectedRecord.payoutReference ? `. Reference: ${selectedRecord.payoutReference}` : ''}. Player notified.`
+                        ? `Approved by ${selectedRecord.reviewedByName || 'Admin'}. Paid to ${selectedRecord.method} ${selectedRecord.accountPhone || (selectedRecord as any).phone || 'account'}${selectedRecord.payoutReference ? `. Reference: ${selectedRecord.payoutReference}` : ''}. Player notified.`
                         : `Rejected by ${selectedRecord.reviewedByName || 'Admin'}: ${selectedRecord.rejectionReason || 'Declined'}. ${formatETB(selectedRecord.amount)} ETB returned to wallet. Player notified.`}
                     </div>
                   )}
