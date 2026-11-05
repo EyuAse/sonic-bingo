@@ -1242,6 +1242,140 @@ export const apiClient = {
       return handleResponse<{ success: boolean; message: string; payout: any }>(res);
     },
 
+    // ----------------------------------------------------
+    // ENQU AGENT COMMISSION PAYOUTS DESK (REAL NEON DB API)
+    // ----------------------------------------------------
+    async getAgentPayoutKPIs() {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agent-payouts/kpis`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{
+        success: boolean;
+        kpis: {
+          pendingPayouts: { count: number; heldAmount: number };
+          paidThisMonth: { count: number; totalAmount: number };
+          convertedToFloat: { count: number; totalAmount: number };
+          commissionOwed: { totalOwed: number; available: number; held: number };
+        };
+      }>(res);
+    },
+
+    async getAgentPayoutFlow() {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agent-payouts/flow`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{
+        success: boolean;
+        flow: { step1: number; step2: number; step3: number; step4: number };
+      }>(res);
+    },
+
+    async getAgentPayoutRequests(filter = 'Open') {
+      const adminHeaders = await getAdminAuthHeader();
+      const qs = filter ? `?filter=${encodeURIComponent(filter)}` : '';
+      const res = await fetch(`${API_BASE}/admin/agent-payouts/requests${qs}`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; requests: any[] }>(res);
+    },
+
+    async startAgentPayoutReview(id: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agent-payouts/requests/${id}/start-review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; message: string }>(res);
+    },
+
+    async updateAgentPayoutChecklist(id: string, checklist: any) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agent-payouts/requests/${id}/checklist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify({ checklist })
+      });
+      return handleResponse<{ success: boolean }>(res);
+    },
+
+    async approveAgentPayoutEnqu(id: string, payoutTxRef: string, notes?: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agent-payouts/requests/${id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify({ payoutTxRef, notes })
+      });
+      return handleResponse<{ success: boolean; message: string; status: string }>(res);
+    },
+
+    async secondApproveAgentPayout(id: string, payoutTxRef: string, notes?: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agent-payouts/requests/${id}/second-approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify({ payoutTxRef, notes })
+      });
+      return handleResponse<{ success: boolean; message: string; status: string }>(res);
+    },
+
+    async rejectAgentPayoutEnqu(id: string, reason: string, note?: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agent-payouts/requests/${id}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify({ reason, note })
+      });
+      return handleResponse<{ success: boolean; message: string; payout: any }>(res);
+    },
+
+    async getAgentPayoutHistory(params: {
+      period?: string;
+      from?: string;
+      to?: string;
+      search?: string;
+      agent?: string;
+      status?: string;
+    } = {}) {
+      const adminHeaders = await getAdminAuthHeader();
+      const qs = new URLSearchParams();
+      if (params.period) qs.set('period', params.period);
+      if (params.from) qs.set('from', params.from);
+      if (params.to) qs.set('to', params.to);
+      if (params.search) qs.set('search', params.search);
+      if (params.agent) qs.set('agent', params.agent);
+      if (params.status) qs.set('status', params.status);
+
+      const res = await fetch(`${API_BASE}/admin/agent-payouts/history?${qs.toString()}`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{
+        success: boolean;
+        stats: {
+          totalPaid: number;
+          paidCount: number;
+          totalConverted: number;
+          convertedCount: number;
+          totalRejected: number;
+          rejectedCount: number;
+          averagePayout: number;
+        };
+        rows: any[];
+      }>(res);
+    },
+
+    async getAgentCommissionBalances() {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/agent-payouts/commission-balances`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{
+        success: boolean;
+        agents: any[];
+      }>(res);
+    },
+
     // Network Health
     async getNetworkHealth() {
       const adminHeaders = await getAdminAuthHeader();
