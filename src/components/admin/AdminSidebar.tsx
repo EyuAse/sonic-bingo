@@ -61,7 +61,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     totalUsersCount
   } = useAdmin();
 
-  const { showToast } = useApp();
+  const { showToast, switchPage } = useApp();
 
   const pendingCount = (transactions || []).filter(t => t.status === 'pending').length;
 

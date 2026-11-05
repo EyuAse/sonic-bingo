@@ -131,7 +131,7 @@ router.get('/queue', requireWithdrawalAdmin, async (_req: WithdrawalAdminRequest
         COALESCE((SELECT SUM(amount) FROM deposit_requests WHERE user_id = u.id AND status = 'approved'), 0) as total_deposited,
         COALESCE((SELECT SUM(amount) FROM withdrawal_requests WHERE user_id = u.id AND status = 'approved'), 0) as total_withdrawn,
         (
-          COALESCE((SELECT SUM(card_price) FROM game_cards WHERE user_id = u.id), 0) +
+          COALESCE((SELECT SUM(bet_amount) FROM game_tickets WHERE user_id = u.id), 0) +
           COALESCE((SELECT SUM(amount) FROM wallet_transactions WHERE user_id = u.id AND type IN ('stake', 'bingo_stake', 'game_stake')), 0)
         ) as total_staked
       FROM withdrawal_requests w
@@ -148,6 +148,9 @@ router.get('/queue', requireWithdrawalAdmin, async (_req: WithdrawalAdminRequest
     const queue = await Promise.all(queueRes.rows.map(async (row) => {
       const createdAtMs = new Date(row.created_at).getTime();
       const waitingMinutes = Math.max(0, Math.floor((now - createdAtMs) / 60000));
+      const waitingHours = Math.floor(waitingMinutes / 60);
+      const waitingMins = waitingMinutes % 60;
+      const waitingDuration = waitingHours > 0 ? `${waitingHours}h ${waitingMins}m` : `${waitingMinutes} min`;
 
       const totalDeposited = parseFloat(row.total_deposited || '0');
       const totalWithdrawn = parseFloat(row.total_withdrawn || '0');
@@ -167,36 +170,56 @@ router.get('/queue', requireWithdrawalAdmin, async (_req: WithdrawalAdminRequest
         {
           id: 'active_account',
           ok: !isSuspended,
+          label: 'Player account is active',
           title: 'Player account is active',
+          passText: 'Player account is active',
+          failText: `Player account is ${row.user_status || 'inactive'}`,
           failureText: `Player account is ${row.user_status || 'inactive'}`,
+          isBlocker: isSuspended,
           blockApproval: isSuspended
         },
         {
           id: 'kyc_verified',
           ok: isKycVerified,
+          label: 'Identity verified (KYC)',
           title: 'Identity verified (KYC)',
+          passText: 'Identity verified (KYC)',
+          failText: 'Identity not verified (KYC)',
           failureText: 'Identity not verified (KYC)',
+          isBlocker: false,
           blockApproval: false
         },
         {
           id: 'name_match',
           ok: nameMatch,
+          label: 'Payout name matches the player',
           title: 'Payout name matches the player',
+          passText: 'Payout name matches the player',
+          failText: `Payout name "${payoutName}" does not match "${registeredName}"`,
           failureText: `Payout name "${payoutName}" does not match "${registeredName}"`,
+          isBlocker: false,
           blockApproval: false
         },
         {
           id: 'amount_limit',
           ok: withinLimit,
+          label: 'Within the 5,000 ETB request limit',
           title: 'Within the 5,000 ETB request limit',
+          passText: 'Within the 5,000 ETB request limit',
+          failText: `Above the 5,000 ETB request limit (${amount.toLocaleString()} ETB)`,
           failureText: `Above the 5,000 ETB request limit (${amount.toLocaleString()} ETB)`,
+          isBlocker: !withinLimit,
           blockApproval: !withinLimit
         },
         {
           id: 'deposit_turnover',
           ok: turnoverMet,
+          label: 'Deposits played through at least once',
           title: 'Deposits played through at least once',
+          passText: 'Deposits played through at least once',
+          failText: `Deposits not fully played through (${totalStaked.toLocaleString()} of ${totalDeposited.toLocaleString()} ETB staked)`,
           failureText: `Deposits not fully played through (${totalStaked.toLocaleString()} of ${totalDeposited.toLocaleString()} ETB staked)`,
+          isBlocker: false,
           blockApproval: false
         }
       ];
@@ -218,6 +241,7 @@ router.get('/queue', requireWithdrawalAdmin, async (_req: WithdrawalAdminRequest
         amount: parseFloat(r.amount),
         method: r.payment_method,
         status: r.status,
+        date: new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + new Date(r.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
         createdAt: r.created_at,
         reviewedAt: r.reviewed_at
       }));
@@ -230,24 +254,33 @@ router.get('/queue', requireWithdrawalAdmin, async (_req: WithdrawalAdminRequest
         id: row.id,
         displayId,
         playerId,
+        userDisplayId: playerId,
         userId: row.user_id,
         name: registeredName,
         phone: row.account_phone || row.user_phone,
         amount,
         method: row.payment_method,
+        accountPhone: row.account_phone || row.user_phone,
         destination: row.account_phone,
         accountName: payoutName,
+        nameMismatch: !nameMatch,
         status: row.status,
         createdAt: row.created_at,
         waitingMinutes,
+        waitingDuration,
+        isLongWaiting: waitingMinutes >= 180,
         checks,
         failedChecksCount: failedChecks.length,
         isBlocked,
+        isApprovalBlocked: isBlocked,
         playerActivity: {
+          status: row.user_status || 'active',
+          isKycVerified,
           walletBalance: parseFloat(row.wallet_balance || '0'),
           totalDeposited,
           totalWithdrawn,
           totalStaked,
+          joinedDate: new Date(row.user_joined_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
           memberSince: row.user_joined_at
         },
         recentWithdrawals

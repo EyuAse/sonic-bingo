@@ -475,13 +475,15 @@ export const WithdrawalsQueueDesk: React.FC<WithdrawalsQueueDeskProps> = ({
               {/* Automated Checks */}
               <div className="w-sec">
                 <h4>Checks</h4>
-                {activeItem.checks.map(check => (
+                {activeItem.checks && activeItem.checks.map(check => (
                   <div key={check.id} className="w-chk">
                     <i className={`w-ck ${check.ok ? 'ok' : 'bad'}`}>
                       {check.ok ? '✓' : '✕'}
                     </i>
                     <span className={check.ok ? '' : 'w-dn'}>
-                      {check.ok ? check.passText : check.failText}
+                      {check.ok
+                        ? (check.passText || (check as any).title || 'Check passed')
+                        : (check.failText || (check as any).failureText || 'Check failed')}
                     </span>
                   </div>
                 ))}
@@ -492,19 +494,19 @@ export const WithdrawalsQueueDesk: React.FC<WithdrawalsQueueDeskProps> = ({
                 <h4>Player activity</h4>
                 <div className="w-lg">
                   <span style={{ color: 'var(--mute)' }}>Wallet balance</span>
-                  <b>{formatETB(activeItem.playerActivity.walletBalance)} ETB</b>
+                  <b>{formatETB(activeItem.playerActivity?.walletBalance)} ETB</b>
                 </div>
                 <div className="w-lg">
                   <span style={{ color: 'var(--mute)' }}>Total deposited</span>
-                  <b>{formatETB(activeItem.playerActivity.totalDeposited)} ETB</b>
+                  <b>{formatETB(activeItem.playerActivity?.totalDeposited)} ETB</b>
                 </div>
                 <div className="w-lg">
                   <span style={{ color: 'var(--mute)' }}>Total withdrawn</span>
-                  <b>{formatETB(activeItem.playerActivity.totalWithdrawn)} ETB</b>
+                  <b>{formatETB(activeItem.playerActivity?.totalWithdrawn)} ETB</b>
                 </div>
                 <div className="w-lg">
                   <span style={{ color: 'var(--mute)' }}>Member since</span>
-                  <b>{activeItem.playerActivity.joinedDate}</b>
+                  <b>{activeItem.playerActivity?.joinedDate || (activeItem.playerActivity as any)?.memberSince || 'Recent'}</b>
                 </div>
               </div>
 
@@ -754,3 +756,4 @@ export const WithdrawalsQueueDesk: React.FC<WithdrawalsQueueDeskProps> = ({
     </div>
   );
 };
+
