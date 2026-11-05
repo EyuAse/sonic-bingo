@@ -26,6 +26,15 @@ export const AdminPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
+  // Tabs rendered using full-bleed Enqu design system (no duplicate topbar or quick ribbon)
+  const isEnquTab =
+    activeTab === 'overview' ||
+    activeTab === 'telegram-bot' ||
+    activeTab === 'agents' ||
+    activeTab === 'users' ||
+    activeTab === 'coins' ||
+    activeTab === 'agent-recharges';
+
   // If not authenticated, render the PIN lock guard
   if (!isAuthenticated) {
     return <AdminPINModal />;
@@ -44,7 +53,7 @@ export const AdminPage: React.FC = () => {
       {/* 2. Admin Content Viewport */}
       <div className={`admin-main-viewport ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         {/* Top Header Bar (Shown on non-Enqu desks) */}
-        {activeTab !== 'overview' && activeTab !== 'telegram-bot' && activeTab !== 'agents' && activeTab !== 'users' && activeTab !== 'coins' && (
+        {!isEnquTab && (
           <header className="admin-viewport-header-light">
             <div className="viewport-header-left-light">
               {isSidebarCollapsed && (
@@ -76,7 +85,6 @@ export const AdminPage: React.FC = () => {
                   {activeTab === 'bots' && '200 Bot Player Accounts & Wallets'}
                   {activeTab === 'bot-engine' && 'Room 10 Dynamic Bot Engine (0-50 Control Desk)'}
                   {activeTab === 'cartelas' && '600 Serial Cartela Cards Library'}
-                  {activeTab === 'agent-recharges' && 'Agent Float Recharge Requests'}
                   {activeTab === 'agent-payouts' && 'Agent Commission Cashouts & Settlement (የወኪሎች ኮሚሽን ክፍያ)'}
                   {activeTab === 'official-accounts' && 'Official Platform Receiving Accounts (የክፍያ መቀበያ ሂሳቦች)'}
                   {activeTab === 'jackpots' && 'Progressive Jackpot Pools & Settlement'}
@@ -87,7 +95,6 @@ export const AdminPage: React.FC = () => {
                   {activeTab === 'bots' && 'እውነተኛ የውሂብ ጎታ ያላቸው 200 የቦቶች ዋሌቶች፣ ራስ-ሰር ተወራራጅነት እና የቀጥታ አሸናፊነት መዝገብ'}
                   {activeTab === 'bot-engine' && 'የክፍል 10 ተለዋዋጭ ቦቶች ቁጥጥር ማዕከል - ከ 0 እስከ 50 ቦቶች በቀጥታ ያስተካክሉ'}
                   {activeTab === 'cartelas' && '600 የቢንጎ ካርቴላ ካርዶች ቤተ-መጽሐፍት'}
-                  {activeTab === 'agent-recharges' && 'የወኪሎች የዋሌት መሙያ ጥያቄዎችን ይገምግሙ እና ያጽድቁ'}
                   {activeTab === 'agent-payouts' && 'የወኪሎች የኮሚሽን ወጪ ጥያቄዎችን በ Telebirr ወይም CBE ይክፈሉ፣ ያጽድቁ ወይም ይመልሱ'}
                   {activeTab === 'official-accounts' && 'የቢንጎ እና የፍሎት ክፍያ መቀበያ ኦፊሴላዊ ሂሳቦች (Telebirr, CBE, M-Pesa)'}
                   {activeTab === 'jackpots' && 'የ 4ቱ ክፍሎች ፕሮግረሲቭ ጃክፖት ሳጥን፣ የ 10% ድልድል እና የ 18 ኳስ አሸናፊዎች'}
@@ -129,7 +136,7 @@ export const AdminPage: React.FC = () => {
         )}
 
         {/* Quick Tab Switcher Ribbon (Shown on non-Enqu desks) */}
-        {activeTab !== 'overview' && activeTab !== 'telegram-bot' && activeTab !== 'agents' && activeTab !== 'users' && activeTab !== 'coins' && (
+        {!isEnquTab && (
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -202,7 +209,7 @@ export const AdminPage: React.FC = () => {
         )}
 
         {/* Tab Content Panes */}
-        <main className={`admin-tab-content ${activeTab === 'overview' || activeTab === 'telegram-bot' || activeTab === 'agents' || activeTab === 'users' || activeTab === 'coins' ? 'enqu-overview-mode' : ''}`}>
+        <main className={`admin-tab-content ${isEnquTab ? 'enqu-overview-mode' : ''}`}>
           {/* TAB 1: OVERVIEW & ANALYTICS */}
           {activeTab === 'overview' && <DashboardOverview onNavigateTab={setActiveTab} />}
 

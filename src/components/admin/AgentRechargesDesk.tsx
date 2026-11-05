@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../../context/AppContext.tsx';
+import { useAdmin } from '../../context/AdminContext.tsx';
 import { apiClient } from '../../services/apiClient.ts';
 import { socketService } from '../../services/socketService.ts';
 
@@ -60,6 +61,7 @@ interface LowBalanceAgent {
 
 export const AgentRechargesDesk: React.FC = () => {
   const { showToast } = useApp();
+  const { isSidebarCollapsed, toggleSidebar } = useAdmin();
 
   // Top KPIs
   const [kpis, setKpis] = useState({
@@ -385,9 +387,11 @@ export const AgentRechargesDesk: React.FC = () => {
 
   return (
     <div className="enqu-recharges-desk" style={{
-      padding: '24px 28px',
-      background: 'var(--panel, #e8e6e9)',
+      width: '100%',
       minHeight: '100vh',
+      flex: 1,
+      padding: '22px 24px',
+      background: 'var(--panel, #e8e6e9)',
       boxSizing: 'border-box',
       overflowY: 'auto',
       fontFamily: 'Urbanist, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -476,7 +480,23 @@ export const AgentRechargesDesk: React.FC = () => {
 
       {/* Top Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
-        <h1 style={{ fontSize: '29px', fontWeight: 700, letterSpacing: '-0.3px', margin: 0 }}>Agent Recharges</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {isSidebarCollapsed && (
+            <button
+              type="button"
+              className="btn-chatgpt-toggle"
+              onClick={toggleSidebar}
+              title="Open sidebar"
+              style={{ marginRight: '4px' }}
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <line x1="9" y1="3" x2="9" y2="21" />
+              </svg>
+            </button>
+          )}
+          <h1 style={{ fontSize: '29px', fontWeight: 700, letterSpacing: '-0.3px', margin: 0 }}>Agent Recharges</h1>
+        </div>
         <span className="av" title="Agent Recharges Desk"></span>
       </div>
 
