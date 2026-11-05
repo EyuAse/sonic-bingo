@@ -75,6 +75,14 @@ export function getAgentAuthHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+export function getWithdrawalsAdminAuthHeader(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  const token = sessionStorage.getItem('sonic_withdrawals_token') || 
+                localStorage.getItem('sonic_withdrawals_token') || 
+                localStorage.getItem('sonic_admin_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export const apiClient = {
   // Public Endpoints
   public: {
@@ -296,7 +304,7 @@ export const apiClient = {
 
     async withdraw(payload: {
       amount: number;
-      paymentMethod: 'Telebirr' | 'CBE';
+      paymentMethod: 'Telebirr' | 'CBE' | 'M-Pesa' | string;
       accountPhone: string;
       accountName?: string;
     }) {
@@ -313,6 +321,32 @@ export const apiClient = {
         message: string;
         newBalance: number;
         withdrawal: any;
+      }>(res);
+    },
+
+    async getMyWithdrawals() {
+      const res = await fetch(`${API_BASE}/wallet/my-withdrawals`, {
+        headers: { ...getAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        requests: any[];
+      }>(res);
+    },
+
+    async cancelWithdrawal(requestId: string | number) {
+      const res = await fetch(`${API_BASE}/wallet/cancel-withdrawal`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader()
+        },
+        body: JSON.stringify({ requestId })
+      });
+      return handleResponse<{
+        success: boolean;
+        message: string;
+        newBalance: number;
       }>(res);
     },
 
@@ -1961,6 +1995,134 @@ export const apiClient = {
         headers: { ...getAgentAuthHeader() }
       });
       return handleResponse<{ success: boolean; accounts: any[] }>(res);
+    }
+  },
+
+  // Dedicated Player Withdrawals Admin Portal
+  withdrawalsAdmin: {
+    async login(pin: string) {
+      const res = await fetch(`${API_BASE}/withdrawals-admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin })
+      });
+      return handleResponse<{
+        success: boolean;
+        token: string;
+        admin: { role: string; name: string };
+      }>(res);
+    },
+
+    async getQueue(params?: { q?: string; method?: string; filter?: string }) {
+      const qParams = new URLSearchParams();
+      if (params?.q) qParams.set('q', params.q);
+      if (params?.method) qParams.set('method', params.method);
+      if (params?.filter) qParams.set('filter', params.filter);
+      const queryStr = qParams.toString() ? `?${qParams.toString()}` : '';
+
+      const res = await fetch(`${API_BASE}/withdrawals-admin/queue${queryStr}`, {
+        headers: { ...getWithdrawalsAdminAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        queue: any[];
+        kpis: {
+          pendingCount: number;
+          pendingAmount: number;
+          longestWaitingMinutes: number;
+          longestWaitingPlayer: string;
+          approvedTodayCount: number;
+          approvedTodayAmount: number;
+          rejectedTodayCount: number;
+          rejectedTodayAmount: number;
+          needsAttentionCount: number;
+          highValueCount: number;
+        };
+      }>(res);
+    },
+
+    async getHistory(params?: {
+      period?: string;
+      from?: string;
+      to?: string;
+      status?: string;
+      method?: string;
+      search?: string;
+      page?: number;
+      limit?: number;
+    }) {
+      const qParams = new URLSearchParams();
+      if (params?.period) qParams.set('period', params.period);
+      if (params?.from) qParams.set('from', params.from);
+      if (params?.to) qParams.set('to', params.to);
+      if (params?.status) qParams.set('status', params.status);
+      if (params?.method) qParams.set('method', params.method);
+      if (params?.search) qParams.set('search', params.search);
+      if (params?.page !== undefined) qParams.set('page', String(params.page));
+      if (params?.limit !== undefined) qParams.set('limit', String(params.limit));
+      const queryStr = qParams.toString() ? `?${qParams.toString()}` : '';
+
+      const res = await fetch(`${API_BASE}/withdrawals-admin/history${queryStr}`, {
+        headers: { ...getWithdrawalsAdminAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        records: any[];
+        total: number;
+        page: number;
+        limit: number;
+        kpis: {
+          requestedCount: number;
+          requestedAmount: number;
+          approvedCount: number;
+          approvedAmount: number;
+          rejectedCount: number;
+          rejectedAmount: number;
+          pendingCount: number;
+          approvalRate: number;
+          avgDecisionMinutes: number;
+        };
+        buckets: Array<{
+          label: string;
+          tooltip: string;
+          approvedAmount: number;
+          rejectedAmount: number;
+          count: number;
+        }>;
+        grouping: string;
+      }>(res);
+    },
+
+    async approve(id: string | number, payoutReference?: string, notes?: string) {
+      const res = await fetch(`${API_BASE}/withdrawals-admin/${id}/approve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getWithdrawalsAdminAuthHeader()
+        },
+        body: JSON.stringify({ payoutReference, notes })
+      });
+      return handleResponse<{
+        success: boolean;
+        message: string;
+        request: any;
+      }>(res);
+    },
+
+    async reject(id: string | number, reason: string, adminNote?: string) {
+      const res = await fetch(`${API_BASE}/withdrawals-admin/${id}/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getWithdrawalsAdminAuthHeader()
+        },
+        body: JSON.stringify({ reason, adminNote })
+      });
+      return handleResponse<{
+        success: boolean;
+        message: string;
+        request: any;
+      }>(res);
     }
   }
 };

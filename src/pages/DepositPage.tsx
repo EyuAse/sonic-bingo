@@ -163,7 +163,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
     try {
       const [myReqsRes, myWithRes] = await Promise.allSettled([
         apiClient.wallet.getMyAgentDeposits(),
-        apiClient.wallet.getMyAgentWithdrawals()
+        apiClient.wallet.getMyWithdrawals().catch(() => apiClient.wallet.getMyAgentWithdrawals())
       ]);
 
       if (myReqsRes.status === 'fulfilled' && myReqsRes.value?.success && myReqsRes.value?.requests) {
@@ -413,12 +413,8 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
     }
   };
 
-  const handleWithdrawViaAgent = async (e: React.FormEvent) => {
+  const handleWithdrawSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedWithdrawAgent) {
-      showToast(lang === 'am' ? '⚠️ እባክዎ ክፍያ የሚፈጽምልዎ ኤጀንት ይምረጡ' : '⚠️ Please select an active online agent');
-      return;
-    }
     if (withdrawAmount < 50) {
       showToast(lang === 'am' ? '⚠️ ዝቅተኛ የማውጣት መጠን 50 ብር ነው' : '⚠️ Minimum withdrawal is 50 ETB');
       return;
@@ -438,17 +434,16 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
 
     try {
       setIsSubmittingWithdraw(true);
-      const res = await apiClient.wallet.withdrawViaAgent({
-        agentId: selectedWithdrawAgent.id,
+      const res = await apiClient.wallet.withdraw({
         amount: withdrawAmount,
-        payoutMethod: withdrawMethod,
-        payoutAccount: withdrawAccount.trim(),
-        payoutAccountName: withdrawAccountName.trim()
+        paymentMethod: withdrawMethod,
+        accountPhone: withdrawAccount.trim(),
+        accountName: withdrawAccountName.trim()
       });
 
-      if (res.success && res.request) {
-        setActiveWithdrawalRequest(res.request);
-        showToast(lang === 'am' ? '✅ የማውጣት ጥያቄ ተልኳል!' : '✅ Withdrawal request submitted to agent!');
+      if (res.success && res.withdrawal) {
+        setActiveWithdrawalRequest(res.withdrawal);
+        showToast(lang === 'am' ? '✅ የማውጣት ጥያቄ ቀርቧል! ካሺየር እስኪያጸድቅ ይጠብቁ' : '✅ Withdrawal submitted! Awaiting cashier approval');
       }
     } catch (err: any) {
       showToast(`❌ ${err.message || 'Withdrawal request failed'}`);
@@ -459,7 +454,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
 
   const handleCancelWithdrawal = async (reqId: string) => {
     try {
-      const res = await apiClient.wallet.cancelAgentWithdrawal(reqId);
+      const res = await apiClient.wallet.cancelWithdrawal(reqId).catch(() => apiClient.wallet.cancelAgentWithdrawal(reqId));
       if (res.success) {
         setActiveWithdrawalRequest(null);
         showToast(lang === 'am' ? '✅ ጥያቄው ተሰርዟል! ገንዘቡ ተመልሷል' : '✅ Request cancelled! Escrow refunded to balance');
@@ -1381,119 +1376,61 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                   )}
                 </div>
               ) : (
-                /* CASE B: 100% HARMONIZED LUXURY AGENT WITHDRAWAL FORM */
-                <form onSubmit={handleWithdrawViaAgent} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {/* Step 1: Header Row */}
-                  <div className="sonic-step-header-row">
-                    <div className="sonic-step-badge-pill">
-                      <span className="sonic-step-number-circle">1</span>
-                      <span className="sonic-step-label-text">
-                        {lang === 'am' ? 'ክፍያ የሚፈጽምልዎ ኤጀንት ይምረጡ' : 'Select Certified Agent'}
-                      </span>
+                /* CASE B: 100% DIRECT CENTRAL OFFICIAL CASHIER WITHDRAWAL FORM */
+                <form onSubmit={handleWithdrawSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {/* Official Central Cashier Desk Banner */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, #181b20, #0f1216)',
+                    borderRadius: '16px',
+                    padding: '14px 16px',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    boxShadow: '0 4px 14px rgba(0,0,0,0.2)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '50%',
+                        background: 'rgba(245, 158, 11, 0.15)',
+                        border: '1px solid rgba(245, 158, 11, 0.4)',
+                        display: 'grid',
+                        placeItems: 'center',
+                        color: '#fbbf24',
+                        fontSize: '16px'
+                      }}>
+                        <i className="fa-solid fa-building-columns"></i>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '14.5px', fontWeight: 700, color: '#f8fafc' }}>
+                          {lang === 'am' ? 'ኦፊሴላዊ የክፍያ ማዕከል' : 'Official Payout Cashier'}
+                        </div>
+                        <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '2px' }}>
+                          {lang === 'am' ? 'ቀጥታ ክፍያ በቴሌብር፣ ኤም-ፔሳ ወይም ንግድ ባንክ (እስከ 5,000 ብር)' : 'Direct payouts to Telebirr, M-Pesa & CBE (Max 5,000 ETB)'}
+                        </div>
+                      </div>
                     </div>
-                    <div className="sonic-online-agents-pill">
-                      <span className="sonic-pulse-dot"></span>
-                      <span>{activeAgents.length > 0 ? `${activeAgents.length} Agents Online` : '2 Agents Online'}</span>
-                    </div>
+                    <span style={{
+                      background: 'rgba(16, 185, 129, 0.15)',
+                      color: '#34d399',
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      borderRadius: '20px',
+                      padding: '4px 10px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}>
+                      <span className="sonic-pulse-dot" style={{ width: 6, height: 6, background: '#10b981' }}></span>
+                      {lang === 'am' ? 'ክፍት ነው' : 'Live Desk'}
+                    </span>
                   </div>
 
-                  {/* Agents Stack: Obsidian Luxury Card for Selected, Light Card for Unselected */}
-                  <div className="sonic-agents-stack">
-                  {isLoadingAgents ? (
-                    <div className="sonic-agent-light-card" style={{ justifyContent: 'center', textAlign: 'center', color: '#64748b', padding: '16px' }}>
-                      <i className="fa-solid fa-circle-notch fa-spin" style={{ marginRight: '8px', color: '#0088cc' }}></i>
-                      <span>Loading active certified agents...</span>
-                    </div>
-                  ) : activeAgents.length === 0 ? (
-                    <div className="sonic-agent-light-card" style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '20px 16px', gap: '8px' }}>
-                      <i className="fa-solid fa-user-clock" style={{ fontSize: '24px', color: '#94a3b8' }}></i>
-                      <span style={{ fontSize: '13.5px', color: '#64748b', fontWeight: 600 }}>{agentLoadError || 'No certified agents currently online.'}</span>
-                      <button
-                        type="button"
-                        onClick={loadAgentData}
-                        style={{ marginTop: '6px', padding: '6px 14px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', color: '#1e293b' }}
-                      >
-                        <i className="fa-solid fa-rotate-right" style={{ marginRight: '6px' }}></i> Retry / እንደገና ሞክር
-                      </button>
-                    </div>
-                  ) : (
-                      activeAgents.map(ag => {
-                        const isSelected = selectedWithdrawAgent?.agentCode === ag.agentCode;
-                        if (isSelected) {
-                          return (
-                            <div
-                              key={ag.agentCode}
-                              className="sonic-agent-obsidian-card"
-                              onClick={() => handleSelectWithdrawAgent(ag)}
-                            >
-                              <div className="sonic-agent-card-left">
-                                <SonicCrownLogo size={36} />
-                                <div className="sonic-agent-card-details">
-                                  <span className="sonic-agent-name-obsidian">
-                                    👑 Sonic Agent #{ag.agentCode}
-                                  </span>
-                                  <span className="sonic-agent-rails-obsidian">
-                                    {ag.telebirrPhone ? `Telebirr: ${ag.telebirrPhone}` : ''}
-                                  </span>
-                                  <span className="sonic-agent-rails-obsidian">
-                                    {ag.cbeAccount ? `CBE Birr: ${ag.cbeAccount}` : ''}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="sonic-agent-card-right">
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px' }}>
-                                  <span className="sonic-status-pill-emerald">
-                                    <span className="sonic-pulse-dot" style={{ width: 6, height: 6 }}></span>
-                                    Online
-                                  </span>
-                                  <span style={{ fontSize: '10px', color: '#38bdf8', fontWeight: 800 }}>
-                                    ⚡ ~{ag.avgApprovalMinutes || 2}m
-                                  </span>
-                                </div>
-                                <div className="sonic-amber-circle-chevron">›</div>
-                              </div>
-                              <LiquidGoldCornerSwoosh opacity={0.95} />
-                            </div>
-                          );
-                        }
-
-                        return (
-                          <div
-                            key={ag.agentCode}
-                            className="sonic-agent-light-card"
-                            onClick={() => handleSelectWithdrawAgent(ag)}
-                          >
-                            <div className="sonic-agent-card-left">
-                              <SonicCrownLogo size={34} />
-                              <div className="sonic-agent-card-details">
-                                <span className="sonic-agent-name-light">Sonic Agent #{ag.agentCode}</span>
-                                <span className="sonic-agent-rails-light">
-                                  {ag.telebirrPhone ? `Telebirr: ${ag.telebirrPhone}` : ''}
-                                </span>
-                                <span className="sonic-agent-rails-light">
-                                  {ag.cbeAccount ? `CBE Birr: ${ag.cbeAccount}` : ''}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="sonic-agent-card-right">
-                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px' }}>
-                                <span className="sonic-status-pill-green">
-                                  <span className="sonic-pulse-dot" style={{ width: 6, height: 6 }}></span>
-                                  Online
-                                </span>
-                                <span style={{ fontSize: '10px', color: '#0284c7', fontWeight: 700 }}>
-                                  ⚡ ~{ag.avgApprovalMinutes || 2}m
-                                </span>
-                              </div>
-                              <GoldenCheckCircle size={24} />
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-
-                  {/* Step 2: Withdrawal Amount Card (Harmonized with Deposit Shell) */}
+                  {/* Step 1: Withdrawal Amount Card (Harmonized with Deposit Shell) */}
                   <div className="sonic-amount-card-shell">
                     <div className="sonic-amount-header-row">
                       <div className="sonic-amount-header-left">
@@ -1732,7 +1669,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                     <button
                       type="submit"
                       className="sonic-primary-gold-submit-btn"
-                      disabled={isSubmittingWithdraw || withdrawAmount < 50 || withdrawAmount > balance || !selectedWithdrawAgent}
+                      disabled={isSubmittingWithdraw || withdrawAmount < 50 || withdrawAmount > balance}
                       style={{ marginTop: '12px' }}
                     >
                       {isSubmittingWithdraw ? (
@@ -1745,8 +1682,8 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                           <i className="fa-solid fa-bolt"></i>
                           <span>
                             {lang === 'am'
-                              ? `አሁን ${withdrawAmount > 0 ? `${withdrawAmount} ብር` : ''} በኤጀንት #${selectedWithdrawAgent?.agentCode || ''} ማውጣት ጠይቅ`
-                              : `Request ${withdrawAmount > 0 ? `${withdrawAmount} ETB` : ''} Payout via Agent #${selectedWithdrawAgent?.agentCode || ''}`}
+                              ? `አሁን ${withdrawAmount > 0 ? `${withdrawAmount} ብር` : ''} ማውጣት ጠይቅ`
+                              : `Request ${withdrawAmount > 0 ? `${withdrawAmount} ETB` : ''} Payout`}
                           </span>
                         </>
                       )}

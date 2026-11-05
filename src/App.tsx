@@ -29,6 +29,7 @@ import { HelpCenterPage } from './pages/HelpCenterPage.tsx';
 import { AboutSonicPage } from './pages/AboutSonicPage.tsx';
 import { AdminPage } from './pages/AdminPage.tsx';
 import { AgentPortalPage } from './pages/AgentPortalPage.tsx';
+import { WithdrawalsAdminPage } from './pages/WithdrawalsAdminPage.tsx';
 import { AppSplashScreen } from './components/common/AppSplashScreen.tsx';
 
 export const App: React.FC = () => {
@@ -83,6 +84,16 @@ export const App: React.FC = () => {
     return (
       <div className="admin-fullscreen-root">
         <AdminPage />
+        <Toast />
+      </div>
+    );
+  }
+
+  // If on Dedicated Player Withdrawals Admin portal route, render full-screen
+  if (currentPage === 'withdrawals') {
+    return (
+      <div className="withdrawals-fullscreen-root">
+        <WithdrawalsAdminPage />
         <Toast />
       </div>
     );

@@ -182,6 +182,17 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       <div className="foot nav">
         <nav>
           <a
+            onClick={() => switchPage('withdrawals')}
+            title={isSidebarCollapsed ? 'Withdrawals Desk' : undefined}
+            style={{ cursor: 'pointer' }}
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M12 15V3M7 8l5-5 5 5M4 17v3h16v-3" />
+            </svg>
+            <span>Withdrawals Desk</span>
+            <span className="s" style={{ background: '#1c1e1d', color: '#fff' }}>Desk</span>
+          </a>
+          <a
             onClick={() => showToast('⚙️ System Settings & Security')}
             title={isSidebarCollapsed ? 'Settings' : undefined}
           >

@@ -1646,5 +1646,134 @@ router.post('/cancel-agent-withdrawal', requireAuth, async (req: AuthenticatedRe
   }
 });
 
+/**
+ * GET /api/wallet/my-withdrawals
+ * Get player's recent central withdrawal requests
+ */
+router.get('/my-withdrawals', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const requestsRes = await query(
+      `SELECT id, amount, payment_method, account_phone, account_name,
+              status, payout_reference, rejection_reason, created_at, reviewed_at
+       FROM withdrawal_requests
+       WHERE user_id = $1
+       ORDER BY created_at DESC
+       LIMIT 20`,
+      [userId]
+    );
+
+    return res.json({
+      success: true,
+      requests: requestsRes.rows.map(r => ({
+        id: r.id,
+        amount: parseFloat(r.amount),
+        payoutMethod: r.payment_method,
+        payoutAccount: r.account_phone,
+        payoutAccountName: r.account_name,
+        payoutReference: r.payout_reference,
+        status: r.status,
+        rejectionReason: r.rejection_reason,
+        createdAt: r.created_at,
+        reviewedAt: r.reviewed_at
+      }))
+    });
+  } catch (error: any) {
+    console.error('❌ [Wallet My Withdrawals Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve withdrawal requests' });
+  }
+});
+
+/**
+ * POST /api/wallet/cancel-withdrawal
+ * Allows player to cancel a pending central withdrawal request and refunds escrow.
+ */
+router.post('/cancel-withdrawal', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const { requestId } = req.body;
+
+    if (!requestId) {
+      return res.status(400).json({ success: false, error: 'Request ID is required' });
+    }
+
+    const result = await withTransaction(async (client) => {
+      const reqRes = await client.query(
+        `SELECT * FROM withdrawal_requests 
+         WHERE id = $1 AND user_id = $2 FOR UPDATE`,
+        [requestId, userId]
+      );
+
+      if (reqRes.rows.length === 0) {
+        throw new Error('Withdrawal request not found');
+      }
+
+      const withReq = reqRes.rows[0];
+      if (withReq.status !== 'pending') {
+        throw new Error(`Cannot cancel request with status "${withReq.status}"`);
+      }
+
+      const refundAmount = parseFloat(withReq.amount);
+
+      // Refund escrow to player wallet
+      const walletRes = await client.query(
+        `UPDATE wallets 
+         SET balance = balance + $1, updated_at = NOW() 
+         WHERE user_id = $2 
+         RETURNING balance`,
+        [refundAmount, userId]
+      );
+      const refundedBal = parseFloat(walletRes.rows[0].balance);
+
+      // Mark request as cancelled
+      await client.query(
+        `UPDATE withdrawal_requests 
+         SET status = 'cancelled', reviewed_at = NOW() 
+         WHERE id = $1`,
+        [requestId]
+      );
+
+      // Update wallet_transactions ledger
+      await client.query(
+        `UPDATE wallet_transactions 
+         SET status = 'cancelled' 
+         WHERE user_id = $1 AND type = 'withdrawal' AND status = 'pending' 
+           AND amount = $2 AND created_at >= $3`,
+        [userId, refundAmount, withReq.created_at]
+      );
+
+      return {
+        refundAmount,
+        refundedBal
+      };
+    });
+
+    // Real-time WebSocket push
+    const balancePayload = {
+      userId,
+      newBalance: result.refundedBal,
+      balance: result.refundedBal,
+      amount: result.refundAmount,
+      type: 'withdrawal_cancelled_refund'
+    };
+    io.emit('user_balance_updated', balancePayload);
+    io.emit(`user_${userId}_balance`, balancePayload);
+    io.emit('withdrawal_status_updated', {
+      requestId,
+      status: 'cancelled',
+      userId
+    });
+
+    return res.json({
+      success: true,
+      message: `Withdrawal request cancelled. ${result.refundAmount.toFixed(2)} ETB refunded to your balance.`,
+      newBalance: result.refundedBal
+    });
+  } catch (error: any) {
+    console.error('❌ [Wallet Cancel Withdrawal Error]:', error);
+    return res.status(400).json({ success: false, error: error.message || 'Failed to cancel withdrawal request' });
+  }
+});
+
 export default router;
 

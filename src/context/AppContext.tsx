@@ -16,7 +16,8 @@ export type PageId =
   | 'help'
   | 'about'
   | 'admin'
-  | 'agent';
+  | 'agent'
+  | 'withdrawals';
 
 interface AppContextType {
   currentPage: PageId;
@@ -36,6 +37,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       if (hash.includes('lomibingo-Admin-vBingo') || path.includes('lomibingo-Admin-vBingo') || hash.includes('admin')) {
         return 'admin';
+      }
+      if (
+        hash.includes('withdrawals') ||
+        path.includes('withdrawals') ||
+        savedPortal === 'withdrawals'
+      ) {
+        return 'withdrawals';
       }
       if (
         hash.includes('agent') ||
@@ -60,6 +68,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (hash.includes('lomibingo-Admin-vBingo') || path.includes('lomibingo-Admin-vBingo') || hash.includes('admin')) {
         setCurrentPage('admin');
       } else if (
+        hash.includes('withdrawals') ||
+        path.includes('withdrawals') ||
+        savedPortal === 'withdrawals'
+      ) {
+        setCurrentPage('withdrawals');
+      } else if (
         hash.includes('agent') ||
         path.includes('agent') ||
         savedPortal === 'agent'
@@ -76,6 +90,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (page === 'admin') {
       window.location.hash = '/lomibingo-Admin-vBingo';
       localStorage.setItem('sonic_active_portal', 'admin');
+    } else if (page === 'withdrawals') {
+      window.location.hash = '/withdrawals';
+      localStorage.setItem('sonic_active_portal', 'withdrawals');
     } else if (page === 'agent') {
       const savedTab = localStorage.getItem('sonic_agent_tab') || 'overview';
       window.location.hash = `/agent-portal?tab=${savedTab}`;
