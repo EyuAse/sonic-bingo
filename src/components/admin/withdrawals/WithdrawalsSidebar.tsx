@@ -174,3 +174,4 @@ export const WithdrawalsSidebar: React.FC<WithdrawalsSidebarProps> = ({
     </>
   );
 };
+

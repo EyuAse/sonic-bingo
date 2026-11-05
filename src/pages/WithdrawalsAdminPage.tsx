@@ -205,90 +205,6 @@ export const WithdrawalsAdminPage: React.FC = () => {
           </div>
         </header>
 
-        {/* Desktop Viewport Header Bar */}
-        <header className="admin-viewport-header-light">
-          <div className="viewport-header-left-light">
-            {isCollapsed && (
-              <button
-                type="button"
-                className="btn-chatgpt-toggle hide-on-mobile"
-                onClick={() => handleToggleCollapse(false)}
-                title="Open sidebar"
-                style={{ marginRight: '8px' }}
-              >
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <line x1="9" y1="3" x2="9" y2="21" />
-                </svg>
-              </button>
-            )}
-            <div className="viewport-page-title-box">
-              <h2 className="viewport-page-main-heading">
-                <i className="fa-solid fa-bolt-lightning header-gold-bolt" style={{ color: '#059669' }}></i>
-                {activeTab === 'queue' && 'Player Withdrawals & Instant Cashout Desk (የተጫዋቾች ወጪ ማረጋገጫ)'}
-                {activeTab === 'history' && 'Central Payout Audit History & Volume Analytics (የክፍያ መዝገብ)'}
-                {activeTab === 'settings' && 'Cashier Security, AML Rules & Payout Policy Settings'}
-              </h2>
-              <p className="viewport-page-sub-amharic">
-                {activeTab === 'queue' && 'የተጫዋቾች ገንዘብ ማውጣት ጥያቄዎች ማረጋገጫ፣ የቴሌብር፣ ኤም-ፔሳ እና ንግድ ባንክ የቀጥታ ክፍያ ፈቃድ'}
-                {activeTab === 'history' && 'የተጠናቀቁ እና የተሰረዙ ክፍያዎች ሙሉ ታሪክ፣ የዕለቱ የክፍያ ስታቲስቲክስ እና የኦዲት መረጃ'}
-                {activeTab === 'settings' && 'የተርሚናል ሚስጥር ቁጥር (PIN) መቀየሪያ፣ ከፍተኛ እና ዝቅተኛ የገንዘብ ማውጫ ገደቦች'}
-              </p>
-            </div>
-          </div>
-
-          <div className="viewport-header-right-light">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  color: '#059669',
-                  background: '#ecfdf5',
-                  border: '1px solid #a7f3d0',
-                  padding: '5px 12px',
-                  borderRadius: '20px'
-                }}
-              >
-                <span
-                  style={{
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '50%',
-                    background: '#10b981',
-                    boxShadow: '0 0 6px rgba(16, 185, 129, 0.6)',
-                    display: 'inline-block'
-                  }}
-                />
-                Live Payouts
-              </span>
-              <button
-                type="button"
-                className="w-btn"
-                onClick={loadQueueData}
-                title="Refresh Queue"
-                style={{
-                  padding: '7px 14px',
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  borderRadius: '12px'
-                }}
-              >
-                <span style={{ display: 'inline-block', transform: isRefreshing ? 'rotate(180deg)' : 'none', transition: 'transform 0.4s ease' }}>
-                  🔄
-                </span>
-                Refresh
-              </button>
-            </div>
-          </div>
-        </header>
-
         {/* Scrollable Viewport Content Area */}
         <div
           className="admin-content-scroller"
@@ -311,62 +227,113 @@ export const WithdrawalsAdminPage: React.FC = () => {
               gap: '12px'
             }}
           >
-            <h1
-              style={{
-                fontSize: '28px',
-                fontWeight: 800,
-                margin: 0,
-                letterSpacing: '-0.5px',
-                color: 'var(--ink)'
-              }}
-            >
-              Withdrawals
-            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {isCollapsed && (
+                <button
+                  type="button"
+                  className="btn-chatgpt-toggle hide-on-mobile"
+                  onClick={() => handleToggleCollapse(false)}
+                  title="Open sidebar"
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '10px',
+                    width: '36px',
+                    height: '36px',
+                    display: 'grid',
+                    placeItems: 'center',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <line x1="9" y1="3" x2="9" y2="21" />
+                  </svg>
+                </button>
+              )}
+              <h1
+                style={{
+                  fontSize: '28px',
+                  fontWeight: 800,
+                  margin: 0,
+                  letterSpacing: '-0.5px',
+                  color: 'var(--ink)'
+                }}
+              >
+                {activeTab === 'settings' ? 'Cashier Settings' : 'Withdrawals'}
+              </h1>
+            </div>
 
-            <div
-              style={{
-                display: 'inline-flex',
-                background: '#ffffff',
-                padding: '4px',
-                borderRadius: '9999px',
-                gap: '4px',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                border: '1px solid #e2e8f0'
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setActiveTab('queue')}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div
                 style={{
-                  border: 0,
-                  padding: '7px 16px',
+                  display: 'inline-flex',
+                  background: '#ffffff',
+                  padding: '4px',
                   borderRadius: '9999px',
-                  fontSize: '13.5px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  background: activeTab === 'queue' ? '#1c1e1d' : 'transparent',
-                  color: activeTab === 'queue' ? '#ffffff' : '#64748b',
-                  transition: 'all 0.15s ease'
+                  gap: '4px',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                  border: '1px solid #e2e8f0'
                 }}
               >
-                Requests {kpis.pendingCount > 0 ? `(${kpis.pendingCount})` : '(0)'}
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('queue')}
+                  style={{
+                    border: 0,
+                    padding: '7px 16px',
+                    borderRadius: '9999px',
+                    fontSize: '13.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: activeTab === 'queue' ? '#1c1e1d' : 'transparent',
+                    color: activeTab === 'queue' ? '#ffffff' : '#64748b',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  Requests {kpis.pendingCount > 0 ? `(${kpis.pendingCount})` : '(0)'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('history')}
+                  style={{
+                    border: 0,
+                    padding: '7px 16px',
+                    borderRadius: '9999px',
+                    fontSize: '13.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: activeTab === 'history' ? '#1c1e1d' : 'transparent',
+                    color: activeTab === 'history' ? '#ffffff' : '#64748b',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  History
+                </button>
+              </div>
+
               <button
                 type="button"
-                onClick={() => setActiveTab('history')}
+                className="w-btn"
+                onClick={loadQueueData}
+                title="Refresh Queue"
                 style={{
-                  border: 0,
-                  padding: '7px 16px',
-                  borderRadius: '9999px',
-                  fontSize: '13.5px',
+                  padding: '7px 14px',
+                  fontSize: '13px',
                   fontWeight: 700,
-                  cursor: 'pointer',
-                  background: activeTab === 'history' ? '#1c1e1d' : 'transparent',
-                  color: activeTab === 'history' ? '#ffffff' : '#64748b',
-                  transition: 'all 0.15s ease'
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  borderRadius: '12px',
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
                 }}
               >
-                History
+                <span style={{ display: 'inline-block', transform: isRefreshing ? 'rotate(180deg)' : 'none', transition: 'transform 0.4s ease' }}>
+                  🔄
+                </span>
+                Refresh
               </button>
             </div>
           </div>
