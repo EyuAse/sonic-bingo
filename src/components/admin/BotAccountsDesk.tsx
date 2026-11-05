@@ -192,9 +192,9 @@ export const BotAccountsDesk: React.FC = () => {
       </div>
 
       {/* 3. Search and Filters Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <div style={{ position: 'relative', width: '280px' }}>
+      <div className="bots-search-filter-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+        <div className="bots-controls-filter-row" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', width: '100%', maxWidth: '100%' }}>
+          <div className="bots-search-box" style={{ position: 'relative', width: '280px', maxWidth: '100%' }}>
             <i className="fa-solid fa-magnifying-glass" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}></i>
             <input
               type="text"
@@ -207,12 +207,13 @@ export const BotAccountsDesk: React.FC = () => {
                 borderRadius: '10px',
                 border: '1px solid #cbd5e1',
                 fontSize: '0.875rem',
-                outline: 'none'
+                outline: 'none',
+                boxSizing: 'border-box'
               }}
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '6px' }}>
+          <div className="tabs" style={{ display: 'flex', gap: '6px', margin: 0, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <button
               type="button"
               onClick={() => { setFilterMode('all'); setCurrentPage(1); }}
@@ -298,8 +299,8 @@ export const BotAccountsDesk: React.FC = () => {
             No bot accounts match your filter criteria.
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+          <div className="wrap" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ width: '100%', minWidth: '680px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #e2e8f0', color: '#475569', fontWeight: '800' }}>
                   <th style={{ padding: '12px 16px' }}>#</th>

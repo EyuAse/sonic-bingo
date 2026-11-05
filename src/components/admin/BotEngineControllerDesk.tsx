@@ -124,9 +124,10 @@ export const BotEngineControllerDesk: React.FC = () => {
   };
 
   return (
-    <div className="bot-engine-desk" style={{ padding: '1.25rem', maxWidth: '1200px', margin: '0 auto' }}>
+    <div className="bot-engine-desk bot-engine-desk-container" style={{ padding: '1.25rem', maxWidth: '1200px', margin: '0 auto' }}>
       {/* ── Strict Isolation Notice Banner ── */}
       <div
+        className="bot-isolation-banner"
         style={{
           background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(6, 95, 70, 0.22))',
           border: '1px solid rgba(16, 185, 129, 0.35)',
@@ -135,7 +136,8 @@ export const BotEngineControllerDesk: React.FC = () => {
           marginBottom: '1.5rem',
           display: 'flex',
           alignItems: 'center',
-          gap: '1rem'
+          gap: '1rem',
+          flexWrap: 'wrap'
         }}
       >
         <div style={{ fontSize: '1.8rem', color: '#10b981' }}>🛡️</div>

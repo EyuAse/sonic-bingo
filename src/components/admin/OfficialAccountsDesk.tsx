@@ -309,7 +309,7 @@ export const OfficialAccountsDesk: React.FC<OfficialAccountsDeskProps> = ({ show
       </div>
 
       {/* 3. Official Accounts Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '20px' }}>
+      <div className="official-accounts-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '20px' }}>
         {accounts.map(acc => {
           const isToggling = togglingId === acc.id;
           return (
