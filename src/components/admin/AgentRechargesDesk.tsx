@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext.tsx';
 import { useAdmin } from '../../context/AdminContext.tsx';
 import { apiClient } from '../../services/apiClient.ts';
 import { socketService } from '../../services/socketService.ts';
+import { generateAgentRechargesPDFReport } from '../../utils/pdfReportGenerator.ts';
 
 interface RechargeRequest {
   id: string;
@@ -168,15 +169,27 @@ export const AgentRechargesDesk: React.FC = () => {
     }
   }, [requestsFilter]);
 
-  const loadHistory = useCallback(async () => {
+  const loadHistory = useCallback(async (overrides?: {
+    period?: 'today' | 'week' | 'month' | 'all' | 'custom';
+    from?: string;
+    to?: string;
+    search?: string;
+    agent?: string;
+  }) => {
+    const p = overrides?.period !== undefined ? overrides.period : historyPeriod;
+    const f = overrides?.from !== undefined ? overrides.from : historyFrom;
+    const t = overrides?.to !== undefined ? overrides.to : historyTo;
+    const s = overrides?.search !== undefined ? overrides.search : historySearch;
+    const a = overrides?.agent !== undefined ? overrides.agent : historyAgentFilter;
+
     try {
       setIsLoadingHistory(true);
       const data = await apiClient.admin.getAgentRechargeHistory({
-        period: historyPeriod,
-        from: historyFrom,
-        to: historyTo,
-        search: historySearch,
-        agent: historyAgentFilter
+        period: p,
+        from: f,
+        to: t,
+        search: s,
+        agent: a
       });
       if (data && data.success) {
         setHistoryRows(data.rows || []);
@@ -365,6 +378,57 @@ export const AgentRechargesDesk: React.FC = () => {
     a.click();
     URL.revokeObjectURL(url);
     showToast('Exporting history as CSV');
+  };
+
+  const handlePeriodChange = (p: 'all' | 'today' | 'week' | 'month') => {
+    setHistoryPeriod(p);
+    setHistoryFrom('');
+    setHistoryTo('');
+    loadHistory({ period: p, from: '', to: '' });
+  };
+
+  const handleCustomDateFetch = () => {
+    if (!historyFrom && !historyTo) {
+      showToast('⚠️ Please select a start or end date to fetch.');
+      return;
+    }
+    if (historyFrom && historyTo && historyFrom > historyTo) {
+      showToast('⚠️ Start date must be before or equal to end date.');
+      return;
+    }
+    setHistoryPeriod('custom');
+    loadHistory({ period: 'custom', from: historyFrom, to: historyTo });
+  };
+
+  const handleDownloadPDFReport = () => {
+    if (historyRows.length === 0) {
+      showToast('⚠️ No history records to export for this period.');
+      return;
+    }
+    let periodLabel = 'All Time';
+    if (historyPeriod === 'today') {
+      periodLabel = `Daily (${new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })})`;
+    } else if (historyPeriod === 'week') {
+      periodLabel = 'Weekly (Last 7 Days)';
+    } else if (historyPeriod === 'month') {
+      periodLabel = `Monthly (${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })})`;
+    } else if (historyPeriod === 'custom') {
+      periodLabel = `Custom (${historyFrom || 'Start'} to ${historyTo || 'End'})`;
+    }
+
+    try {
+      generateAgentRechargesPDFReport({
+        periodLabel,
+        stats: historyStats,
+        rows: historyRows,
+        generatedBy: 'Super Admin',
+        agentFilter: historyAgentFilter || undefined
+      });
+      showToast('📄 Downloaded official PDF audit report!');
+    } catch (err: any) {
+      console.error('Failed to generate PDF report:', err);
+      showToast('❌ Failed to generate PDF report. Check browser console.');
+    }
   };
 
   // ----------------------------------------------------
@@ -923,11 +987,7 @@ export const AgentRechargesDesk: React.FC = () => {
                   <button
                     key={p}
                     className={historyPeriod === p ? 'on' : ''}
-                    onClick={() => {
-                      setHistoryPeriod(p);
-                      setHistoryFrom('');
-                      setHistoryTo('');
-                    }}
+                    onClick={() => handlePeriodChange(p)}
                   >
                     {p === 'all' ? 'All time' : p === 'today' ? 'Daily' : p === 'week' ? 'Weekly' : 'Monthly'}
                   </button>
@@ -946,7 +1006,7 @@ export const AgentRechargesDesk: React.FC = () => {
                   value={historyTo}
                   onChange={e => { setHistoryTo(e.target.value); setHistoryPeriod('custom'); }}
                 />
-                <button className="k" onClick={loadHistory}>Fetch</button>
+                <button className="k" onClick={handleCustomDateFetch}>Fetch</button>
               </div>
             </div>
           </div>
@@ -977,13 +1037,24 @@ export const AgentRechargesDesk: React.FC = () => {
 
           {/* Transaction History Table */}
           <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
               <h3 style={{ margin: 0 }}>
                 Transaction History <span className="tr" style={{ fontWeight: 400, marginLeft: '6px' }}>
                   {historyPeriod === 'all' ? 'All dates' : `${historyFrom || 'Start'} to ${historyTo || 'End'}`}
                 </span>
               </h3>
-              <button onClick={handleExportCSV}>Export CSV</button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button onClick={handleExportCSV}>Export CSV</button>
+                <button
+                  className="k"
+                  onClick={handleDownloadPDFReport}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  title="Download clean modern PDF audit report"
+                >
+                  <i className="fa-solid fa-file-pdf" style={{ color: '#ef4444' }}></i>
+                  Download PDF Report
+                </button>
+              </div>
             </div>
 
             <div className="wrap">

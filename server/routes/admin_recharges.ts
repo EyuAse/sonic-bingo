@@ -563,14 +563,22 @@ adminRechargesRouter.get('/history', requireAdmin, async (req: AuthenticatedRequ
     const params: any[] = [];
 
     if (period === 'today') {
-      dateClause = "AND (DATE(COALESCE(arr.reviewed_at, arr.created_at)) = CURRENT_DATE)";
+      dateClause = "AND ((COALESCE(arr.reviewed_at, arr.created_at) AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date)";
     } else if (period === 'week') {
-      dateClause = "AND (COALESCE(arr.reviewed_at, arr.created_at) >= NOW() - INTERVAL '7 days')";
+      dateClause = "AND ((COALESCE(arr.reviewed_at, arr.created_at) AT TIME ZONE 'Africa/Addis_Ababa') >= (NOW() AT TIME ZONE 'Africa/Addis_Ababa' - INTERVAL '7 days'))";
     } else if (period === 'month') {
-      dateClause = "AND (COALESCE(arr.reviewed_at, arr.created_at) >= NOW() - INTERVAL '30 days')";
-    } else if (period === 'custom' && fromDate && toDate) {
-      params.push(fromDate, toDate);
-      dateClause = `AND (DATE(COALESCE(arr.reviewed_at, arr.created_at)) BETWEEN $${params.length - 1} AND $${params.length})`;
+      dateClause = "AND ((COALESCE(arr.reviewed_at, arr.created_at) AT TIME ZONE 'Africa/Addis_Ababa') >= DATE_TRUNC('month', NOW() AT TIME ZONE 'Africa/Addis_Ababa'))";
+    } else if (period === 'custom' || fromDate || toDate) {
+      if (fromDate && toDate) {
+        params.push(fromDate, toDate);
+        dateClause = `AND ((COALESCE(arr.reviewed_at, arr.created_at) AT TIME ZONE 'Africa/Addis_Ababa')::date BETWEEN $${params.length - 1}::date AND $${params.length}::date)`;
+      } else if (fromDate) {
+        params.push(fromDate);
+        dateClause = `AND ((COALESCE(arr.reviewed_at, arr.created_at) AT TIME ZONE 'Africa/Addis_Ababa')::date >= $${params.length}::date)`;
+      } else if (toDate) {
+        params.push(toDate);
+        dateClause = `AND ((COALESCE(arr.reviewed_at, arr.created_at) AT TIME ZONE 'Africa/Addis_Ababa')::date <= $${params.length}::date)`;
+      }
     }
 
     const historyRes = await query(`
@@ -599,7 +607,7 @@ adminRechargesRouter.get('/history', requireAdmin, async (req: AuthenticatedRequ
       WHERE arr.status IN ('approved', 'Credited', 'rejected', 'Rejected')
       ${dateClause}
       ORDER BY COALESCE(arr.reviewed_at, arr.created_at) DESC
-      LIMIT 200
+      LIMIT 500
     `, params);
 
     let rows = historyRes.rows.map((r, i) => {
