@@ -9,7 +9,7 @@ import '../styles/withdrawals_admin.css';
 
 // Components
 import { WithdrawalsPINModal } from '../components/admin/withdrawals/WithdrawalsPINModal.tsx';
-import { WithdrawalsSidebar, WithdrawalsDeskTab } from '../components/admin/withdrawals/WithdrawalsSidebar.tsx';
+import WithdrawalsSidebar, { type WithdrawalsDeskTab } from '../components/admin/withdrawals/WithdrawalsSidebar.tsx';
 import { WithdrawalsQueueDesk } from '../components/admin/withdrawals/WithdrawalsQueueDesk.tsx';
 import { WithdrawalsHistoryDesk } from '../components/admin/withdrawals/WithdrawalsHistoryDesk.tsx';
 import { WithdrawalsSettingsDesk } from '../components/admin/withdrawals/WithdrawalsSettingsDesk.tsx';

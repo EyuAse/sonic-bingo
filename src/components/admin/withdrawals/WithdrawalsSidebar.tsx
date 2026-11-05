@@ -175,3 +175,5 @@ export const WithdrawalsSidebar: React.FC<WithdrawalsSidebarProps> = ({
   );
 };
 
+export default WithdrawalsSidebar;
+
