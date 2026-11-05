@@ -1,3 +1,10 @@
+/* Document body support for Admin Portal */
+body:has(.admin-fullscreen-root),
+html:has(.admin-fullscreen-root) {
+  background-color: #f8fafc !important;
+  overflow-x: hidden !important;
+}
+
 /* 1. Global Shell - High Performance Fullscreen Shell */
 .admin-fullscreen-root {
   width: 100%;
@@ -7236,9 +7243,29 @@ input:checked + .slider-round:before {
 }
 
 /* ============================================================
-   12. COMPREHENSIVE RESPONSIVE STYLING FOR MOBILE (< 768px)
+   12. COMPREHENSIVE RESPONSIVE STYLING FOR MOBILE & TABLETS (<= 980px)
    ============================================================ */
-@media (max-width: 768px) {
+@media (max-width: 980px) {
+  /* Document and Root natural touch scrolling on mobile & tablet */
+  html, body {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    height: auto !important;
+    min-height: 100% !important;
+  }
+
+  .admin-fullscreen-root {
+    width: 100% !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    position: relative !important;
+    background: #f8fafc !important;
+  }
+
   /* Mobile Bottom Nav Permanently Disabled */
   .admin-bottom-nav { display: none !important; }
 
@@ -7288,6 +7315,16 @@ input:checked + .slider-round:before {
   .admin-layout-shell aside.mobile-open {
     transform: translateX(0) !important;
     box-shadow: 6px 0 32px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  /* Drawer Nav List with independent touch scrolling */
+  .enqu-sidebar .enqu-nav,
+  .admin-layout-shell aside .enqu-nav {
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    max-height: calc(100dvh - 120px) !important;
+    touch-action: pan-y !important;
   }
 
   /* Drawer Top Row inside Sidebar */
@@ -7431,31 +7468,70 @@ input:checked + .slider-round:before {
     border: 1.5px solid #e2e8f0 !important;
   }
 
-  /* 4. Layout Shell & Main Viewport on Mobile */
+  /* 4. Layout Shell & Main Viewport on Mobile: Full-Depth Natural Touch Scrolling */
   .admin-layout-shell {
     display: block !important;
     width: 100% !important;
     min-height: 100vh !important;
+    min-height: 100dvh !important;
     height: auto !important;
     overflow-x: hidden !important;
+    overflow-y: visible !important;
+    background: #f8fafc !important;
   }
 
   .admin-main-viewport {
+    display: block !important;
     width: 100% !important;
     max-width: 100vw !important;
     margin-left: 0 !important;
     overflow-x: hidden !important;
+    overflow-y: visible !important;
     min-height: 100vh !important;
+    min-height: 100dvh !important;
     height: auto !important;
     -webkit-overflow-scrolling: touch !important;
     padding: 0 !important;
   }
 
   .admin-tab-content {
+    display: block !important;
     width: 100% !important;
     max-width: 100vw !important;
+    min-height: auto !important;
+    height: auto !important;
     overflow-x: hidden !important;
+    overflow-y: visible !important;
     padding: 0 !important;
+  }
+
+  /* Release internal desk containers from height & overflow trapping on touch screens */
+  .enqu-dashboard-main,
+  .enqu-recharges-desk,
+  .enqu-payouts-desk,
+  .enqu-rewards-desk,
+  .tgp,
+  .fresh-cashier-desk-container,
+  .bot-engine-desk-container {
+    overflow-y: visible !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+  }
+
+  /* Allow dual-axis touch gesture recognition on table containers */
+  .wrap,
+  .enqu-dashboard-main .wrap,
+  .enqu-recharges-desk .wrap,
+  .enqu-payouts-desk .wrap,
+  .enqu-rewards-desk .wrap,
+  .fresh-cashier-desk-container .wrap,
+  .tgp .wrap,
+  .tabs,
+  .enqu-dashboard-main .tabs,
+  .enqu-recharges-desk .tabs,
+  .enqu-payouts-desk .tabs {
+    touch-action: pan-x pan-y !important;
   }
 
   /* Hide Desktop Sidebar & Desktop Backdrops */
@@ -9439,6 +9515,7 @@ tr.sel td {
 .enqu-payouts-desk .wrap {
   overflow-x: auto !important;
   -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-x pan-y !important;
   width: 100% !important;
   max-width: 100% !important;
   display: block !important;
@@ -9488,7 +9565,7 @@ tr.sel td {
 }
 
 /* 4. Responsive Filter Ribbons & Date Pickers for Tablets and Phones */
-@media (max-width: 768px) {
+@media (max-width: 980px) {
   .filter-ribbon-card .row,
   .enqu-dashboard-main .card > .row {
     flex-direction: column !important;
@@ -9630,7 +9707,7 @@ tr.sel td {
 }
 
 /* 2. Non-Enqu Desks Responsive Layouts */
-@media (max-width: 768px) {
+@media (max-width: 980px) {
   .bot-engine-desk-container {
     padding: 12px 10px !important;
   }

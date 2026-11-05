@@ -194,6 +194,7 @@ export const AdminPage: React.FC = () => {
             borderBottom: '1px solid #e2e8f0',
             overflowX: 'auto',
             WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-x pan-y',
             scrollbarWidth: 'none'
           }}>
             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
