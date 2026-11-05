@@ -302,6 +302,14 @@ export const BonusRewardsDesk: React.FC = () => {
           .enqu-g3 { grid-template-columns: 1fr; }
           .enqu-g2 { grid-template-columns: 1fr; }
         }
+        @media (max-width: 560px) {
+          .enqu-bonus-desk { padding: 14px 10px !important; }
+          .enqu-top { flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+          .enqu-top h1 { font-size: 20px !important; }
+          .enqu-pillbox { font-size: 12px; padding: 5px 10px; }
+          .enqu-card { padding: 14px 12px; border-radius: 16px; }
+          .enqu-val { font-size: 20px; }
+        }
       `}</style>
 
       <div className="enqu-rewards-container">

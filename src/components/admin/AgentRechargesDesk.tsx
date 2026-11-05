@@ -537,13 +537,28 @@ export const AgentRechargesDesk: React.FC = () => {
         .enqu-recharges-desk .modalbg { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: grid; place-items: center; z-index: 1000; padding: 16px; }
         .enqu-recharges-desk .modal { background: var(--card); border-radius: 24px; padding: 22px; width: min(580px, 100%); max-height: 90vh; overflow: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.25); }
         @media (max-width: 900px) {
-          .enqu-recharges-desk .g4, .enqu-recharges-desk .g3, .enqu-recharges-desk .g2 { grid-template-columns: 1fr; }
-          .enqu-recharges-desk .flow { grid-template-columns: 1fr 1fr; }
+          .enqu-recharges-desk .g4 { grid-template-columns: 1fr 1fr; }
+          .enqu-recharges-desk .g3, .enqu-recharges-desk .g2 { grid-template-columns: 1fr; }
+          .enqu-recharges-desk .flow { grid-template-columns: 1fr 1fr; gap: 8px; }
+        }
+        @media (max-width: 560px) {
+          .enqu-recharges-desk { padding: 14px 10px !important; }
+          .enqu-recharges-desk .g4, .enqu-recharges-desk .g3 { grid-template-columns: 1fr; }
+          .enqu-recharges-desk .flow { grid-template-columns: 1fr 1fr; gap: 8px; }
+          .enqu-recharges-desk .fs { padding: 10px 8px; gap: 8px; }
+          .enqu-recharges-desk .fs b { font-size: 12px; }
+          .enqu-recharges-desk .fn { width: 22px; height: 22px; font-size: 11px; }
+          .enqu-recharges-desk .fc { font-size: 18px; }
+          .enqu-recharges-desk .card { padding: 13px 12px; border-radius: 16px; }
+          .enqu-recharges-desk .val { font-size: 20px; margin: 4px 0; }
+        }
+        @media (max-width: 380px) {
+          .enqu-recharges-desk .flow { grid-template-columns: 1fr; }
         }
       `}</style>
 
       {/* Top Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
+      <div className="desk-header-top-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', flexWrap: 'wrap', gap: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {isSidebarCollapsed && (
             <button
@@ -559,7 +574,7 @@ export const AgentRechargesDesk: React.FC = () => {
               </svg>
             </button>
           )}
-          <h1 style={{ fontSize: '29px', fontWeight: 700, letterSpacing: '-0.3px', margin: 0 }}>Agent Recharges</h1>
+          <h1 style={{ fontSize: 'clamp(20px, 5.5vw, 29px)', fontWeight: 700, letterSpacing: '-0.3px', margin: 0 }}>Agent Recharges</h1>
         </div>
         <span className="av" title="Agent Recharges Desk"></span>
       </div>

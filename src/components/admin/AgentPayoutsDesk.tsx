@@ -583,16 +583,27 @@ export const AgentPayoutsDesk: React.FC = () => {
         @media (max-width: 980px) {
           .enqu-payouts-desk .g4 { grid-template-columns: 1fr 1fr; }
           .enqu-payouts-desk .g2 { grid-template-columns: 1fr; }
-          .enqu-payouts-desk .flow { grid-template-columns: 1fr 1fr; }
+          .enqu-payouts-desk .flow { grid-template-columns: 1fr 1fr; gap: 8px; }
         }
         @media (max-width: 560px) {
+          .enqu-payouts-desk { padding: 14px 10px !important; }
           .enqu-payouts-desk .g4 { grid-template-columns: 1fr; }
           .enqu-payouts-desk .two { grid-template-columns: 1fr; }
+          .enqu-payouts-desk .flow { grid-template-columns: 1fr 1fr; gap: 8px; }
+          .enqu-payouts-desk .fs { padding: 10px 8px; gap: 8px; }
+          .enqu-payouts-desk .fs b { font-size: 12px; }
+          .enqu-payouts-desk .fn { width: 22px; height: 22px; font-size: 11px; }
+          .enqu-payouts-desk .fc { font-size: 18px; }
+          .enqu-payouts-desk .card { padding: 13px 12px; border-radius: 16px; }
+          .enqu-payouts-desk .val { font-size: 20px; margin: 4px 0; }
+        }
+        @media (max-width: 380px) {
+          .enqu-payouts-desk .flow { grid-template-columns: 1fr; }
         }
       `}</style>
 
       {/* 1. TOP HEADER */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+      <div className="desk-header-top-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {isSidebarCollapsed && (
             <button
@@ -608,7 +619,7 @@ export const AgentPayoutsDesk: React.FC = () => {
               </svg>
             </button>
           )}
-          <h1 style={{ fontSize: '28px', fontWeight: 700, letterSpacing: '-0.4px', margin: 0 }}>Agent Payouts</h1>
+          <h1 style={{ fontSize: 'clamp(20px, 5.5vw, 28px)', fontWeight: 700, letterSpacing: '-0.4px', margin: 0 }}>Agent Payouts</h1>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span className="pillbox">
