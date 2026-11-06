@@ -4,11 +4,13 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { ProfileHeader } from '../components/wallet/ProfileHeader';
 import { EthiopiaFlag, UKFlag } from '../components/common/FlagIcons';
+import { GameInstructionsModal } from '../components/profile/GameInstructionsModal';
 
 export const ProfilePage: React.FC = () => {
   const { switchPage, showToast } = useApp();
   const { lang, toggleLang, t } = useLanguage();
   const { logout } = useAuth();
+  const [isInstructionsOpen, setIsInstructionsOpen] = useState<boolean>(false);
 
   const handleLogout = () => {
     logout();
@@ -40,6 +42,26 @@ export const ProfilePage: React.FC = () => {
               <div className="settings-row-text-col">
                 <strong className="settings-row-title">{t('profile.accountInfo')}</strong>
                 <span className="settings-row-sub">{t('profile.accountInfoSub')}</span>
+              </div>
+              <i className="fa-solid fa-chevron-right settings-chevron"></i>
+            </div>
+
+            {/* Game Instructions -> Opens Bilingual Modal */}
+            <div
+              className="settings-row-item"
+              onClick={() => setIsInstructionsOpen(true)}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="settings-row-icon-circ" style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#d97706' }}>
+                <i className="fa-solid fa-book-open-reader"></i>
+              </div>
+              <div className="settings-row-text-col">
+                <strong className="settings-row-title">
+                  {lang === 'am' ? 'የጨዋታ መመሪያዎች' : 'Game Instructions'}
+                </strong>
+                <span className="settings-row-sub">
+                  {lang === 'am' ? 'ምዝገባ፣ ተቀማጭ፣ ወጪ እና አጨዋወት' : 'Registration, deposits, withdrawals & rules'}
+                </span>
               </div>
               <i className="fa-solid fa-chevron-right settings-chevron"></i>
             </div>
@@ -134,6 +156,12 @@ export const ProfilePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Game Instructions Modal */}
+      <GameInstructionsModal
+        isOpen={isInstructionsOpen}
+        onClose={() => setIsInstructionsOpen(false)}
+      />
     </div>
   );
 };
