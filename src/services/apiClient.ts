@@ -1490,6 +1490,106 @@ export const apiClient = {
         headers: { ...adminHeaders }
       });
       return handleResponse<{ success: boolean; message?: string; error?: string }>(res);
+    },
+
+    // Cashflow Analytics & Executive Treasury Endpoints
+    async getCashflowKPIs(params?: { period?: string; from?: string; to?: string }) {
+      const q = new URLSearchParams();
+      if (params?.period) q.set('period', params.period);
+      if (params?.from) q.set('from', params.from);
+      if (params?.to) q.set('to', params.to);
+      const queryStr = q.toString() ? `?${q.toString()}` : '';
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/cashflow/kpis${queryStr}`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{
+        success: boolean;
+        period: { code: string; label: string; startIso: string; endIso: string };
+        kpis: any;
+      }>(res);
+    },
+
+    async getCashflowTrend(params?: { period?: string; from?: string; to?: string }) {
+      const q = new URLSearchParams();
+      if (params?.period) q.set('period', params.period);
+      if (params?.from) q.set('from', params.from);
+      if (params?.to) q.set('to', params.to);
+      const queryStr = q.toString() ? `?${q.toString()}` : '';
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/cashflow/trend${queryStr}`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{
+        success: boolean;
+        buckets: Array<{
+          date: string;
+          label: string;
+          inflow: number;
+          outflow: number;
+          net: number;
+          ggr: number;
+          pot: number;
+        }>;
+      }>(res);
+    },
+
+    async getCashflowStream(params?: {
+      period?: string;
+      from?: string;
+      to?: string;
+      flow?: string;
+      category?: string;
+      search?: string;
+      page?: number;
+      limit?: number;
+    }) {
+      const q = new URLSearchParams();
+      if (params?.period) q.set('period', params.period);
+      if (params?.from) q.set('from', params.from);
+      if (params?.to) q.set('to', params.to);
+      if (params?.flow) q.set('flow', params.flow);
+      if (params?.category) q.set('category', params.category);
+      if (params?.search) q.set('search', params.search);
+      if (params?.page) q.set('page', String(params.page));
+      if (params?.limit) q.set('limit', String(params.limit));
+      const queryStr = q.toString() ? `?${q.toString()}` : '';
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/cashflow/stream${queryStr}`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{
+        success: boolean;
+        transactions: any[];
+        pagination: { total: number; page: number; limit: number; totalPages: number };
+      }>(res);
+    },
+
+    async getCashflowGamingBreakdown(params?: { period?: string; from?: string; to?: string }) {
+      const q = new URLSearchParams();
+      if (params?.period) q.set('period', params.period);
+      if (params?.from) q.set('from', params.from);
+      if (params?.to) q.set('to', params.to);
+      const queryStr = q.toString() ? `?${q.toString()}` : '';
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/cashflow/gaming-breakdown${queryStr}`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{
+        success: boolean;
+        rooms: any[];
+      }>(res);
+    },
+
+    async getCashflowTreasuryBalance() {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/cashflow/treasury-balance`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{
+        success: boolean;
+        balanceSheet: any;
+      }>(res);
     }
   },
 

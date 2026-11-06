@@ -535,14 +535,19 @@ export interface CashflowReportKPIs {
     totalAmount: number;
     count: number;
     directDeposits: number;
+    directDepositCount?: number;
     agentRecharges: number;
+    agentRechargeCount?: number;
   };
   grossOutflows: {
     totalAmount: number;
     count: number;
     playerWithdrawals: number;
+    playerWithdrawalCount?: number;
     agentPayouts: number;
+    agentPayoutCount?: number;
     p2pCashouts: number;
+    p2pCashoutCount?: number;
   };
   netCashFlow: {
     amount: number;
@@ -555,13 +560,17 @@ export interface CashflowReportKPIs {
     totalPot: number;
     turnover: number;
     roundsCount: number;
+    ticketsCount?: number;
   };
   liabilities: {
     playerBalances: number;
     playerBonuses: number;
+    totalPlayers?: number;
     agentFloat: number;
     agentCommissions: number;
+    totalAgents?: number;
     pendingWithdrawals: number;
+    pendingWithdrawalCount?: number;
     totalCirculatingLiabilities: number;
     solvencyStatus: string;
   };
