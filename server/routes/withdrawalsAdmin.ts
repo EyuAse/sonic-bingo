@@ -716,7 +716,7 @@ router.post('/:id/reject', requireWithdrawalAdmin, async (req: WithdrawalAdminRe
 
       await client.query(`
         INSERT INTO wallet_transactions (user_id, type, amount, balance_after, reference_code, status, payment_method, description)
-        VALUES ($1, 'withdrawal_refund', $2, $3, $4, 'completed', $5, $6)
+        VALUES ($1, 'refund', $2, $3, $4, 'completed', $5, $6)
       `, [
         request.user_id,
         refundAmount,

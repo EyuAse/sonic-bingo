@@ -950,62 +950,144 @@ router.post('/withdrawals/:id/reject', requireAdmin, async (req: AuthenticatedRe
     const { reason } = req.body;
 
     const result = await withTransaction(async (client) => {
+      // 1. Try finding in standard withdrawal_requests
       const wRes = await client.query(
         'SELECT * FROM withdrawal_requests WHERE id = $1 FOR UPDATE',
         [withdrawalId]
       );
 
-      if (wRes.rows.length === 0) {
+      if (wRes.rows.length > 0) {
+        const withdrawal = wRes.rows[0];
+        if (withdrawal.status !== 'pending') {
+          throw new Error(`Withdrawal has already been ${withdrawal.status}.`);
+        }
+
+        const amount = parseFloat(withdrawal.amount);
+
+        // Refund balance to user
+        const walletRes = await client.query(
+          'SELECT balance FROM wallets WHERE user_id = $1 FOR UPDATE',
+          [withdrawal.user_id]
+        );
+
+        const currentBalance = parseFloat(walletRes.rows[0].balance);
+        const newBalance = currentBalance + amount;
+
+        await client.query(
+          'UPDATE wallets SET balance = $1, updated_at = NOW() WHERE user_id = $2',
+          [newBalance, withdrawal.user_id]
+        );
+
+        const rejectionReason = reason || 'Invalid account details';
+        const adminName = req.user?.fullName || 'Superadmin';
+
+        // Mark rejected
+        await client.query(
+          `UPDATE withdrawal_requests 
+           SET status = 'rejected', 
+               reviewed_by = $1, 
+               reviewed_by_name = $2,
+               rejection_reason = $3,
+               admin_note = $4,
+               reviewed_at = NOW() 
+           WHERE id = $5`,
+          [adminId, adminName, rejectionReason, rejectionReason, withdrawalId]
+        );
+
+        // Update pending ledger entry
+        await client.query(`
+          UPDATE wallet_transactions
+          SET status = 'rejected'
+          WHERE user_id = $1 AND type = 'withdrawal' AND status = 'pending' AND amount = $2
+        `, [withdrawal.user_id, amount]);
+
+        // Record refund in ledger
+        await client.query(
+          `INSERT INTO wallet_transactions (user_id, type, amount, balance_after, reference_code, status, payment_method, description)
+           VALUES ($1, 'refund', $2, $3, $4, 'completed', $5, $6)`,
+          [
+            withdrawal.user_id,
+            amount,
+            newBalance,
+            `REFUND-WD-${Date.now().toString().slice(-6)}`,
+            withdrawal.payment_method,
+            `Withdrawal rejected: ${rejectionReason}. Funds refunded.`
+          ]
+        );
+
+        return {
+          userId: withdrawal.user_id,
+          amount,
+          newBalance
+        };
+      }
+
+      // 2. Fallback: Check P2P agent_withdrawal_requests
+      const awRes = await client.query(
+        'SELECT * FROM agent_withdrawal_requests WHERE id = $1 FOR UPDATE',
+        [withdrawalId]
+      );
+
+      if (awRes.rows.length === 0) {
         throw new Error('Withdrawal request not found.');
       }
 
-      const withdrawal = wRes.rows[0];
-      if (withdrawal.status !== 'pending') {
-        throw new Error(`Withdrawal has already been ${withdrawal.status}.`);
+      const awReq = awRes.rows[0];
+      if (awReq.status !== 'pending') {
+        throw new Error(`Agent withdrawal has already been ${awReq.status}.`);
       }
 
-      const amount = parseFloat(withdrawal.amount);
+      const p2pAmount = parseFloat(awReq.amount);
 
-      // Refund balance to user
-      const walletRes = await client.query(
+      // Refund balance to player
+      const pWalletRes = await client.query(
         'SELECT balance FROM wallets WHERE user_id = $1 FOR UPDATE',
-        [withdrawal.user_id]
+        [awReq.player_id]
       );
 
-      const currentBalance = parseFloat(walletRes.rows[0].balance);
-      const newBalance = currentBalance + amount;
+      const pCurrentBal = parseFloat(pWalletRes.rows[0].balance);
+      const pNewBal = pCurrentBal + p2pAmount;
 
       await client.query(
         'UPDATE wallets SET balance = $1, updated_at = NOW() WHERE user_id = $2',
-        [newBalance, withdrawal.user_id]
+        [pNewBal, awReq.player_id]
       );
 
-      // Mark rejected
+      const p2pReason = reason || 'Declined by platform compliance';
+
+      // Mark agent withdrawal rejected
       await client.query(
-        `UPDATE withdrawal_requests 
-         SET status = 'rejected', reviewed_by = $1, reviewed_at = NOW() 
+        `UPDATE agent_withdrawal_requests 
+         SET status = 'rejected', rejection_reason = $1, resolved_at = NOW() 
          WHERE id = $2`,
-        [adminId, withdrawalId]
+        [p2pReason, withdrawalId]
       );
+
+      // Update pending ledger entry
+      await client.query(`
+        UPDATE wallet_transactions
+        SET status = 'rejected'
+        WHERE user_id = $1 AND type = 'withdrawal' AND status = 'pending' AND amount = $2
+      `, [awReq.player_id, p2pAmount]);
 
       // Record refund in ledger
       await client.query(
         `INSERT INTO wallet_transactions (user_id, type, amount, balance_after, reference_code, status, payment_method, description)
          VALUES ($1, 'refund', $2, $3, $4, 'completed', $5, $6)`,
         [
-          withdrawal.user_id,
-          amount,
-          newBalance,
-          `REFUND-WD-${Date.now().toString().slice(-6)}`,
-          withdrawal.payment_method,
-          `Withdrawal rejected: ${reason || 'Invalid account details'}. Funds refunded.`
+          awReq.player_id,
+          p2pAmount,
+          pNewBal,
+          `REFUND-P2P-${Date.now().toString().slice(-6)}`,
+          awReq.payout_method,
+          `Agent withdrawal rejected: ${p2pReason}. Funds refunded.`
         ]
       );
 
       return {
-        userId: withdrawal.user_id,
-        amount,
-        newBalance
+        userId: awReq.player_id,
+        amount: p2pAmount,
+        newBalance: pNewBal
       };
     });
 
@@ -2325,20 +2407,29 @@ router.post('/agents/payouts/:id/reject', requireAdmin, async (req: Authenticate
       }
 
       const payout = pRes.rows[0];
-      if (payout.status !== 'pending') {
+      const currentStatus = (payout.status || '').toLowerCase();
+      if (currentStatus === 'paid' || currentStatus === 'approved' || currentStatus === 'rejected') {
         throw new Error(`Payout request is already ${payout.status}`);
       }
 
       const refundAmount = parseFloat(payout.amount);
+      const now = new Date();
+      const currentTimeline = Array.isArray(payout.timeline) ? payout.timeline : [];
+      const newTimeline = [
+        [now.toISOString(), `Rejected: ${rejectionReason}. ${refundAmount} ETB refunded to commission balance.`],
+        ...currentTimeline
+      ];
 
       // 1. Mark request rejected
       await client.query(
         `UPDATE agent_commission_payout_requests
-         SET status = 'rejected',
+         SET status = 'Rejected',
+             rejection_reason = $1,
+             admin_notes = COALESCE($2, admin_notes),
              settled_at = NOW(),
-             admin_notes = $1
-         WHERE id = $2`,
-        [rejectionReason, id]
+             timeline = $3::jsonb
+         WHERE id = $4`,
+        [rejectionReason, rejectionReason, JSON.stringify(newTimeline), id]
       );
 
       // 2. Refund deducted commission balance back to agent profile
@@ -2373,6 +2464,7 @@ router.post('/agents/payouts/:id/reject', requireAdmin, async (req: Authenticate
       status: 'rejected'
     });
     io.emit('agent_payout_status_updated', { id: result.id, status: 'rejected' });
+    io.emit('admin_agent_payout_update', { id: result.id, status: 'Rejected' });
 
     return res.json({
       success: true,
