@@ -1,6 +1,7 @@
 import { io } from '../io.ts';
 import { query, withTransaction } from '../db.ts';
 import { telegramBotService } from '../services/telegramBotService.ts';
+import { coinService } from '../services/coinService.ts';
 import {
   type BingoCell,
   generateCardFromId,
@@ -622,6 +623,24 @@ class BingoGameEngine {
              VALUES ($1, 'refund', $2, (SELECT balance FROM wallets WHERE user_id = $1), $3, 'completed', $4)`,
             [userId, refundAmount, refCode, `Refunded ${ticketsToRefund.length} cartelas from ${room.name}`]
           );
+
+          // Revert earned coins on ticket cancellation
+          const coinsToRevert = Math.floor(refundAmount * 1.5);
+          if (coinsToRevert > 0) {
+            await client.query(
+              `UPDATE coin_wallets 
+               SET balance = GREATEST(0, balance - $1),
+                   lifetime_earned = GREATEST(0, lifetime_earned - $1),
+                   updated_at = NOW()
+               WHERE user_id = $2`,
+              [coinsToRevert, userId]
+            );
+            await client.query(
+              `INSERT INTO coin_transactions (user_id, amount, type, balance_after, reference_id, description)
+               VALUES ($1, $2, 'admin_adjustment', (SELECT balance FROM coin_wallets WHERE user_id = $1), $3, $4)`,
+              [userId, -coinsToRevert, refCode, `Reverted ${coinsToRevert} coins for cancelled tickets in ${room.name}`]
+            );
+          }
         });
 
         if (room.phase === 'lobby') {
@@ -1016,6 +1035,15 @@ class BingoGameEngine {
         newBalance: result.newReal,
         balance: result.newReal,
         bonus: result.newBonus
+      });
+
+      // 🪙 Award 1.5x Coins per eligible Birr played (e.g. 50 ETB play = 75 coins)
+      coinService.awardCoinsForGameplay(
+        userId,
+        totalCost,
+        `Purchased ${drawnIds.length} cartela(s) in ${room.name} (${totalCost.toFixed(2)} ETB)`
+      ).catch(err => {
+        console.error(`❌ [CoinService Error awarding gameplay coins in ${room.id}]:`, err);
       });
 
       // Register tickets in memory (strictly max 2 cartelas, all paid stake)

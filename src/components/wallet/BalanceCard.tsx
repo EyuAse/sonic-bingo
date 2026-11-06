@@ -65,7 +65,7 @@ export const BalanceCard: React.FC = () => {
               <span className="coins-multiplier-pill">1.5x</span>
             </div>
             <p className="coins-rate-sub">
-              {lang === 'am' ? '1,000 ኮይኖች = 10 ብር ቦነስ' : '1,000 Coins = 10 ETB Bonus'}
+              {lang === 'am' ? '1,000 ኮይኖች = 20 ብር ቦነስ' : '1,000 Coins = 20 ETB Bonus'}
             </p>
           </div>
         </div>
@@ -78,7 +78,7 @@ export const BalanceCard: React.FC = () => {
           className="btn-coins-redeem-action"
           onClick={handleRedeem}
           disabled={isRedeeming}
-          title={coins >= 1000 ? 'Exchange 1,000 coins for 10 ETB bonus' : 'Requires at least 1,000 coins'}
+          title={coins >= 1000 ? 'Exchange 1,000 coins for 20 ETB bonus' : 'Requires at least 1,000 coins'}
         >
           <span>{isRedeeming ? '...' : (lang === 'am' ? 'ቀይር' : 'Redeem')}</span>
           <i className="fa-solid fa-chevron-right"></i>

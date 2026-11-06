@@ -278,7 +278,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         else if (typeof data.bonusAdded === 'number') setBonus(prev => prev + data.bonusAdded);
         return {
           success: true,
-          message: data.message || 'Successfully redeemed 1,000 coins for 10 ETB bonus!',
+          message: data.message || 'Successfully redeemed 1,000 coins for 20 ETB bonus!',
           coins: data.coins,
           bonusAdded: data.bonusAdded
         };

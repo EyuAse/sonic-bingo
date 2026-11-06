@@ -230,12 +230,12 @@ CREATE TABLE IF NOT EXISTS coin_wallets (
 );
 CREATE INDEX IF NOT EXISTS idx_coin_wallets_user ON coin_wallets(user_id);
 
--- 14. Coin Transactions Table (1,000 Coins = 10 ETB Redemption)
+-- 14. Coin Transactions Table (1,000 Coins = 20 ETB Redemption)
 CREATE TABLE IF NOT EXISTS coin_transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     amount INT NOT NULL,
-    type VARCHAR(30) NOT NULL CHECK (type IN ('earned_deposit', 'redeemed_bonus', 'admin_adjustment')),
+    type VARCHAR(30) NOT NULL CHECK (type IN ('earned_deposit', 'earned_gameplay', 'redeemed_bonus', 'admin_adjustment')),
     balance_after INT NOT NULL,
     reference_id VARCHAR(100),
     description TEXT,
@@ -348,7 +348,7 @@ CREATE TABLE IF NOT EXISTS bonus_reward_settings (
     coin_earning_enabled BOOLEAN NOT NULL DEFAULT true,
     coin_earning_rate NUMERIC(5, 2) NOT NULL DEFAULT 1.50 CHECK (coin_earning_rate >= 0),
     coin_redemption_coins_per_block INT NOT NULL DEFAULT 1000 CHECK (coin_redemption_coins_per_block > 0),
-    coin_redemption_reward_etb NUMERIC(10, 2) NOT NULL DEFAULT 10.00 CHECK (coin_redemption_reward_etb > 0),
+    coin_redemption_reward_etb NUMERIC(10, 2) NOT NULL DEFAULT 20.00 CHECK (coin_redemption_reward_etb > 0),
     coin_redemption_min_coins INT NOT NULL DEFAULT 1000 CHECK (coin_redemption_min_coins >= 0),
     coin_credit_target VARCHAR(50) NOT NULL DEFAULT 'Bonus wallet' CHECK (coin_credit_target IN ('Bonus wallet', 'Withdrawable wallet')),
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP

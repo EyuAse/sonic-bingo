@@ -11,7 +11,7 @@ export interface CoinTransactionRecord {
   id: string;
   userId: string;
   amount: number;
-  type: 'earned_deposit' | 'redeemed_bonus' | 'admin_adjustment';
+  type: 'earned_deposit' | 'earned_gameplay' | 'redeemed_bonus' | 'admin_adjustment';
   balanceAfter: number;
   referenceId?: string;
   description?: string;
@@ -26,6 +26,78 @@ export class CoinService {
       CoinService.instance = new CoinService();
     }
     return CoinService.instance;
+  }
+
+  /**
+   * 🎮 Award Coins for Eligible Game Play (1.5 Coins per Birr Played)
+   * Example: 50 Birr eligible play earns 75 coins.
+   */
+  public async awardCoinsForGameplay(
+    userId: string,
+    betAmount: number,
+    description?: string,
+    dbClient?: any
+  ): Promise<{ coinsAwarded: number; newBalance: number }> {
+    const runner = dbClient || { query };
+
+    // Query dynamic coin earning rules from database
+    const settingsRes = await runner.query(
+      `SELECT coin_earning_enabled, coin_earning_rate FROM bonus_reward_settings WHERE id = 1`
+    );
+    const s = settingsRes.rows[0];
+    const isEarningEnabled = s ? s.coin_earning_enabled !== false : true;
+    const rate = s ? parseFloat(s.coin_earning_rate || '1.5') : 1.5;
+
+    if (!isEarningEnabled || rate <= 0 || betAmount <= 0) {
+      return { coinsAwarded: 0, newBalance: 0 };
+    }
+
+    const coinsAwarded = Math.floor(betAmount * rate);
+    if (coinsAwarded <= 0) {
+      return { coinsAwarded: 0, newBalance: 0 };
+    }
+
+    // Upsert coin wallet
+    const walletRes = await runner.query(
+      `INSERT INTO coin_wallets (user_id, balance, lifetime_earned, lifetime_redeemed, updated_at)
+       VALUES ($1, $2, $2, 0, NOW())
+       ON CONFLICT (user_id) DO UPDATE 
+       SET balance = coin_wallets.balance + EXCLUDED.balance,
+           lifetime_earned = coin_wallets.lifetime_earned + EXCLUDED.balance,
+           updated_at = NOW()
+       RETURNING balance`,
+      [userId, coinsAwarded]
+    );
+
+    const newBalance = parseInt(walletRes.rows[0]?.balance || '0', 10);
+
+    // Record ledger entry in coin_transactions
+    await runner.query(
+      `INSERT INTO coin_transactions (user_id, amount, type, balance_after, reference_id, description)
+       VALUES ($1, $2, 'earned_gameplay', $3, $4, $5)`,
+      [
+        userId,
+        coinsAwarded,
+        newBalance,
+        `PLAY-${Date.now().toString().slice(-6)}`,
+        description || `Earned ${coinsAwarded} coins for ${betAmount.toFixed(2)} ETB game play (${rate}x rate)`
+      ]
+    );
+
+    // Emit live WebSocket notifications
+    io.emit(`user_${userId}_coins`, {
+      type: 'coins_earned',
+      amount: coinsAwarded,
+      newBalance
+    });
+    io.emit('user_coins_updated', {
+      userId,
+      coinsEarned: coinsAwarded,
+      newBalance
+    });
+
+    console.log(`🪙 [CoinService] Awarded ${coinsAwarded} coins to player ${userId} for ${betAmount} ETB play (Balance: ${newBalance})`);
+    return { coinsAwarded, newBalance };
   }
 
   /**
@@ -121,9 +193,11 @@ export class CoinService {
     );
     const s = settingsRes.rows[0] || {};
     const coinsPerBlock = parseInt(s.coin_redemption_coins_per_block || '1000', 10);
-    const rewardPerBlock = parseFloat(s.coin_redemption_reward_etb || '10');
+    const rewardPerBlock = parseFloat(s.coin_redemption_reward_etb || '20');
     const minCoins = parseInt(s.coin_redemption_min_coins || '1000', 10);
-    const isWithdrawable = s.coin_credit_target === 'Withdrawable wallet';
+    // 🛡️ HARD RULE: Coins can be used for rewards but cannot be withdrawn directly as cash.
+    // Exchanged rewards strictly credit the Bonus wallet (wallets.bonus) which can be used to play games.
+    const isWithdrawable = false;
 
     if (coinsToRedeem < minCoins || coinsToRedeem % coinsPerBlock !== 0) {
       return {

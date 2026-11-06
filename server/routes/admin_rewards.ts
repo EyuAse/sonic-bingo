@@ -54,7 +54,7 @@ adminRewardsRouter.get('/kpis', requireAdmin, async (_req: AuthenticatedRequest,
 
     const s = settingsRes.rows[0] || {};
     const coinsPerBlock = parseInt(s.coin_redemption_coins_per_block || '1000', 10);
-    const rewardPerBlock = parseFloat(s.coin_redemption_reward_etb || '10');
+    const rewardPerBlock = parseFloat(s.coin_redemption_reward_etb || '20');
 
     const totalBonus = parseFloat(walletsRes.rows[0]?.total_bonus || '0');
     const bonusPlayers = parseInt(walletsRes.rows[0]?.bonus_players || '0', 10);
@@ -119,7 +119,7 @@ adminRewardsRouter.get('/settings', requireAdmin, async (_req: AuthenticatedRequ
       coin_earning_enabled: true,
       coin_earning_rate: 1.5,
       coin_redemption_coins_per_block: 1000,
-      coin_redemption_reward_etb: 10,
+      coin_redemption_reward_etb: 20,
       coin_redemption_min_coins: 1000,
       coin_credit_target: 'Bonus wallet'
     };
@@ -137,7 +137,7 @@ adminRewardsRouter.get('/settings', requireAdmin, async (_req: AuthenticatedRequ
         coinEarningEnabled: Boolean(settings.coin_earning_enabled),
         coinEarningRate: parseFloat(settings.coin_earning_rate || '1.5'),
         coinRedemptionCoinsPerBlock: parseInt(settings.coin_redemption_coins_per_block || '1000', 10),
-        coinRedemptionRewardEtb: parseFloat(settings.coin_redemption_reward_etb || '10'),
+        coinRedemptionRewardEtb: parseFloat(settings.coin_redemption_reward_etb || '20'),
         coinRedemptionMinCoins: parseInt(settings.coin_redemption_min_coins || '1000', 10),
         coinCreditTarget: settings.coin_credit_target || 'Bonus wallet',
         updatedAt: settings.updated_at
@@ -380,7 +380,7 @@ adminRewardsRouter.get('/top-coin-holders', requireAdmin, async (_req: Authentic
 
     const s = settingsRes.rows[0] || {};
     const coinsPerBlock = parseInt(s.coin_redemption_coins_per_block || '1000', 10);
-    const rewardPerBlock = parseFloat(s.coin_redemption_reward_etb || '10');
+    const rewardPerBlock = parseFloat(s.coin_redemption_reward_etb || '20');
 
     const holders = holdersRes.rows.map((h, index) => {
       const coins = parseInt(h.coins || '0', 10);

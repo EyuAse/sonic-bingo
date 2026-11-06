@@ -99,7 +99,7 @@ export const AffiliatePage: React.FC = () => {
 
   const handleRedeemCoins = async () => {
     if (coins < 1000) {
-      showToast(lang === 'am' ? '⚠️ ኮይኖችን ለመቀየር ቢያንስ 1,000 ኮይኖች ያስፈልጋሉ።' : '⚠️ At least 1,000 coins are required to redeem for 10 ETB bonus.');
+      showToast(lang === 'am' ? '⚠️ ኮይኖችን ለመቀየር ቢያንስ 1,000 ኮይኖች ያስፈልጋሉ።' : '⚠️ At least 1,000 coins are required to redeem for 20 ETB bonus.');
       return;
     }
     setIsRedeemingCoins(true);
@@ -237,7 +237,7 @@ export const AffiliatePage: React.FC = () => {
                   cursor: coins >= 1000 ? 'pointer' : 'default'
                 }}
               >
-                {isRedeemingCoins ? '...' : coins >= 1000 ? (lang === 'am' ? '10 ብር ቅያሬ' : 'Redeem 10') : `${coins}/1000`}
+                {isRedeemingCoins ? '...' : coins >= 1000 ? (lang === 'am' ? '20 ብር ቅያሬ' : 'Redeem 20') : `${coins}/1000`}
               </button>
             </div>
           </div>
@@ -253,7 +253,7 @@ export const AffiliatePage: React.FC = () => {
             }}></div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#64748b', marginTop: '4px' }}>
-            <span>{lang === 'am' ? '💡 1,000 ሳንቲም = 10 ብር የጨዋታ ቦነስ' : '💡 1,000 coins = 10 ETB game bonus'}</span>
+            <span>{lang === 'am' ? '💡 1,000 ሳንቲም = 20 ብር የጨዋታ ቦነስ' : '💡 1,000 coins = 20 ETB game bonus'}</span>
             <span style={{ fontWeight: 700, color: '#d97706' }}>{coins % 1000} / 1000 🪙</span>
           </div>
         </div>

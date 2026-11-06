@@ -974,7 +974,7 @@ router.get('/coins', requireAuth, async (req: AuthenticatedRequest, res) => {
 
 /**
  * POST /api/wallet/redeem-coins
- * Exchange 1,000 Coins for 10.00 ETB Game Play Bonus
+ * Exchange 1,000 Coins for 20.00 ETB Game Play Bonus (Non-Withdrawable)
  */
 router.post('/redeem-coins', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {

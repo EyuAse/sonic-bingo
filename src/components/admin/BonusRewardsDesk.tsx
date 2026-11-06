@@ -28,7 +28,7 @@ export const BonusRewardsDesk: React.FC = () => {
     coinEarningEnabled: true,
     coinEarningRate: 1.5,
     coinRedemptionCoinsPerBlock: 1000,
-    coinRedemptionRewardEtb: 10,
+    coinRedemptionRewardEtb: 20,
     coinRedemptionMinCoins: 1000,
     coinCreditTarget: 'Bonus wallet'
   });
@@ -498,7 +498,7 @@ export const BonusRewardsDesk: React.FC = () => {
                         step="any"
                         className="enqu-input"
                         value={settings.coinRedemptionRewardEtb}
-                        onChange={e => setSettings(s => ({ ...s, coinRedemptionRewardEtb: parseFloat(e.target.value) || 10 }))}
+                        onChange={e => setSettings(s => ({ ...s, coinRedemptionRewardEtb: parseFloat(e.target.value) || 20 }))}
                       />
                     </div>
                     <div>

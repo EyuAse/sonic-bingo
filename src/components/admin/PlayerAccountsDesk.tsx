@@ -706,7 +706,7 @@ export const PlayerAccountsDesk: React.FC = () => {
                   {fmt(selectedDetails.coins)}
                 </div>
                 <div className="tr" style={{ fontSize: '11px' }}>
-                  1,000 coins = 10 ETB
+                  1,000 coins = 20 ETB (Bonus)
                 </div>
               </div>
               <div className="card" style={{ background: 'var(--panel)', padding: '12px 14px' }}>
