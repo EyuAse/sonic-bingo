@@ -148,8 +148,8 @@ router.post('/deposit-for-player', requireAgent, async (req: AuthenticatedReques
     }
 
     const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount < 50) {
-      return res.status(400).json({ success: false, error: 'Minimum deposit amount is 50 ETB' });
+    if (isNaN(numAmount) || numAmount < 50 || numAmount > 1500) {
+      return res.status(400).json({ success: false, error: 'Deposit amount must be between 50 and 1,500 ETB' });
     }
 
     const method = paymentMethod === 'M-Pesa' ? 'M-Pesa' : (paymentMethod === 'CBE' ? 'CBE' : (paymentMethod === 'Cash' ? 'Cash' : 'Telebirr'));

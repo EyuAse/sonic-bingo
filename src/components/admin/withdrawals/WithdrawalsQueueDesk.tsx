@@ -208,7 +208,7 @@ export const WithdrawalsQueueDesk: React.FC<WithdrawalsQueueDeskProps> = ({
     <div>
       {/* Top Explanatory Note */}
       <div className="w-note">
-        Approve to release funds to the player Telebirr, M-Pesa or CBE account. Reject to return the held amount to the player wallet. Limit 5,000 ETB per request. Every decision is saved in the history.
+        Approve to release funds to the player Telebirr, M-Pesa or CBE account. Reject to return the held amount to the player wallet. Limit 2,000 ETB per request. Every decision is saved in the history.
       </div>
 
       {/* 4 Top KPI Cards */}

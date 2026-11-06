@@ -94,8 +94,8 @@ export const AgentCashInDesk: React.FC<AgentCashInDeskProps> = ({
       showToast('⚠️ Please search and select a player first.');
       return;
     }
-    if (amount < 50) {
-      showToast('⚠️ Minimum deposit is 50 ETB.');
+    if (amount < 50 || amount > 1500) {
+      showToast('⚠️ Deposit amount must be between 50 and 1,500 ETB.');
       return;
     }
 
@@ -139,7 +139,7 @@ export const AgentCashInDesk: React.FC<AgentCashInDeskProps> = ({
     }
   };
 
-  const quickAmounts = [50, 100, 200, 500, 1000, 2000];
+  const quickAmounts = [50, 100, 200, 500, 1000, 1500];
 
   return (
     <div style={{ maxWidth: '960px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>

@@ -324,6 +324,23 @@ export const apiClient = {
       }>(res);
     },
 
+    async getWithdrawalEligibility() {
+      const res = await fetch(`${API_BASE}/wallet/withdrawal-eligibility`, {
+        headers: { ...getAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        eligible: boolean;
+        completedGames: number;
+        requiredGames: number;
+        todayWithdrawals: number;
+        maxDailyWithdrawals: number;
+        minAmount: number;
+        maxAmount: number;
+        reason?: string;
+      }>(res);
+    },
+
     async getMyWithdrawals() {
       const res = await fetch(`${API_BASE}/wallet/my-withdrawals`, {
         headers: { ...getAuthHeader() }

@@ -31,7 +31,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
   const { t, lang } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>(initialTab);
-  const quickAmounts = [50, 100, 200, 500, 1000, 5000];
+  const quickAmounts = [50, 100, 200, 500, 1000, 1500];
 
   // Active Authorized Agents for In-Person / Online Deposit & Cashout (Dynamic Multi-Rail)
   const [activeAgents, setActiveAgents] = useState<Array<{
@@ -103,6 +103,14 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
   } | null>(null);
   const [isSubmittingWithdraw, setIsSubmittingWithdraw] = useState<boolean>(false);
   const [activeWithdrawalRequest, setActiveWithdrawalRequest] = useState<any | null>(null);
+  const [withdrawalEligibility, setWithdrawalEligibility] = useState<{
+    eligible: boolean;
+    completedGames: number;
+    requiredGames: number;
+    todayWithdrawals: number;
+    maxDailyWithdrawals: number;
+    reason?: string;
+  } | null>(null);
 
   // Dynamic selection handlers ensuring rail compatibility
   const handleSelectDepositAgent = (ag: any) => {
@@ -179,6 +187,13 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
           setActiveWithdrawalRequest(pendingWith);
         }
       }
+
+      // 3. Load live player withdrawal eligibility
+      apiClient.wallet.getWithdrawalEligibility().then(res => {
+        if (res && res.success) {
+          setWithdrawalEligibility(res);
+        }
+      }).catch(() => {});
     } catch (err) {
       console.warn('Failed to load player pending requests:', err);
     }
@@ -372,8 +387,8 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
       showToast(lang === 'am' ? '⚠️ እባክዎ ኤጀንት ይምረጡ' : '⚠️ Please select a certified agent');
       return;
     }
-    if (agentDepositAmount < 50) {
-      showToast(lang === 'am' ? '⚠️ ዝቅተኛ የተቀማጭ መጠን 50 ብር ነው' : '⚠️ Minimum deposit is 50 ETB');
+    if (agentDepositAmount < 50 || agentDepositAmount > 1500) {
+      showToast(lang === 'am' ? '⚠️ የተቀማጭ መጠን ከ 50 እስከ 1,500 ብር መሆን አለበት' : '⚠️ Deposit amount must be between 50 and 1,500 ETB');
       return;
     }
     if (!agentTxRef.trim() || agentTxRef.trim().length < 4) {
@@ -415,12 +430,12 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
 
   const handleWithdrawSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (withdrawAmount < 50) {
-      showToast(lang === 'am' ? '⚠️ ዝቅተኛ የማውጣት መጠን 50 ብር ነው' : '⚠️ Minimum withdrawal is 50 ETB');
+    if (withdrawAmount < 50 || withdrawAmount > 2000) {
+      showToast(lang === 'am' ? '⚠️ የማውጣት መጠን በአንድ ግብይት ከ 50 እስከ 2,000 ብር መሆን አለበት' : '⚠️ Withdrawal amount must be between 50 and 2,000 ETB per transaction');
       return;
     }
-    if (withdrawAmount > 5000) {
-      showToast(lang === 'am' ? '⚠️ ከፍተኛ የማውጣት መጠን 5,000 ብር ነው' : '⚠️ Maximum withdrawal is 5,000 ETB');
+    if (withdrawalEligibility && !withdrawalEligibility.eligible) {
+      showToast(`⚠️ ${withdrawalEligibility.reason || (lang === 'am' ? 'የማውጣት መስፈርቱን አላሟሉም' : 'Withdrawal criteria not met')}`);
       return;
     }
     if (withdrawAmount > balance) {
@@ -903,7 +918,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
 
                   {/* 3x2 Quick Amounts Grid */}
                   <div className="sonic-amount-chips-grid">
-                    {[50, 100, 200, 500, 1000, 5000].map(amt => (
+                    {[50, 100, 200, 500, 1000, 1500].map(amt => (
                       <button
                         key={amt}
                         type="button"
@@ -921,7 +936,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                     <input
                       type="number"
                       min="50"
-                      max="100000"
+                      max="1500"
                       value={agentDepositAmount || ''}
                       onChange={e => setAgentDepositAmount(Number(e.target.value))}
                       className="sonic-amount-big-field"
@@ -1409,7 +1424,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                           {lang === 'am' ? 'ኦፊሴላዊ የክፍያ ማዕከል' : 'Official Payout Cashier'}
                         </div>
                         <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '2px' }}>
-                          {lang === 'am' ? 'ቀጥታ ክፍያ በቴሌብር፣ ኤም-ፔሳ ወይም ንግድ ባንክ (እስከ 5,000 ብር)' : 'Direct payouts to Telebirr, M-Pesa & CBE (Max 5,000 ETB)'}
+                          {lang === 'am' ? 'ቀጥታ ክፍያ በቴሌብር፣ ኤም-ፔሳ ወይም ንግድ ባንክ (እስከ 2,000 ብር)' : 'Direct payouts to Telebirr, M-Pesa & CBE (Max 2,000 ETB)'}
                         </div>
                       </div>
                     </div>
@@ -1430,6 +1445,71 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                     </span>
                   </div>
 
+                  {/* 🛡️ Responsible Gaming & Anti-Fraud Compliance Card */}
+                  {withdrawalEligibility && (
+                    <div
+                      style={{
+                        background: withdrawalEligibility.eligible ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
+                        border: `1px solid ${withdrawalEligibility.eligible ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.35)'}`,
+                        borderRadius: '16px',
+                        padding: '12px 14px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '16px' }}>{withdrawalEligibility.eligible ? '🛡️' : '🔒'}</span>
+                          <strong style={{ fontSize: '13px', color: withdrawalEligibility.eligible ? '#34d399' : '#fbbf24' }}>
+                            {withdrawalEligibility.eligible
+                              ? (lang === 'am' ? 'የማውጣት መስፈርቶች ተሟልተዋል' : 'Withdrawal Criteria Verified')
+                              : (lang === 'am' ? 'የማውጣት መስፈርት አልተሟላም' : 'Withdrawal Criteria Locked')}
+                          </strong>
+                        </div>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            padding: '2px 8px',
+                            borderRadius: '8px',
+                            background: withdrawalEligibility.eligible ? '#10b981' : '#f59e0b',
+                            color: '#fff'
+                          }}
+                        >
+                          {withdrawalEligibility.eligible ? (lang === 'am' ? 'ተፈቅዷል' : 'ELIGIBLE') : (lang === 'am' ? 'የተቆለፈ' : 'LOCKED')}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11.5px' }}>
+                        <div style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '6px 8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                          <div style={{ color: '#94a3b8', marginBottom: '2px' }}>{lang === 'am' ? 'የተጠናቀቁ ጨዋታዎች' : 'Completed Games'}</div>
+                          <strong style={{ color: withdrawalEligibility.completedGames >= 5 ? '#34d399' : '#fbbf24', fontSize: '12.5px' }}>
+                            {withdrawalEligibility.completedGames} / 5 {withdrawalEligibility.completedGames >= 5 ? '✓' : ''}
+                          </strong>
+                        </div>
+                        <div style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '6px 8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                          <div style={{ color: '#94a3b8', marginBottom: '2px' }}>{lang === 'am' ? 'የዛሬ ወጪዎች' : "Today's Withdrawals"}</div>
+                          <strong style={{ color: withdrawalEligibility.todayWithdrawals < 3 ? '#34d399' : '#f43f5e', fontSize: '12.5px' }}>
+                            {withdrawalEligibility.todayWithdrawals} / 3 {withdrawalEligibility.todayWithdrawals < 3 ? '✓' : ''}
+                          </strong>
+                        </div>
+                      </div>
+
+                      {!withdrawalEligibility.eligible && (
+                        <p style={{ margin: 0, fontSize: '11px', color: '#f59e0b', lineHeight: 1.4 }}>
+                          {withdrawalEligibility.completedGames < 5
+                            ? (lang === 'am'
+                                ? `⚠️ ገንዘብ ለማውጣት ቢያንስ 5 ጨዋታዎችን ማጠናቀቅ አለብዎት (ያጠናቀቁት፡ ${withdrawalEligibility.completedGames}/5 ጨዋታ)።`
+                                : `⚠️ You must complete at least 5 games before requesting a withdrawal (Completed: ${withdrawalEligibility.completedGames}/5 games).`)
+                            : (lang === 'am'
+                                ? '⚠️ የቀን ገደብ ደርሷል፡ በቀን ቢበዛ 3 ጊዜ ብቻ ማውጣት ይቻላል። እባክዎ ነገ እንደገና ይሞክሩ።'
+                                : '⚠️ Maximum 3 withdrawals allowed per day. Please try again tomorrow.')}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   {/* Step 1: Withdrawal Amount Card (Harmonized with Deposit Shell) */}
                   <div className="sonic-amount-card-shell">
                     <div className="sonic-amount-header-row">
@@ -1441,13 +1521,13 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                         </div>
                       </div>
                       <span className="sonic-amount-min-tag">
-                        {lang === 'am' ? 'ዝቅተኛ፡ 50 ብር' : 'Min: 50 ETB'}
+                        {lang === 'am' ? 'ዝቅተኛ፡ 50 • ከፍተኛ፡ 2,000 ብር' : 'Min: 50 • Max: 2,000 ETB'}
                       </span>
                     </div>
 
                     {/* 3x2 Quick Chips Grid */}
                     <div className="sonic-amount-chips-grid">
-                      {[50, 100, 200, 500, 1000].map(amt => (
+                      {[50, 100, 200, 500, 1000, 2000].map(amt => (
                         <button
                           key={amt}
                           type="button"
@@ -1459,11 +1539,11 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                       ))}
                       <button
                         type="button"
-                        className={`sonic-amount-chip-btn ${withdrawAmount === Math.min(5000, Math.floor(balance)) && balance >= 50 ? 'active' : ''}`}
-                        onClick={() => setWithdrawAmount(Math.min(5000, Math.floor(balance)))}
+                        className={`sonic-amount-chip-btn ${withdrawAmount === Math.min(2000, Math.floor(balance)) && balance >= 50 ? 'active' : ''}`}
+                        onClick={() => setWithdrawAmount(Math.min(2000, Math.floor(balance)))}
                         style={{ fontWeight: 900 }}
                       >
-                        {lang === 'am' ? 'ሁሉንም (Max)' : '★ Max Balance'}
+                        {lang === 'am' ? 'ሁሉንም (እስከ 2,000)' : '★ Max (Up to 2,000)'}
                       </button>
                     </div>
 
@@ -1477,7 +1557,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                         className="sonic-amount-big-field"
                         placeholder="200"
                         min={50}
-                        max={5000}
+                        max={2000}
                         required
                       />
                       <div className="sonic-input-gold-swoosh"></div>
@@ -1669,8 +1749,18 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                     <button
                       type="submit"
                       className="sonic-primary-gold-submit-btn"
-                      disabled={isSubmittingWithdraw || withdrawAmount < 50 || withdrawAmount > balance}
-                      style={{ marginTop: '12px' }}
+                      disabled={
+                        isSubmittingWithdraw ||
+                        withdrawAmount < 50 ||
+                        withdrawAmount > 2000 ||
+                        withdrawAmount > balance ||
+                        (withdrawalEligibility !== null && !withdrawalEligibility.eligible)
+                      }
+                      style={{
+                        marginTop: '12px',
+                        opacity: (withdrawalEligibility !== null && !withdrawalEligibility.eligible) ? 0.6 : 1,
+                        cursor: (withdrawalEligibility !== null && !withdrawalEligibility.eligible) ? 'not-allowed' : 'pointer'
+                      }}
                     >
                       {isSubmittingWithdraw ? (
                         <>

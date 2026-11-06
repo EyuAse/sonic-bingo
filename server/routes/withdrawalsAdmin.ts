@@ -21,7 +21,7 @@ async function ensureWithdrawalColumns() {
       CREATE TABLE IF NOT EXISTS withdrawal_settings (
         id VARCHAR(50) PRIMARY KEY DEFAULT 'default',
         current_pin VARCHAR(20) DEFAULT '5678',
-        max_request_limit NUMERIC(10, 2) DEFAULT 5000,
+        max_request_limit NUMERIC(10, 2) DEFAULT 2000,
         high_value_threshold NUMERIC(10, 2) DEFAULT 2000,
         min_request_limit NUMERIC(10, 2) DEFAULT 50,
         require_kyc_verification BOOLEAN DEFAULT false,
@@ -163,7 +163,13 @@ router.get('/queue', requireWithdrawalAdmin, async (_req: WithdrawalAdminRequest
         (
           COALESCE((SELECT SUM(bet_amount) FROM game_tickets WHERE user_id = u.id), 0) +
           COALESCE((SELECT SUM(amount) FROM wallet_transactions WHERE user_id = u.id AND type IN ('stake', 'bingo_stake', 'game_stake')), 0)
-        ) as total_staked
+        ) as total_staked,
+        COALESCE((
+          SELECT COUNT(DISTINCT gt.round_id)
+          FROM game_tickets gt
+          JOIN game_rounds gr ON gt.round_id = gr.id
+          WHERE gt.user_id = u.id AND (gr.phase IN ('winner', 'ended') OR gt.status IN ('won', 'lost'))
+        ), 0) as completed_games
       FROM withdrawal_requests w
       JOIN users u ON w.user_id = u.id
       LEFT JOIN wallets wal ON wal.user_id = u.id
@@ -192,10 +198,12 @@ router.get('/queue', requireWithdrawalAdmin, async (_req: WithdrawalAdminRequest
       const registeredName = (row.user_full_name || '').trim();
       const payoutName = (row.account_name || registeredName).trim();
       const nameMatch = registeredName.toLowerCase() === payoutName.toLowerCase();
-      const withinLimit = amount <= 5000;
+      const withinLimit = amount <= 2000;
       const turnoverMet = totalDeposited === 0 || totalStaked >= totalDeposited;
+      const completedGames = parseInt(row.completed_games || '0', 10);
+      const minGamesCompleted = completedGames >= 5;
 
-      // 5 Enqu Automated Compliance Checks
+      // 6 Enqu Automated Compliance Checks
       const checks = [
         {
           id: 'active_account',
@@ -207,6 +215,17 @@ router.get('/queue', requireWithdrawalAdmin, async (_req: WithdrawalAdminRequest
           failureText: `Player account is ${row.user_status || 'inactive'}`,
           isBlocker: isSuspended,
           blockApproval: isSuspended
+        },
+        {
+          id: 'min_games_completed',
+          ok: minGamesCompleted,
+          label: 'Completed at least 5 games (Anti-Fraud)',
+          title: 'Completed at least 5 games (Anti-Fraud)',
+          passText: `Player completed ${completedGames} games (minimum 5 required)`,
+          failText: `Player only completed ${completedGames} of 5 required games`,
+          failureText: `Player only completed ${completedGames} of 5 required games`,
+          isBlocker: !minGamesCompleted,
+          blockApproval: !minGamesCompleted
         },
         {
           id: 'kyc_verified',
@@ -233,11 +252,11 @@ router.get('/queue', requireWithdrawalAdmin, async (_req: WithdrawalAdminRequest
         {
           id: 'amount_limit',
           ok: withinLimit,
-          label: 'Within the 5,000 ETB request limit',
-          title: 'Within the 5,000 ETB request limit',
-          passText: 'Within the 5,000 ETB request limit',
-          failText: `Above the 5,000 ETB request limit (${amount.toLocaleString()} ETB)`,
-          failureText: `Above the 5,000 ETB request limit (${amount.toLocaleString()} ETB)`,
+          label: 'Within the 2,000 ETB request limit',
+          title: 'Within the 2,000 ETB request limit',
+          passText: 'Within the 2,000 ETB request limit',
+          failText: `Above the 2,000 ETB request limit (${amount.toLocaleString()} ETB)`,
+          failureText: `Above the 2,000 ETB request limit (${amount.toLocaleString()} ETB)`,
           isBlocker: !withinLimit,
           blockApproval: !withinLimit
         },
@@ -807,7 +826,7 @@ router.get('/settings', requireWithdrawalAdmin, async (_req: WithdrawalAdminRequ
       return res.json({
         success: true,
         settings: {
-          max_request_limit: 5000,
+          max_request_limit: 2000,
           high_value_threshold: 2000,
           min_request_limit: 50,
           require_kyc_verification: false,
@@ -823,7 +842,7 @@ router.get('/settings', requireWithdrawalAdmin, async (_req: WithdrawalAdminRequ
     return res.json({
       success: true,
       settings: {
-        max_request_limit: Number(row.max_request_limit || 5000),
+        max_request_limit: Number(row.max_request_limit || 2000),
         high_value_threshold: Number(row.high_value_threshold || 2000),
         min_request_limit: Number(row.min_request_limit || 50),
         require_kyc_verification: Boolean(row.require_kyc_verification),

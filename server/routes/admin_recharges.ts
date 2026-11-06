@@ -440,7 +440,7 @@ adminRechargesRouter.post('/:id/credit', requireAdmin, async (req: Authenticated
           status,
           payment_method,
           description
-        ) VALUES ($1, 'agent_recharge', $2, $3, $4, 'completed', $5, $6)
+        ) VALUES ($1, 'deposit', $2, $3, $4, 'completed', $5, $6)
       `, [
         recharge.agent_user_id,
         creditAmt,

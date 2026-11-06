@@ -50,8 +50,8 @@ router.post('/deposit', requireAuth, async (req: AuthenticatedRequest, res) => {
     const { amount, paymentMethod, playerPhone, transactionRef, receiptImage } = req.body;
 
     const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount < 50) {
-      return res.status(400).json({ success: false, error: 'Minimum deposit is 50 ETB.' });
+    if (isNaN(numAmount) || numAmount < 50 || numAmount > 1500) {
+      return res.status(400).json({ success: false, error: 'Deposit amount must be between 50 and 1,500 ETB.' });
     }
 
     if (!paymentMethod || !['Telebirr', 'CBE', 'M-Pesa'].includes(paymentMethod)) {
@@ -188,6 +188,78 @@ router.post('/deposit', requireAuth, async (req: AuthenticatedRequest, res) => {
 });
 
 /**
+ * 🛡️ Anti-Fraud & Responsible Gaming Financial Validation
+ * - Min withdrawal: 50 ETB
+ * - Max withdrawal: 2,000 ETB per transaction
+ * - Max withdrawals: 3 times per day
+ * - Must complete at least 5 games before becoming eligible
+ */
+async function verifyWithdrawalEligibility(userId: string) {
+  // 1. Check completed games count (player must have played and completed at least 5 games)
+  const gamesRes = await query(`
+    SELECT COUNT(DISTINCT gt.round_id) as completed_games
+    FROM game_tickets gt
+    JOIN game_rounds gr ON gt.round_id = gr.id
+    WHERE gt.user_id = $1 AND (gr.phase IN ('winner', 'ended') OR gt.status IN ('won', 'lost'))
+  `, [userId]);
+
+  const completedGames = parseInt(gamesRes.rows[0]?.completed_games || '0', 10);
+  const requiredGames = 5;
+
+  // 2. Check today's withdrawal count across central & agent requests
+  const todayRes = await query(`
+    SELECT COUNT(*) as today_count 
+    FROM (
+      SELECT id FROM withdrawal_requests 
+      WHERE user_id = $1 AND created_at >= CURRENT_DATE AND status IN ('pending', 'approved', 'completed')
+      UNION ALL
+      SELECT id FROM agent_withdrawal_requests 
+      WHERE player_id = $1 AND created_at >= CURRENT_DATE AND status IN ('pending', 'approved')
+    ) t
+  `, [userId]);
+
+  const todayWithdrawals = parseInt(todayRes.rows[0]?.today_count || '0', 10);
+  const maxDailyWithdrawals = 3;
+
+  let eligible = true;
+  let reason = '';
+
+  if (completedGames < requiredGames) {
+    eligible = false;
+    reason = `A player must complete at least ${requiredGames} games before becoming eligible to withdraw. You have completed ${completedGames}/${requiredGames} games.`;
+  } else if (todayWithdrawals >= maxDailyWithdrawals) {
+    eligible = false;
+    reason = `Maximum ${maxDailyWithdrawals} withdrawals allowed per day. Please try again tomorrow.`;
+  }
+
+  return {
+    eligible,
+    completedGames,
+    requiredGames,
+    todayWithdrawals,
+    maxDailyWithdrawals,
+    minAmount: 50,
+    maxAmount: 2000,
+    reason: eligible ? undefined : reason
+  };
+}
+
+/**
+ * GET /api/wallet/withdrawal-eligibility
+ * Returns live player eligibility metrics for the client withdrawal modal
+ */
+router.get('/withdrawal-eligibility', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.user!.id;
+    const status = await verifyWithdrawalEligibility(userId);
+    return res.json({ success: true, ...status });
+  } catch (err: any) {
+    console.error('❌ [Withdrawal Eligibility Check Error]:', err);
+    return res.status(500).json({ success: false, error: 'Failed to verify withdrawal eligibility' });
+  }
+});
+
+/**
  * Submit Withdrawal Request with Atomic Balance Lock
  */
 router.post('/withdraw', requireAuth, async (req: AuthenticatedRequest, res) => {
@@ -196,8 +268,14 @@ router.post('/withdraw', requireAuth, async (req: AuthenticatedRequest, res) => 
     const { amount, paymentMethod, accountPhone, accountName } = req.body;
 
     const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount < 50 || numAmount > 5000) {
-      return res.status(400).json({ success: false, error: 'Withdrawal amount must be between 50 and 5,000 ETB.' });
+    if (isNaN(numAmount) || numAmount < 50 || numAmount > 2000) {
+      return res.status(400).json({ success: false, error: 'Withdrawal amount must be between 50 and 2,000 ETB per transaction.' });
+    }
+
+    // 🛡️ Enforce anti-fraud eligibility rules (completed 5 games, max 3/day)
+    const eligibility = await verifyWithdrawalEligibility(userId);
+    if (!eligibility.eligible) {
+      return res.status(400).json({ success: false, error: eligibility.reason });
     }
 
     if (!paymentMethod || !['Telebirr', 'CBE', 'M-Pesa'].includes(paymentMethod)) {
@@ -944,8 +1022,14 @@ router.post('/agent-voucher/create', requireAuth, async (req: AuthenticatedReque
     const { amount } = req.body;
 
     const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount < 50 || numAmount > 5000) {
-      return res.status(400).json({ success: false, error: 'Withdrawal amount must be between 50 and 5,000 ETB.' });
+    if (isNaN(numAmount) || numAmount < 50 || numAmount > 2000) {
+      return res.status(400).json({ success: false, error: 'Withdrawal amount must be between 50 and 2,000 ETB per transaction.' });
+    }
+
+    // 🛡️ Enforce anti-fraud eligibility rules (completed 5 games, max 3/day)
+    const eligibility = await verifyWithdrawalEligibility(userId);
+    if (!eligibility.eligible) {
+      return res.status(400).json({ success: false, error: eligibility.reason });
     }
 
     // Check if player already has an active pending voucher
@@ -1254,8 +1338,8 @@ router.post('/deposit-via-agent', requireAuth, async (req: AuthenticatedRequest,
     const { agentId, agentCode, amount, paymentMethod, playerPhone, transactionCode, screenshotUrl } = req.body;
 
     const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount < 50) {
-      return res.status(400).json({ success: false, error: 'Minimum deposit is 50 ETB.' });
+    if (isNaN(numAmount) || numAmount < 50 || numAmount > 1500) {
+      return res.status(400).json({ success: false, error: 'Deposit amount must be between 50 and 1,500 ETB.' });
     }
 
     if (!paymentMethod || !['Telebirr', 'CBE', 'M-Pesa'].includes(paymentMethod)) {
@@ -1499,11 +1583,17 @@ router.post('/withdraw-via-agent', requireAuth, async (req: AuthenticatedRequest
     }
 
     const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount < 50 || numAmount > 5000) {
+    if (isNaN(numAmount) || numAmount < 50 || numAmount > 2000) {
       return res.status(400).json({
         success: false,
-        error: 'Withdrawal amount must be between 50 and 5,000 ETB'
+        error: 'Withdrawal amount must be between 50 and 2,000 ETB per transaction.'
       });
+    }
+
+    // 🛡️ Enforce anti-fraud eligibility rules (completed 5 games, max 3/day)
+    const eligibility = await verifyWithdrawalEligibility(userId);
+    if (!eligibility.eligible) {
+      return res.status(400).json({ success: false, error: eligibility.reason });
     }
 
     const validMethods = ['Telebirr', 'CBE', 'M-Pesa'];

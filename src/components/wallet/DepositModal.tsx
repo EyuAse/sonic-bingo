@@ -61,7 +61,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({ isOpen, onClose }) =
   const activeReceiverNumber = activeReceiver.accountNumber;
   const receiverName = activeReceiver.accountName;
   const receiverServiceName = activeReceiver.serviceName;
-  const quickAmounts = [50, 100, 200, 500, 1000, 5000];
+  const quickAmounts = [50, 100, 200, 500, 1000, 1500];
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -110,8 +110,8 @@ export const DepositModal: React.FC<DepositModalProps> = ({ isOpen, onClose }) =
 
   const handleDepositSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (amount < 10) {
-      showToast(lang === 'am' ? '⚠️ ዝቅተኛ ተቀማጭ 10 ብር ነው።' : '⚠️ Minimum deposit is 10 ETB.');
+    if (amount < 50 || amount > 1500) {
+      showToast(lang === 'am' ? '⚠️ የተቀማጭ መጠን ከ 50 እስከ 1,500 ብር መሆን አለበት።' : '⚠️ Deposit amount must be between 50 and 1,500 ETB.');
       return;
     }
 
@@ -318,7 +318,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({ isOpen, onClose }) =
                 <label className="form-section-label">
                   <span className="step-num">2</span> {lang === 'am' ? 'የተቀማጭ መጠን' : 'Deposit Amount'}
                 </label>
-                <span className="min-limit-sub">{lang === 'am' ? 'ዝቅተኛ፡ 50 ብር' : 'Min: 50 ETB'}</span>
+                <span className="min-limit-sub">{lang === 'am' ? 'ዝቅተኛ፡ 50 • ከፍተኛ፡ 1,500 ብር' : 'Min: 50 • Max: 1,500 ETB'}</span>
               </div>
 
               {/* Preset Chips */}
@@ -341,7 +341,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({ isOpen, onClose }) =
                 <input
                   type="number"
                   min="50"
-                  max="100000"
+                  max="1500"
                   value={amount || ''}
                   onChange={e => setAmount(Number(e.target.value))}
                   placeholder={lang === 'am' ? 'መጠን ያስገቡ' : 'Enter amount'}

@@ -35,6 +35,36 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submittedRef, setSubmittedRef] = useState<string>('');
 
+  // 🛡️ Live Anti-Fraud Withdrawal Eligibility State (5 Completed Games + Max 3/day)
+  const [eligibility, setEligibility] = useState<{
+    eligible: boolean;
+    completedGames: number;
+    requiredGames: number;
+    todayWithdrawals: number;
+    maxDailyWithdrawals: number;
+    reason?: string;
+  } | null>(null);
+  const [isLoadingEligibility, setIsLoadingEligibility] = useState<boolean>(true);
+
+  // Fetch real-time eligibility whenever modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      setIsLoadingEligibility(true);
+      apiClient.wallet.getWithdrawalEligibility()
+        .then(res => {
+          if (res.success) {
+            setEligibility(res);
+          }
+        })
+        .catch(err => {
+          console.error('Failed to fetch withdrawal eligibility:', err);
+        })
+        .finally(() => {
+          setIsLoadingEligibility(false);
+        });
+    }
+  }, [isOpen]);
+
   // Auto-fill from user's attached accounts or profile when method changes
   useEffect(() => {
     const attached = user?.attachedAccounts || [];
@@ -53,7 +83,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
 
   if (!isOpen) return null;
 
-  const quickAmounts = [100, 200, 500, 1000, 5000];
+  const quickAmounts = [50, 100, 200, 500, 1000, 2000];
 
   const handleWithdrawSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,8 +93,13 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
       return;
     }
 
-    if (amount > 5000) {
-      showToast(lang === 'am' ? '⚠️ ከፍተኛ የማውጣት መጠን 5,000 ብር ነው።' : '⚠️ Maximum withdrawal limit is 5,000 ETB.');
+    if (amount > 2000) {
+      showToast(lang === 'am' ? '⚠️ ከፍተኛ የማውጣት መጠን በአንድ ግብይት 2,000 ብር ነው።' : '⚠️ Maximum withdrawal limit is 2,000 ETB per transaction.');
+      return;
+    }
+
+    if (eligibility && !eligibility.eligible) {
+      showToast(`⚠️ ${eligibility.reason || (lang === 'am' ? 'የማውጣት መስፈርቱን አላሟሉም' : 'Withdrawal requirements not met')}`);
       return;
     }
 
@@ -220,9 +255,95 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
               </div>
               <div className="balance-banner-limits">
                 <span>{lang === 'am' ? 'ዝቅተኛ፡ 50 ብር' : 'Min: 50 ETB'}</span>
-                <span>{lang === 'am' ? 'ከፍተኛ፡ 25,000 ብር' : 'Max: 25,000 ETB'}</span>
+                <span>{lang === 'am' ? 'ከፍተኛ፡ 2,000 ብር' : 'Max: 2,000 ETB'}</span>
               </div>
             </div>
+
+            {/* 🛡️ Responsible Gaming & Anti-Fraud Compliance Card */}
+            {eligibility && (
+              <div
+                style={{
+                  background: eligibility.eligible ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
+                  border: `1px solid ${eligibility.eligible ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.35)'}`,
+                  borderRadius: '14px',
+                  padding: '12px 14px',
+                  marginBottom: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '16px' }}>{eligibility.eligible ? '🛡️' : '🔒'}</span>
+                    <strong style={{ fontSize: '13px', color: eligibility.eligible ? '#059669' : '#d97706' }}>
+                      {eligibility.eligible
+                        ? (lang === 'am' ? 'የማውጣት መስፈርቶች ተሟልተዋል' : 'Withdrawal Criteria Verified')
+                        : (lang === 'am' ? 'የማውጣት መስፈርት አልተሟላም' : 'Withdrawal Criteria Locked')}
+                    </strong>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: '8px',
+                      background: eligibility.eligible ? '#10b981' : '#f59e0b',
+                      color: '#fff'
+                    }}
+                  >
+                    {eligibility.eligible ? (lang === 'am' ? 'ተፈቅዷል' : 'ELIGIBLE') : (lang === 'am' ? 'የተቆለፈ' : 'LOCKED')}
+                  </span>
+                </div>
+
+                {/* Progress Indicators */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11.5px' }}>
+                  <div
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.7)',
+                      padding: '6px 8px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(0,0,0,0.05)'
+                    }}
+                  >
+                    <div style={{ color: 'var(--mute)', marginBottom: '2px' }}>
+                      {lang === 'am' ? 'የተጠናቀቁ ጨዋታዎች' : 'Completed Games'}
+                    </div>
+                    <strong style={{ color: eligibility.completedGames >= 5 ? '#059669' : '#d97706', fontSize: '12.5px' }}>
+                      {eligibility.completedGames} / 5 {eligibility.completedGames >= 5 ? '✓' : ''}
+                    </strong>
+                  </div>
+
+                  <div
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.7)',
+                      padding: '6px 8px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(0,0,0,0.05)'
+                    }}
+                  >
+                    <div style={{ color: 'var(--mute)', marginBottom: '2px' }}>
+                      {lang === 'am' ? 'የዛሬ ወጪዎች' : "Today's Withdrawals"}
+                    </div>
+                    <strong style={{ color: eligibility.todayWithdrawals < 3 ? '#059669' : '#dc2626', fontSize: '12.5px' }}>
+                      {eligibility.todayWithdrawals} / 3 {eligibility.todayWithdrawals < 3 ? '✓' : ''}
+                    </strong>
+                  </div>
+                </div>
+
+                {!eligibility.eligible && (
+                  <p style={{ margin: 0, fontSize: '11px', color: '#b45309', lineHeight: 1.4 }}>
+                    {eligibility.completedGames < 5
+                      ? (lang === 'am'
+                          ? `⚠️ ገንዘብ ለማውጣት ቢያንስ 5 ጨዋታዎችን ማጠናቀቅ አለብዎት (ያጠናቀቁት፡ ${eligibility.completedGames}/5 ጨዋታ)።`
+                          : `⚠️ You must complete at least 5 games before requesting a withdrawal (Completed: ${eligibility.completedGames}/5 games).`)
+                      : (lang === 'am'
+                          ? '⚠️ የቀን ገደብ ደርሷል፡ በቀን ቢበዛ 3 ጊዜ ብቻ ማውጣት ይቻላል። እባክዎ ነገ እንደገና ይሞክሩ።'
+                          : '⚠️ Maximum 3 withdrawals allowed per day. Please try again tomorrow.')}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* 1. Payment Method Selection */}
             <div className="form-section-block">
@@ -276,9 +397,9 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
                 <button
                   type="button"
                   className="btn-max-amount"
-                  onClick={() => setAmount(Math.min(balance, 5000))}
+                  onClick={() => setAmount(Math.min(balance, 2000))}
                 >
-                  {lang === 'am' ? 'ሁሉንም (እስከ 5,000)' : 'Max (Up to 5,000)'}
+                  {lang === 'am' ? 'ሁሉንም (እስከ 2,000)' : 'Max (Up to 2,000)'}
                 </button>
               </div>
 
@@ -302,10 +423,10 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
                 <input
                   type="number"
                   min="50"
-                  max="5000"
+                  max="2000"
                   value={amount || ''}
                   onChange={e => setAmount(Number(e.target.value))}
-                  placeholder={lang === 'am' ? 'መጠን ያስገቡ' : 'Enter amount'}
+                  placeholder={lang === 'am' ? 'መጠን ያስገቡ (50 - 2,000)' : 'Enter amount (50 - 2,000)'}
                   required
                 />
               </div>
@@ -389,10 +510,25 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
             <button
               type="submit"
               className="btn-submit-payment-gold"
-              disabled={amount > balance || amount < 50}
+              disabled={
+                amount > balance ||
+                amount < 50 ||
+                amount > 2000 ||
+                (eligibility !== null && !eligibility.eligible) ||
+                isSubmitting ||
+                isLoadingEligibility
+              }
+              style={{
+                opacity: (eligibility !== null && !eligibility.eligible) ? 0.6 : 1,
+                cursor: (eligibility !== null && !eligibility.eligible) ? 'not-allowed' : 'pointer'
+              }}
             >
               <i className="fa-solid fa-arrow-up-from-bracket"></i>
-              <span>{lang === 'am' ? `አሁን ${amount > 0 ? `${amount} ብር` : ''} አውጣ` : `Withdraw ${amount > 0 ? `${amount} ETB` : ''} Now`}</span>
+              <span>
+                {eligibility && !eligibility.eligible
+                  ? (lang === 'am' ? '🔒 የማውጣት መስፈርት አልተሟላም' : '🔒 Withdrawal Criteria Locked')
+                  : (lang === 'am' ? `አሁን ${amount > 0 ? `${amount} ብር` : ''} አውጣ` : `Withdraw ${amount > 0 ? `${amount} ETB` : ''} Now`)}
+              </span>
             </button>
           </form>
         )}
