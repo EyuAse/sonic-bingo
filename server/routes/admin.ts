@@ -8,6 +8,7 @@ import { exportDatabaseBackup } from '../scripts/backup_database.ts';
 import { coinService } from '../services/coinService.ts';
 import { adminPlayersRouter } from './admin_players.ts';
 import { adminRewardsRouter } from './admin_rewards.ts';
+import { adminCashflowRouter } from './admin_cashflow.ts';
 
 const router = Router();
 
@@ -16,6 +17,9 @@ router.use('/players', adminPlayersRouter);
 
 // Mount Dedicated Bonus & Reward Management Router
 router.use('/rewards', adminRewardsRouter);
+
+// Mount Dedicated Cashflow & Treasury Router
+router.use('/cashflow', adminCashflowRouter);
 
 /**
  * Get All Real Users from Neon DB
