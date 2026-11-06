@@ -1852,7 +1852,7 @@ router.post('/agents/create', requireAdmin, async (req: AuthenticatedRequest, re
           [cleanPhone, cleanName, hashedPassword]
         );
         userId = newUserRes.rows[0].id;
-        await client.query("INSERT INTO wallets (user_id, balance, bonus) VALUES ($1, 0.00, 20.00)", [userId]);
+        await client.query("INSERT INTO wallets (user_id, balance, bonus) VALUES ($1, 0.00, 50.00)", [userId]);
       }
 
       const profileCheck = await client.query('SELECT id FROM agent_profiles WHERE user_id = $1', [userId]);

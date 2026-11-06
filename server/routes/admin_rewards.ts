@@ -110,7 +110,7 @@ adminRewardsRouter.get('/settings', requireAdmin, async (_req: AuthenticatedRequ
 
     const settings = settingsRes.rows[0] || {
       reg_bonus_enabled: true,
-      reg_bonus_amount: 20,
+      reg_bonus_amount: 50,
       reg_bonus_expires_days: 0,
       ref_bonus_enabled: true,
       ref_bonus_percent: 10,
@@ -128,7 +128,7 @@ adminRewardsRouter.get('/settings', requireAdmin, async (_req: AuthenticatedRequ
       success: true,
       settings: {
         regBonusEnabled: Boolean(settings.reg_bonus_enabled),
-        regBonusAmount: parseFloat(settings.reg_bonus_amount || '20'),
+        regBonusAmount: parseFloat(settings.reg_bonus_amount || '50'),
         regBonusExpiresDays: parseInt(settings.reg_bonus_expires_days || '0', 10),
         refBonusEnabled: Boolean(settings.ref_bonus_enabled),
         refBonusPercent: parseFloat(settings.ref_bonus_percent || '10'),

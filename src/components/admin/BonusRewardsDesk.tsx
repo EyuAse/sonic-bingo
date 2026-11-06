@@ -19,7 +19,7 @@ export const BonusRewardsDesk: React.FC = () => {
   // 2. Settings State
   const [settings, setSettings] = useState({
     regBonusEnabled: true,
-    regBonusAmount: 20,
+    regBonusAmount: 50,
     regBonusExpiresDays: 0,
     refBonusEnabled: true,
     refBonusPercent: 10,

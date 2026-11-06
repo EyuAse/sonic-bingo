@@ -189,7 +189,7 @@ router.post('/telegram', async (req, res) => {
         );
         const bonusSettings = bonusSettingsRes.rows[0];
         const isRegBonusEnabled = bonusSettings ? bonusSettings.reg_bonus_enabled !== false : true;
-        const dynamicRegBonus = isRegBonusEnabled ? parseFloat(bonusSettings?.reg_bonus_amount || '20.00') : 0.00;
+        const dynamicRegBonus = isRegBonusEnabled ? parseFloat(bonusSettings?.reg_bonus_amount || '50.00') : 0.00;
 
         // Create Wallet with dynamic Welcome Bonus (Configured via Admin Bonus Settings)
         const newWalletRes = await client.query(
@@ -229,7 +229,7 @@ router.post('/telegram', async (req, res) => {
       userRow = result.user;
       walletRow = {
         balance: parseFloat(result.wallet.balance || '0'),
-        bonus: parseFloat(result.wallet.bonus || '20.00'),
+        bonus: parseFloat(result.wallet.bonus || '50.00'),
         lockedBalance: parseFloat(result.wallet.locked_balance || '0')
       };
 
@@ -241,7 +241,7 @@ router.post('/telegram', async (req, res) => {
         telegramUsername: userRow.telegram_username,
         role: userRow.role,
         balance: 0,
-        bonus: 20,
+        bonus: 50,
         createdAt: userRow.created_at
       });
     }
@@ -352,7 +352,7 @@ router.post('/register', async (req, res) => {
       );
       const bonusSettings = bonusSettingsRes.rows[0];
       const isRegBonusEnabled = bonusSettings ? bonusSettings.reg_bonus_enabled !== false : true;
-      const dynamicRegBonus = isRegBonusEnabled ? parseFloat(bonusSettings?.reg_bonus_amount || '20.00') : 0.00;
+      const dynamicRegBonus = isRegBonusEnabled ? parseFloat(bonusSettings?.reg_bonus_amount || '50.00') : 0.00;
 
       const newWalletRes = await client.query(
         `INSERT INTO wallets (user_id, balance, bonus, locked_balance)
@@ -401,7 +401,7 @@ router.post('/register', async (req, res) => {
       phone: result.user.phone,
       role: result.user.role,
       balance: 0,
-      bonus: 20,
+      bonus: 50,
       createdAt: result.user.created_at
     });
 

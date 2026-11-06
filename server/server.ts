@@ -295,7 +295,7 @@ app.get('/api/public/bonus-config', async (_req, res) => {
     return res.json({
       success: true,
       regBonusEnabled: Boolean(s.reg_bonus_enabled),
-      regBonusAmount: parseFloat(s.reg_bonus_amount || '20'),
+      regBonusAmount: parseFloat(s.reg_bonus_amount || '50'),
       regBonusExpiresDays: parseInt(s.reg_bonus_expires_days || '0', 10),
       refBonusEnabled: Boolean(s.ref_bonus_enabled),
       refBonusPercent: parseFloat(s.ref_bonus_percent || '10'),

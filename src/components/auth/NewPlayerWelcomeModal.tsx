@@ -35,7 +35,7 @@ export const NewPlayerWelcomeModal: React.FC<NewPlayerWelcomeModalProps> = ({
     .trim() || 'Sonic Player';
 
   const displayUsername = user.telegramUsername ? `@${user.telegramUsername}` : 'Verified Player';
-  const effectiveBonus = bonusAmount > 0 ? bonusAmount : 20;
+  const effectiveBonus = bonusAmount > 0 ? bonusAmount : 50;
 
   return (
     <div className="otp-modal-overlay">

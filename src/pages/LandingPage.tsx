@@ -66,7 +66,7 @@ export const LandingPage: React.FC = () => {
     setIsExistingAccount(false);
   }, [user, telegramUser]);
 
-  // When new user taps "Claim 20 ETB Bonus" on Slide 3 -> Open clean registration modal
+  // When new user taps "Claim 50 ETB Bonus" on Slide 3 -> Open clean registration modal
   const handleOpenRegisterModal = () => {
     setShowRegisterModal(true);
   };

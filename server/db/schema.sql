@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS wallets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     balance NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CHECK (balance >= 0),
-    bonus NUMERIC(12, 2) NOT NULL DEFAULT 20.00 CHECK (bonus >= 0),
+    bonus NUMERIC(12, 2) NOT NULL DEFAULT 50.00 CHECK (bonus >= 0),
     locked_balance NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CHECK (locked_balance >= 0),
     currency VARCHAR(10) DEFAULT 'ETB',
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
@@ -339,7 +339,7 @@ CREATE INDEX IF NOT EXISTS idx_vouchers_status ON agent_cashout_vouchers(status)
 CREATE TABLE IF NOT EXISTS bonus_reward_settings (
     id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
     reg_bonus_enabled BOOLEAN NOT NULL DEFAULT true,
-    reg_bonus_amount NUMERIC(10, 2) NOT NULL DEFAULT 20.00 CHECK (reg_bonus_amount >= 0),
+    reg_bonus_amount NUMERIC(10, 2) NOT NULL DEFAULT 50.00 CHECK (reg_bonus_amount >= 0),
     reg_bonus_expires_days INT NOT NULL DEFAULT 0 CHECK (reg_bonus_expires_days >= 0),
     ref_bonus_enabled BOOLEAN NOT NULL DEFAULT true,
     ref_bonus_percent NUMERIC(5, 2) NOT NULL DEFAULT 10.00 CHECK (ref_bonus_percent >= 0 AND ref_bonus_percent <= 100),
