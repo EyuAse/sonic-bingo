@@ -5,6 +5,7 @@ import { io } from '../io.ts';
 import { gameEngine } from '../game/BingoGameEngine.ts';
 import { generateCardFromId } from '../game/cartelaGenerator.ts';
 import { coinService } from '../services/coinService.ts';
+import { executeAgentDepositApproval, executeDirectDepositApproval } from '../services/depositAutoApprovalService.ts';
 
 const router = Router();
 
@@ -81,6 +82,40 @@ router.post('/deposit', requireAuth, async (req: AuthenticatedRequest, res) => {
     );
 
     const deposit = insertRes.rows[0];
+
+    // Check if matching Telebirr SMS already arrived in telebirr_sms_logs
+    if (paymentMethod === 'Telebirr') {
+      const phoneLast4 = playerPhone.trim().length >= 4 ? playerPhone.trim().slice(-4) : '';
+      const smsMatchRes = await query(
+        `SELECT id, transaction_ref, amount FROM telebirr_sms_logs 
+         WHERE (transaction_ref ILIKE $1 OR (amount = $2 AND payer_phone LIKE '%' || $3))
+           AND status = 'unmatched'
+           AND received_at >= NOW() - INTERVAL '3 hours'
+         ORDER BY received_at DESC LIMIT 1`,
+        [cleanRef, numAmount, phoneLast4]
+      );
+
+      if (smsMatchRes.rows.length > 0) {
+        const matchedSms = smsMatchRes.rows[0];
+        console.log(`⚡ [Instant Auto-Approve Cashier] Matching SMS found (ID: ${matchedSms.id}, Tx: ${matchedSms.transaction_ref}) for Cashier Deposit ${deposit.id}`);
+        const approveResult = await executeDirectDepositApproval(deposit.id, matchedSms.transaction_ref || cleanRef, matchedSms.id);
+        if (approveResult.success) {
+          return res.json({
+            success: true,
+            message: `🎉 Deposit of ${numAmount} ETB instantly verified & credited via Telebirr SMS!`,
+            deposit: {
+              id: deposit.id,
+              amount: numAmount,
+              paymentMethod,
+              transactionRef: cleanRef,
+              status: 'approved',
+              instant: true,
+              createdAt: deposit.created_at
+            }
+          });
+        }
+      }
+    }
 
     // Notify Connected Admin/Cashier in real-time
     io.emit('admin_new_deposit', {
@@ -1265,6 +1300,37 @@ router.post('/deposit-via-agent', requireAuth, async (req: AuthenticatedRequest,
     );
 
     const newRequest = insertRes.rows[0];
+
+    // 3b. TWO-WAY AUTO-APPROVAL: Check if matching Telebirr SMS already arrived in telebirr_sms_logs
+    if (paymentMethod === 'Telebirr') {
+      const phoneLast4 = cleanPhone.length >= 4 ? cleanPhone.slice(-4) : '';
+      const smsMatchRes = await query(
+        `SELECT id, transaction_ref, amount FROM telebirr_sms_logs 
+         WHERE (transaction_ref ILIKE $1 OR (amount = $2 AND payer_phone LIKE '%' || $3))
+           AND status = 'unmatched'
+           AND received_at >= NOW() - INTERVAL '3 hours'
+         ORDER BY received_at DESC LIMIT 1`,
+        [cleanTxCode, numAmount, phoneLast4]
+      );
+
+      if (smsMatchRes.rows.length > 0) {
+        const matchedSms = smsMatchRes.rows[0];
+        console.log(`⚡ [Instant Auto-Approve] Matching SMS found (ID: ${matchedSms.id}, Tx: ${matchedSms.transaction_ref}) for Agent Deposit Request ${newRequest.id}`);
+        const approveResult = await executeAgentDepositApproval(newRequest.id, matchedSms.transaction_ref || cleanTxCode, matchedSms.id);
+        if (approveResult.success) {
+          return res.json({
+            success: true,
+            message: `🎉 Deposit of ${numAmount} ETB instantly verified & credited via Telebirr SMS!`,
+            requestId: newRequest.id,
+            agentCode: agent.agent_code,
+            agentDisplayName: `Sonic Agent #${agent.agent_code}`,
+            status: 'approved',
+            instant: true,
+            newBalance: approveResult.newBalance
+          });
+        }
+      }
+    }
 
     // 4. Broadcast real-time WebSocket event to the Agent
     io.emit(`agent_${agent.id}_new_request`, {
