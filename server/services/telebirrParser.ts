@@ -1,7 +1,8 @@
 /**
  * Telebirr SMS Parser Service
  * Accurately extracts Transaction ID, Amount, Sender Phone, Sender Name,
- * and Account Balance from official Ethio Telecom Telebirr SMS confirmations.
+ * and Account Balance from all Ethio Telecom Telebirr SMS confirmations
+ * (P2P transfers, Bank-to-Telebirr transfers, and Merchant payments).
  */
 
 export interface ParsedTelebirrSMS {
@@ -10,7 +11,7 @@ export interface ParsedTelebirrSMS {
   amount?: number;
   senderPhone?: string;     // e.g. '2519****8124' or '0912345678'
   senderLast4?: string;     // e.g. '8124' (critical for matching masked SMS)
-  senderName?: string;      // e.g. 'NATINAEL GETACHO'
+  senderName?: string;      // e.g. 'NATINAEL GETACHO' or 'Commercial Bank of Ethiopia'
   recipientName?: string;   // e.g. 'FEVEN'
   balanceAfter?: number;    // e.g. 221.63
   rawText: string;
@@ -40,18 +41,10 @@ export function parseTelebirrSMS(smsBody: string): ParsedTelebirrSMS {
 
   const text = smsBody.trim();
 
-  // Pattern 1: Official Ethio Telecom Telebirr Received Template (English)
-  // e.g.:
+  // Pattern 1: Official Ethio Telecom Telebirr P2P Received Template (English)
   // "Dear FEVEN
-  //  You have received ETB
-  //  130.00 from NATINAEL
-  //  GETACHO(2519****8124)
-  //  on 05/11/2026 19:41:47.
-  //  Your transaction number
-  //  is DK50QX28QA. Your
-  //  current E-Money
-  //  Account balance is ETB
-  //  221.63."
+  //  You have received ETB 130.00 from NATINAEL GETACHO(2519****8124)...
+  //  Your transaction number is DK50QX28QA."
   const officialEnRegex = /(?:Dear\s+([A-Za-z\s]+?)\s+)?You\s+have\s+received\s+(?:ETB\s*)?([\d,]+(?:\.\d{1,2})?)\s*(?:ETB)?\s+from\s+([A-Za-z\s]+?)\s*\(\s*([0-9*+]+)\s*\).*?transaction\s*(?:number|id|no)?\s*(?:is|:)[:\s]*([A-Za-z0-9]+)/is;
 
   const matchOfficial = text.match(officialEnRegex);
@@ -61,7 +54,6 @@ export function parseTelebirrSMS(smsBody: string): ParsedTelebirrSMS {
     const phone = matchOfficial[4].trim();
     const txRef = matchOfficial[5].trim().toUpperCase();
 
-    // Check for balance after
     const balMatch = text.match(/(?:balance\s*is\s*(?:ETB\s*)?)([\d,]+(?:\.\d{1,2})?)/i);
     const balAfter = balMatch ? parseFloat(balMatch[1].replace(/,/g, '')) : undefined;
 
@@ -80,8 +72,34 @@ export function parseTelebirrSMS(smsBody: string): ParsedTelebirrSMS {
     }
   }
 
-  // Pattern 2: Standard English Format with phone directly after 'from'
-  // e.g. "You have received 100.00 ETB from 0912345678 (Abebe Kebede)... Transaction ID: DA98KL78"
+  // Pattern 2: Bank-to-Telebirr Transfer Template
+  // "Dear FEVEN, You have received  ETB 2,000.00 by transaction number DK64RQO4IA on 2026-11-06 11:19:47 from Commercial Bank of Ethiopia..."
+  const bankTransferRegex = /(?:Dear\s+([A-Za-z\s]+?)[,\s]+)?You\s+have\s+received\s+(?:ETB\s*)?([\d,]+(?:\.\d{1,2})?)\s*(?:ETB)?\s+by\s+transaction\s*(?:number|id|no)?\s*([A-Za-z0-9]+).*?from\s+([A-Za-z\s]+?)(?:\s+to|\.|$)/is;
+
+  const matchBank = text.match(bankTransferRegex);
+  if (matchBank) {
+    const rawAmt = matchBank[2].replace(/,/g, '');
+    const amt = parseFloat(rawAmt);
+    const txRef = matchBank[3].trim().toUpperCase();
+    const sender = matchBank[4]?.trim();
+
+    const balMatch = text.match(/(?:balance\s*is\s*(?:ETB\s*)?)([\d,]+(?:\.\d{1,2})?)/i);
+    const balAfter = balMatch ? parseFloat(balMatch[1].replace(/,/g, '')) : undefined;
+
+    if (!isNaN(amt) && amt > 0 && txRef) {
+      return {
+        success: true,
+        recipientName: matchBank[1]?.trim() || undefined,
+        amount: amt,
+        senderName: sender || 'Bank Transfer',
+        transactionRef: txRef,
+        balanceAfter: balAfter,
+        rawText: text
+      };
+    }
+  }
+
+  // Pattern 3: Standard English Format with phone directly after 'from'
   const enRegex = /received\s+(?:ETB\s+)?([\d,]+(?:\.\d{1,2})?)\s*(?:ETB)?\s+from\s+([0-9*+]+)(?:\s*\((.*?)\))?.*?Transaction\s*(?:ID|No|Number)?\s*(?:is|:)[:\s]*([A-Za-z0-9]+)/is;
   const matchEn = text.match(enRegex);
   if (matchEn) {
@@ -101,9 +119,7 @@ export function parseTelebirrSMS(smsBody: string): ParsedTelebirrSMS {
     }
   }
 
-  // Pattern 3: Official Amharic Telebirr Format
-  // e.g. "ከ 0987654321 (Tigist Alemu) 250.50 ብር ተቀብለዋል። የግብይት መለያ: ET8899AA"
-  // or "ውድ ... 130.00 ብር ከ ናትናኤል (2519****8124) ተቀብለዋል። የግብይት መለያ ቁጥርዎ DK50QX28QA..."
+  // Pattern 4: Official Amharic Telebirr Format
   const amRegex = /(?:ከ\s*([0-9*+]+)(?:\s*\((.*?)\))?\s*([\d,]+(?:\.\d{1,2})?)\s*ብር|([\d,]+(?:\.\d{1,2})?)\s*ብር\s*ከ\s*([^\(]+?)\s*\(\s*([0-9*+]+)\s*\))\s*ተቀብለዋል።.*?የግብይት\s*መለያ\s*(?:ቁጥር(?:ዎ)?)?[:\s]+([A-Za-z0-9]+)/is;
   const matchAm = text.match(amRegex);
   if (matchAm) {
@@ -112,12 +128,10 @@ export function parseTelebirrSMS(smsBody: string): ParsedTelebirrSMS {
     let senderName: string | undefined;
 
     if (matchAm[1]) {
-      // "ከ PHONE (NAME) AMOUNT ብር ተቀብለዋል"
       phone = matchAm[1].trim();
       senderName = matchAm[2]?.trim();
       amt = parseFloat(matchAm[3].replace(/,/g, ''));
     } else {
-      // "AMOUNT ብር ከ NAME (PHONE) ተቀብለዋል"
       amt = parseFloat(matchAm[4].replace(/,/g, ''));
       senderName = matchAm[5]?.trim();
       phone = matchAm[6].trim();
@@ -138,7 +152,7 @@ export function parseTelebirrSMS(smsBody: string): ParsedTelebirrSMS {
     }
   }
 
-  // Pattern 4: Broad Resilient Fallback (Find TxID, Amount, and Phone separately)
+  // Pattern 5: Broad Resilient Fallback (Find TxID, Amount, and Phone separately)
   const txMatch = text.match(/(?:transaction\s*(?:number|id|no)?\s*(?:is|:)[:\s]*|የግብይት\s*መለያ(?:\s*ቁጥር)?[:\s]+)([A-Za-z0-9]{8,16})/i);
   const amtMatch = text.match(/(?:received|ተቀብለዋል).*?(?:ETB|ብር)?\s*([\d,]+(?:\.\d{1,2})?)\s*(?:ETB|ብር)?/is) ||
                    text.match(/([\d,]+(?:\.\d{1,2})?)\s*(?:ETB|ብር)/i);

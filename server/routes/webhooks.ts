@@ -24,11 +24,13 @@ async function ensureTelebirrLogsTable() {
         balance_after NUMERIC(10, 2),
         status VARCHAR(50) DEFAULT 'unmatched',
         matched_user_id UUID REFERENCES users(id),
-        matched_deposit_id UUID REFERENCES deposit_requests(id),
+        matched_deposit_id UUID,
+        deposit_type VARCHAR(50),
         received_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         processed_at TIMESTAMP WITH TIME ZONE
       );
 
+      ALTER TABLE telebirr_sms_logs ADD COLUMN IF NOT EXISTS deposit_type VARCHAR(50);
       CREATE INDEX IF NOT EXISTS idx_telebirr_sms_tx_ref ON telebirr_sms_logs(transaction_ref);
       CREATE INDEX IF NOT EXISTS idx_telebirr_sms_phone ON telebirr_sms_logs(payer_phone);
     `);
@@ -91,7 +93,7 @@ router.post('/telebirr-sms', async (req: Request, res: Response) => {
 
     const { transactionRef, amount, senderPhone, senderLast4, senderName, recipientName, balanceAfter } = parsed;
 
-    // 4. Atomic Database Execution: Idempotency, Player Matching, and Wallet Credit
+    // 4. Atomic Database Execution: Idempotency, Agent/Direct Matching, and Wallet Credit
     const result = await withTransaction(async (client) => {
       // 4a. Check if this transaction has already been credited (Anti-Replay Attack)
       const existingTx = await client.query(
@@ -108,11 +110,176 @@ router.post('/telebirr-sms', async (req: Request, res: Response) => {
         };
       }
 
-      // 4b. Find matching player
+      // 4b. SEARCH 1: Check Agent Portal Deposits (`agent_deposit_requests`)
+      // Match by exact transaction_code OR (matching amount + last 4 digits of phone in last 60 mins)
+      let agentDepRes = await client.query(
+        `SELECT * FROM agent_deposit_requests 
+         WHERE status = 'pending' AND transaction_code ILIKE $1 
+         ORDER BY created_at DESC LIMIT 1 FOR UPDATE`,
+        [transactionRef]
+      );
+
+      if (agentDepRes.rows.length === 0 && senderLast4) {
+        agentDepRes = await client.query(
+          `SELECT * FROM agent_deposit_requests 
+           WHERE status = 'pending' 
+             AND amount = $1 
+             AND player_phone LIKE '%' || $2
+             AND created_at >= NOW() - INTERVAL '60 minutes'
+           ORDER BY created_at DESC LIMIT 1 FOR UPDATE`,
+          [amount, senderLast4]
+        );
+      }
+
+      // If matched with an Agent Deposit Request:
+      if (agentDepRes.rows.length > 0) {
+        const depReq = agentDepRes.rows[0];
+        const agentId = depReq.agent_id;
+        const playerId = depReq.player_id;
+        const depositAmount = parseFloat(depReq.amount);
+
+        // Fetch Agent Profile
+        const agentProfileRes = await client.query(
+          `SELECT id, agent_code, wallet_balance, commission_rate FROM agent_profiles WHERE id = $1 FOR UPDATE`,
+          [agentId]
+        );
+        const agentProfile = agentProfileRes.rows[0];
+        const agentBalance = parseFloat(agentProfile?.wallet_balance || '0');
+
+        // Check Agent Float Solvency
+        if (agentBalance < depositAmount) {
+          console.warn(`⚠️ [Agent Deposit Auto-Approve] Agent ${agentId} low float balance: ${agentBalance} < ${depositAmount}`);
+        }
+
+        const commissionRate = parseFloat(agentProfile?.commission_rate || '5.0');
+        const commissionEarned = depositAmount * (commissionRate / 100);
+        const agentBalAfter = Math.max(0, agentBalance - depositAmount);
+
+        // Fetch Player Wallet
+        let playerWalletRes = await client.query(
+          `SELECT id, balance, user_id FROM wallets WHERE user_id = $1 FOR UPDATE`,
+          [playerId]
+        );
+
+        if (playerWalletRes.rows.length === 0) {
+          await client.query(
+            `INSERT INTO wallets (user_id, balance, bonus, currency, updated_at)
+             VALUES ($1, 0.00, 0.00, 'ETB', NOW())
+             ON CONFLICT (user_id) DO NOTHING`,
+            [playerId]
+          );
+          playerWalletRes = await client.query(
+            `SELECT id, balance, user_id FROM wallets WHERE user_id = $1 FOR UPDATE`,
+            [playerId]
+          );
+        }
+
+        const playerWallet = playerWalletRes.rows[0];
+        const playerOldBalance = parseFloat(playerWallet.balance || '0');
+        const playerBalAfter = playerOldBalance + depositAmount;
+        const coinsEarned = Math.round(depositAmount * 1.5);
+
+        // Update Agent Profile (Deduct float, add commission)
+        if (agentProfile) {
+          await client.query(
+            `UPDATE agent_profiles 
+             SET wallet_balance = $1, 
+                 commission_balance = COALESCE(commission_balance, 0.00) + $2, 
+                 updated_at = NOW() 
+             WHERE id = $3`,
+            [agentBalAfter, commissionEarned, agentId]
+          );
+        }
+
+        // Credit Player Balance
+        await client.query(
+          `UPDATE wallets SET balance = $1, updated_at = NOW() WHERE id = $2`,
+          [playerBalAfter, playerWallet.id]
+        );
+
+        // Award Coins
+        try {
+          await coinService.awardCoinsForDeposit(playerId, depositAmount, transactionRef, client);
+        } catch (cErr) {
+          console.warn('⚠️ Coin award notice:', cErr);
+        }
+
+        // Mark Player as has_deposited & link to agent
+        await client.query(
+          `UPDATE users SET has_deposited = true, agent_id = COALESCE(agent_id, $1) WHERE id = $2`,
+          [agentId, playerId]
+        );
+
+        // Audit Records
+        if (agentProfile) {
+          await client.query(
+            `INSERT INTO agent_commissions 
+              (agent_id, source_type, source_id, amount, commission_rate, commission_earned)
+             VALUES ($1, 'deposit', $2, $3, $4, $5)`,
+            [agentId, depReq.id, depositAmount, commissionRate, commissionEarned]
+          );
+
+          await client.query(
+            `INSERT INTO agent_player_deposits 
+              (agent_id, player_user_id, amount, agent_balance_after, player_balance_after, payment_method, reference_code)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [agentId, playerId, depositAmount, agentBalAfter, playerBalAfter, depReq.payment_method, transactionRef]
+          );
+        }
+
+        await client.query(
+          `INSERT INTO wallet_transactions 
+            (user_id, type, amount, balance_after, reference_code, status, payment_method, description)
+           VALUES ($1, 'deposit', $2, $3, $4, 'completed', $5, $6)`,
+          [
+            playerId,
+            depositAmount,
+            playerBalAfter,
+            transactionRef,
+            depReq.payment_method,
+            `Automated Deposit via Agent #${agentProfile?.agent_code || agentId} (${transactionRef})`
+          ]
+        );
+
+        // Update agent_deposit_requests to 'approved'
+        await client.query(
+          `UPDATE agent_deposit_requests
+           SET status = 'approved',
+               resolved_at = NOW(),
+               agent_balance_before = $1,
+               agent_balance_after = $2,
+               player_balance_before = $3,
+               player_balance_after = $4
+           WHERE id = $5`,
+          [agentBalance, agentBalAfter, playerOldBalance, playerBalAfter, depReq.id]
+        );
+
+        // Record in telebirr_sms_logs
+        await client.query(
+          `INSERT INTO telebirr_sms_logs (sender, message_body, transaction_ref, amount, payer_phone, payer_name, recipient_name, balance_after, status, matched_user_id, matched_deposit_id, deposit_type, processed_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'credited', $9, $10, 'agent_deposit', NOW())
+           ON CONFLICT (transaction_ref) DO UPDATE 
+           SET status = 'credited', matched_user_id = $9, matched_deposit_id = $10, deposit_type = 'agent_deposit', processed_at = NOW()`,
+          [sender, messageBody, transactionRef, depositAmount, senderPhone || null, senderName || null, recipientName || null, balanceAfter || null, playerId, depReq.id]
+        );
+
+        return {
+          status: 'credited',
+          type: 'agent_deposit',
+          agentId,
+          userId: playerId,
+          depositId: depReq.id,
+          amount: depositAmount,
+          prevBal: playerOldBalance,
+          newBal: playerBalAfter,
+          txRef: transactionRef
+        };
+      }
+
+      // 4c. SEARCH 2: Check Direct Cashier Deposits (`deposit_requests`)
       let matchedUserId: string | null = null;
       let matchedDepositId: string | null = null;
 
-      // Match Option 1: Search pending deposit_requests by exact transaction_ref
       const depByRef = await client.query(
         `SELECT * FROM deposit_requests 
          WHERE status = 'pending' AND transaction_ref ILIKE $1 
@@ -125,7 +292,6 @@ router.post('/telebirr-sms', async (req: Request, res: Response) => {
         matchedDepositId = depByRef.rows[0].id;
       }
 
-      // Match Option 2: Search pending deposit_requests by matching amount + last 4 phone digits (last 60 mins)
       if (!matchedUserId && senderLast4) {
         const depByPhone = await client.query(
           `SELECT * FROM deposit_requests 
@@ -143,7 +309,7 @@ router.post('/telebirr-sms', async (req: Request, res: Response) => {
         }
       }
 
-      // Match Option 3: Fallback match with registered user phone (last 4 digits match)
+      // Fallback search in users table
       if (!matchedUserId && senderLast4) {
         const userByPhone = await client.query(
           `SELECT id FROM users 
@@ -157,7 +323,6 @@ router.post('/telebirr-sms', async (req: Request, res: Response) => {
         }
       }
 
-      // If no player match was found, record as 'unmatched' for 1-click Admin resolution
       if (!matchedUserId) {
         await client.query(
           `INSERT INTO telebirr_sms_logs (sender, message_body, transaction_ref, amount, payer_phone, payer_name, recipient_name, balance_after, status)
@@ -173,21 +338,17 @@ router.post('/telebirr-sms', async (req: Request, res: Response) => {
           amount, 
           phone: senderPhone,
           senderName,
-          message: 'SMS received and logged, but no matching player request found.'
+          message: 'SMS logged, but no matching agent or direct deposit request found.'
         };
       }
 
-      // 4c. Lock and credit player wallet
+      // Credit Player for Direct Cashier Deposit
       const walletRes = await client.query(
         `SELECT balance FROM wallets WHERE user_id = $1 FOR UPDATE`,
         [matchedUserId]
       );
 
-      if (walletRes.rows.length === 0) {
-        throw new Error(`Wallet not found for matched user ${matchedUserId}`);
-      }
-
-      const prevBal = parseFloat(walletRes.rows[0].balance);
+      const prevBal = parseFloat(walletRes.rows[0]?.balance || '0');
       const newBal = prevBal + amount;
 
       await client.query(
@@ -195,7 +356,6 @@ router.post('/telebirr-sms', async (req: Request, res: Response) => {
         [newBal, matchedUserId]
       );
 
-      // 4d. Update or Insert deposit_requests
       if (matchedDepositId) {
         await client.query(
           `UPDATE deposit_requests 
@@ -213,14 +373,12 @@ router.post('/telebirr-sms', async (req: Request, res: Response) => {
         matchedDepositId = newDep.rows[0].id;
       }
 
-      // 4e. Record in ledger
       await client.query(
         `INSERT INTO wallet_transactions (user_id, type, amount, balance_after, reference_code, status, payment_method, description)
          VALUES ($1, 'deposit', $2, $3, $4, 'completed', 'Telebirr', $5)`,
         [matchedUserId, amount, newBal, transactionRef, `Automated Telebirr Deposit (${transactionRef})`]
       );
 
-      // 4f. Mark user has_deposited & award coins
       await client.query(`UPDATE users SET has_deposited = TRUE WHERE id = $1`, [matchedUserId]);
       try {
         await coinService.awardCoinsForDeposit(matchedUserId, amount, transactionRef, client);
@@ -228,17 +386,17 @@ router.post('/telebirr-sms', async (req: Request, res: Response) => {
         console.warn('⚠️ Coin reward notice:', cErr);
       }
 
-      // 4g. Log in telebirr_sms_logs as 'credited'
       await client.query(
-        `INSERT INTO telebirr_sms_logs (sender, message_body, transaction_ref, amount, payer_phone, payer_name, recipient_name, balance_after, status, matched_user_id, matched_deposit_id, processed_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'credited', $9, $10, NOW())
+        `INSERT INTO telebirr_sms_logs (sender, message_body, transaction_ref, amount, payer_phone, payer_name, recipient_name, balance_after, status, matched_user_id, matched_deposit_id, deposit_type, processed_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'credited', $9, $10, 'direct_deposit', NOW())
          ON CONFLICT (transaction_ref) DO UPDATE 
-         SET status = 'credited', matched_user_id = $9, matched_deposit_id = $10, processed_at = NOW()`,
+         SET status = 'credited', matched_user_id = $9, matched_deposit_id = $10, deposit_type = 'direct_deposit', processed_at = NOW()`,
         [sender, messageBody, transactionRef, amount, senderPhone || null, senderName || null, recipientName || null, balanceAfter || null, matchedUserId, matchedDepositId]
       );
 
       return {
         status: 'credited',
+        type: 'direct_deposit',
         userId: matchedUserId,
         depositId: matchedDepositId,
         amount,
@@ -248,7 +406,7 @@ router.post('/telebirr-sms', async (req: Request, res: Response) => {
       };
     });
 
-    // 5. Fire Real-Time WebSocket Events to Player and Admin
+    // 5. Fire Real-Time WebSocket Events
     if (result.status === 'credited') {
       io.emit('player_wallet_update', {
         userId: result.userId,
@@ -264,7 +422,16 @@ router.post('/telebirr-sms', async (req: Request, res: Response) => {
         txRef: result.txRef
       });
 
-      console.log(`✅ [Telebirr Webhook] Successfully credited ${result.amount} ETB to user ${result.userId} (Tx: ${result.txRef})`);
+      if (result.type === 'agent_deposit') {
+        io.emit('agent_request_updated', {
+          requestId: result.depositId,
+          agentId: (result as any).agentId,
+          status: 'approved',
+          approvedBy: 'SMS_AUTOMATION'
+        });
+      }
+
+      console.log(`✅ [Telebirr Webhook] Successfully auto-approved ${result.type} of ${result.amount} ETB for user ${result.userId} (Tx: ${result.txRef})`);
     }
 
     return res.json({ success: true, result });
