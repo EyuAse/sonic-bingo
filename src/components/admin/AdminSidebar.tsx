@@ -5,7 +5,6 @@ import { useApp } from '../../context/AppContext.tsx';
 export type AdminTab =
   | 'overview'
   | 'cashier'
-  | 'cashflow'
   | 'users'
   | 'bots'
   | 'bot-engine'
@@ -29,7 +28,6 @@ interface AdminSidebarProps {
 const IC = {
   dash: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
   p2p: 'M4 8h14l-3-3M20 16H6l3 3',
-  flow: 'M4 20V12M10 20V4M16 20V9M21 20H3',
   pl: 'M12 4a4 4 0 100 8 4 4 0 000-8zM4 20c0-4 4-6 8-6s8 2 8 6',
   bot: 'M6 8h12v10H6zM12 4v4M9 13h.01M15 13h.01',
   eng: 'M12 8a4 4 0 100 8 4 4 0 000-8zM12 2v3M12 19v3M2 12h3M19 12h3',
@@ -86,7 +84,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       n: pendingCount > 0 ? pendingCount : undefined,
       urgentBadge: pendingCount > 0
     },
-    { id: 'cashflow', label: 'Cash Flow & Revenue', path: IC.flow },
     { id: 'users', label: 'Player Accounts', path: IC.pl, n: totalUsersCount || users.length || 7 },
     { id: 'bots', label: 'Bot Player Accounts', path: IC.bot, n: 200 },
     { id: 'bot-engine', label: 'Bot Engine', path: IC.eng, s: '0-50' },

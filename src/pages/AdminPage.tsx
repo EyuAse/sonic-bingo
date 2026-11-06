@@ -5,7 +5,6 @@ import { AdminPINModal } from '../components/admin/AdminPINModal.tsx';
 import { AdminSidebar, AdminTab } from '../components/admin/AdminSidebar.tsx';
 import { DashboardOverview } from '../components/admin/DashboardOverview.tsx';
 import { CashierDesk } from '../components/admin/CashierDesk.tsx';
-import { CashFlowAnalytics } from '../components/admin/CashFlowAnalytics.tsx';
 import { PlayerAccountsDesk } from '../components/admin/PlayerAccountsDesk.tsx';
 import { BotsSimulatorDesk } from '../components/admin/BotsSimulatorDesk.tsx';
 import { BotAccountsDesk } from '../components/admin/BotAccountsDesk.tsx';
@@ -23,7 +22,6 @@ import '../styles/admin.css';
 const TAB_TITLES: Record<AdminTab, string> = {
   overview: '📊 Dashboard',
   cashier: '🛡️ P2P Cashier',
-  cashflow: '⚖️ Cash Flow',
   users: '👥 Players',
   bots: '🤖 200 Bots',
   'bot-engine': '🎚️ Bot Engine (0-50)',
@@ -131,7 +129,6 @@ export const AdminPage: React.FC = () => {
                 <h2 className="viewport-page-main-heading">
                   <i className="fa-solid fa-bolt-lightning header-gold-bolt"></i>
                   {activeTab === 'cashier' && 'P2P Cashier Surveillance & Network Audit Ledger'}
-                  {activeTab === 'cashflow' && 'Cash Flow & Revenue Analytics'}
                   {activeTab === 'bots' && '200 Bot Player Accounts & Wallets'}
                   {activeTab === 'bot-engine' && 'Room 10 Dynamic Bot Engine (0-50 Control Desk)'}
                   {activeTab === 'cartelas' && '600 Serial Cartela Cards Library'}
@@ -140,7 +137,6 @@ export const AdminPage: React.FC = () => {
                 </h2>
                 <p className="viewport-page-amharic-sub">
                   {activeTab === 'cashier' && 'የወኪሎች P2P ተቀማጭ እና ክፍያ ክትትል፣ የሞባይል ገንዘብ ኦዲት መዝገብ እና የፍሎት ቁጥጥር'}
-                  {activeTab === 'cashflow' && 'የቀን ተቀማጭ፣ የክፍያ ወጪ እና የተጣራ የሶኒክ ቢንጎ ገቢ ዝርዝር'}
                   {activeTab === 'bots' && 'እውነተኛ የውሂብ ጎታ ያላቸው 200 የቦቶች ዋሌቶች፣ ራስ-ሰር ተወራራጅነት እና የቀጥታ አሸናፊነት መዝገብ'}
                   {activeTab === 'bot-engine' && 'የክፍል 10 ተለዋዋጭ ቦቶች ቁጥጥር ማዕከል - ከ 0 እስከ 50 ቦቶች በቀጥታ ያስተካክሉ'}
                   {activeTab === 'cartelas' && '600 የቢንጎ ካርቴላ ካርዶች ቤተ-መጽሐፍት'}
@@ -204,7 +200,6 @@ export const AdminPage: React.FC = () => {
               { id: 'overview', label: '📊 Dashboard' },
               { id: 'bot-engine', label: '🎚️ Bot Engine (0-50)', highlight: true },
               { id: 'cashier', label: '🛡️ P2P Cashier' },
-              { id: 'cashflow', label: '⚖️ Cash Flow' },
               { id: 'users', label: '👥 Players' },
               { id: 'bots', label: '🤖 200 Bots' },
               { id: 'telegram-bot', label: '📢 Telegram Bot' },
@@ -265,10 +260,7 @@ export const AdminPage: React.FC = () => {
           {/* TAB 2: CASHIER APPROVALS DESK */}
           {activeTab === 'cashier' && <CashierDesk />}
 
-          {/* TAB 3: CASH FLOW & REVENUE ANALYTICS */}
-          {activeTab === 'cashflow' && <CashFlowAnalytics />}
-
-          {/* TAB 4: PLAYER ACCOUNTS & WALLETS DIRECTORY */}
+          {/* TAB 3: PLAYER ACCOUNTS & WALLETS DIRECTORY */}
           {activeTab === 'users' && <PlayerAccountsDesk />}
 
           {/* TAB 5: 200 BOT PLAYER ACCOUNTS & WALLETS */}
