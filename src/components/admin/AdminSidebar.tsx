@@ -4,6 +4,7 @@ import { useApp } from '../../context/AppContext.tsx';
 
 export type AdminTab =
   | 'overview'
+  | 'cashflow'
   | 'cashier'
   | 'users'
   | 'bots'
@@ -27,6 +28,7 @@ interface AdminSidebarProps {
 // Exact Minimalist SVG Stroke Icons from Enqu Game Admin (1).html
 const IC = {
   dash: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
+  cf: 'M3 3v18h18M7 16l4-4 4 4 6-6M17 6h4v4',
   p2p: 'M4 8h14l-3-3M20 16H6l3 3',
   pl: 'M12 4a4 4 0 100 8 4 4 0 000-8zM4 20c0-4 4-6 8-6s8 2 8 6',
   bot: 'M6 8h12v10H6zM12 4v4M9 13h.01M15 13h.01',
@@ -77,6 +79,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     urgentBadge?: boolean;
   }> = [
     { id: 'overview', label: 'Dashboard', path: IC.dash },
+    { id: 'cashflow', label: 'Cashflow & Treasury', path: IC.cf, s: 'Live' },
     {
       id: 'cashier',
       label: 'P2P Cashier',

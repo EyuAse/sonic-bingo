@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext.tsx';
 import { AdminPINModal } from '../components/admin/AdminPINModal.tsx';
 import { AdminSidebar, AdminTab } from '../components/admin/AdminSidebar.tsx';
 import { DashboardOverview } from '../components/admin/DashboardOverview.tsx';
+import { CashflowDesk } from '../components/admin/CashflowDesk.tsx';
 import { CashierDesk } from '../components/admin/CashierDesk.tsx';
 import { PlayerAccountsDesk } from '../components/admin/PlayerAccountsDesk.tsx';
 import { BotsSimulatorDesk } from '../components/admin/BotsSimulatorDesk.tsx';
@@ -21,6 +22,7 @@ import '../styles/admin.css';
 
 const TAB_TITLES: Record<AdminTab, string> = {
   overview: '📊 Dashboard',
+  cashflow: '📈 Cashflow & Treasury',
   cashier: '🛡️ P2P Cashier',
   users: '👥 Players',
   bots: '🤖 200 Bots',
@@ -44,6 +46,7 @@ export const AdminPage: React.FC = () => {
   // Tabs rendered using full-bleed Enqu design system (no duplicate topbar or quick ribbon)
   const isEnquTab =
     activeTab === 'overview' ||
+    activeTab === 'cashflow' ||
     activeTab === 'telegram-bot' ||
     activeTab === 'agents' ||
     activeTab === 'users' ||
@@ -256,6 +259,9 @@ export const AdminPage: React.FC = () => {
         <main className={`admin-tab-content ${isEnquTab ? 'enqu-overview-mode' : ''}`}>
           {/* TAB 1: OVERVIEW & ANALYTICS */}
           {activeTab === 'overview' && <DashboardOverview onNavigateTab={setActiveTab} />}
+
+          {/* TAB 1b: CASHFLOW & TREASURY ANALYTICS */}
+          {activeTab === 'cashflow' && <CashflowDesk />}
 
           {/* TAB 2: CASHIER APPROVALS DESK */}
           {activeTab === 'cashier' && <CashierDesk />}
