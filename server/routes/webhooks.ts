@@ -77,6 +77,16 @@ router.post('/telebirr-sms', async (req: Request, res: Response) => {
     // 3. Parse Telebirr Details using the Regex Engine
     const parsed = parseTelebirrSMS(messageBody);
 
+    // 🛡️ SECURITY GUARD: Strictly ignore Outgoing Transfers
+    if (parsed.isOutgoing) {
+      console.log(`ℹ️ [Telebirr Webhook] Ignored outgoing transfer SMS from ${sender}`);
+      return res.json({ 
+        success: true, 
+        status: 'ignored', 
+        reason: 'Outgoing transfer is not eligible for deposit credit.' 
+      });
+    }
+
     if (!parsed.success || !parsed.transactionRef || !parsed.amount) {
       // Store unparsed / unrelated SMS for admin inspection without failing
       await query(
@@ -121,62 +131,110 @@ router.post('/telebirr-sms', async (req: Request, res: Response) => {
     const smsLogId = logRes.rows[0]?.id;
 
     // 6. SEARCH 1: Check Agent Portal Deposits (`agent_deposit_requests`)
-    // Match by exact transaction_code OR (matching amount + last 4 digits of phone within 3 hours)
+    // Match by exact transaction_code within 60 minutes
     let agentDepRes = await query(
-      `SELECT id FROM agent_deposit_requests 
+      `SELECT id, amount, player_phone FROM agent_deposit_requests 
        WHERE status = 'pending' AND transaction_code ILIKE $1 
+         AND created_at >= NOW() - INTERVAL '60 minutes'
        ORDER BY created_at DESC LIMIT 1`,
       [transactionRef]
     );
 
     if (agentDepRes.rows.length === 0 && senderLast4) {
       agentDepRes = await query(
-        `SELECT id FROM agent_deposit_requests 
+        `SELECT id, amount, player_phone FROM agent_deposit_requests 
          WHERE status = 'pending' 
            AND amount = $1 
            AND player_phone LIKE '%' || $2
-           AND created_at >= NOW() - INTERVAL '3 hours'
+           AND created_at >= NOW() - INTERVAL '60 minutes'
          ORDER BY created_at DESC LIMIT 1`,
         [amount, senderLast4]
       );
     }
 
     if (agentDepRes.rows.length > 0) {
-      const matchId = agentDepRes.rows[0].id;
-      console.log(`🎯 [Telebirr Webhook] Matched pending Agent Deposit Request: ${matchId}`);
-      const approveResult = await executeAgentDepositApproval(matchId, transactionRef, smsLogId);
+      const matchRow = agentDepRes.rows[0];
+      const claimedAmt = parseFloat(matchRow.amount);
+
+      // 🛡️ SECURITY PILLAR 1: Check Amount Mismatch
+      if (Math.abs(claimedAmt - amount) > 0.01) {
+        const mismatchReason = `Amount mismatch: User claimed ${claimedAmt.toFixed(2)} ETB, but Telebirr verified ${amount.toFixed(2)} ETB. Auto-rejected to prevent fraud.`;
+        console.warn(`🚨 [SECURITY ALERT Webhook] ${mismatchReason} (Req: ${matchRow.id}, Tx: ${transactionRef})`);
+
+        await query(
+          `UPDATE agent_deposit_requests 
+           SET status = 'rejected', rejection_reason = $1, resolved_at = NOW() 
+           WHERE id = $2`,
+          [mismatchReason, matchRow.id]
+        );
+
+        return res.json({
+          success: true,
+          status: 'rejected',
+          reason: mismatchReason,
+          claimedAmount: claimedAmt,
+          verifiedAmount: amount
+        });
+      }
+
+      console.log(`🎯 [Telebirr Webhook] Matched pending Agent Deposit Request: ${matchRow.id} (Verified: ${amount} ETB)`);
+      const approveResult = await executeAgentDepositApproval(matchRow.id, transactionRef, smsLogId);
       return res.json({ success: true, result: approveResult });
     }
 
     // 7. SEARCH 2: Check Direct Central Cashier Deposits (`deposit_requests`)
     let dirDepRes = await query(
-      `SELECT id FROM deposit_requests 
+      `SELECT id, amount, player_phone FROM deposit_requests 
        WHERE status = 'pending' AND transaction_ref ILIKE $1 
+         AND created_at >= NOW() - INTERVAL '60 minutes'
        ORDER BY created_at DESC LIMIT 1`,
       [transactionRef]
     );
 
     if (dirDepRes.rows.length === 0 && senderLast4) {
       dirDepRes = await query(
-        `SELECT id FROM deposit_requests 
+        `SELECT id, amount, player_phone FROM deposit_requests 
          WHERE status = 'pending' 
            AND amount = $1 
            AND player_phone LIKE '%' || $2
-           AND created_at >= NOW() - INTERVAL '3 hours'
+           AND created_at >= NOW() - INTERVAL '60 minutes'
          ORDER BY created_at DESC LIMIT 1`,
         [amount, senderLast4]
       );
     }
 
     if (dirDepRes.rows.length > 0) {
-      const matchId = dirDepRes.rows[0].id;
-      console.log(`🎯 [Telebirr Webhook] Matched pending Central Cashier Deposit Request: ${matchId}`);
-      const approveResult = await executeDirectDepositApproval(matchId, transactionRef, smsLogId);
+      const matchRow = dirDepRes.rows[0];
+      const claimedAmt = parseFloat(matchRow.amount);
+
+      // 🛡️ SECURITY PILLAR 1: Check Amount Mismatch
+      if (Math.abs(claimedAmt - amount) > 0.01) {
+        const mismatchReason = `Amount mismatch: User claimed ${claimedAmt.toFixed(2)} ETB, but Telebirr verified ${amount.toFixed(2)} ETB. Auto-rejected.`;
+        console.warn(`🚨 [SECURITY ALERT Webhook Direct] ${mismatchReason} (Req: ${matchRow.id}, Tx: ${transactionRef})`);
+
+        await query(
+          `UPDATE deposit_requests 
+           SET status = 'rejected', admin_notes = $1, reviewed_by = 'TELEBIRR_SMS_AUTO', reviewed_at = NOW() 
+           WHERE id = $2`,
+          [mismatchReason, matchRow.id]
+        );
+
+        return res.json({
+          success: true,
+          status: 'rejected',
+          reason: mismatchReason,
+          claimedAmount: claimedAmt,
+          verifiedAmount: amount
+        });
+      }
+
+      console.log(`🎯 [Telebirr Webhook] Matched pending Central Cashier Deposit Request: ${matchRow.id} (Verified: ${amount} ETB)`);
+      const approveResult = await executeDirectDepositApproval(matchRow.id, transactionRef, smsLogId);
       return res.json({ success: true, result: approveResult });
     }
 
     // 8. No pending request matched yet -> Remains logged as 'unmatched'
-    // When the player opens the app and submits within the next 3 hours, wallet.ts will match it instantly!
+    // When the player opens the app and submits within the next 60 minutes, wallet.ts will match it instantly!
     console.log(`⏳ [Telebirr Webhook] SMS logged (ID: ${smsLogId}, Tx: ${transactionRef}, ${amount} ETB). Waiting for player request submission.`);
     return res.json({
       success: true,

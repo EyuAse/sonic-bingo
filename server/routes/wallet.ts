@@ -83,29 +83,69 @@ router.post('/deposit', requireAuth, async (req: AuthenticatedRequest, res) => {
 
     const deposit = insertRes.rows[0];
 
-    // Check if matching Telebirr SMS already arrived in telebirr_sms_logs
+    // 🛡️ SECURITY HARDENING: Check if matching Telebirr SMS already arrived in telebirr_sms_logs
     if (paymentMethod === 'Telebirr') {
       const phoneLast4 = playerPhone.trim().length >= 4 ? playerPhone.trim().slice(-4) : '';
       const smsMatchRes = await query(
-        `SELECT id, transaction_ref, amount FROM telebirr_sms_logs 
-         WHERE (transaction_ref ILIKE $1 OR (amount = $2 AND payer_phone LIKE '%' || $3))
+        `SELECT id, transaction_ref, amount, payer_phone FROM telebirr_sms_logs 
+         WHERE transaction_ref ILIKE $1
            AND status = 'unmatched'
-           AND received_at >= NOW() - INTERVAL '3 hours'
+           AND received_at >= NOW() - INTERVAL '60 minutes'
          ORDER BY received_at DESC LIMIT 1`,
-        [cleanRef, numAmount, phoneLast4]
+        [cleanRef]
       );
 
       if (smsMatchRes.rows.length > 0) {
         const matchedSms = smsMatchRes.rows[0];
-        console.log(`⚡ [Instant Auto-Approve Cashier] Matching SMS found (ID: ${matchedSms.id}, Tx: ${matchedSms.transaction_ref}) for Cashier Deposit ${deposit.id}`);
+        const verifiedAmount = parseFloat(matchedSms.amount);
+
+        // 🛡️ SECURITY PILLAR 1: Amount Reconciliation Firewall
+        if (Math.abs(numAmount - verifiedAmount) > 0.01) {
+          console.warn(`🚨 [SECURITY AMOUNT MISMATCH Cashier] User claimed ${numAmount} ETB, but Telebirr verified ${verifiedAmount} ETB (Tx: ${cleanRef})`);
+          await query(
+            `UPDATE deposit_requests 
+             SET status = 'rejected', admin_notes = $1, reviewed_by = 'TELEBIRR_SMS_AUTO', reviewed_at = NOW() 
+             WHERE id = $2`,
+            [`Amount mismatch: You requested ${numAmount.toFixed(2)} ETB, but Telebirr received ${verifiedAmount.toFixed(2)} ETB. Auto-rejected.`, deposit.id]
+          );
+
+          return res.status(400).json({
+            success: false,
+            error: `Amount mismatch: You entered ${numAmount.toFixed(2)} ETB, but Telebirr received ${verifiedAmount.toFixed(2)} ETB for transaction ${cleanRef}. Please enter the exact amount transferred.`
+          });
+        }
+
+        // 🛡️ SECURITY PILLAR 3: Phone Number Last-4 Bi-Directional Match
+        const smsPayerPhone = matchedSms.payer_phone || '';
+        const smsLast4Match = smsPayerPhone.match(/(\d{4})\)?$/);
+        const smsLast4 = smsLast4Match ? smsLast4Match[1] : undefined;
+
+        if (smsLast4 && phoneLast4 && smsLast4 !== phoneLast4) {
+          console.warn(`⚠️ [SECURITY PHONE MISMATCH Cashier] Tx ${cleanRef} sender is ***${smsLast4}, player phone is ***${phoneLast4}`);
+          return res.json({
+            success: true,
+            message: 'Deposit submitted. Cashier will verify shortly.',
+            deposit: {
+              id: deposit.id,
+              amount: numAmount,
+              paymentMethod,
+              transactionRef: cleanRef,
+              status: 'pending',
+              note: 'Phone mismatch detected. Awaiting cashier review.',
+              createdAt: deposit.created_at
+            }
+          });
+        }
+
+        console.log(`⚡ [Instant Auto-Approve Cashier] Verified match (ID: ${matchedSms.id}, Tx: ${matchedSms.transaction_ref}, ${verifiedAmount} ETB) for Cashier Deposit ${deposit.id}`);
         const approveResult = await executeDirectDepositApproval(deposit.id, matchedSms.transaction_ref || cleanRef, matchedSms.id);
         if (approveResult.success) {
           return res.json({
             success: true,
-            message: `🎉 Deposit of ${numAmount} ETB instantly verified & credited via Telebirr SMS!`,
+            message: `🎉 Deposit of ${verifiedAmount} ETB instantly verified & credited via Telebirr SMS!`,
             deposit: {
               id: deposit.id,
-              amount: numAmount,
+              amount: verifiedAmount,
               paymentMethod,
               transactionRef: cleanRef,
               status: 'approved',
@@ -1305,28 +1345,68 @@ router.post('/deposit-via-agent', requireAuth, async (req: AuthenticatedRequest,
     if (paymentMethod === 'Telebirr') {
       const phoneLast4 = cleanPhone.length >= 4 ? cleanPhone.slice(-4) : '';
       const smsMatchRes = await query(
-        `SELECT id, transaction_ref, amount FROM telebirr_sms_logs 
-         WHERE (transaction_ref ILIKE $1 OR (amount = $2 AND payer_phone LIKE '%' || $3))
+        `SELECT id, transaction_ref, amount, payer_phone FROM telebirr_sms_logs 
+         WHERE transaction_ref ILIKE $1
            AND status = 'unmatched'
-           AND received_at >= NOW() - INTERVAL '3 hours'
+           AND received_at >= NOW() - INTERVAL '60 minutes'
          ORDER BY received_at DESC LIMIT 1`,
-        [cleanTxCode, numAmount, phoneLast4]
+        [cleanTxCode]
       );
 
       if (smsMatchRes.rows.length > 0) {
         const matchedSms = smsMatchRes.rows[0];
-        console.log(`⚡ [Instant Auto-Approve] Matching SMS found (ID: ${matchedSms.id}, Tx: ${matchedSms.transaction_ref}) for Agent Deposit Request ${newRequest.id}`);
+        const verifiedAmount = parseFloat(matchedSms.amount);
+
+        // 🛡️ SECURITY PILLAR 1: Amount Reconciliation Firewall
+        // If user claimed 100 ETB, but Telebirr received 53 ETB: REJECT immediately!
+        if (Math.abs(numAmount - verifiedAmount) > 0.01) {
+          console.warn(`🚨 [SECURITY AMOUNT MISMATCH] User claimed ${numAmount} ETB, but Telebirr verified ${verifiedAmount} ETB (Tx: ${cleanTxCode})`);
+          await query(
+            `UPDATE agent_deposit_requests 
+             SET status = 'rejected', rejection_reason = $1, resolved_at = NOW() 
+             WHERE id = $2`,
+            [`Amount mismatch: You requested ${numAmount.toFixed(2)} ETB, but Telebirr received ${verifiedAmount.toFixed(2)} ETB. Auto-rejected.`, newRequest.id]
+          );
+
+          return res.status(400).json({
+            success: false,
+            error: `Amount mismatch: You entered ${numAmount.toFixed(2)} ETB, but Telebirr received ${verifiedAmount.toFixed(2)} ETB for transaction ${cleanTxCode}. Please enter the exact amount transferred.`
+          });
+        }
+
+        // 🛡️ SECURITY PILLAR 3: Phone Number Last-4 Bi-Directional Match
+        const smsPayerPhone = matchedSms.payer_phone || '';
+        const smsLast4Match = smsPayerPhone.match(/(\d{4})\)?$/);
+        const smsLast4 = smsLast4Match ? smsLast4Match[1] : undefined;
+
+        if (smsLast4 && phoneLast4 && smsLast4 !== phoneLast4) {
+          console.warn(`⚠️ [SECURITY PHONE MISMATCH] Tx ${cleanTxCode} sender is ***${smsLast4}, player phone is ***${phoneLast4}`);
+          return res.json({
+            success: true,
+            message: `Deposit request for ${numAmount} ETB submitted to Agent #${agent.agent_code}. Verification in progress.`,
+            requestId: newRequest.id,
+            status: 'pending',
+            note: 'Phone mismatch detected. Awaiting manual cashier review.'
+          });
+        }
+
+        console.log(`⚡ [Instant Auto-Approve] Verified match (ID: ${matchedSms.id}, Tx: ${matchedSms.transaction_ref}, ${verifiedAmount} ETB) for Agent Deposit ${newRequest.id}`);
         const approveResult = await executeAgentDepositApproval(newRequest.id, matchedSms.transaction_ref || cleanTxCode, matchedSms.id);
         if (approveResult.success) {
           return res.json({
             success: true,
-            message: `🎉 Deposit of ${numAmount} ETB instantly verified & credited via Telebirr SMS!`,
+            message: `🎉 Deposit of ${verifiedAmount} ETB instantly verified & credited via Telebirr SMS!`,
             requestId: newRequest.id,
             agentCode: agent.agent_code,
             agentDisplayName: `Sonic Agent #${agent.agent_code}`,
             status: 'approved',
             instant: true,
             newBalance: approveResult.newBalance
+          });
+        } else if (approveResult.error === 'AMOUNT_MISMATCH') {
+          return res.status(400).json({
+            success: false,
+            error: approveResult.message || 'Amount mismatch detected between deposit request and Telebirr SMS.'
           });
         }
       }

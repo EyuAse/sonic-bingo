@@ -7,6 +7,7 @@
 
 export interface ParsedTelebirrSMS {
   success: boolean;
+  isOutgoing?: boolean;
   transactionRef?: string;
   amount?: number;
   senderPhone?: string;     // e.g. '2519****8124' or '0912345678'
@@ -40,6 +41,18 @@ export function parseTelebirrSMS(smsBody: string): ParsedTelebirrSMS {
   }
 
   const text = smsBody.trim();
+
+  // 🛡️ SECURITY GUARD 1: Strictly Reject Outgoing / Debit Transfers
+  // When money is transferred OUT, Ethio Telecom sends "You have transferred" or "አስተላልፈዋል".
+  // These are outgoing payments or withdrawals and must NEVER be credited as deposits!
+  const isOutgoing = /You\s+have\s+transferred/i.test(text) ||
+                     /አስተላልፈዋል/i.test(text) ||
+                     /transferred\s+(?:ETB|ብር)/i.test(text) ||
+                     /sent\s+(?:ETB|ብር)/i.test(text);
+
+  if (isOutgoing) {
+    return { success: false, isOutgoing: true, rawText: text };
+  }
 
   // Pattern 1: Official Ethio Telecom Telebirr P2P Received Template (English)
   // "Dear FEVEN

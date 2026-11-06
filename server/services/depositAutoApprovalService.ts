@@ -11,6 +11,11 @@ export interface AutoApproveResult {
   newBalance?: number;
   txRef?: string;
   error?: string;
+  message?: string;
+  claimedAmount?: number;
+  verifiedAmount?: number;
+  alreadyProcessed?: boolean;
+  status?: string;
 }
 
 /**
@@ -23,7 +28,37 @@ export async function executeAgentDepositApproval(
 ): Promise<AutoApproveResult> {
   try {
     const result = await withTransaction(async (client) => {
-      // 1. Lock agent deposit request
+      // 1. Lock and fetch Telebirr SMS Log (Source of Truth)
+      let smsRowQuery: any;
+      if (smsLogId) {
+        smsRowQuery = await client.query(
+          `SELECT id, amount, transaction_ref, payer_phone, recipient_name, status, received_at 
+           FROM telebirr_sms_logs WHERE id = $1 FOR UPDATE`,
+          [smsLogId]
+        );
+      } else {
+        smsRowQuery = await client.query(
+          `SELECT id, amount, transaction_ref, payer_phone, recipient_name, status, received_at 
+           FROM telebirr_sms_logs WHERE transaction_ref ILIKE $1 FOR UPDATE`,
+          [txRef]
+        );
+      }
+
+      if (smsRowQuery.rows.length === 0) {
+        throw new Error(`Telebirr SMS log for transaction ${txRef} not found in database.`);
+      }
+
+      const smsRecord = smsRowQuery.rows[0];
+      if (smsRecord.status === 'credited') {
+        return { success: true, alreadyProcessed: true, status: 'already_credited', txRef };
+      }
+
+      const verifiedAmount = parseFloat(smsRecord.amount);
+      if (isNaN(verifiedAmount) || verifiedAmount <= 0) {
+        throw new Error(`Invalid verified SMS amount for transaction ${txRef}: ${smsRecord.amount}`);
+      }
+
+      // 2. Lock agent deposit request
       const reqRes = await client.query(
         `SELECT * FROM agent_deposit_requests WHERE id = $1 FOR UPDATE`,
         [requestId]
@@ -38,11 +73,36 @@ export async function executeAgentDepositApproval(
         return { success: true, alreadyProcessed: true, status: depReq.status };
       }
 
+      const userClaimedAmount = parseFloat(depReq.amount);
+
+      // 🛡️ SECURITY PILLAR 1: Amount Reconciliation Firewall
+      // If user claimed 100 ETB, but Telebirr received 53 ETB: STRICTLY REJECT to prevent theft!
+      if (Math.abs(userClaimedAmount - verifiedAmount) > 0.01) {
+        const mismatchReason = `Amount mismatch: User claimed ${userClaimedAmount.toFixed(2)} ETB in app, but Telebirr verified ${verifiedAmount.toFixed(2)} ETB. Auto-rejected.`;
+        console.warn(`🚨 [SECURITY ALERT] ${mismatchReason} (Req: ${requestId}, Tx: ${txRef})`);
+
+        await client.query(
+          `UPDATE agent_deposit_requests 
+           SET status = 'rejected', rejection_reason = $1, resolved_at = NOW() 
+           WHERE id = $2`,
+          [mismatchReason, requestId]
+        );
+
+        return {
+          success: false,
+          error: 'AMOUNT_MISMATCH',
+          message: mismatchReason,
+          claimedAmount: userClaimedAmount,
+          verifiedAmount
+        };
+      }
+
+      // 🛡️ SOURCE OF TRUTH: Always use the verified amount from the bank SMS!
+      const depositAmount = verifiedAmount;
       const agentId = depReq.agent_id;
       const playerId = depReq.player_id;
-      const depositAmount = parseFloat(depReq.amount);
 
-      // 2. Lock agent profile
+      // 3. Lock agent profile
       const agentProfileRes = await client.query(
         `SELECT id, agent_code, wallet_balance, commission_rate FROM agent_profiles WHERE id = $1 FOR UPDATE`,
         [agentId]
@@ -50,11 +110,27 @@ export async function executeAgentDepositApproval(
       const agentProfile = agentProfileRes.rows[0];
       const agentBalance = parseFloat(agentProfile?.wallet_balance || '0');
 
+      // 🛡️ SECURITY PILLAR 7: Agent Float Solvency Guard
+      if (agentBalance < depositAmount) {
+        console.warn(`⚠️ [Agent Float Insufficient] Agent ${agentId} float balance ${agentBalance} < required ${depositAmount}`);
+        await client.query(
+          `UPDATE agent_deposit_requests 
+           SET rejection_reason = 'Agent float temporarily insufficient. Please contact agent to top up float.' 
+           WHERE id = $1`,
+          [depReq.id]
+        );
+        return {
+          success: false,
+          error: 'AGENT_FLOAT_INSUFFICIENT',
+          message: `Agent #${agentProfile?.agent_code || agentId} does not have sufficient float balance.`
+        };
+      }
+
       const commissionRate = parseFloat(agentProfile?.commission_rate || '5.0');
       const commissionEarned = depositAmount * (commissionRate / 100);
       const agentBalAfter = Math.max(0, agentBalance - depositAmount);
 
-      // 3. Lock player wallet
+      // 4. Lock player wallet
       let playerWalletRes = await client.query(
         `SELECT id, balance, user_id FROM wallets WHERE user_id = $1 FOR UPDATE`,
         [playerId]
@@ -223,7 +299,37 @@ export async function executeDirectDepositApproval(
 ): Promise<AutoApproveResult> {
   try {
     const result = await withTransaction(async (client) => {
-      // 1. Lock deposit request
+      // 1. Lock and fetch Telebirr SMS Log (Source of Truth)
+      let smsRowQuery: any;
+      if (smsLogId) {
+        smsRowQuery = await client.query(
+          `SELECT id, amount, transaction_ref, payer_phone, recipient_name, status, received_at 
+           FROM telebirr_sms_logs WHERE id = $1 FOR UPDATE`,
+          [smsLogId]
+        );
+      } else {
+        smsRowQuery = await client.query(
+          `SELECT id, amount, transaction_ref, payer_phone, recipient_name, status, received_at 
+           FROM telebirr_sms_logs WHERE transaction_ref ILIKE $1 FOR UPDATE`,
+          [txRef]
+        );
+      }
+
+      if (smsRowQuery.rows.length === 0) {
+        throw new Error(`Telebirr SMS log for transaction ${txRef} not found in database.`);
+      }
+
+      const smsRecord = smsRowQuery.rows[0];
+      if (smsRecord.status === 'credited') {
+        return { success: true, alreadyProcessed: true, status: 'already_credited', txRef };
+      }
+
+      const verifiedAmount = parseFloat(smsRecord.amount);
+      if (isNaN(verifiedAmount) || verifiedAmount <= 0) {
+        throw new Error(`Invalid verified SMS amount for transaction ${txRef}: ${smsRecord.amount}`);
+      }
+
+      // 2. Lock deposit request
       const reqRes = await client.query(
         `SELECT * FROM deposit_requests WHERE id = $1 FOR UPDATE`,
         [depositId]
@@ -238,10 +344,34 @@ export async function executeDirectDepositApproval(
         return { success: true, alreadyProcessed: true, status: depReq.status };
       }
 
-      const playerId = depReq.user_id;
-      const depositAmount = parseFloat(depReq.amount);
+      const userClaimedAmount = parseFloat(depReq.amount);
 
-      // 2. Lock player wallet
+      // 🛡️ SECURITY PILLAR 1: Amount Reconciliation Firewall
+      if (Math.abs(userClaimedAmount - verifiedAmount) > 0.01) {
+        const mismatchReason = `Amount mismatch: User claimed ${userClaimedAmount.toFixed(2)} ETB, but Telebirr verified ${verifiedAmount.toFixed(2)} ETB. Auto-rejected.`;
+        console.warn(`🚨 [SECURITY ALERT Direct Deposit] ${mismatchReason} (Req: ${depositId}, Tx: ${txRef})`);
+
+        await client.query(
+          `UPDATE deposit_requests 
+           SET status = 'rejected', admin_notes = $1, reviewed_by = 'TELEBIRR_SMS_AUTO', reviewed_at = NOW() 
+           WHERE id = $2`,
+          [mismatchReason, depositId]
+        );
+
+        return {
+          success: false,
+          error: 'AMOUNT_MISMATCH',
+          message: mismatchReason,
+          claimedAmount: userClaimedAmount,
+          verifiedAmount
+        };
+      }
+
+      // 🛡️ SOURCE OF TRUTH: Credit strictly verified amount
+      const depositAmount = verifiedAmount;
+      const playerId = depReq.user_id;
+
+      // 3. Lock player wallet
       let playerWalletRes = await client.query(
         `SELECT id, balance, user_id FROM wallets WHERE user_id = $1 FOR UPDATE`,
         [playerId]
