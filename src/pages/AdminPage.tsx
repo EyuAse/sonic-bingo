@@ -18,6 +18,8 @@ import { BonusRewardsDesk } from '../components/admin/BonusRewardsDesk.tsx';
 import { OfficialAccountsDesk } from '../components/admin/OfficialAccountsDesk.tsx';
 import '../styles/admin.css';
 import '../styles/admin-jackpot.css';
+import '../styles/admin-cartelas.css';
+import '../styles/admin-bot-engine.css';
 
 const TAB_TITLES: Record<AdminTab, string> = {
   overview: '📊 Dashboard',

@@ -23,7 +23,8 @@
 
 /* Base Root Container */
 .cartelas-enqu-root {
-  color: var(--c-ink);
+  background: var(--c-panel, #e8e6e9);
+  color: var(--c-ink, #1b1b1b);
   font-family: Urbanist, "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 15px;
   line-height: 1.45;
@@ -32,6 +33,7 @@
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+  min-height: 100vh;
 }
 
 .cartelas-enqu-root *,
@@ -206,85 +208,6 @@
   color: #a3a3a3;
 }
 
-/* Pattern Simulator Ribbon */
-.cartelas-pattern-ribbon {
-  background: var(--c-card);
-  border-radius: 20px;
-  padding: 16px 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-}
-
-.pattern-ribbon-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.pattern-ribbon-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--c-ink);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pattern-ribbon-badge {
-  font-size: 11px;
-  background: var(--c-chip);
-  color: var(--c-mute);
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-weight: 700;
-}
-
-.pattern-pills-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.pattern-pill-btn {
-  border: 1px solid var(--c-line);
-  background: #ffffff;
-  color: var(--c-ink);
-  font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  padding: 6px 14px;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.pattern-pill-btn:hover {
-  border-color: var(--c-dark);
-  background: var(--c-chip);
-}
-
-.pattern-pill-btn.active {
-  background: var(--c-dark);
-  color: #ffffff;
-  border-color: var(--c-dark);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
-
-.pattern-pill-btn.active .pattern-dot {
-  background: #f6d453;
-}
-
-.pattern-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--c-mute);
-}
 
 /* Search & Jump Controls Card */
 .cartelas-controls-card {
@@ -537,17 +460,6 @@
   border: 1px dashed #f59e0b;
 }
 
-.matrix-number-cell.pattern-highlight {
-  background: #fef08a !important;
-  color: #854d0e !important;
-  font-weight: 800;
-  box-shadow: inset 0 0 0 1.5px #eab308;
-}
-
-.matrix-number-cell.free-star-cell.pattern-highlight {
-  background: #fde047 !important;
-  box-shadow: inset 0 0 0 2px #ca8a04;
-}
 
 /* Table View */
 .cartelas-table-card {

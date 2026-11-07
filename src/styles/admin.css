@@ -1,3 +1,6 @@
+@import './admin-cartelas.css';
+@import './admin-bot-engine.css';
+
 /* Document body support for Admin Portal */
 body:has(.admin-fullscreen-root),
 html:has(.admin-fullscreen-root) {
@@ -365,6 +368,8 @@ html:has(.admin-fullscreen-root) {
   padding: 0 !important;
   max-width: none !important;
   width: 100% !important;
+  background: #e8e6e9 !important;
+  min-height: 100vh;
 }
 
 .enqu-dashboard-main {

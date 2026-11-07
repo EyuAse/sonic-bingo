@@ -3,27 +3,6 @@ import { useAdmin, CartelaCard } from '../../context/AdminContext.tsx';
 import { useApp } from '../../context/AppContext.tsx';
 import '../../styles/admin-cartelas.css';
 
-type PatternType =
-  | 'none'
-  | 'full-house'
-  | 'horizontal'
-  | 'vertical'
-  | 'diagonal-x'
-  | 'four-corners'
-  | 'post-stamp'
-  | 'center-square';
-
-const PATTERN_INDICES: Record<PatternType, number[]> = {
-  none: [],
-  'full-house': Array.from({ length: 25 }, (_, i) => i),
-  horizontal: [10, 11, 12, 13, 14], // Middle Row (Row 3)
-  vertical: [2, 7, 12, 17, 22],     // Column N (Middle Column)
-  'diagonal-x': [0, 6, 12, 18, 24, 4, 8, 16, 20], // Both Diagonals (X)
-  'four-corners': [0, 4, 20, 24],   // 4 Outer Corners
-  'post-stamp': [3, 4, 8, 9],       // Top-Right 2x2
-  'center-square': [6, 7, 8, 11, 12, 13, 16, 17, 18] // Small Center Box
-};
-
 const RANGE_PRESETS = [
   { label: 'All', start: 1, end: 600 },
   { label: '1–60', start: 1, end: 60 },
@@ -46,7 +25,6 @@ export const CartelasDesk: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [activeRange, setActiveRange] = useState<string>('All');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
-  const [activePattern, setActivePattern] = useState<PatternType>('none');
   const [selectedCard, setSelectedCard] = useState<CartelaCard | null>(null);
 
   const safePool = useMemo(() => (Array.isArray(cartelaPool) ? cartelaPool : []), [cartelaPool]);
@@ -82,8 +60,6 @@ export const CartelasDesk: React.FC = () => {
   const startIdx = (safePage - 1) * cardsPerPage;
   const paginatedCards = filteredCartelas.slice(startIdx, startIdx + cardsPerPage);
 
-  const activePatternSet = useMemo(() => new Set(PATTERN_INDICES[activePattern]), [activePattern]);
-
   const handleCopySerial = (serial: string) => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(serial);
@@ -103,7 +79,7 @@ export const CartelasDesk: React.FC = () => {
         <div className="cartelas-top-left">
           <h1>600 Cartelas Library</h1>
           <p>
-            Deterministic 75-ball bingo cards (#1 &ndash; #600) &bull; Zero duplicate matrix &bull; Real-time pattern inspector
+            Deterministic 75-ball bingo cards (#1 &ndash; #600) &bull; Zero duplicate matrix &bull; Authentic number allocation
           </p>
         </div>
         <div className="cartelas-top-right">
@@ -185,54 +161,7 @@ export const CartelasDesk: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Winning Pattern Simulator Ribbon */}
-      <div className="cartelas-pattern-ribbon">
-        <div className="pattern-ribbon-head">
-          <div className="pattern-ribbon-title">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            <span>Winning Pattern Simulator</span>
-            <span className="pattern-ribbon-badge">Live Board Preview</span>
-          </div>
-          {activePattern !== 'none' && (
-            <button
-              type="button"
-              className="pattern-pill-btn"
-              onClick={() => setActivePattern('none')}
-              style={{ padding: '4px 10px', fontSize: '11.5px' }}
-            >
-              Clear Simulator
-            </button>
-          )}
-        </div>
-        <div className="pattern-pills-row">
-          {[
-            { id: 'none', label: 'Normal View' },
-            { id: 'full-house', label: 'Full House (25)' },
-            { id: 'horizontal', label: 'Horizontal Line (Row 3)' },
-            { id: 'vertical', label: 'Vertical Line (Col N)' },
-            { id: 'diagonal-x', label: 'Diagonal (X)' },
-            { id: 'four-corners', label: '4 Corners' },
-            { id: 'post-stamp', label: 'Post Stamp (Top-Right)' },
-            { id: 'center-square', label: 'Center Square (3x3)' }
-          ].map(p => (
-            <button
-              key={p.id}
-              type="button"
-              className={`pattern-pill-btn ${activePattern === p.id ? 'active' : ''}`}
-              onClick={() => setActivePattern(p.id as PatternType)}
-            >
-              <span className="pattern-dot"></span>
-              <span>{p.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* 4. Filter, Search & View Controls */}
+      {/* 3. Filter, Search & View Controls */}
       <div className="cartelas-controls-card">
         <div className="controls-top-row">
           <div className="cartelas-search-wrapper">
@@ -300,7 +229,7 @@ export const CartelasDesk: React.FC = () => {
         </div>
       </div>
 
-      {/* 5. Display: 5x5 Boards Grid vs Detailed Table */}
+      {/* 4. Display: 5x5 Boards Grid vs Detailed Table */}
       {viewMode === 'grid' ? (
         <div className="cartelas-boards-grid">
           {paginatedCards.length === 0 ? (
@@ -346,12 +275,11 @@ export const CartelasDesk: React.FC = () => {
 
                   {card.grid.map((num, idx) => {
                     const isFree = num === 0;
-                    const isPatternHit = activePatternSet.has(idx);
 
                     return (
                       <div
                         key={idx}
-                        className={`matrix-number-cell ${isFree ? 'free-star-cell' : ''} ${isPatternHit ? 'pattern-highlight' : ''}`}
+                        className={`matrix-number-cell ${isFree ? 'free-star-cell' : ''}`}
                       >
                         {isFree ? '★' : num}
                       </div>
@@ -420,7 +348,7 @@ export const CartelasDesk: React.FC = () => {
         </div>
       )}
 
-      {/* 6. Pagination Bar */}
+      {/* 5. Pagination Bar */}
       {totalPages > 1 && (
         <div className="cartelas-pagination-bar">
           <div className="pagination-info">
@@ -470,7 +398,7 @@ export const CartelasDesk: React.FC = () => {
         </div>
       )}
 
-      {/* 7. High-Definition Inspection Modal */}
+      {/* 6. High-Definition Inspection Modal */}
       {selectedCard && (
         <div className="cartela-modal-overlay" onClick={() => setSelectedCard(null)}>
           <div className="cartela-modal-box" onClick={e => e.stopPropagation()}>
@@ -503,12 +431,11 @@ export const CartelasDesk: React.FC = () => {
 
                 {selectedCard.grid.map((num, idx) => {
                   const isFree = num === 0;
-                  const isPatternHit = activePatternSet.has(idx);
 
                   return (
                     <div
                       key={idx}
-                      className={`modal-matrix-cell ${isFree ? 'free-star' : ''} ${isPatternHit ? 'pattern-highlight' : ''}`}
+                      className={`modal-matrix-cell ${isFree ? 'free-star' : ''}`}
                     >
                       {isFree ? (
                         <>

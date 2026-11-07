@@ -23,7 +23,8 @@
 
 /* Base Root Container */
 .bot-engine-enqu-root {
-  color: var(--b-ink);
+  background: var(--b-panel, #e8e6e9);
+  color: var(--b-ink, #1b1b1b);
   font-family: Urbanist, "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 15px;
   line-height: 1.45;
@@ -32,6 +33,7 @@
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+  min-height: 100vh;
 }
 
 .bot-engine-enqu-root *,
@@ -725,3 +727,4 @@
     align-items: flex-start;
   }
 }
+
