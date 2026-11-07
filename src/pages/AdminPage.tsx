@@ -53,7 +53,8 @@ export const AdminPage: React.FC = () => {
     activeTab === 'users' ||
     activeTab === 'coins' ||
     activeTab === 'agent-recharges' ||
-    activeTab === 'agent-payouts';
+    activeTab === 'agent-payouts' ||
+    activeTab === 'jackpots';
 
   // If not authenticated, render the PIN lock guard
   if (!isAuthenticated) {
@@ -137,7 +138,6 @@ export const AdminPage: React.FC = () => {
                   {activeTab === 'bot-engine' && 'Room 10 Dynamic Bot Engine (0-50 Control Desk)'}
                   {activeTab === 'cartelas' && '600 Serial Cartela Cards Library'}
                   {activeTab === 'official-accounts' && 'Official Platform Receiving Accounts (የክፍያ መቀበያ ሂሳቦች)'}
-                  {activeTab === 'jackpots' && 'Progressive Jackpot Pools & Settlement'}
                 </h2>
                 <p className="viewport-page-amharic-sub">
                   {activeTab === 'cashier' && 'የወኪሎች P2P ተቀማጭ እና ክፍያ ክትትል፣ የሞባይል ገንዘብ ኦዲት መዝገብ እና የፍሎት ቁጥጥር'}
@@ -145,7 +145,6 @@ export const AdminPage: React.FC = () => {
                   {activeTab === 'bot-engine' && 'የክፍል 10 ተለዋዋጭ ቦቶች ቁጥጥር ማዕከል - ከ 0 እስከ 50 ቦቶች በቀጥታ ያስተካክሉ'}
                   {activeTab === 'cartelas' && '600 የቢንጎ ካርቴላ ካርዶች ቤተ-መጽሐፍት'}
                   {activeTab === 'official-accounts' && 'የቢንጎ እና የፍሎት ክፍያ መቀበያ ኦፊሴላዊ ሂሳቦች (Telebirr, CBE, M-Pesa)'}
-                  {activeTab === 'jackpots' && 'የ 4ቱ ክፍሎች ፕሮግረሲቭ ጃክፖት ሳጥን፣ የ 10% ድልድል እና የ 18 ኳስ አሸናፊዎች'}
                 </p>
               </div>
             </div>
