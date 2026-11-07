@@ -1,0 +1,727 @@
+/* ==========================================================================
+   Lomi Bingo — Luxury Enqu Bot Engine Controller Stylesheet
+   Designed for High-Performance Superadmin Casino Desk
+   Matches Enqu luxury obsidian-gold design system
+   ========================================================================== */
+
+:root {
+  --b-bg: #e8e6e9;
+  --b-card: #ffffff;
+  --b-panel: #e8e6e9;
+  --b-ink: #1b1b1b;
+  --b-mute: #707070;
+  --b-line: #d9d9db;
+  --b-chip: #e9e9ea;
+  --b-dark: #1f2220;
+  --b-grey: #858585;
+  --b-g: #2e9e4f;
+  --b-r: #b0302f;
+  --b-gold: #e6a21f;
+  --b-gold-light: #f6d453;
+  --b-gold-dark: #e08a1e;
+}
+
+/* Base Root Container */
+.bot-engine-enqu-root {
+  color: var(--b-ink);
+  font-family: Urbanist, "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  box-sizing: border-box;
+  padding: 24px 28px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.bot-engine-enqu-root *,
+.bot-engine-enqu-root *::before,
+.bot-engine-enqu-root *::after {
+  box-sizing: border-box;
+}
+
+/* Top Header Bar */
+.bot-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.bot-top-left h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--b-ink);
+  margin: 0 0 4px 0;
+}
+
+.bot-top-left p {
+  font-size: 13.5px;
+  color: var(--b-mute);
+  margin: 0;
+  font-weight: 500;
+}
+
+.bot-top-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bot-clock-pill {
+  background: var(--b-card);
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--b-ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.clock-live-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--b-g);
+  display: inline-block;
+  box-shadow: 0 0 8px rgba(46, 158, 79, 0.7);
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.btn-bot-reload {
+  border: 0;
+  background: var(--b-card);
+  color: var(--b-ink);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.btn-bot-reload:hover {
+  background: var(--b-chip);
+}
+
+.btn-bot-reload.spinning svg {
+  animation: spinReload 0.8s linear infinite;
+}
+
+@keyframes spinReload {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Multi-Room Isolation Shield Banner */
+.bot-isolation-banner {
+  background: linear-gradient(135deg, #1c1e1d 0%, #252826 100%);
+  color: #ffffff;
+  border-radius: 20px;
+  padding: 18px 24px;
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(230, 162, 31, 0.25);
+}
+
+.isolation-shield-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: rgba(230, 162, 31, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: var(--b-gold);
+  flex: none;
+}
+
+.isolation-text-box {
+  flex: 1;
+}
+
+.isolation-text-box strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--b-gold-light);
+  display: block;
+  margin-bottom: 3px;
+}
+
+.isolation-text-box p {
+  font-size: 13px;
+  color: #d1d5db;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.isolation-badge-pills {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: none;
+}
+
+.isolation-badge-pill {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.isolation-badge-pill.room10 {
+  background: rgba(46, 158, 79, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.isolation-badge-pill.otherrooms {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+/* 4 Elevated KPI Cards */
+.bot-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.bot-kpi-card {
+  background: var(--b-card);
+  border-radius: 20px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 120px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.bot-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+.bot-kpi-card.hero-dark {
+  background: linear-gradient(135deg, #1c1e1d 0%, #2a2d2b 60%, #1a1c1b 100%);
+  color: #ffffff;
+}
+
+.bot-kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.bot-kpi-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--b-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bot-kpi-card.hero-dark .bot-kpi-label {
+  color: #d1d5db;
+}
+
+.bot-kpi-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--b-chip);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: var(--b-ink);
+}
+
+.bot-kpi-card.hero-dark .bot-kpi-icon {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f6d453;
+}
+
+.bot-kpi-value {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--b-ink);
+  margin: 4px 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.bot-kpi-card.hero-dark .bot-kpi-value {
+  color: #ffffff;
+}
+
+.bot-kpi-unit {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--b-mute);
+}
+
+.bot-kpi-card.hero-dark .bot-kpi-unit {
+  color: #d1d5db;
+}
+
+.bot-kpi-sub {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--b-mute);
+}
+
+.bot-kpi-card.hero-dark .bot-kpi-sub {
+  color: #a3a3a3;
+}
+
+/* Interactive Controller Card (Mode & Slider) */
+.bot-controller-card {
+  background: var(--b-card);
+  border-radius: 20px;
+  padding: 22px 24px;
+  margin-bottom: 22px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.controller-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.controller-title-box h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--b-ink);
+  margin: 0 0 4px 0;
+}
+
+.controller-title-box p {
+  font-size: 13px;
+  color: var(--b-mute);
+  margin: 0;
+}
+
+.controller-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: var(--b-chip);
+  padding: 3px;
+  border-radius: 14px;
+  gap: 2px;
+}
+
+.btn-mode-toggle {
+  border: 0;
+  background: transparent;
+  color: var(--b-mute);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 11px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.btn-mode-toggle.active {
+  background: #ffffff;
+  color: var(--b-ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Slider Controls Section */
+.controller-slider-section {
+  padding-top: 16px;
+  border-top: 1px solid var(--b-line);
+}
+
+.slider-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.slider-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--b-ink);
+}
+
+.slider-live-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--b-gold-dark);
+}
+
+.bot-range-input {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--b-chip);
+  outline: none;
+  accent-color: var(--b-dark);
+  cursor: pointer;
+  margin-bottom: 14px;
+}
+
+.slider-presets-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-slider-preset {
+  border: 1px solid var(--b-line);
+  background: #ffffff;
+  color: var(--b-ink);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-slider-preset:hover {
+  background: var(--b-chip);
+}
+
+.btn-slider-preset.active {
+  background: var(--b-dark);
+  color: #ffffff;
+  border-color: var(--b-dark);
+}
+
+/* 24-Hour Ethiopian Schedule Timeline */
+.bot-timeline-card {
+  background: var(--b-card);
+  border-radius: 20px;
+  padding: 22px 24px;
+  margin-bottom: 22px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.timeline-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--b-ink);
+  margin: 0 0 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeline-header p {
+  font-size: 13px;
+  color: var(--b-mute);
+  margin: 0;
+}
+
+.timeline-tiers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.timeline-tier-card {
+  background: #fafafb;
+  border: 1px solid var(--b-line);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.18s ease;
+  position: relative;
+}
+
+.timeline-tier-card:hover {
+  border-color: var(--b-dark);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.timeline-tier-card.active-tier {
+  background: linear-gradient(135deg, #1c1e1d 0%, #252826 100%);
+  color: #ffffff;
+  border: 2px solid var(--b-gold);
+  box-shadow: 0 6px 18px rgba(230, 162, 31, 0.2);
+}
+
+.tier-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.tier-hours {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--b-ink);
+}
+
+.timeline-tier-card.active-tier .tier-hours {
+  color: #ffffff;
+}
+
+.tier-ethiopian {
+  font-size: 12px;
+  color: var(--b-mute);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.timeline-tier-card.active-tier .tier-ethiopian {
+  color: #d1d5db;
+}
+
+.tier-active-pill {
+  background: var(--b-gold);
+  color: #1c1e1d;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tier-range-badge {
+  font-size: 14px;
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.tier-range-badge.sleep {
+  background: rgba(176, 48, 47, 0.1);
+  color: var(--b-r);
+}
+
+.timeline-tier-card.active-tier .tier-range-badge.sleep {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.tier-range-badge.normal {
+  background: var(--b-chip);
+  color: var(--b-ink);
+}
+
+.timeline-tier-card.active-tier .tier-range-badge.normal {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.tier-range-badge.peak {
+  background: rgba(46, 158, 79, 0.12);
+  color: var(--b-g);
+}
+
+.timeline-tier-card.active-tier .tier-range-badge.peak {
+  background: rgba(74, 222, 128, 0.2);
+  color: #86efac;
+}
+
+.tier-desc {
+  font-size: 12.5px;
+  color: var(--b-mute);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.timeline-tier-card.active-tier .tier-desc {
+  color: #9ca3af;
+}
+
+/* Standby Bot Roster Preview */
+.bot-roster-card {
+  background: var(--b-card);
+  border-radius: 20px;
+  padding: 22px 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.roster-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.roster-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--b-ink);
+  margin: 0 0 4px 0;
+}
+
+.roster-header p {
+  font-size: 13px;
+  color: var(--b-mute);
+  margin: 0;
+}
+
+.roster-search-input {
+  background: var(--b-chip);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--b-ink);
+  outline: none;
+  min-width: 220px;
+}
+
+.roster-search-input:focus {
+  background: #ffffff;
+  border-color: var(--b-dark);
+}
+
+.roster-bots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.roster-bot-item {
+  background: #fafafb;
+  border: 1px solid var(--b-line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.15s ease;
+}
+
+.roster-bot-item:hover {
+  border-color: var(--b-dark);
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.roster-bot-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1f2220, #374151);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex: none;
+}
+
+.roster-bot-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.roster-bot-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--b-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roster-bot-phone {
+  font-size: 11.5px;
+  font-family: monospace;
+  color: var(--b-mute);
+}
+
+.roster-bot-status {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(46, 158, 79, 0.12);
+  color: var(--b-g);
+  flex: none;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .bot-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .bot-engine-enqu-root {
+    padding: 16px 14px;
+  }
+  .bot-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .bot-isolation-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .controller-header, .timeline-header, .roster-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

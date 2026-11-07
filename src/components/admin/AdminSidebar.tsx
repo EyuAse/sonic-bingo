@@ -77,26 +77,26 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     s?: string;
     urgentBadge?: boolean;
   }> = [
-    { id: 'overview', label: 'Dashboard', path: IC.dash },
-    { id: 'cashflow', label: 'Cashflow & Treasury', path: IC.cf, s: 'Live' },
-    {
-      id: 'cashier',
-      label: 'P2P Cashier',
-      path: IC.p2p,
-      n: pendingCount > 0 ? pendingCount : undefined,
-      urgentBadge: pendingCount > 0
-    },
-    { id: 'users', label: 'Player Accounts', path: IC.pl, n: totalUsersCount || users.length || 7 },
-    { id: 'bot-engine', label: 'Bot Engine', path: IC.eng, s: '0-50' },
-    { id: 'cartelas', label: '600 Cartelas', path: IC.room, s: 'Cards' },
-    { id: 'telegram-bot', label: 'Telegram Bot & Ads', path: IC.tg },
-    { id: 'agents', label: 'Agents Directory', path: IC.ag, s: 'Portal' },
-    { id: 'agent-recharges', label: 'Agent Recharges', path: IC.rc, s: 'Float' },
-    { id: 'agent-payouts', label: 'Agent Payouts', path: IC.po, s: 'Cashout' },
-    { id: 'official-accounts', label: 'Official Accounts', path: IC.of, s: 'Rails' },
-    { id: 'jackpots', label: 'Progressive Jackpots', path: IC.jp, s: 'Vault' },
-    { id: 'coins', label: 'Bonus & Rewards', path: IC.co, s: 'Live' }
-  ];
+      { id: 'overview', label: 'Dashboard', path: IC.dash },
+      { id: 'cashflow', label: 'Cashflow & Treasury', path: IC.cf, s: 'Live' },
+      {
+        id: 'cashier',
+        label: 'P2P Cashier',
+        path: IC.p2p,
+        n: pendingCount > 0 ? pendingCount : undefined,
+        urgentBadge: pendingCount > 0
+      },
+      { id: 'users', label: 'Player Accounts', path: IC.pl, n: totalUsersCount || users.length || 7 },
+      { id: 'bot-engine', label: 'Bot Engine', path: IC.eng, s: '0-50' },
+      { id: 'cartelas', label: '600 Cartelas', path: IC.room, s: 'Cards' },
+      { id: 'telegram-bot', label: 'Telegram Bot & Ads', path: IC.tg },
+      { id: 'agents', label: 'Agents Directory', path: IC.ag, s: 'Portal' },
+      { id: 'agent-recharges', label: 'Agent Recharges', path: IC.rc, s: 'Float' },
+      { id: 'agent-payouts', label: 'Agent Payouts', path: IC.po, s: 'Cashout' },
+      { id: 'official-accounts', label: 'Official Accounts', path: IC.of, s: 'Rails' },
+      { id: 'jackpots', label: 'Progressive Jackpots', path: IC.jp, s: 'Vault' },
+      { id: 'coins', label: 'Bonus & Rewards', path: IC.co, s: 'Live' }
+    ];
 
   return (
     <>
@@ -144,76 +144,76 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           </button>
         </div>
 
-      {/* Main Navigation List */}
-      <nav className="enqu-nav">
-        {navItems.map(item => {
-          const isActive = activeTab === item.id;
-          return (
+        {/* Main Navigation List */}
+        <nav className="enqu-nav">
+          {navItems.map(item => {
+            const isActive = activeTab === item.id;
+            return (
+              <a
+                key={item.id}
+                className={isActive ? 'on' : ''}
+                onClick={() => handleSelectTab(item.id)}
+                title={isSidebarCollapsed ? item.label : undefined}
+              >
+                <svg viewBox="0 0 24 24">
+                  <path d={item.path} />
+                </svg>
+                <span>{item.label}</span>
+                {item.n != null && (
+                  <span
+                    className="n"
+                    style={item.urgentBadge ? { background: '#b0302f', color: '#ffffff' } : undefined}
+                  >
+                    {item.n}
+                  </span>
+                )}
+                {item.s && <span className="s">{item.s}</span>}
+                {isSidebarCollapsed && item.urgentBadge && (
+                  <span className="collapsed-urgent-dot" />
+                )}
+              </a>
+            );
+          })}
+        </nav>
+
+        {/* Exact Footer Actions */}
+        <div className="foot nav">
+          <nav>
             <a
-              key={item.id}
-              className={isActive ? 'on' : ''}
-              onClick={() => handleSelectTab(item.id)}
-              title={isSidebarCollapsed ? item.label : undefined}
+              onClick={() => switchPage('withdrawals')}
+              title={isSidebarCollapsed ? 'Withdrawals Desk' : undefined}
+              style={{ cursor: 'pointer' }}
             >
               <svg viewBox="0 0 24 24">
-                <path d={item.path} />
+                <path d="M12 15V3M7 8l5-5 5 5M4 17v3h16v-3" />
               </svg>
-              <span>{item.label}</span>
-              {item.n != null && (
-                <span
-                  className="n"
-                  style={item.urgentBadge ? { background: '#b0302f', color: '#ffffff' } : undefined}
-                >
-                  {item.n}
-                </span>
-              )}
-              {item.s && <span className="s">{item.s}</span>}
-              {isSidebarCollapsed && item.urgentBadge && (
-                <span className="collapsed-urgent-dot" />
-              )}
+              <span>Withdrawals Desk</span>
+              <span className="s" style={{ background: '#1c1e1d', color: '#fff' }}>Desk</span>
             </a>
-          );
-        })}
-      </nav>
-
-      {/* Exact Footer Actions */}
-      <div className="foot nav">
-        <nav>
-          <a
-            onClick={() => switchPage('withdrawals')}
-            title={isSidebarCollapsed ? 'Withdrawals Desk' : undefined}
-            style={{ cursor: 'pointer' }}
-          >
-            <svg viewBox="0 0 24 24">
-              <path d="M12 15V3M7 8l5-5 5 5M4 17v3h16v-3" />
-            </svg>
-            <span>Withdrawals Desk</span>
-            <span className="s" style={{ background: '#1c1e1d', color: '#fff' }}>Desk</span>
-          </a>
-          <a
-            onClick={() => showToast('⚙️ System Settings & Security')}
-            title={isSidebarCollapsed ? 'Settings' : undefined}
-          >
-            <svg viewBox="0 0 24 24">
-              <path d={IC.set} />
-            </svg>
-            <span>Settings</span>
-          </a>
-          <a
-            onClick={() => {
-              logoutAdmin();
-              showToast('👋 Logged out from Admin Portal');
-            }}
-            title={isSidebarCollapsed ? 'Log out' : undefined}
-          >
-            <svg viewBox="0 0 24 24">
-              <path d={IC.out} />
-            </svg>
-            <span>Log out</span>
-          </a>
-        </nav>
-      </div>
-    </aside>
+            <a
+              onClick={() => showToast('⚙️ System Settings & Security')}
+              title={isSidebarCollapsed ? 'Settings' : undefined}
+            >
+              <svg viewBox="0 0 24 24">
+                <path d={IC.set} />
+              </svg>
+              <span>Settings</span>
+            </a>
+            <a
+              onClick={() => {
+                logoutAdmin();
+                showToast('👋 Logged out from Admin Portal');
+              }}
+              title={isSidebarCollapsed ? 'Log out' : undefined}
+            >
+              <svg viewBox="0 0 24 24">
+                <path d={IC.out} />
+              </svg>
+              <span>Log out</span>
+            </a>
+          </nav>
+        </div>
+      </aside>
     </>
   );
 };
