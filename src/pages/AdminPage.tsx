@@ -56,7 +56,8 @@ export const AdminPage: React.FC = () => {
     activeTab === 'agent-payouts' ||
     activeTab === 'jackpots' ||
     activeTab === 'cartelas' ||
-    activeTab === 'bot-engine';
+    activeTab === 'bot-engine' ||
+    activeTab === 'official-accounts';
 
   // If not authenticated, render the PIN lock guard
   if (!isAuthenticated) {
@@ -136,11 +137,9 @@ export const AdminPage: React.FC = () => {
                 <h2 className="viewport-page-main-heading">
                   <i className="fa-solid fa-bolt-lightning header-gold-bolt"></i>
                   {activeTab === 'cashier' && 'P2P Cashier Surveillance & Network Audit Ledger'}
-                  {activeTab === 'official-accounts' && 'Official Platform Receiving Accounts (የክፍያ መቀበያ ሂሳቦች)'}
                 </h2>
                 <p className="viewport-page-amharic-sub">
                   {activeTab === 'cashier' && 'የወኪሎች P2P ተቀማጭ እና ክፍያ ክትትል፣ የሞባይል ገንዘብ ኦዲት መዝገብ እና የፍሎት ቁጥጥር'}
-                  {activeTab === 'official-accounts' && 'የቢንጎ እና የፍሎት ክፍያ መቀበያ ኦፊሴላዊ ሂሳቦች (Telebirr, CBE, M-Pesa)'}
                 </p>
               </div>
             </div>

@@ -578,7 +578,13 @@ export const OfficialAccountsDesk: React.FC<OfficialAccountsDeskProps> = ({ show
 
   return (
     <div className="official-accounts-enqu-root">
-      {/* 1. Header Information Note */}
+      {/* 1. Top Header Title Bar */}
+      <div className="top">
+        <h1>Payment Accounts</h1>
+        <span className="av"></span>
+      </div>
+
+      {/* 2. Header Information Note */}
       <div className="note">
         Players pay into these accounts through agents. Turning an account off hides it from players straight away. Deactivating retires it and keeps its history.
       </div>

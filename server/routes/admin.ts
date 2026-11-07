@@ -2521,7 +2521,7 @@ router.get('/official-accounts', requireAdmin, async (_req, res) => {
         pa.updated_at,
         COALESCE(u.full_name, 'Platform account') as agent_name,
         COALESCE(ap.agent_code, 'PLATFORM') as agent_code,
-        COALESCE(ap.location, 'Headquarters') as agent_city
+        'Headquarters' as agent_city
       FROM payment_accounts pa
       LEFT JOIN agent_profiles ap ON pa.agent_id = ap.id
       LEFT JOIN users u ON ap.user_id = u.id
@@ -2696,7 +2696,7 @@ router.get('/official-accounts/agents', requireAdmin, async (_req, res) => {
         ap.id,
         ap.agent_code,
         u.full_name as name,
-        COALESCE(ap.location, 'Addis Ababa') as city
+        'Addis Ababa' as city
       FROM agent_profiles ap
       JOIN users u ON ap.user_id = u.id
       WHERE ap.status = 'active'
