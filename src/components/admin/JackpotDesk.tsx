@@ -141,10 +141,6 @@ export const JackpotDesk: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [overview, setOverview] = useState<OverviewData | null>(null);
 
-  // Review & award modal state
-  const [reviewPool, setReviewPool] = useState<JackpotPoolData | null>(null);
-  const [isAwarding, setIsAwarding] = useState<boolean>(false);
-
   // Prize split calculator state
   const [calcStake, setCalcStake] = useState<number>(10);
   const [calcCartelas, setCalcCartelas] = useState<number>(50);
@@ -258,40 +254,6 @@ export const JackpotDesk: React.FC = () => {
     }
   }, [activeTab, winRoomId, winSearch, winPage]);
 
-  // Live HIT count
-  const livePools = useMemo(() => {
-    return overview?.pools?.filter(p => p.isLive) || [];
-  }, [overview]);
-
-  const liveCount = livePools.length;
-
-  // Handle Review & Award execution
-  const handleAwardJackpot = async () => {
-    if (!reviewPool) return;
-    try {
-      setIsAwarding(true);
-      const res = await apiClient.admin.awardJackpot({
-        roomId: reviewPool.roomId,
-        winnerUserId: reviewPool.pendingAward?.winnerUserId || undefined,
-        roundId: reviewPool.pendingAward?.roundId || undefined,
-        awardAmount: reviewPool.balance
-      });
-
-      if (res.success) {
-        showToast(`🎉 ${res.message || 'Jackpot successfully awarded!'}`);
-        setReviewPool(null);
-        fetchOverview();
-        if (activeTab === 'winners') fetchWinners();
-      } else {
-        showToast(`❌ ${res.error || 'Failed to award jackpot'}`);
-      }
-    } catch (err: any) {
-      showToast(`❌ Error: ${err.message}`);
-    } finally {
-      setIsAwarding(false);
-    }
-  };
-
   // Helper date formatter
   const formatDateLabel = (iso: string | null) => {
     if (!iso) return 'Never';
@@ -372,7 +334,6 @@ export const JackpotDesk: React.FC = () => {
           onClick={() => setActiveTab('overview')}
         >
           Overview
-          {liveCount > 0 && <span className="pill-count">{liveCount} live</span>}
         </button>
         <button
           type="button"
@@ -413,13 +374,9 @@ export const JackpotDesk: React.FC = () => {
                 Four separate pools, one for each stake. 10% of every game feeds only the matching pool.
               </div>
               <div style={{ marginTop: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {liveCount > 0 ? (
-                  <span className="jhit">HIT JACKPOT · {liveCount} LIVE</span>
-                ) : (
-                  <span className="j-b o" style={{ background: 'rgba(255,255,255,.12)', color: '#eee', borderColor: 'rgba(255,255,255,.2)' }}>
-                    No pool at target yet
-                  </span>
-                )}
+                <span className="j-b o" style={{ background: 'rgba(255,255,255,.12)', color: '#eee', borderColor: 'rgba(255,255,255,.2)', padding: '5px 12px' }}>
+                  🎰 4 Active Progressive Pools
+                </span>
               </div>
             </div>
 
@@ -443,29 +400,6 @@ export const JackpotDesk: React.FC = () => {
             </div>
           </div>
 
-          {/* Hit Alert Warning Banner (.jbanner) */}
-          {livePools.map(p => {
-            const pa = p.pendingAward;
-            return (
-              <div key={p.roomId} className="jbanner">
-                <span className="jhit">HIT JACKPOT</span>
-                <div className="jt">
-                  ETB {p.stake} pool reached {p.balance.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ETB
-                  <small>
-                    Eligible game {pa?.roundRef || 'Active'} won by {pa?.winnerName || 'Player'}. Verify the result to pay ETB {p.balance.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}.
-                  </small>
-                </div>
-                <button
-                  type="button"
-                  className="j-btn k"
-                  onClick={() => setReviewPool(p)}
-                >
-                  Review &amp; award
-                </button>
-              </div>
-            );
-          })}
-
           {/* 4 Circular SVG Progress Ring Pool Cards (.j-grid .j-g4) */}
           <div className="j-grid j-g4">
             {(overview?.pools || []).map(p => {
@@ -479,7 +413,7 @@ export const JackpotDesk: React.FC = () => {
               return (
                 <div
                   key={p.roomId}
-                  className={`j-card jpool ${p.isLive ? 'live' : ''} ${!p.isActive ? 'off' : ''}`}
+                  className={`j-card jpool ${!p.isActive ? 'off' : ''}`}
                 >
                   {/* Stake Label & Status */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -489,8 +423,10 @@ export const JackpotDesk: React.FC = () => {
                     </span>
                     {!p.isActive ? (
                       <span className="j-b o">Paused</span>
-                    ) : p.isLive ? (
-                      <span className="jhit">HIT</span>
+                    ) : p.balance >= p.target ? (
+                      <span className="j-b o" style={{ color: '#047857', background: '#ecfdf5', borderColor: '#a7f3d0' }}>
+                        Target Reached
+                      </span>
                     ) : (
                       <span className="j-b o">Accumulating</span>
                     )}
@@ -535,9 +471,9 @@ export const JackpotDesk: React.FC = () => {
                   {/* Detail Metric Rows */}
                   <div className="lg">
                     <span style={{ '--c': '#e6a21f' } as React.CSSProperties}>
-                      {p.isLive ? 'Above target' : 'To reach target'}
+                      {p.balance >= p.target ? 'Above target' : 'To reach target'}
                     </span>
-                    <b>{p.isLive ? `+${(p.balance - p.target).toFixed(1)}` : distance.toFixed(1)} ETB</b>
+                    <b>{p.balance >= p.target ? `+${(p.balance - p.target).toFixed(1)}` : distance.toFixed(1)} ETB</b>
                   </div>
                   <div className="lg">
                     <span style={{ '--c': 'var(--j-grey)' } as React.CSSProperties}>Added today</span>
@@ -549,11 +485,11 @@ export const JackpotDesk: React.FC = () => {
                   </div>
 
                   {/* Action Buttons */}
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+                  <div style={{ marginTop: '14px' }}>
                     <button
                       type="button"
                       className="j-btn"
-                      style={{ flex: 1 }}
+                      style={{ width: '100%', justifyContent: 'center' }}
                       onClick={() => {
                         setConRoomId(p.roomId);
                         setActiveTab('contributions');
@@ -561,16 +497,6 @@ export const JackpotDesk: React.FC = () => {
                     >
                       History
                     </button>
-                    {p.isLive && (
-                      <button
-                        type="button"
-                        className="j-btn k"
-                        style={{ flex: 1 }}
-                        onClick={() => setReviewPool(p)}
-                      >
-                        Review award
-                      </button>
-                    )}
                   </div>
                 </div>
               );
@@ -1207,97 +1133,6 @@ export const JackpotDesk: React.FC = () => {
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* =================================================================== */}
-      {/* Review & Award Modal (.j-modalbg, .j-modal)                         */}
-      {/* =================================================================== */}
-      {reviewPool && (
-        <div className="j-modalbg">
-          <div className="j-modal">
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Award Jackpot</h3>
-              <button
-                type="button"
-                className="j-btn"
-                style={{ padding: '4px 10px', borderRadius: '50%' }}
-                onClick={() => setReviewPool(null)}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Pool & Winner Summary Panel */}
-            <div style={{ background: 'var(--j-panel)', borderRadius: '16px', padding: '12px 16px', marginTop: '14px' }}>
-              <div className="lg">
-                <span style={{ '--c': '#e6a21f' } as React.CSSProperties}>Pool</span>
-                <b>ETB {reviewPool.stake} stake</b>
-              </div>
-              <div className="lg">
-                <span style={{ '--c': 'var(--j-grey)' } as React.CSSProperties}>Winner</span>
-                <b>{reviewPool.pendingAward?.winnerName || 'Player'} ({reviewPool.pendingAward?.winnerPhone || '—'})</b>
-              </div>
-              <div className="lg">
-                <span style={{ '--c': 'var(--j-grey)' } as React.CSSProperties}>Game Reference</span>
-                <b>{reviewPool.pendingAward?.roundRef || 'Latest Round'}</b>
-              </div>
-              <div className="lg">
-                <span style={{ '--c': 'var(--j-dark)' } as React.CSSProperties}>Award Amount</span>
-                <b style={{ color: '#2e9e4f', fontSize: '15px' }}>{reviewPool.balance.toLocaleString()} ETB</b>
-              </div>
-              <div className="lg">
-                <span style={{ '--c': 'var(--j-grey)' } as React.CSSProperties}>Carries over to next game</span>
-                <b>{reviewPool.seedAmount} ETB (Reset to Seed)</b>
-              </div>
-            </div>
-
-            {/* 4 Real Verification Checkmarks */}
-            <div style={{ marginTop: '16px' }}>
-              <div className="jchk">
-                <i className="jck">✓</i>
-                <span>Winning result verified for game {reviewPool.pendingAward?.roundRef || 'Active'}</span>
-              </div>
-              <div className="jchk">
-                <i className="jck">✓</i>
-                <span>Player has completed 5 or more games and the account is active</span>
-              </div>
-              <div className="jchk">
-                <i className="jck">✓</i>
-                <span>Pool balance is at or above {reviewPool.target} ETB</span>
-              </div>
-              <div className="jchk">
-                <i className="jck">✓</i>
-                <span>Game stake matches the ETB {reviewPool.stake} pool</span>
-              </div>
-            </div>
-
-            <p style={{ fontSize: '12px', color: 'var(--j-mute)', margin: '14px 0 16px 0' }}>
-              The amount is credited directly to the winner's cash wallet and the player is notified.
-            </p>
-
-            {/* Actions */}
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                type="button"
-                className="j-btn"
-                style={{ flex: 1, padding: '10px' }}
-                onClick={() => setReviewPool(null)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="j-btn k"
-                style={{ flex: 1, padding: '10px' }}
-                disabled={isAwarding}
-                onClick={handleAwardJackpot}
-              >
-                {isAwarding ? 'Processing Award...' : `Confirm & Award ETB ${reviewPool.balance.toLocaleString()}`}
-              </button>
-            </div>
           </div>
         </div>
       )}

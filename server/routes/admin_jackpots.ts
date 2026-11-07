@@ -8,9 +8,9 @@ export const adminJackpotsRouter = Router();
 
 const STAKE_ROOMS = [
   { id: 'room-10', stake: 10, name: 'ETB 10 stake', defaultTarget: 500 },
-  { id: 'room-20', stake: 20, name: 'ETB 20 stake', defaultTarget: 500 },
-  { id: 'room-50', stake: 50, name: 'ETB 50 stake', defaultTarget: 500 },
-  { id: 'room-100', stake: 100, name: 'ETB 100 stake', defaultTarget: 500 }
+  { id: 'room-20', stake: 20, name: 'ETB 20 stake', defaultTarget: 1000 },
+  { id: 'room-50', stake: 50, name: 'ETB 50 stake', defaultTarget: 2500 },
+  { id: 'room-100', stake: 100, name: 'ETB 100 stake', defaultTarget: 5000 }
 ];
 
 /**
@@ -186,7 +186,7 @@ async function handleOverview(_req: AuthenticatedRequest, res: Response) {
       const liveRoom = gameEngine.getRoom(s.id);
       const liveBal = liveRoom?.jackpotPoolBalance !== undefined ? liveRoom.jackpotPoolBalance : parseFloat(dbRow?.balance || '0');
       const seedBal = parseFloat(dbRow?.seed_amount || String(s.defaultTarget));
-      const target = s.defaultTarget; // Standard 500 ETB trigger
+      const target = parseFloat(dbRow?.seed_amount || String(s.defaultTarget));
       const addedToday = roomTodayMap.get(s.id) || 0;
       const isLive = liveBal >= target;
 
