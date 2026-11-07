@@ -7,8 +7,6 @@ import { DashboardOverview } from '../components/admin/DashboardOverview.tsx';
 import { CashflowDesk } from '../components/admin/CashflowDesk.tsx';
 import { CashierDesk } from '../components/admin/CashierDesk.tsx';
 import { PlayerAccountsDesk } from '../components/admin/PlayerAccountsDesk.tsx';
-import { BotsSimulatorDesk } from '../components/admin/BotsSimulatorDesk.tsx';
-import { BotAccountsDesk } from '../components/admin/BotAccountsDesk.tsx';
 import { CartelasDesk } from '../components/admin/CartelasDesk.tsx';
 import { TelegramBotDesk } from '../components/admin/TelegramBotDesk.tsx';
 import { BotEngineControllerDesk } from '../components/admin/BotEngineControllerDesk.tsx';
@@ -26,7 +24,6 @@ const TAB_TITLES: Record<AdminTab, string> = {
   cashflow: '📈 Cashflow & Treasury',
   cashier: '🛡️ P2P Cashier',
   users: '👥 Players',
-  bots: '🤖 200 Bots',
   'bot-engine': '🎚️ Bot Engine (0-50)',
   cartelas: '🗂️ 600 Cards',
   'telegram-bot': '📢 Telegram Bot',
@@ -54,7 +51,9 @@ export const AdminPage: React.FC = () => {
     activeTab === 'coins' ||
     activeTab === 'agent-recharges' ||
     activeTab === 'agent-payouts' ||
-    activeTab === 'jackpots';
+    activeTab === 'jackpots' ||
+    activeTab === 'cartelas' ||
+    activeTab === 'bot-engine';
 
   // If not authenticated, render the PIN lock guard
   if (!isAuthenticated) {
@@ -134,16 +133,10 @@ export const AdminPage: React.FC = () => {
                 <h2 className="viewport-page-main-heading">
                   <i className="fa-solid fa-bolt-lightning header-gold-bolt"></i>
                   {activeTab === 'cashier' && 'P2P Cashier Surveillance & Network Audit Ledger'}
-                  {activeTab === 'bots' && '200 Bot Player Accounts & Wallets'}
-                  {activeTab === 'bot-engine' && 'Room 10 Dynamic Bot Engine (0-50 Control Desk)'}
-                  {activeTab === 'cartelas' && '600 Serial Cartela Cards Library'}
                   {activeTab === 'official-accounts' && 'Official Platform Receiving Accounts (የክፍያ መቀበያ ሂሳቦች)'}
                 </h2>
                 <p className="viewport-page-amharic-sub">
                   {activeTab === 'cashier' && 'የወኪሎች P2P ተቀማጭ እና ክፍያ ክትትል፣ የሞባይል ገንዘብ ኦዲት መዝገብ እና የፍሎት ቁጥጥር'}
-                  {activeTab === 'bots' && 'እውነተኛ የውሂብ ጎታ ያላቸው 200 የቦቶች ዋሌቶች፣ ራስ-ሰር ተወራራጅነት እና የቀጥታ አሸናፊነት መዝገብ'}
-                  {activeTab === 'bot-engine' && 'የክፍል 10 ተለዋዋጭ ቦቶች ቁጥጥር ማዕከል - ከ 0 እስከ 50 ቦቶች በቀጥታ ያስተካክሉ'}
-                  {activeTab === 'cartelas' && '600 የቢንጎ ካርቴላ ካርዶች ቤተ-መጽሐፍት'}
                   {activeTab === 'official-accounts' && 'የቢንጎ እና የፍሎት ክፍያ መቀበያ ኦፊሴላዊ ሂሳቦች (Telebirr, CBE, M-Pesa)'}
                 </p>
               </div>
@@ -204,9 +197,8 @@ export const AdminPage: React.FC = () => {
               { id: 'bot-engine', label: '🎚️ Bot Engine (0-50)', highlight: true },
               { id: 'cashier', label: '🛡️ P2P Cashier' },
               { id: 'users', label: '👥 Players' },
-              { id: 'bots', label: '🤖 200 Bots' },
               { id: 'telegram-bot', label: '📢 Telegram Bot' },
-              { id: 'cartelas', label: '🗂️ 600 Cards' },
+              { id: 'cartelas', label: '🗂️ 600 Cartelas' },
               { id: 'agents', label: '🤝 Agents' },
               { id: 'agent-recharges', label: '⚡ Recharges' },
               { id: 'agent-payouts', label: '💸 Payouts' },
@@ -240,7 +232,7 @@ export const AdminPage: React.FC = () => {
                 }}
               >
                 {t.label}
-                {t.highlight && activeTab !== 'bot-engine' && (
+                {t.highlight && (activeTab as string) !== 'bot-engine' && (
                   <span style={{
                     backgroundColor: '#10b981',
                     color: '#ffffff',
@@ -268,9 +260,6 @@ export const AdminPage: React.FC = () => {
 
           {/* TAB 3: PLAYER ACCOUNTS & WALLETS DIRECTORY */}
           {activeTab === 'users' && <PlayerAccountsDesk />}
-
-          {/* TAB 5: 200 BOT PLAYER ACCOUNTS & WALLETS */}
-          {activeTab === 'bots' && <BotAccountsDesk />}
 
           {/* TAB 5b: ROOM 10 DYNAMIC BOT ENGINE (0-50) */}
           {activeTab === 'bot-engine' && <BotEngineControllerDesk />}

@@ -7,7 +7,6 @@ export type AdminTab =
   | 'cashflow'
   | 'cashier'
   | 'users'
-  | 'bots'
   | 'bot-engine'
   | 'cartelas'
   | 'telegram-bot'
@@ -88,9 +87,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       urgentBadge: pendingCount > 0
     },
     { id: 'users', label: 'Player Accounts', path: IC.pl, n: totalUsersCount || users.length || 7 },
-    { id: 'bots', label: 'Bot Player Accounts', path: IC.bot, n: 200 },
     { id: 'bot-engine', label: 'Bot Engine', path: IC.eng, s: '0-50' },
-    { id: 'cartelas', label: 'Room 10', path: IC.room, n: '600 Cartelas' },
+    { id: 'cartelas', label: '600 Cartelas', path: IC.room, s: 'Cards' },
     { id: 'telegram-bot', label: 'Telegram Bot & Ads', path: IC.tg },
     { id: 'agents', label: 'Agents Directory', path: IC.ag, s: 'Portal' },
     { id: 'agent-recharges', label: 'Agent Recharges', path: IC.rc, s: 'Float' },
