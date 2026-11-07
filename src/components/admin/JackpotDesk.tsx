@@ -1,468 +1,668 @@
-import React, { useState, useEffect } from 'react';
-import { useAdmin } from '../../context/AdminContext.tsx';
-import { useApp } from '../../context/AppContext.tsx';
+import React, { useState, useEffect, useMemo } from 'react';
 import { apiClient } from '../../services/apiClient.ts';
+import { socketService } from '../../services/socketService.ts';
+import { useApp } from '../../context/AppContext.tsx';
 
-interface JackpotPoolItem {
-  room_id: string;
-  name?: string;
-  room_name?: string;
-  stake_amount?: number;
-  balance: number | string;
-  seed_amount: number | string;
-  last_won_amount?: number | string;
-  last_won_at?: string;
-  liveBalance?: number;
+interface JackpotPoolData {
+  roomId: string;
+  stake: number;
+  name: string;
+  balance: number;
+  target: number;
+  seedAmount: number;
+  isLive: boolean;
+  isActive: boolean;
+  addedToday: number;
+  lastAwarded: string | null;
+  lastWonAmount: number;
+  pendingAward?: {
+    roundId: string;
+    roundRef: string;
+    winnerUserId: string | null;
+    winnerName: string;
+    winnerPhone: string;
+    amount: number;
+  } | null;
 }
 
-interface JackpotWinnerItem {
-  id: string;
-  room_id: string;
-  room_name?: string;
-  winner_name: string;
-  winner_phone: string;
-  amount: number | string;
-  balls_count: number;
-  won_at: string;
+interface ChartDayData {
+  date: string;
+  dayLabel: string;
+  room10: number;
+  room20: number;
+  room50: number;
+  room100: number;
+  total: number;
 }
+
+interface OverviewData {
+  totalVaultBalance: number;
+  contributedToday: number;
+  awardedLast30Days: number;
+  closestToTarget: {
+    roomId: string;
+    stake: number;
+    distance: number;
+    balance: number;
+    target: number;
+  } | null;
+  pools: JackpotPoolData[];
+  chart14Days: ChartDayData[];
+}
+
+const ROOM_COLORS: Record<string, string> = {
+  'room-10': '#c9c9cd',
+  'room-20': '#8a8a8e',
+  'room-50': '#1f2220',
+  'room-100': '#e6a21f'
+};
 
 export const JackpotDesk: React.FC = () => {
-  const { adminToken } = useAdmin();
   const { showToast } = useApp();
 
-  const [pools, setPools] = useState<JackpotPoolItem[]>([]);
-  const [winners, setWinners] = useState<JackpotWinnerItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedPool, setSelectedPool] = useState<JackpotPoolItem | null>(null);
-  const [editBalance, setEditBalance] = useState('');
-  const [editSeed, setEditSeed] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Active top tab: ONLY 3 tabs (NO Settings tab!)
+  const [activeTab, setActiveTab] = useState<'overview' | 'contributions' | 'winners'>('overview');
 
-  const fetchJackpotData = async () => {
+  // Overview state
+  const [loading, setLoading] = useState<boolean>(true);
+  const [overview, setOverview] = useState<OverviewData | null>(null);
+
+  // Review & award modal state
+  const [reviewPool, setReviewPool] = useState<JackpotPoolData | null>(null);
+  const [isAwarding, setIsAwarding] = useState<boolean>(false);
+
+  // Prize split calculator state
+  const [calcStake, setCalcStake] = useState<number>(10);
+  const [calcCartelas, setCalcCartelas] = useState<number>(50);
+
+  // Fetch overview from real Neon DB backend
+  const fetchOverview = async () => {
     try {
       setLoading(true);
-      const res = await apiClient.admin.getJackpots();
-      if (res.success) {
-        setPools(res.pools || []);
-        setWinners(res.winners || []);
+      const res = await apiClient.admin.getJackpotOverview();
+      if (res.success && res.data) {
+        setOverview(res.data);
       }
-    } catch (err) {
-      console.error('Failed to fetch jackpot data:', err);
+    } catch (err: any) {
+      console.error('Failed to load jackpot overview:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchJackpotData();
-    const interval = setInterval(fetchJackpotData, 15000);
-    return () => clearInterval(interval);
+    fetchOverview();
+
+    // Listen for live WebSocket jackpot updates from game engine
+    const unsub = socketService.on('jackpot_update', () => {
+      fetchOverview();
+    });
+
+    // Auto polling interval (15s fallback)
+    const interval = setInterval(fetchOverview, 15000);
+
+    return () => {
+      if (typeof unsub === 'function') unsub();
+      clearInterval(interval);
+    };
   }, []);
 
-  const handleOpenAdjust = (p: JackpotPoolItem) => {
-    setSelectedPool(p);
-    setEditBalance(String((p.liveBalance ?? p.balance) || 0));
-    setEditSeed(String(p.seed_amount));
-  };
+  // Live HIT count
+  const livePools = useMemo(() => {
+    return overview?.pools?.filter(p => p.isLive) || [];
+  }, [overview]);
 
-  const handleSaveAdjust = async () => {
-    if (!selectedPool) return;
-    const balNum = parseFloat(editBalance);
-    const seedNum = parseFloat(editSeed);
+  const liveCount = livePools.length;
 
-    if (isNaN(balNum) || isNaN(seedNum) || balNum < 0 || seedNum < 0) {
-      showToast('❌ Please enter valid non-negative numbers');
-      return;
-    }
-
+  // Handle Review & Award execution
+  const handleAwardJackpot = async () => {
+    if (!reviewPool) return;
     try {
-      setIsSubmitting(true);
-      const res = await apiClient.admin.adjustJackpot({
-        roomId: selectedPool.room_id,
-        balance: balNum,
-        seedAmount: seedNum
+      setIsAwarding(true);
+      const res = await apiClient.admin.awardJackpot({
+        roomId: reviewPool.roomId,
+        winnerUserId: reviewPool.pendingAward?.winnerUserId || undefined,
+        roundId: reviewPool.pendingAward?.roundId || undefined,
+        awardAmount: reviewPool.balance
       });
+
       if (res.success) {
-        showToast(`🎉 ${selectedPool.room_id} Jackpot adjusted successfully!`);
-        setSelectedPool(null);
-        fetchJackpotData();
+        showToast(`🎉 ${res.message || 'Jackpot successfully awarded!'}`);
+        setReviewPool(null);
+        fetchOverview();
       } else {
-        showToast(`❌ ${res.error || 'Adjustment failed'}`);
+        showToast(`❌ ${res.error || 'Failed to award jackpot'}`);
       }
     } catch (err: any) {
       showToast(`❌ Error: ${err.message}`);
     } finally {
-      setIsSubmitting(false);
+      setIsAwarding(false);
     }
   };
 
-  const totalVaultBalance = pools.reduce((acc, p) => acc + parseFloat(String((p.liveBalance ?? p.balance) || 0)), 0);
-  const totalPaidOut = winners.reduce((acc, w) => acc + parseFloat(String(w.amount || 0)), 0);
+  // Helper date formatter
+  const formatDateLabel = (iso: string | null) => {
+    if (!iso) return 'Never';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+    } catch {
+      return 'Never';
+    }
+  };
+
+  // Calculator computations (70/10/20 standard)
+  const calcTotalPot = calcStake * calcCartelas;
+  const calcWinnerPayout = Math.floor(calcTotalPot * 0.70);
+  const calcJackpotFee = Math.floor(calcTotalPot * 0.10);
+  const calcHouseFee = calcTotalPot - calcWinnerPayout - calcJackpotFee;
 
   return (
-    <div className="admin-subpage-wrap animate-fadeIn">
-      {/* 1. Header Banner */}
-      <div style={{
-        background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%)',
-        borderRadius: '16px',
-        padding: '24px',
-        color: '#ffffff',
-        marginBottom: '24px',
-        boxShadow: '0 10px 25px -5px rgba(49, 46, 129, 0.3)',
-        display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '16px'
-      }}>
+    <div className="jackpot-enqu-root animate-fadeIn">
+      {/* 1. Top Header */}
+      <div className="jackpot-top">
+        <h1>Jackpot Management</h1>
+        <div className="av" title="Superadmin" />
+      </div>
+
+      {/* 2. Top Navigation Tabs (Strictly 3 tabs, NO Settings tab) */}
+      <div className="jackpot-nav-tabs">
+        <button
+          type="button"
+          className={`jackpot-nav-btn ${activeTab === 'overview' ? 'on' : ''}`}
+          onClick={() => setActiveTab('overview')}
+        >
+          Overview
+          {liveCount > 0 && <span className="pill-count">{liveCount} live</span>}
+        </button>
+        <button
+          type="button"
+          className={`jackpot-nav-btn ${activeTab === 'contributions' ? 'on' : ''}`}
+          onClick={() => setActiveTab('contributions')}
+        >
+          Contributions
+        </button>
+        <button
+          type="button"
+          className={`jackpot-nav-btn ${activeTab === 'winners' ? 'on' : ''}`}
+          onClick={() => setActiveTab('winners')}
+        >
+          Winners &amp; payouts
+        </button>
+      </div>
+
+      {/* =================================================================== */}
+      {/* TAB 1: OVERVIEW                                                     */}
+      {/* =================================================================== */}
+      {activeTab === 'overview' && (
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '1.75rem' }}>🎰</span>
-            <h2 style={{ fontSize: '1.375rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
-              Progressive Jackpot Engine Desk
-            </h2>
-          </div>
-          <p style={{ margin: 0, color: '#c7d2fe', fontSize: '0.875rem' }}>
-            የቀጥታ ፕሮግረሲቭ ጃክፖት ካዝናዎች፣ የ10% መዋጮ ድልድል እና የጃክፖት አሸናፊዎች መዝገብ
-          </p>
-        </div>
+          {/* Total Jackpot Vault Hero Banner (.jhero) */}
+          <div className="jhero">
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div className="jk">Total jackpot vault</div>
+              <div className="jbig">
+                <small>ETB</small>
+                {loading && !overview ? '...' : (overview?.totalVaultBalance ?? 0).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+              </div>
+              <div className="jsub">
+                Four separate pools, one for each stake. 10% of every game feeds only the matching pool.
+              </div>
+              <div style={{ marginTop: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {liveCount > 0 ? (
+                  <span className="jhit">HIT JACKPOT · {liveCount} LIVE</span>
+                ) : (
+                  <span className="j-b o" style={{ background: 'rgba(255,255,255,.12)', color: '#eee', borderColor: 'rgba(255,255,255,.2)' }}>
+                    No pool at target yet
+                  </span>
+                )}
+              </div>
+            </div>
 
-        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-          <div style={{ background: 'rgba(255, 255, 255, 0.1)', padding: '10px 18px', borderRadius: '12px', backdropFilter: 'blur(8px)' }}>
-            <div style={{ fontSize: '0.75rem', color: '#a5b4fc', textTransform: 'uppercase', fontWeight: 700 }}>Total Jackpot Vault</div>
-            <div style={{ fontSize: '1.375rem', fontWeight: 800, color: '#facc15' }}>
-              {totalVaultBalance.toLocaleString()} ETB
+            <div className="jmini">
+              <div>
+                <span>Contributed today</span>
+                <b>ETB {(overview?.contributedToday ?? 0).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</b>
+              </div>
+              <div>
+                <span>Awarded, last 30 days</span>
+                <b>ETB {(overview?.awardedLast30Days ?? 0).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</b>
+              </div>
+              <div>
+                <span>Closest to target</span>
+                <b>
+                  {overview?.closestToTarget
+                    ? `ETB ${overview.closestToTarget.stake} · ${overview.closestToTarget.distance.toFixed(1)} away`
+                    : 'All at target'}
+                </b>
+              </div>
             </div>
           </div>
-          <div style={{ background: 'rgba(255, 255, 255, 0.1)', padding: '10px 18px', borderRadius: '12px', backdropFilter: 'blur(8px)' }}>
-            <div style={{ fontSize: '0.75rem', color: '#a5b4fc', textTransform: 'uppercase', fontWeight: 700 }}>Jackpots Paid Out</div>
-            <div style={{ fontSize: '1.375rem', fontWeight: 800, color: '#34d399' }}>
-              {totalPaidOut.toLocaleString()} ETB
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* 2. Room Pools Grid */}
-      <div className="jackpot-pools-grid" style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
-        gap: '16px',
-        marginBottom: '28px'
-      }}>
-        {pools.map(p => {
-          const bal = parseFloat(String((p.liveBalance ?? p.balance) || 0));
-          const seed = parseFloat(String(p.seed_amount || 0));
-          const lastWon = parseFloat(String(p.last_won_amount || 0));
-          const isBoosted = bal > seed;
-
-          return (
-            <div
-              key={p.room_id}
-              style={{
-                backgroundColor: '#ffffff',
-                border: isBoosted ? '2px solid #818cf8' : '1px solid #e2e8f0',
-                borderRadius: '16px',
-                padding: '20px',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.04)',
-                position: 'relative'
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                <div>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase' }}>
-                    {p.room_id.toUpperCase()}
-                  </div>
-                  <h3 style={{ fontSize: '1.125rem', fontWeight: 800, margin: '2px 0 0 0', color: '#0f172a' }}>
-                    {p.room_name || p.room_id}
-                  </h3>
+          {/* Hit Alert Warning Banner (.jbanner) */}
+          {livePools.map(p => {
+            const pa = p.pendingAward;
+            return (
+              <div key={p.roomId} className="jbanner">
+                <span className="jhit">HIT JACKPOT</span>
+                <div className="jt">
+                  ETB {p.stake} pool reached {p.balance.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ETB
+                  <small>
+                    Eligible game {pa?.roundRef || 'Active'} won by {pa?.winnerName || 'Player'}. Verify the result to pay ETB {p.balance.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}.
+                  </small>
                 </div>
-                <span style={{
-                  backgroundColor: '#eef2ff',
-                  color: '#4338ca',
-                  padding: '4px 10px',
-                  borderRadius: '20px',
-                  fontSize: '0.75rem',
-                  fontWeight: 700
-                }}>
-                  {p.stake_amount || (p.room_id === 'room-10' ? 10 : p.room_id === 'room-20' ? 20 : p.room_id === 'room-50' ? 50 : 100)} ETB Stake
-                </span>
-              </div>
-
-              {/* Current Pool Display */}
-              <div style={{
-                background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-                padding: '14px',
-                borderRadius: '12px',
-                marginBottom: '14px',
-                textAlign: 'center'
-              }}>
-                <div style={{ fontSize: '0.6875rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Live Jackpot Balance
-                </div>
-                <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#4f46e5', margin: '4px 0' }}>
-                  {bal.toLocaleString()} <span style={{ fontSize: '1rem', fontWeight: 700 }}>ETB</span>
-                </div>
-                <div style={{ fontSize: '0.75rem', color: isBoosted ? '#059669' : '#64748b', fontWeight: 600 }}>
-                  {isBoosted ? `🔥 +${(bal - seed).toLocaleString()} ETB Accumulated` : `🌱 Baseline Seed Active`}
-                </div>
-              </div>
-
-              {/* Pool Details */}
-              <div style={{ fontSize: '0.8125rem', color: '#475569', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #f1f5f9' }}>
-                  <span>Baseline Seed:</span>
-                  <strong style={{ color: '#0f172a' }}>{seed.toLocaleString()} ETB</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #f1f5f9' }}>
-                  <span>Last Won Amount:</span>
-                  <strong style={{ color: lastWon > 0 ? '#059669' : '#94a3b8' }}>
-                    {lastWon > 0 ? `${lastWon.toLocaleString()} ETB` : 'None yet'}
-                  </strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-                  <span>Win Trigger:</span>
-                  <strong style={{ color: '#dc2626' }}>≤ 15 Balls (Speed 15)</strong>
-                </div>
-              </div>
-
-              {/* Adjust Button */}
-              <button
-                type="button"
-                onClick={() => handleOpenAdjust(p)}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  backgroundColor: '#f1f5f9',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: '10px',
-                  fontWeight: 700,
-                  fontSize: '0.8125rem',
-                  color: '#334155',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <i className="fa-solid fa-sliders"></i>
-                Adjust Pool / Seed
-              </button>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* 3. Historical Jackpot Winners Table */}
-      <div style={{
-        backgroundColor: '#ffffff',
-        borderRadius: '16px',
-        padding: '24px',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.04)'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <div>
-            <h3 style={{ fontSize: '1.125rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>
-              🏆 Recent Progressive Jackpot Winners
-            </h3>
-            <p style={{ margin: '2px 0 0 0', color: '#64748b', fontSize: '0.8125rem' }}>
-              Real players who completed a winning bingo pattern in ≤ 15 balls drawn (Speed 15 Golden Strike)
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={fetchJackpotData}
-            style={{
-              padding: '8px 14px',
-              backgroundColor: '#f8fafc',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '0.8125rem',
-              fontWeight: 600,
-              color: '#334155'
-            }}
-          >
-            <i className="fa-solid fa-rotate-right" style={{ marginRight: '6px' }}></i> Refresh
-          </button>
-        </div>
-
-        {winners.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
-            <i className="fa-solid fa-trophy" style={{ fontSize: '2.5rem', marginBottom: '12px', color: '#cbd5e1' }}></i>
-            <p style={{ margin: 0, fontWeight: 600 }}>No progressive jackpots have been hit yet.</p>
-            <p style={{ margin: '4px 0 0 0', fontSize: '0.8125rem' }}>
-              When a real player wins on Ball 15 (Speed 15 Golden Strike), the payout is recorded here automatically.
-            </p>
-          </div>
-        ) : (
-          <div className="wrap" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-            <table style={{ width: '100%', minWidth: '580px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #e2e8f0', color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' }}>
-                  <th style={{ padding: '10px 12px' }}>Winner Name</th>
-                  <th style={{ padding: '10px 12px' }}>Phone</th>
-                  <th style={{ padding: '10px 12px' }}>Room</th>
-                  <th style={{ padding: '10px 12px' }}>Jackpot Prize</th>
-                  <th style={{ padding: '10px 12px' }}>Balls Drawn</th>
-                  <th style={{ padding: '10px 12px' }}>Date Won</th>
-                </tr>
-              </thead>
-              <tbody>
-                {winners.map(w => (
-                  <tr key={w.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '12px', fontWeight: 700, color: '#0f172a' }}>{w.winner_name}</td>
-                    <td style={{ padding: '12px', color: '#475569' }}>{w.winner_phone}</td>
-                    <td style={{ padding: '12px' }}>
-                      <span style={{ backgroundColor: '#eef2ff', color: '#4338ca', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700 }}>
-                        {w.room_name || w.room_id}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px', fontWeight: 800, color: '#059669' }}>
-                      {parseFloat(String(w.amount)).toLocaleString()} ETB
-                    </td>
-                    <td style={{ padding: '12px' }}>
-                      <span style={{ backgroundColor: '#fee2e2', color: '#b91c1c', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 800 }}>
-                        ⚡ {w.balls_count} Balls
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px', color: '#64748b', fontSize: '0.8125rem' }}>
-                      {new Date(w.won_at).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* 4. Adjust Modal */}
-      {selectedPool && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          backdropFilter: 'blur(4px)'
-        }}>
-          <div style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '16px',
-            padding: '28px',
-            width: '90%',
-            maxWidth: '440px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
-          }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 8px 0', color: '#0f172a' }}>
-              Adjust Jackpot: {selectedPool.room_name || selectedPool.room_id}
-            </h3>
-            <p style={{ margin: '0 0 20px 0', color: '#64748b', fontSize: '0.875rem' }}>
-              Update the active pool balance or default baseline seed for this room.
-            </p>
-
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <label style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#334155' }}>
-                  Active Pool Balance (ETB)
-                </label>
                 <button
                   type="button"
-                  onClick={() => setEditBalance(editSeed)}
-                  style={{
-                    background: '#eef2ff',
-                    color: '#4f46e5',
-                    border: '1px solid #c7d2fe',
-                    borderRadius: '6px',
-                    padding: '2px 8px',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    cursor: 'pointer'
-                  }}
+                  className="j-btn k"
+                  onClick={() => setReviewPool(p)}
                 >
-                  ⚡ Set Equal to Seed
+                  Review &amp; award
                 </button>
               </div>
-              <input
-                type="number"
-                value={editBalance}
-                onChange={e => setEditBalance(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '0.9375rem',
-                  fontWeight: 600,
-                  boxSizing: 'border-box'
-                }}
-              />
+            );
+          })}
+
+          {/* 4 Circular SVG Progress Ring Pool Cards (.j-grid .j-g4) */}
+          <div className="j-grid j-g4">
+            {(overview?.pools || []).map(p => {
+              const radius = 54;
+              const circumference = 2 * Math.PI * radius; // ~339.29
+              const progressRatio = Math.min(1, p.balance / p.target);
+              const strokeDash = circumference * progressRatio;
+              const dotColor = ROOM_COLORS[p.roomId] || '#e6a21f';
+              const distance = Math.max(0, p.target - p.balance);
+
+              return (
+                <div
+                  key={p.roomId}
+                  className={`j-card jpool ${p.isLive ? 'live' : ''} ${!p.isActive ? 'off' : ''}`}
+                >
+                  {/* Stake Label & Status */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span className="jst">
+                      <i style={{ background: dotColor }} />
+                      ETB {p.stake} stake
+                    </span>
+                    {!p.isActive ? (
+                      <span className="j-b o">Paused</span>
+                    ) : p.isLive ? (
+                      <span className="jhit">HIT</span>
+                    ) : (
+                      <span className="j-b o">Accumulating</span>
+                    )}
+                  </div>
+
+                  {/* Circular SVG Ring */}
+                  <div className="jring">
+                    <svg viewBox="0 0 132 132" width="132" height="132" role="img" aria-label={`ETB ${p.stake} pool at ${p.balance} of ${p.target}`}>
+                      <defs>
+                        <linearGradient id={`jg-${p.roomId}`} x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#f6d453" />
+                          <stop offset="100%" stopColor="#e08a1e" />
+                        </linearGradient>
+                      </defs>
+                      {/* Background track */}
+                      <circle
+                        cx="66"
+                        cy="66"
+                        r={radius}
+                        fill="none"
+                        stroke="#ececee"
+                        strokeWidth="12"
+                      />
+                      {/* Animated Golden Stroke */}
+                      <circle
+                        cx="66"
+                        cy="66"
+                        r={radius}
+                        fill="none"
+                        stroke={`url(#jg-${p.roomId})`}
+                        strokeWidth="12"
+                        strokeLinecap="round"
+                        strokeDasharray={`${strokeDash.toFixed(1)} ${circumference.toFixed(1)}`}
+                        style={{ transition: 'stroke-dasharray 0.6s ease' }}
+                      />
+                    </svg>
+
+                    <div className="jc">
+                      <b>{p.balance.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</b>
+                      <small>of {p.target} ETB</small>
+                    </div>
+                  </div>
+
+                  {/* Detail Metric Rows */}
+                  <div className="lg">
+                    <span style={{ '--c': '#e6a21f' } as React.CSSProperties}>
+                      {p.isLive ? 'Above target' : 'To reach target'}
+                    </span>
+                    <b>{p.isLive ? `+${(p.balance - p.target).toFixed(1)}` : distance.toFixed(1)} ETB</b>
+                  </div>
+                  <div className="lg">
+                    <span style={{ '--c': 'var(--j-grey)' } as React.CSSProperties}>Added today</span>
+                    <b>{p.addedToday.toFixed(1)} ETB</b>
+                  </div>
+                  <div className="lg">
+                    <span style={{ '--c': 'var(--j-grey)' } as React.CSSProperties}>Last awarded</span>
+                    <b>{formatDateLabel(p.lastAwarded)}</b>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+                    <button
+                      type="button"
+                      className="j-btn"
+                      style={{ flex: 1 }}
+                      onClick={() => setActiveTab('contributions')}
+                    >
+                      History
+                    </button>
+                    {p.isLive && (
+                      <button
+                        type="button"
+                        className="j-btn k"
+                        style={{ flex: 1 }}
+                        onClick={() => setReviewPool(p)}
+                      >
+                        Review award
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 14-Day Contributions Stacked Bar Chart & Prize Split Calculator */}
+          <div className="j-grid j-g2" style={{ alignItems: 'start', marginTop: '15px' }}>
+            {/* Left: 14-Day Stacked Bar Chart */}
+            <div className="j-card">
+              <h3>
+                Contributions, last 14 days
+                <span className="r j-tr">By day · ETB</span>
+              </h3>
+
+              {/* Legend */}
+              <div className="jleg">
+                <span style={{ '--c': ROOM_COLORS['room-10'] } as React.CSSProperties}>ETB 10</span>
+                <span style={{ '--c': ROOM_COLORS['room-20'] } as React.CSSProperties}>ETB 20</span>
+                <span style={{ '--c': ROOM_COLORS['room-50'] } as React.CSSProperties}>ETB 50</span>
+                <span style={{ '--c': ROOM_COLORS['room-100'] } as React.CSSProperties}>ETB 100</span>
+              </div>
+
+              {/* Stacked Chart Container */}
+              {(() => {
+                const days = overview?.chart14Days || [];
+                const maxVal = Math.max(...days.map(d => d.total), 50);
+                const step = Math.ceil(maxVal / 4);
+                const chartMax = step * 4;
+
+                return (
+                  <div className="jch">
+                    {/* Gridlines */}
+                    <div className="jgl">
+                      {[1, 0.75, 0.5, 0.25, 0].map((frac, idx) => {
+                        const topPct = (1 - frac) * 100;
+                        const labelVal = Math.round(chartMax * frac);
+                        return (
+                          <React.Fragment key={idx}>
+                            <i style={{ top: `${topPct}%` }} />
+                            <span style={{ top: `${topPct}%` }}>{labelVal}</span>
+                          </React.Fragment>
+                        );
+                      })}
+                    </div>
+
+                    {/* Bars */}
+                    <div className="jbars">
+                      {days.map(d => {
+                        const hTotalPct = Math.min(100, (d.total / chartMax) * 100);
+                        const r10Pct = d.total > 0 ? (d.room10 / d.total) * 100 : 0;
+                        const r20Pct = d.total > 0 ? (d.room20 / d.total) * 100 : 0;
+                        const r50Pct = d.total > 0 ? (d.room50 / d.total) * 100 : 0;
+                        const r100Pct = d.total > 0 ? (d.room100 / d.total) * 100 : 0;
+
+                        return (
+                          <div
+                            key={d.date}
+                            className="jcol"
+                            title={`${d.dayLabel}: Total ETB ${d.total.toFixed(1)} (R10: ${d.room10}, R20: ${d.room20}, R50: ${d.room50}, R100: ${d.room100})`}
+                          >
+                            <div className="st" style={{ height: `${Math.max(hTotalPct, 2)}%` }}>
+                              {d.room100 > 0 && <i style={{ height: `${r100Pct}%`, background: ROOM_COLORS['room-100'] }} />}
+                              {d.room50 > 0 && <i style={{ height: `${r50Pct}%`, background: ROOM_COLORS['room-50'] }} />}
+                              {d.room20 > 0 && <i style={{ height: `${r20Pct}%`, background: ROOM_COLORS['room-20'] }} />}
+                              {d.room10 > 0 && <i style={{ height: `${r10Pct}%`, background: ROOM_COLORS['room-10'] }} />}
+                            </div>
+                            <span className="jl">{d.dayLabel}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                Baseline Seed Amount (ETB)
-              </label>
-              <input
-                type="number"
-                value={editSeed}
-                onChange={e => setEditSeed(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '0.9375rem',
-                  fontWeight: 600,
-                  boxSizing: 'border-box'
-                }}
-              />
-              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                The pool automatically resets to this amount when a player hits the jackpot.
-              </span>
-            </div>
+            {/* Right: Prize Split Calculator */}
+            <div className="j-card">
+              <h3>
+                Prize split calculator
+                <span className="r j-tr">Live preview</span>
+              </h3>
 
-            <div style={{ display: 'flex', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--j-mute)', marginBottom: '4px' }}>
+                    Cartela Stake (ETB)
+                  </label>
+                  <select
+                    className="jackpot-input"
+                    style={{ width: '100%' }}
+                    value={calcStake}
+                    onChange={e => setCalcStake(parseInt(e.target.value, 10))}
+                  >
+                    <option value={10}>ETB 10 Stake</option>
+                    <option value={20}>ETB 20 Stake</option>
+                    <option value={50}>ETB 50 Stake</option>
+                    <option value={100}>ETB 100 Stake</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--j-mute)', marginBottom: '4px' }}>
+                    Cartelas Sold: {calcCartelas}
+                  </label>
+                  <input
+                    type="range"
+                    min={5}
+                    max={200}
+                    step={5}
+                    value={calcCartelas}
+                    onChange={e => setCalcCartelas(parseInt(e.target.value, 10))}
+                    style={{ width: '100%', marginTop: '6px' }}
+                  />
+                </div>
+              </div>
+
+              {/* Segmented Bar Preview */}
+              <div className="jbar">
+                <i style={{ width: '70%', background: '#2e9e4f' }} title="1st Winner Payout: 70%" />
+                <i style={{ width: '10%', background: '#e6a21f' }} title="Jackpot Pool Rollover: 10%" />
+                <i style={{ width: '20%', background: '#1f2220' }} title="Platform House Margin: 20%" />
+              </div>
+
+              {/* Breakdown Rows */}
+              <div style={{ marginTop: '12px' }}>
+                <div className="jrow">
+                  <span className="jn">Total Pot</span>
+                  <div className="jtk"><i style={{ width: '100%', background: '#dedede' }} /></div>
+                  <span className="jv">{calcTotalPot.toLocaleString()} ETB</span>
+                </div>
+
+                <div className="jrow">
+                  <span className="jn" style={{ color: '#2e9e4f' }}>1st Winner (70%)</span>
+                  <div className="jtk"><i style={{ width: '70%', background: '#2e9e4f' }} /></div>
+                  <span className="jv" style={{ color: '#2e9e4f' }}>{calcWinnerPayout.toLocaleString()} ETB</span>
+                </div>
+
+                <div className="jrow">
+                  <span className="jn" style={{ color: '#e6a21f' }}>Jackpot (10%)</span>
+                  <div className="jtk"><i style={{ width: '10%', background: '#e6a21f' }} /></div>
+                  <span className="jv" style={{ color: '#e6a21f' }}>{calcJackpotFee.toLocaleString()} ETB</span>
+                </div>
+
+                <div className="jrow">
+                  <span className="jn" style={{ color: 'var(--j-mute)' }}>Platform (20%)</span>
+                  <div className="jtk"><i style={{ width: '20%', background: '#1f2220' }} /></div>
+                  <span className="jv">{calcHouseFee.toLocaleString()} ETB</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 5-Step Educational Diagram: "How the jackpot works" */}
+          <div className="j-card" style={{ marginTop: '15px' }}>
+            <h3>How the jackpot works</h3>
+            <div className="jflow">
+              <div className="jfs">
+                <span className="j-b k">Step 1</span>
+                <b>Game ends</b>
+                <p>Claims are verified. First and second winners are recorded in the ledger.</p>
+              </div>
+              <div className="jfs">
+                <span className="j-b k">Step 2</span>
+                <b>Deductions</b>
+                <p>Platform fee (20%) and matching progressive jackpot fee (10%) are allocated.</p>
+              </div>
+              <div className="jfs">
+                <span className="j-b k">Step 3</span>
+                <b>Pool rollover</b>
+                <p>10% jackpot fee automatically rolls over to the matching stake room pool in Neon DB.</p>
+              </div>
+              <div className="jfs">
+                <span className="j-b k">Step 4</span>
+                <b>Target trigger</b>
+                <p>When pool reaches target threshold or Speed-15 strike occurs, jackpot is flagged as HIT.</p>
+              </div>
+              <div className="jfs">
+                <span className="j-b k">Step 5</span>
+                <b>Settlement</b>
+                <p>Superadmin verifies &amp; awards jackpot. Cash credits winner wallet, pool resets to seed.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Placeholder blocks for Tab 2 and Tab 3 (full implementation in Phase 4) */}
+      {activeTab === 'contributions' && (
+        <div className="j-card">
+          <h3>
+            Jackpot Contributions Ledger
+            <span className="r j-tr">Phase 4 Active Hook</span>
+          </h3>
+          <p style={{ color: 'var(--j-mute)', margin: '10px 0' }}>
+            Contributions timeline, timeframe filter, pool share breakdown, and paginated ledger will render here.
+          </p>
+        </div>
+      )}
+
+      {activeTab === 'winners' && (
+        <div className="j-card">
+          <h3>
+            Jackpot Winners &amp; Payouts
+            <span className="r j-tr">Phase 4 Active Hook</span>
+          </h3>
+          <p style={{ color: 'var(--j-mute)', margin: '10px 0' }}>
+            Historical jackpot winners, instant search, pool filters, CSV export, and award settlements will render here.
+          </p>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* Review & Award Modal (.j-modalbg, .j-modal)                         */}
+      {/* =================================================================== */}
+      {reviewPool && (
+        <div className="j-modalbg">
+          <div className="j-modal">
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Award Jackpot</h3>
               <button
                 type="button"
-                onClick={() => setSelectedPool(null)}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  backgroundColor: '#f1f5f9',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: '10px',
-                  fontWeight: 700,
-                  color: '#475569',
-                  cursor: 'pointer'
-                }}
+                className="j-btn"
+                style={{ padding: '4px 10px', borderRadius: '50%' }}
+                onClick={() => setReviewPool(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Pool & Winner Summary Panel */}
+            <div style={{ background: 'var(--j-panel)', borderRadius: '16px', padding: '12px 16px', marginTop: '14px' }}>
+              <div className="lg">
+                <span style={{ '--c': '#e6a21f' } as React.CSSProperties}>Pool</span>
+                <b>ETB {reviewPool.stake} stake</b>
+              </div>
+              <div className="lg">
+                <span style={{ '--c': 'var(--j-grey)' } as React.CSSProperties}>Winner</span>
+                <b>{reviewPool.pendingAward?.winnerName || 'Player'} ({reviewPool.pendingAward?.winnerPhone || '—'})</b>
+              </div>
+              <div className="lg">
+                <span style={{ '--c': 'var(--j-grey)' } as React.CSSProperties}>Game Reference</span>
+                <b>{reviewPool.pendingAward?.roundRef || 'Latest Round'}</b>
+              </div>
+              <div className="lg">
+                <span style={{ '--c': 'var(--j-dark)' } as React.CSSProperties}>Award Amount</span>
+                <b style={{ color: '#2e9e4f', fontSize: '15px' }}>{reviewPool.balance.toLocaleString()} ETB</b>
+              </div>
+              <div className="lg">
+                <span style={{ '--c': 'var(--j-grey)' } as React.CSSProperties}>Carries over to next game</span>
+                <b>{reviewPool.seedAmount} ETB (Reset to Seed)</b>
+              </div>
+            </div>
+
+            {/* 4 Real Verification Checkmarks */}
+            <div style={{ marginTop: '16px' }}>
+              <div className="jchk">
+                <i className="jck">✓</i>
+                <span>Winning result verified for game {reviewPool.pendingAward?.roundRef || 'Active'}</span>
+              </div>
+              <div className="jchk">
+                <i className="jck">✓</i>
+                <span>Player has completed 5 or more games and the account is active</span>
+              </div>
+              <div className="jchk">
+                <i className="jck">✓</i>
+                <span>Pool balance is at or above {reviewPool.target} ETB</span>
+              </div>
+              <div className="jchk">
+                <i className="jck">✓</i>
+                <span>Game stake matches the ETB {reviewPool.stake} pool</span>
+              </div>
+            </div>
+
+            <p style={{ fontSize: '12px', color: 'var(--j-mute)', margin: '14px 0 16px 0' }}>
+              The amount is credited directly to the winner's cash wallet and the player is notified.
+            </p>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                className="j-btn"
+                style={{ flex: 1, padding: '10px' }}
+                onClick={() => setReviewPool(null)}
               >
                 Cancel
               </button>
               <button
                 type="button"
-                disabled={isSubmitting}
-                onClick={handleSaveAdjust}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  backgroundColor: '#4f46e5',
-                  border: 'none',
-                  borderRadius: '10px',
-                  fontWeight: 700,
-                  color: '#ffffff',
-                  cursor: 'pointer'
-                }}
+                className="j-btn k"
+                style={{ flex: 1, padding: '10px' }}
+                disabled={isAwarding}
+                onClick={handleAwardJackpot}
               >
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
+                {isAwarding ? 'Processing Award...' : `Confirm & Award ETB ${reviewPool.balance.toLocaleString()}`}
               </button>
             </div>
           </div>
