@@ -16,6 +16,7 @@ import agentRouter from './routes/agent.ts';
 import adminRechargesRouter from './routes/admin_recharges.ts';
 import { adminPayoutsRouter } from './routes/admin_payouts.ts';
 import { adminCashflowRouter } from './routes/admin_cashflow.ts';
+import { adminJackpotsRouter } from './routes/admin_jackpots.ts';
 import telegramBotRouter from './routes/telegramBot.ts';
 import withdrawalsAdminRouter from './routes/withdrawalsAdmin.ts';
 import { webhooksRouter } from './routes/webhooks.ts';
@@ -280,6 +281,7 @@ const walletLimiter = rateLimit({
 app.use('/api/auth', authLimiter, authRouter);
 app.use('/api/wallet', walletLimiter, walletRouter);
 app.use('/api/agent', agentRouter);
+app.use('/api/admin/jackpots', adminJackpotsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/admin/agent-recharges', adminRechargesRouter);
 app.use('/api/admin/agent-payouts', adminPayoutsRouter);

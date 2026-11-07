@@ -900,7 +900,73 @@ export const apiClient = {
       const res = await fetch(`${API_BASE}/admin/jackpots`, {
         headers: { ...adminHeaders }
       });
-      return handleResponse<{ success: boolean; pools: any[]; winners: any[] }>(res);
+      return handleResponse<{ success: boolean; data?: any; pools?: any[]; winners?: any[] }>(res);
+    },
+
+    async getJackpotOverview() {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/jackpots/overview`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; data: any }>(res);
+    },
+
+    async getJackpotContributions(params: {
+      period?: string;
+      from?: string;
+      to?: string;
+      roomId?: string;
+      page?: number;
+      limit?: number;
+    } = {}) {
+      const adminHeaders = await getAdminAuthHeader();
+      const queryParams = new URLSearchParams();
+      if (params.period) queryParams.set('period', params.period);
+      if (params.from) queryParams.set('from', params.from);
+      if (params.to) queryParams.set('to', params.to);
+      if (params.roomId) queryParams.set('roomId', params.roomId);
+      if (params.page) queryParams.set('page', String(params.page));
+      if (params.limit) queryParams.set('limit', String(params.limit));
+
+      const res = await fetch(`${API_BASE}/admin/jackpots/contributions?${queryParams.toString()}`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; data: any }>(res);
+    },
+
+    async getJackpotWinners(params: {
+      roomId?: string;
+      query?: string;
+      page?: number;
+      limit?: number;
+    } = {}) {
+      const adminHeaders = await getAdminAuthHeader();
+      const queryParams = new URLSearchParams();
+      if (params.roomId) queryParams.set('roomId', params.roomId);
+      if (params.query) queryParams.set('query', params.query);
+      if (params.page) queryParams.set('page', String(params.page));
+      if (params.limit) queryParams.set('limit', String(params.limit));
+
+      const res = await fetch(`${API_BASE}/admin/jackpots/winners?${queryParams.toString()}`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; data: any }>(res);
+    },
+
+    async awardJackpot(payload: {
+      roomId: string;
+      winnerUserId?: string;
+      roundId?: string;
+      awardAmount?: number;
+      notes?: string;
+    }) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/jackpots/award`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify(payload)
+      });
+      return handleResponse<{ success: boolean; message: string; data?: any; error?: string }>(res);
     },
 
     async adjustJackpot(payload: { roomId: string; balance?: number; seedAmount?: number }) {
