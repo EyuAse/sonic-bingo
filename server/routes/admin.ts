@@ -4,6 +4,7 @@ import { query, withTransaction, getDatabaseStorageStats } from '../db.ts';
 import { requireAdmin, AuthenticatedRequest } from '../middleware/auth.ts';
 import { io } from '../io.ts';
 import { gameEngine } from '../game/BingoGameEngine.ts';
+import { calculateRoom10TargetBots } from '../game/ethiopianBotRoster.ts';
 import { exportDatabaseBackup } from '../scripts/backup_database.ts';
 import { coinService } from '../services/coinService.ts';
 import { adminPlayersRouter } from './admin_players.ts';
@@ -1320,16 +1321,26 @@ router.get('/bot-config', requireAdmin, async (_req, res) => {
   try {
     const botConfig = gameEngine.getBotConfig();
     const room10 = gameEngine.getRoom('room-10');
+    const targetBots = calculateRoom10TargetBots(room10?.dynamicBotTarget, new Date());
+    const activeBots = room10 ? room10.opponentCards.length : 0;
+    const realPlayers = room10 ? room10.realPlayerCount : 0;
+    const totalPot = room10 && room10.totalPot > 0 ? room10.totalPot : (activeBots + realPlayers) * 10;
+    const winnerPayout = room10 && room10.winnerPayout > 0 ? room10.winnerPayout : Math.floor(totalPot * 0.8);
+    const houseFee = room10 && room10.houseFee > 0 ? room10.houseFee : totalPot - winnerPayout;
+
     return res.json({
       success: true,
       botConfig,
       telemetry: {
-        activeBotCount: room10 ? room10.opponentCards.length : 0,
+        activeBotCount: activeBots,
         roundNumber: room10 ? room10.roundNumber : 1,
         phase: room10 ? room10.phase : 'lobby',
-        totalPot: room10 ? room10.totalPot : 0,
-        winnerPayout: room10 ? room10.winnerPayout : 0,
-        realPlayerCount: room10 ? room10.realPlayerCount : 0
+        totalPot,
+        winnerPayout,
+        houseFee,
+        realPlayerCount: realPlayers,
+        targetBots: room10?.dynamicBotTarget ?? targetBots,
+        waitingForPlayers: room10 ? room10.waitingForPlayers : false
       }
     });
   } catch (error: any) {

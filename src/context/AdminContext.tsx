@@ -127,7 +127,10 @@ interface AdminContextType {
     phase: string;
     totalPot?: number;
     winnerPayout?: number;
+    houseFee?: number;
     realPlayerCount?: number;
+    targetBots?: number;
+    waitingForPlayers?: boolean;
   } | null;
 
   // 600 Cartelas
@@ -371,7 +374,10 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     phase: string;
     totalPot?: number;
     winnerPayout?: number;
+    houseFee?: number;
     realPlayerCount?: number;
+    targetBots?: number;
+    waitingForPlayers?: boolean;
   } | null>(null);
 
   const refreshBotConfig = useCallback(async () => {
