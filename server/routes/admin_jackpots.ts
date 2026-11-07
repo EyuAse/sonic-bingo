@@ -856,3 +856,4 @@ adminJackpotsRouter.post('/adjust', requireAdmin, async (req: AuthenticatedReque
     return res.status(500).json({ success: false, error: 'Failed to adjust jackpot pool' });
   }
 });
+

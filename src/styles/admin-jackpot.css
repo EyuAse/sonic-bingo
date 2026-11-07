@@ -1,0 +1,889 @@
+/* ==========================================================================
+   Lomi Bingo — Luxury Enqu Progressive Jackpot Management Stylesheet
+   Designed for High-Performance Superadmin Casino Desk
+   Matches Enqu luxury obsidian-gold design system
+   ========================================================================== */
+
+:root {
+  --j-bg: #e8e6e9;
+  --j-card: #ffffff;
+  --j-panel: #e8e6e9;
+  --j-ink: #1b1b1b;
+  --j-mute: #707070;
+  --j-line: #d9d9db;
+  --j-chip: #e9e9ea;
+  --j-dark: #1f2220;
+  --j-grey: #858585;
+  --j-g: #2e9e4f;
+  --j-r: #b0302f;
+  --j-gold: #e6a21f;
+  --j-gold-light: #f6d453;
+  --j-gold-dark: #e08a1e;
+}
+
+/* Base Root Container */
+.jackpot-enqu-root {
+  color: var(--j-ink);
+  font-family: Urbanist, "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  box-sizing: border-box;
+}
+
+.jackpot-enqu-root *,
+.jackpot-enqu-root *::before,
+.jackpot-enqu-root *::after {
+  box-sizing: border-box;
+}
+
+/* Top Header Bar */
+.jackpot-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.jackpot-top h1 {
+  font-size: 29px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--j-ink);
+  flex: 1;
+  margin: 0;
+}
+
+.jackpot-top .av {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a8573c, #7d3524);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  display: inline-block;
+  flex: none;
+}
+
+/* Navigation Tabs */
+.jackpot-nav-tabs {
+  display: inline-flex;
+  align-items: center;
+  background: var(--j-card);
+  padding: 4px;
+  border-radius: 18px;
+  gap: 4px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.jackpot-nav-btn {
+  border: 0;
+  background: transparent;
+  color: var(--j-ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.jackpot-nav-btn:hover {
+  background: var(--j-chip);
+}
+
+.jackpot-nav-btn.on {
+  background: var(--j-dark);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.jackpot-nav-btn .pill-count {
+  background: rgba(246, 212, 83, 0.25);
+  color: #e08a1e;
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.jackpot-nav-btn.on .pill-count {
+  background: #f6d453;
+  color: #1c1e1d;
+}
+
+/* Grids */
+.j-grid {
+  display: grid;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.j-g4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.j-g3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.j-g2 {
+  grid-template-columns: 1.7fr 1fr;
+}
+
+.j-g1 {
+  grid-template-columns: 1fr;
+}
+
+/* Generic Card Styles */
+.j-card {
+  background: var(--j-card);
+  border-radius: 20px;
+  padding: 18px 20px;
+  min-width: 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  position: relative;
+}
+
+.j-card.d {
+  background: linear-gradient(135deg, #1c1e1d, #2a2d2b 55%, #1a1c1b);
+  color: #ffffff;
+}
+
+.j-card h3 {
+  font-size: 16.5px;
+  font-weight: 600;
+  margin: 0 0 14px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--j-ink);
+}
+
+.j-card.d h3 {
+  color: #ffffff;
+}
+
+.j-card h3 .r {
+  margin-left: auto;
+}
+
+/* KPI Cards */
+.j-lab {
+  font-size: 13.5px;
+  color: var(--j-mute);
+  font-weight: 500;
+}
+
+.j-card.d .j-lab {
+  color: #cfcfd2;
+}
+
+.j-val {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 6px 0;
+  letter-spacing: -0.5px;
+}
+
+.j-tr {
+  font-size: 12px;
+  color: var(--j-mute);
+  font-weight: 500;
+}
+
+.j-card.d .j-tr {
+  color: #9e9ea3;
+}
+
+.j-up {
+  color: var(--j-g);
+}
+
+.j-dn {
+  color: var(--j-r);
+}
+
+.j-card.d .j-up {
+  color: #3fbf62;
+}
+
+/* Rows & Utility */
+.j-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.j-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Buttons & Badges */
+.j-b {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 14px;
+  background: var(--j-grey);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.j-b.o {
+  background: transparent;
+  color: var(--j-mute);
+  box-shadow: inset 0 0 0 1px var(--j-line);
+}
+
+.j-b.k {
+  background: var(--j-dark);
+  color: #ffffff;
+}
+
+.j-btn {
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 0;
+  border-radius: 14px;
+  padding: 6px 14px;
+  background: var(--j-chip);
+  color: var(--j-ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.j-btn:hover {
+  background: #dedede;
+}
+
+.j-btn.p {
+  background: var(--j-grey);
+  color: #ffffff;
+}
+
+.j-btn.k {
+  background: var(--j-dark);
+  color: #ffffff;
+}
+
+.j-btn.k:hover {
+  background: #000000;
+}
+
+.j-btn:focus-visible {
+  outline: 2px solid var(--j-grey);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   Total Jackpot Vault Hero Banner (.jhero)
+   ========================================================================== */
+.jhero {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 22px;
+  border-radius: 24px;
+  padding: 26px 28px;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 18px;
+  background: radial-gradient(circle at 88% 12%, rgba(246, 212, 83, 0.38), transparent 42%),
+              radial-gradient(circle at 8% 115%, rgba(224, 138, 30, 0.28), transparent 48%),
+              linear-gradient(135deg, #1c1e1d, #2a2d2b 55%, #1a1c1b);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.jhero::after {
+  content: "";
+  position: absolute;
+  right: -70px;
+  top: -70px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  border: 1px solid rgba(246, 212, 83, 0.25);
+  box-shadow: 0 0 0 28px rgba(246, 212, 83, 0.05),
+              0 0 0 56px rgba(246, 212, 83, 0.035);
+  pointer-events: none;
+}
+
+.jk {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #d9d9db;
+}
+
+.jbig {
+  font-size: 46px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  margin: 8px 0;
+  line-height: 1.05;
+}
+
+.jbig small {
+  font-size: 18px;
+  font-weight: 700;
+  color: #f6d453;
+  margin-right: 8px;
+  letter-spacing: 0;
+}
+
+.jsub {
+  font-size: 13.5px;
+  color: #cfcfd2;
+  font-weight: 500;
+  line-height: 1.5;
+  max-width: 440px;
+}
+
+.jmini {
+  display: grid;
+  gap: 10px;
+  align-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+.jmini div {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 11px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.jmini span {
+  font-size: 13px;
+  color: #cfcfd2;
+  font-weight: 500;
+}
+
+.jmini b {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Pulsing HIT Badge */
+.jhit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #f6d453, #e08a1e);
+  color: #2a1c00;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  padding: 5px 12px;
+  border-radius: 14px;
+  font-size: 11.5px;
+  animation: jpulse 1.8s infinite;
+  white-space: nowrap;
+}
+
+@keyframes jpulse {
+  0% { box-shadow: 0 0 0 0 rgba(246, 212, 83, 0.55); }
+  70% { box-shadow: 0 0 0 10px rgba(246, 212, 83, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(246, 212, 83, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jhit {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   Hit Alert Warning Banner (.jbanner)
+   ========================================================================== */
+.jbanner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: linear-gradient(90deg, #fff4d3, #ffffff 70%);
+  border-radius: 20px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+  box-shadow: inset 4px 0 0 #e6a21f, 0 2px 10px rgba(0, 0, 0, 0.03);
+}
+
+.jbanner .jt {
+  flex: 1;
+  min-width: 220px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--j-ink);
+}
+
+.jbanner .jt small {
+  display: block;
+  color: var(--j-mute);
+  font-weight: 500;
+  font-size: 12.5px;
+  margin-top: 2px;
+}
+
+/* ==========================================================================
+   4 Pool Cards (.jpool) & Circular SVG Progress Ring (.jring)
+   ========================================================================== */
+.jpool {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.jpool.live {
+  box-shadow: 0 0 0 2px #e6a21f, 0 8px 24px rgba(230, 162, 31, 0.12);
+}
+
+.jpool.off {
+  opacity: 0.55;
+}
+
+.jst {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--j-ink);
+}
+
+.jst i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Circular SVG Ring Container */
+.jring {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  margin: 14px auto 12px;
+}
+
+.jring svg {
+  display: block;
+  transform: rotate(-90deg);
+}
+
+.jring .jc {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+
+.jc b {
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--j-ink);
+}
+
+.jc small {
+  font-size: 11.5px;
+  color: var(--j-mute);
+  font-weight: 600;
+}
+
+/* Metric Detail Rows */
+.lg {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 5px 0;
+  color: var(--j-ink);
+}
+
+.lg span {
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  color: var(--j-mute);
+}
+
+.lg span::before {
+  content: "";
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 8px;
+  background: var(--c, var(--j-grey));
+}
+
+.lg b {
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   Stacked Bar Chart (.jch, .jbars, .jcol, .jleg)
+   ========================================================================== */
+.jleg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--j-mute);
+  margin-bottom: 12px;
+}
+
+.jleg span {
+  display: flex;
+  align-items: center;
+}
+
+.jleg span::before {
+  content: "";
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  margin-right: 6px;
+  background: var(--c);
+}
+
+.jch {
+  position: relative;
+  height: 214px;
+  padding: 8px 0 28px 44px;
+}
+
+.jgl {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 8px;
+  bottom: 28px;
+  pointer-events: none;
+}
+
+.jgl i {
+  position: absolute;
+  left: 44px;
+  right: 0;
+  border-top: 1px dashed var(--j-line);
+}
+
+.jgl span {
+  position: absolute;
+  left: 0;
+  width: 38px;
+  text-align: right;
+  font-size: 11.5px;
+  color: var(--j-mute);
+  transform: translateY(-50%);
+  font-weight: 500;
+}
+
+.jbars {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.jcol {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  position: relative;
+  min-width: 0;
+}
+
+.jcol .st {
+  width: 100%;
+  max-width: 36px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 7px 7px 2px 2px;
+  overflow: hidden;
+  min-height: 2px;
+  transition: opacity 0.15s ease;
+}
+
+.jcol .st i {
+  display: block;
+  width: 100%;
+}
+
+.jcol:hover .st {
+  opacity: 0.8;
+}
+
+.jl {
+  position: absolute;
+  top: 100%;
+  margin-top: 7px;
+  font-size: 11px;
+  color: var(--j-mute);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Prize Split Calculator (.jbar) & Breakdown Rows (.jrow)
+   ========================================================================== */
+.jbar {
+  display: flex;
+  height: 16px;
+  border-radius: 9px;
+  overflow: hidden;
+  margin: 12px 0 8px;
+  background: var(--j-chip);
+}
+
+.jbar i {
+  display: block;
+  height: 100%;
+  transition: width 0.2s ease;
+}
+
+.jrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 9px 0;
+}
+
+.jrow .jn {
+  width: 82px;
+  flex: none;
+  font-weight: 600;
+  color: var(--j-ink);
+}
+
+.jrow .jtk {
+  flex: 1;
+  height: 9px;
+  border-radius: 5px;
+  background: var(--j-chip);
+  overflow: hidden;
+}
+
+.jrow .jtk i {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.2s ease;
+}
+
+.jrow .jv {
+  width: 82px;
+  text-align: right;
+  flex: none;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   Educational Flow: "How the Jackpot Works" (.jflow, .jfs)
+   ========================================================================== */
+.jflow {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.jfs {
+  background: var(--j-panel);
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.jfs b {
+  display: block;
+  font-size: 14px;
+  margin: 9px 0 4px;
+  color: var(--j-ink);
+}
+
+.jfs p {
+  font-size: 12.5px;
+  color: var(--j-mute);
+  line-height: 1.45;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* ==========================================================================
+   Tables & Ledgers
+   ========================================================================== */
+.jackpot-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.jackpot-table th {
+  text-align: left;
+  color: var(--j-mute);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--j-line);
+  border-bottom: 1px solid var(--j-line);
+  white-space: nowrap;
+}
+
+.jackpot-table td {
+  padding: 12px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--j-line);
+  white-space: nowrap;
+  color: var(--j-ink);
+}
+
+.jackpot-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.jackpot-table tr.jr {
+  cursor: default;
+  transition: background 0.15s ease;
+}
+
+.jackpot-table tr.jr:hover td {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.jempty {
+  padding: 40px 10px;
+  text-align: center;
+  color: var(--j-mute);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Inputs & Date Pickers */
+.jackpot-input {
+  font-family: inherit;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--j-line);
+  background: #ffffff;
+  color: var(--j-ink);
+  outline: none;
+}
+
+.jackpot-input:focus {
+  border-color: var(--j-dark);
+}
+
+/* ==========================================================================
+   Review & Award Modal (.modalbg, .modal)
+   ========================================================================== */
+.j-modalbg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: grid;
+  place-items: center;
+  z-index: 10000;
+  padding: 16px;
+  backdrop-filter: blur(4px);
+}
+
+.j-modal {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 24px 26px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  width: min(480px, 100%);
+  animation: jfadeIn 0.2s ease-out;
+}
+
+@keyframes jfadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.jck {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  flex: none;
+  background: #e4f1e8;
+  color: #1f6a37;
+  margin-top: 1px;
+}
+
+.jchk {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13.5px;
+  font-weight: 600;
+  margin: 10px 0;
+  line-height: 1.35;
+  color: var(--j-ink);
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 980px) {
+  .jhero {
+    grid-template-columns: 1fr;
+  }
+  .j-g4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .j-g2 {
+    grid-template-columns: 1fr;
+  }
+  .jflow {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .j-g4 {
+    grid-template-columns: 1fr;
+  }
+  .jflow {
+    grid-template-columns: 1fr;
+  }
+  .jbig {
+    font-size: 38px;
+  }
+  .jackpot-top h1 {
+    font-size: 24px;
+  }
+}
