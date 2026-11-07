@@ -1502,23 +1502,33 @@ export const apiClient = {
       return handleResponse<{ success: boolean; metrics: any }>(res);
     },
 
-    // Official Platform Receiving Accounts Management
+    // Official Platform Receiving Accounts Management (Enqu Luxury UI)
     async getOfficialAccounts() {
       const adminHeaders = await getAdminAuthHeader();
       const res = await fetch(`${API_BASE}/admin/official-accounts`, {
         headers: { ...adminHeaders }
       });
-      return handleResponse<{ success: boolean; accounts: any[] }>(res);
+      return handleResponse<{ success: boolean; stats: any; accounts: any[] }>(res);
+    },
+
+    async getOfficialAccountAgents() {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/official-accounts/agents`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; agents: Array<{ id: string; name: string; code?: string; city?: string }> }>(res);
     },
 
     async createOfficialAccount(payload: {
       provider: string;
-      accountTitle: string;
+      accountTitle?: string;
       accountName: string;
       accountNumber: string;
+      agentId?: string | null;
       badge?: string;
       dailyLimit?: number;
-      isActive?: boolean;
+      maxPerDeposit?: number;
+      autoPauseAtDailyLimit?: boolean;
       displayOrder?: number;
     }) {
       const adminHeaders = await getAdminAuthHeader();
@@ -1544,6 +1554,52 @@ export const apiClient = {
       const adminHeaders = await getAdminAuthHeader();
       const res = await fetch(`${API_BASE}/admin/official-accounts/${id}/toggle`, {
         method: 'PATCH',
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; account: any; message?: string; error?: string }>(res);
+    },
+
+    async toggleOfficialAccountAutoPause(id: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/official-accounts/${id}/auto-pause`, {
+        method: 'PATCH',
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; account: any; message?: string; error?: string }>(res);
+    },
+
+    async verifyOfficialAccount(id: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/official-accounts/${id}/verify`, {
+        method: 'PATCH',
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; account: any; message?: string; error?: string }>(res);
+    },
+
+    async setPrimaryOfficialAccount(id: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/official-accounts/${id}/primary`, {
+        method: 'PATCH',
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{ success: boolean; account: any; message?: string; error?: string }>(res);
+    },
+
+    async deactivateOfficialAccount(id: string, reason: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/official-accounts/${id}/deactivate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify({ reason })
+      });
+      return handleResponse<{ success: boolean; account: any; message?: string; error?: string }>(res);
+    },
+
+    async reactivateOfficialAccount(id: string) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/official-accounts/${id}/reactivate`, {
+        method: 'POST',
         headers: { ...adminHeaders }
       });
       return handleResponse<{ success: boolean; account: any; message?: string; error?: string }>(res);

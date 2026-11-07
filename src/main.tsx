@@ -25,6 +25,7 @@ import './styles/admin.css';
 import './styles/admin-jackpot.css';
 import './styles/admin-cartelas.css';
 import './styles/admin-bot-engine.css';
+import './styles/admin-official-accounts.css';
 import './styles/auth.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

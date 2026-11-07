@@ -2494,15 +2494,190 @@ router.post('/agents/payouts/:id/reject', requireAdmin, async (req: Authenticate
 
 /**
  * Official Platform Receiving Accounts Management (Admin Control Desk)
+ * Real Neon PostgreSQL Data & Ledger Integration (Enqu Luxury UI)
  */
-router.get('/official-accounts', requireAdmin, async (req, res) => {
+
+router.get('/official-accounts', requireAdmin, async (_req, res) => {
   try {
-    const result = await query(
-      `SELECT * FROM payment_accounts ORDER BY display_order ASC, created_at ASC`
-    );
+    const accountsRes = await query(`
+      SELECT 
+        pa.id,
+        pa.provider,
+        pa.account_number,
+        pa.account_name,
+        pa.account_title,
+        pa.badge,
+        pa.is_active,
+        COALESCE(pa.daily_limit, 500000.00) as daily_limit,
+        COALESCE(pa.max_per_deposit, 1500.00) as max_per_deposit,
+        COALESCE(pa.auto_pause_at_daily_limit, true) as auto_pause_at_daily_limit,
+        COALESCE(pa.status, CASE WHEN pa.is_active = true THEN 'Active' ELSE 'Paused' END) as status,
+        COALESCE(pa.is_primary, false) as is_primary,
+        COALESCE(pa.is_verified, true) as is_verified,
+        pa.deactivation_reason,
+        pa.display_order,
+        pa.agent_id,
+        pa.created_at,
+        pa.updated_at,
+        COALESCE(u.full_name, 'Platform account') as agent_name,
+        COALESCE(ap.agent_code, 'PLATFORM') as agent_code,
+        COALESCE(ap.location, 'Headquarters') as agent_city
+      FROM payment_accounts pa
+      LEFT JOIN agent_profiles ap ON pa.agent_id = ap.id
+      LEFT JOIN users u ON ap.user_id = u.id
+      ORDER BY pa.display_order ASC, pa.created_at ASC
+    `);
+
+    // Aggregate real turnover from deposit_requests & agent_recharge_requests
+    const [playerTodayRes, rechargeTodayRes, volume30dRes, recentDepsRes, auditsRes] = await Promise.all([
+      query(`
+        SELECT payment_method, COALESCE(SUM(amount), 0) as amt, COUNT(*) as cnt
+        FROM deposit_requests
+        WHERE status = 'approved' AND created_at >= CURRENT_DATE
+        GROUP BY payment_method
+      `),
+      query(`
+        SELECT payment_method, COALESCE(SUM(amount), 0) as amt, COUNT(*) as cnt
+        FROM agent_recharge_requests
+        WHERE status = 'approved' AND created_at >= CURRENT_DATE
+        GROUP BY payment_method
+      `),
+      query(`
+        SELECT 
+          payment_method, 
+          COALESCE(SUM(amount), 0) as amt, 
+          COUNT(*) as cnt,
+          MAX(created_at) as last_dep
+        FROM deposit_requests
+        WHERE status = 'approved' AND created_at >= NOW() - INTERVAL '30 days'
+        GROUP BY payment_method
+      `),
+      query(`
+        SELECT 
+          dr.id,
+          dr.amount,
+          dr.payment_method,
+          dr.transaction_ref,
+          dr.created_at,
+          COALESCE(u.full_name, u.first_name, 'Player') as player_name
+        FROM deposit_requests dr
+        LEFT JOIN users u ON dr.user_id = u.id
+        WHERE dr.status = 'approved'
+        ORDER BY dr.created_at DESC
+        LIMIT 100
+      `),
+      query(`
+        SELECT 
+          id,
+          payment_account_id,
+          actor_name,
+          action,
+          created_at
+        FROM payment_account_audit_logs
+        ORDER BY created_at DESC
+      `)
+    ]);
+
+    // Map each account with real metrics
+    const accounts = accountsRes.rows.map(acc => {
+      const pToday = playerTodayRes.rows.find((r: any) => r.payment_method?.toLowerCase() === acc.provider?.toLowerCase());
+      const rToday = rechargeTodayRes.rows.find((r: any) => r.payment_method?.toLowerCase() === acc.provider?.toLowerCase());
+      const v30d = volume30dRes.rows.find((r: any) => r.payment_method?.toLowerCase() === acc.provider?.toLowerCase());
+
+      const receivedToday = (parseFloat(pToday?.amt || '0') + parseFloat(rToday?.amt || '0'));
+      const total30d = parseFloat(v30d?.amt || '0');
+      const count30d = parseInt(v30d?.cnt || '0', 10);
+      const avgDeposit = count30d > 0 ? Math.round(total30d / count30d) : 0;
+      const lastDeposit = v30d?.last_dep || null;
+
+      const recentDeposits = recentDepsRes.rows
+        .filter((d: any) => d.payment_method?.toLowerCase() === acc.provider?.toLowerCase())
+        .slice(0, 5)
+        .map((d: any) => ({
+          id: d.id,
+          playerName: d.player_name,
+          amount: parseFloat(d.amount),
+          ref: d.transaction_ref,
+          createdAt: d.created_at
+        }));
+
+      const auditLogs = auditsRes.rows
+        .filter((l: any) => l.payment_account_id === acc.id)
+        .map((l: any) => ({
+          id: l.id,
+          actor: l.actor_name,
+          action: l.action,
+          createdAt: l.created_at
+        }));
+
+      let currentStatus = acc.status;
+      let isActive = acc.is_active;
+      const limitNum = parseFloat(acc.daily_limit);
+
+      if (acc.auto_pause_at_daily_limit && currentStatus === 'Active' && receivedToday >= limitNum && limitNum > 0) {
+        currentStatus = 'Paused';
+        isActive = false;
+      }
+
+      return {
+        id: acc.id,
+        provider: acc.provider,
+        accountNumber: acc.account_number,
+        accountName: acc.account_name,
+        accountTitle: acc.account_title || `${acc.provider.toUpperCase()} OFFICIAL`,
+        badge: acc.badge,
+        isActive,
+        dailyLimit: limitNum,
+        maxPerDeposit: parseFloat(acc.max_per_deposit),
+        autoPauseAtDailyLimit: !!acc.auto_pause_at_daily_limit,
+        status: currentStatus,
+        isPrimary: !!acc.is_primary,
+        isVerified: !!acc.is_verified,
+        deactivationReason: acc.deactivation_reason,
+        displayOrder: acc.display_order,
+        agentId: acc.agent_id,
+        agent: {
+          id: acc.agent_id || 'PLATFORM',
+          name: acc.agent_name,
+          code: acc.agent_code,
+          city: acc.agent_city
+        },
+        receivedToday,
+        total30d,
+        count30d,
+        avgDeposit,
+        lastDeposit,
+        recentDeposits,
+        auditLogs,
+        createdAt: acc.created_at,
+        updatedAt: acc.updated_at
+      };
+    });
+
+    const activeCount = accounts.filter(a => a.status === 'Active').length;
+    const pausedCount = accounts.filter(a => a.status === 'Paused').length;
+    const pendingCount = accounts.filter(a => a.status === 'Pending').length;
+    const deactivatedCount = accounts.filter(a => a.status === 'Deactivated').length;
+    const nearLimitCount = accounts.filter(a => a.status === 'Active' && (a.receivedToday / a.dailyLimit) >= 0.8).length;
+
+    const totalTodayPlayer = playerTodayRes.rows.reduce((sum: number, r: any) => sum + parseFloat(r.amt || '0'), 0);
+    const totalTodayRecharge = rechargeTodayRes.rows.reduce((sum: number, r: any) => sum + parseFloat(r.amt || '0'), 0);
+    const totalConfirmedDeposits = playerTodayRes.rows.reduce((sum: number, r: any) => sum + parseInt(r.cnt || '0', 10), 0) +
+                                   rechargeTodayRes.rows.reduce((sum: number, r: any) => sum + parseInt(r.cnt || '0', 10), 0);
+
     return res.json({
       success: true,
-      accounts: result.rows
+      stats: {
+        activeCount,
+        totalCount: accounts.length,
+        pausedCount,
+        pendingCount,
+        deactivatedCount,
+        nearLimitCount,
+        receivedToday: totalTodayPlayer + totalTodayRecharge,
+        confirmedDepositsToday: totalConfirmedDeposits
+      },
+      accounts
     });
   } catch (error: any) {
     console.error('❌ [Admin GET Official Accounts Error]:', error);
@@ -2510,45 +2685,108 @@ router.get('/official-accounts', requireAdmin, async (req, res) => {
   }
 });
 
-router.post('/official-accounts', requireAdmin, async (req, res) => {
+/**
+ * GET /api/admin/official-accounts/agents
+ * Returns active registered agents for assignment dropdown
+ */
+router.get('/official-accounts/agents', requireAdmin, async (_req, res) => {
   try {
-    const { provider, accountTitle, accountName, accountNumber, badge, dailyLimit, isActive, displayOrder } = req.body;
+    const agentsRes = await query(`
+      SELECT 
+        ap.id,
+        ap.agent_code,
+        u.full_name as name,
+        COALESCE(ap.location, 'Addis Ababa') as city
+      FROM agent_profiles ap
+      JOIN users u ON ap.user_id = u.id
+      WHERE ap.status = 'active'
+      ORDER BY ap.agent_code ASC
+    `);
+
+    const agents = [
+      { id: 'PLATFORM', name: 'Platform account', city: 'Headquarters' },
+      ...agentsRes.rows.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        code: r.agent_code,
+        city: r.city
+      }))
+    ];
+
+    return res.json({ success: true, agents });
+  } catch (error: any) {
+    console.error('❌ [Admin GET Official Account Agents Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to fetch agents for official accounts' });
+  }
+});
+
+/**
+ * POST /api/admin/official-accounts
+ * Create new account in unverified status
+ */
+router.post('/official-accounts', requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { 
+      provider, 
+      accountTitle, 
+      accountName, 
+      accountNumber, 
+      agentId,
+      badge, 
+      dailyLimit, 
+      maxPerDeposit,
+      autoPauseAtDailyLimit,
+      displayOrder 
+    } = req.body;
 
     if (!provider || !accountNumber || !accountName) {
       return res.status(400).json({ success: false, error: 'Provider, account number, and account name are required' });
     }
 
-    const cleanNumber = String(accountNumber).trim();
+    const cleanNumber = String(accountNumber).trim().replace(/\s+/g, '');
     const cleanProvider = String(provider).trim();
     const cleanName = String(accountName).trim();
     const cleanTitle = (accountTitle || `${cleanProvider.toUpperCase()} OFFICIAL`).trim();
     const cleanBadge = (badge || '⚡ Verified Rail').trim();
-    const limit = typeof dailyLimit === 'number' && dailyLimit > 0 ? dailyLimit : 500000;
-    const active = isActive !== false;
+    const limit = typeof dailyLimit === 'number' && dailyLimit > 0 ? dailyLimit : 50000;
+    const maxTx = typeof maxPerDeposit === 'number' && maxPerDeposit > 0 ? maxPerDeposit : 1500;
+    const autoPause = autoPauseAtDailyLimit !== false;
     const order = typeof displayOrder === 'number' ? displayOrder : 1;
+    const resolvedAgentId = (agentId && agentId !== 'PLATFORM') ? agentId : null;
+
+    // Check duplicate
+    const existing = await query(`SELECT id FROM payment_accounts WHERE account_number = $1`, [cleanNumber]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ success: false, error: 'This account number is already registered' });
+    }
 
     const result = await query(
-      `INSERT INTO payment_accounts (provider, account_title, account_name, account_number, badge, is_active, display_order, daily_limit)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       ON CONFLICT (account_number) DO UPDATE
-       SET provider = EXCLUDED.provider,
-           account_title = EXCLUDED.account_title,
-           account_name = EXCLUDED.account_name,
-           badge = EXCLUDED.badge,
-           is_active = EXCLUDED.is_active,
-           display_order = EXCLUDED.display_order,
-           daily_limit = EXCLUDED.daily_limit,
-           updated_at = NOW()
-       RETURNING *`,
-      [cleanProvider, cleanTitle, cleanName, cleanNumber, cleanBadge, active, order, limit]
+      `INSERT INTO payment_accounts (
+        provider, account_title, account_name, account_number, badge, 
+        is_active, display_order, daily_limit, max_per_deposit, 
+        auto_pause_at_daily_limit, status, is_verified, is_primary, agent_id
+      )
+      VALUES ($1, $2, $3, $4, $5, false, $6, $7, $8, $9, 'Pending', false, false, $10)
+      RETURNING *`,
+      [cleanProvider, cleanTitle, cleanName, cleanNumber, cleanBadge, order, limit, maxTx, autoPause, resolvedAgentId]
     );
 
-    io.emit('official_accounts_updated', { account: result.rows[0], action: 'created' });
+    const newAccount = result.rows[0];
+
+    // Log to audit trail
+    const actorName = req.user?.username || req.user?.firstName || 'Admin';
+    await query(
+      `INSERT INTO payment_account_audit_logs (payment_account_id, actor_name, action)
+       VALUES ($1, $2, $3)`,
+      [newAccount.id, actorName, 'Account added (unverified)']
+    );
+
+    io.emit('official_accounts_updated', { account: newAccount, action: 'created' });
 
     return res.json({
       success: true,
-      account: result.rows[0],
-      message: 'Official account saved successfully'
+      account: newAccount,
+      message: 'Payment account added. Verify it to enable deposits.'
     });
   } catch (error: any) {
     console.error('❌ [Admin Create Official Account Error]:', error);
@@ -2556,23 +2794,75 @@ router.post('/official-accounts', requireAdmin, async (req, res) => {
   }
 });
 
-router.put('/official-accounts/:id', requireAdmin, async (req, res) => {
+/**
+ * PUT /api/admin/official-accounts/:id
+ * Edit account details with number-change re-verification guard
+ */
+router.put('/official-accounts/:id', requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
-    const { provider, accountTitle, accountName, accountNumber, badge, dailyLimit, isActive, displayOrder } = req.body;
+    const { 
+      provider, 
+      accountTitle, 
+      accountName, 
+      accountNumber, 
+      agentId,
+      badge, 
+      dailyLimit, 
+      maxPerDeposit,
+      autoPauseAtDailyLimit,
+      displayOrder,
+      changeReason 
+    } = req.body;
+
+    const currentRes = await query(`SELECT * FROM payment_accounts WHERE id = $1`, [id]);
+    if (currentRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Official account not found' });
+    }
+    const current = currentRes.rows[0];
 
     const updates: string[] = [];
     const values: any[] = [];
     let idx = 1;
 
-    if (provider) { updates.push(`provider = $${idx++}`); values.push(provider.trim()); }
+    let numberOrProviderChanged = false;
+    let oldNum = current.account_number;
+    let newNum = oldNum;
+
+    if (provider && provider.trim() !== current.provider) {
+      updates.push(`provider = $${idx++}`);
+      values.push(provider.trim());
+      numberOrProviderChanged = true;
+    }
+    if (accountNumber) {
+      newNum = String(accountNumber).trim().replace(/\s+/g, '');
+      if (newNum !== current.account_number) {
+        updates.push(`account_number = $${idx++}`);
+        values.push(newNum);
+        numberOrProviderChanged = true;
+      }
+    }
     if (accountTitle) { updates.push(`account_title = $${idx++}`); values.push(accountTitle.trim()); }
     if (accountName) { updates.push(`account_name = $${idx++}`); values.push(accountName.trim()); }
-    if (accountNumber) { updates.push(`account_number = $${idx++}`); values.push(accountNumber.trim()); }
     if (badge) { updates.push(`badge = $${idx++}`); values.push(badge.trim()); }
     if (typeof dailyLimit === 'number') { updates.push(`daily_limit = $${idx++}`); values.push(dailyLimit); }
-    if (typeof isActive === 'boolean') { updates.push(`is_active = $${idx++}`); values.push(isActive); }
+    if (typeof maxPerDeposit === 'number') { updates.push(`max_per_deposit = $${idx++}`); values.push(maxPerDeposit); }
+    if (typeof autoPauseAtDailyLimit === 'boolean') { updates.push(`auto_pause_at_daily_limit = $${idx++}`); values.push(autoPauseAtDailyLimit); }
     if (typeof displayOrder === 'number') { updates.push(`display_order = $${idx++}`); values.push(displayOrder); }
+    if (agentId !== undefined) {
+      const resolvedAgent = (agentId && agentId !== 'PLATFORM') ? agentId : null;
+      updates.push(`agent_id = $${idx++}`);
+      values.push(resolvedAgent);
+    }
+
+    if (numberOrProviderChanged) {
+      updates.push(`is_verified = false`);
+      updates.push(`is_primary = false`);
+      if (current.status !== 'Deactivated') {
+        updates.push(`status = 'Pending'`);
+        updates.push(`is_active = false`);
+      }
+    }
 
     if (updates.length === 0) {
       return res.status(400).json({ success: false, error: 'No fields provided for update' });
@@ -2586,16 +2876,39 @@ router.put('/official-accounts/:id', requireAdmin, async (req, res) => {
       values
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Official account not found' });
+    const updatedAccount = result.rows[0];
+    const actorName = req.user?.username || req.user?.firstName || 'Admin';
+
+    // Audit logs for updates
+    if (numberOrProviderChanged) {
+      const reasonText = changeReason ? ` (${changeReason})` : '';
+      await query(
+        `INSERT INTO payment_account_audit_logs (payment_account_id, actor_name, action)
+         VALUES ($1, $2, $3)`,
+        [id, actorName, `Number changed from ${oldNum} to ${newNum}${reasonText}`]
+      );
+    }
+    if (dailyLimit && dailyLimit !== parseFloat(current.daily_limit)) {
+      await query(
+        `INSERT INTO payment_account_audit_logs (payment_account_id, actor_name, action)
+         VALUES ($1, $2, $3)`,
+        [id, actorName, `Daily limit updated to ${Number(dailyLimit).toLocaleString()} ETB`]
+      );
+    }
+    if (autoPauseAtDailyLimit !== undefined && autoPauseAtDailyLimit !== current.auto_pause_at_daily_limit) {
+      await query(
+        `INSERT INTO payment_account_audit_logs (payment_account_id, actor_name, action)
+         VALUES ($1, $2, $3)`,
+        [id, actorName, `Auto-pause ${autoPauseAtDailyLimit ? 'enabled' : 'disabled'}`]
+      );
     }
 
-    io.emit('official_accounts_updated', { account: result.rows[0], action: 'updated' });
+    io.emit('official_accounts_updated', { account: updatedAccount, action: 'updated' });
 
     return res.json({
       success: true,
-      account: result.rows[0],
-      message: 'Official account updated successfully'
+      account: updatedAccount,
+      message: numberOrProviderChanged ? 'Saved. Verify the new number before it goes live' : 'Account updated successfully'
     });
   } catch (error: any) {
     console.error('❌ [Admin Update Official Account Error]:', error);
@@ -2603,12 +2916,68 @@ router.put('/official-accounts/:id', requireAdmin, async (req, res) => {
   }
 });
 
-router.patch('/official-accounts/:id/toggle', requireAdmin, async (req, res) => {
+/**
+ * PATCH /api/admin/official-accounts/:id/toggle
+ * 1-Click Receiving switch (Active <=> Paused)
+ */
+router.patch('/official-accounts/:id/toggle', requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const currentRes = await query(`SELECT * FROM payment_accounts WHERE id = $1`, [id]);
+    if (currentRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Official account not found' });
+    }
+    const acc = currentRes.rows[0];
+
+    if (acc.status === 'Pending' || !acc.is_verified) {
+      return res.status(400).json({ success: false, error: 'Verify the account first before turning it on' });
+    }
+    if (acc.status === 'Deactivated') {
+      return res.status(400).json({ success: false, error: 'Reactivate the account before enabling receiving' });
+    }
+
+    const turningOn = (acc.status !== 'Active');
+    const newStatus = turningOn ? 'Active' : 'Paused';
+    const newActive = turningOn;
+
+    const result = await query(
+      `UPDATE payment_accounts 
+       SET status = $1, is_active = $2, updated_at = NOW() 
+       WHERE id = $3 
+       RETURNING *`,
+      [newStatus, newActive, id]
+    );
+
+    const actorName = req.user?.username || req.user?.firstName || 'Admin';
+    await query(
+      `INSERT INTO payment_account_audit_logs (payment_account_id, actor_name, action)
+       VALUES ($1, $2, $3)`,
+      [id, actorName, turningOn ? 'Turned on' : 'Turned off']
+    );
+
+    io.emit('official_accounts_updated', { account: result.rows[0], action: 'toggled' });
+
+    return res.json({
+      success: true,
+      account: result.rows[0],
+      message: turningOn ? 'Account is now receiving payments' : 'Account is now off'
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Toggle Official Account Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to toggle account status' });
+  }
+});
+
+/**
+ * PATCH /api/admin/official-accounts/:id/auto-pause
+ * Toggle auto-pause at daily limit
+ */
+router.patch('/official-accounts/:id/auto-pause', requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
     const result = await query(
       `UPDATE payment_accounts 
-       SET is_active = NOT is_active, updated_at = NOW() 
+       SET auto_pause_at_daily_limit = NOT auto_pause_at_daily_limit, updated_at = NOW() 
        WHERE id = $1 
        RETURNING *`,
       [id]
@@ -2618,16 +2987,212 @@ router.patch('/official-accounts/:id/toggle', requireAdmin, async (req, res) => 
       return res.status(404).json({ success: false, error: 'Official account not found' });
     }
 
-    io.emit('official_accounts_updated', { account: result.rows[0], action: 'toggled' });
+    const acc = result.rows[0];
+    const actorName = req.user?.username || req.user?.firstName || 'Admin';
+    await query(
+      `INSERT INTO payment_account_audit_logs (payment_account_id, actor_name, action)
+       VALUES ($1, $2, $3)`,
+      [id, actorName, `Auto-pause ${acc.auto_pause_at_daily_limit ? 'enabled' : 'disabled'}`]
+    );
+
+    io.emit('official_accounts_updated', { account: acc, action: 'updated' });
+
+    return res.json({
+      success: true,
+      account: acc,
+      message: `Auto-pause ${acc.auto_pause_at_daily_limit ? 'enabled' : 'disabled'}`
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Toggle Auto-Pause Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to update auto-pause' });
+  }
+});
+
+/**
+ * PATCH /api/admin/official-accounts/:id/verify
+ * Mark account as verified after test payment
+ */
+router.patch('/official-accounts/:id/verify', requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const result = await query(
+      `UPDATE payment_accounts 
+       SET is_verified = true, 
+           status = CASE WHEN status = 'Pending' THEN 'Paused' ELSE status END,
+           updated_at = NOW() 
+       WHERE id = $1 
+       RETURNING *`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Official account not found' });
+    }
+
+    const actorName = req.user?.username || req.user?.firstName || 'Admin';
+    await query(
+      `INSERT INTO payment_account_audit_logs (payment_account_id, actor_name, action)
+       VALUES ($1, $2, $3)`,
+      [id, actorName, 'Verified with a test payment']
+    );
+
+    io.emit('official_accounts_updated', { account: result.rows[0], action: 'verified' });
 
     return res.json({
       success: true,
       account: result.rows[0],
-      message: `Account status updated to ${result.rows[0].is_active ? 'Active' : 'Inactive'}`
+      message: 'Verified. Turn the account on to start receiving deposits.'
     });
   } catch (error: any) {
-    console.error('❌ [Admin Toggle Official Account Error]:', error);
-    return res.status(500).json({ success: false, error: 'Failed to toggle account status' });
+    console.error('❌ [Admin Verify Official Account Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to verify account' });
+  }
+});
+
+/**
+ * PATCH /api/admin/official-accounts/:id/primary
+ * Designate account as primary rail for its provider
+ */
+router.patch('/official-accounts/:id/primary', requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const target = await query(`SELECT * FROM payment_accounts WHERE id = $1`, [id]);
+    if (target.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Official account not found' });
+    }
+    const acc = target.rows[0];
+
+    // Unset primary on other accounts of same provider
+    await query(
+      `UPDATE payment_accounts SET is_primary = false, updated_at = NOW() WHERE provider = $1 AND id != $2`,
+      [acc.provider, id]
+    );
+
+    // Set primary on this account
+    const result = await query(
+      `UPDATE payment_accounts SET is_primary = true, updated_at = NOW() WHERE id = $1 RETURNING *`,
+      [id]
+    );
+
+    const actorName = req.user?.username || req.user?.firstName || 'Admin';
+    await query(
+      `INSERT INTO payment_account_audit_logs (payment_account_id, actor_name, action)
+       VALUES ($1, $2, $3)`,
+      [id, actorName, `Set as primary ${acc.provider} account`]
+    );
+
+    io.emit('official_accounts_updated', { account: result.rows[0], action: 'primary_set' });
+
+    return res.json({
+      success: true,
+      account: result.rows[0],
+      message: `Set as primary ${acc.provider} account`
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Set Primary Account Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to set primary account' });
+  }
+});
+
+/**
+ * POST /api/admin/official-accounts/:id/deactivate
+ * Deactivate account with reason, promoting next active account if primary
+ */
+router.post('/official-accounts/:id/deactivate', requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const deactReason = String(reason || 'Deactivated by admin').trim();
+
+    const target = await query(`SELECT * FROM payment_accounts WHERE id = $1`, [id]);
+    if (target.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Official account not found' });
+    }
+    const acc = target.rows[0];
+    const wasPrimary = acc.is_primary;
+
+    const result = await query(
+      `UPDATE payment_accounts 
+       SET status = 'Deactivated', is_active = false, is_primary = false, 
+           deactivation_reason = $1, updated_at = NOW() 
+       WHERE id = $2 
+       RETURNING *`,
+      [deactReason, id]
+    );
+
+    const actorName = req.user?.username || req.user?.firstName || 'Admin';
+    await query(
+      `INSERT INTO payment_account_audit_logs (payment_account_id, actor_name, action)
+       VALUES ($1, $2, $3)`,
+      [id, actorName, `Deactivated: ${deactReason}`]
+    );
+
+    // If was primary, promote next active account for that provider
+    if (wasPrimary) {
+      const nextActive = await query(
+        `SELECT id FROM payment_accounts WHERE provider = $1 AND is_active = true AND id != $2 ORDER BY display_order ASC LIMIT 1`,
+        [acc.provider, id]
+      );
+      if (nextActive.rows.length > 0) {
+        const nextId = nextActive.rows[0].id;
+        await query(`UPDATE payment_accounts SET is_primary = true WHERE id = $1`, [nextId]);
+        await query(
+          `INSERT INTO payment_account_audit_logs (payment_account_id, actor_name, action)
+           VALUES ($1, $2, $3)`,
+          [nextId, 'System', `Became primary after ${acc.account_number} was deactivated`]
+        );
+      }
+    }
+
+    io.emit('official_accounts_updated', { account: result.rows[0], action: 'deactivated' });
+
+    return res.json({
+      success: true,
+      account: result.rows[0],
+      message: 'Account deactivated'
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Deactivate Official Account Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to deactivate account' });
+  }
+});
+
+/**
+ * POST /api/admin/official-accounts/:id/reactivate
+ * Reactivate account back to Paused status
+ */
+router.post('/official-accounts/:id/reactivate', requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const result = await query(
+      `UPDATE payment_accounts 
+       SET status = 'Paused', is_active = false, deactivation_reason = NULL, updated_at = NOW() 
+       WHERE id = $1 
+       RETURNING *`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Official account not found' });
+    }
+
+    const actorName = req.user?.username || req.user?.firstName || 'Admin';
+    await query(
+      `INSERT INTO payment_account_audit_logs (payment_account_id, actor_name, action)
+       VALUES ($1, $2, $3)`,
+      [id, actorName, 'Reactivated (paused until turned on)']
+    );
+
+    io.emit('official_accounts_updated', { account: result.rows[0], action: 'reactivated' });
+
+    return res.json({
+      success: true,
+      account: result.rows[0],
+      message: 'Reactivated. Turn it on when ready'
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Reactivate Official Account Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to reactivate account' });
   }
 });
 

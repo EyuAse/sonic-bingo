@@ -20,6 +20,7 @@ import '../styles/admin.css';
 import '../styles/admin-jackpot.css';
 import '../styles/admin-cartelas.css';
 import '../styles/admin-bot-engine.css';
+import '../styles/admin-official-accounts.css';
 
 const TAB_TITLES: Record<AdminTab, string> = {
   overview: '📊 Dashboard',

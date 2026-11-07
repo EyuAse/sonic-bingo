@@ -1,5 +1,6 @@
 @import './admin-cartelas.css';
 @import './admin-bot-engine.css';
+@import './admin-official-accounts.css';
 
 /* Document body support for Admin Portal */
 body:has(.admin-fullscreen-root),

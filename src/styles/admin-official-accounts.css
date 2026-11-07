@@ -1,0 +1,752 @@
+/**
+ * Enqu Luxury Payment Accounts Management Desk Stylesheet
+ * Strictly matched to the official Enqu UI specification
+ */
+
+:root {
+  --pa-bg: #ffffff;
+  --pa-panel: #e8e6e9;
+  --pa-card: #ffffff;
+  --pa-ink: #1b1b1b;
+  --pa-mute: #707070;
+  --pa-line: #d9d9db;
+  --pa-chip: #e9e9ea;
+  --pa-dark: #1f2220;
+  --pa-grey: #858585;
+  --pa-g: #2e9e4f;
+  --pa-r: #b0302f;
+  --pa-amber: #e6a21f;
+}
+
+.official-accounts-enqu-root {
+  background: var(--pa-panel);
+  min-height: 100vh;
+  padding: 22px 24px 60px;
+  font-family: Urbanist, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--pa-ink);
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+.official-accounts-enqu-root * {
+  box-sizing: border-box;
+}
+
+.official-accounts-enqu-root .top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.official-accounts-enqu-root .top h1 {
+  font-size: 29px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  flex: 1;
+  margin: 0;
+  color: var(--pa-ink);
+}
+
+.official-accounts-enqu-root .note {
+  background: var(--pa-card);
+  border-radius: 16px;
+  padding: 12px 16px;
+  font-size: 13.5px;
+  color: var(--pa-mute);
+  margin-bottom: 15px;
+  box-shadow: inset 3px 0 0 var(--pa-grey);
+  line-height: 1.5;
+}
+
+/* Grids */
+.official-accounts-enqu-root .grid {
+  display: grid;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.official-accounts-enqu-root .g4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.official-accounts-enqu-root .g2 {
+  grid-template-columns: 1.7fr 1fr;
+}
+
+.official-accounts-enqu-root .g1 {
+  grid-template-columns: 1fr;
+}
+
+.official-accounts-enqu-root .g3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Elevated Cards */
+.official-accounts-enqu-root .card {
+  background: var(--pa-card);
+  border-radius: 20px;
+  padding: 16px 18px;
+  min-width: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.official-accounts-enqu-root .card.d {
+  background: linear-gradient(135deg, #1c1e1d, #2a2d2b 55%, #1a1c1b);
+  color: #ffffff;
+}
+
+.official-accounts-enqu-root .lab {
+  font-size: 14px;
+  color: var(--pa-mute);
+  font-weight: 500;
+}
+
+.official-accounts-enqu-root .card.d .lab {
+  color: #e5e5e5;
+}
+
+.official-accounts-enqu-root .val {
+  font-size: 23px;
+  font-weight: 700;
+  margin: 8px 0;
+  letter-spacing: -0.2px;
+}
+
+.official-accounts-enqu-root .tr {
+  font-size: 12px;
+  color: var(--pa-mute);
+  font-weight: 500;
+}
+
+.official-accounts-enqu-root .up {
+  color: var(--pa-g);
+}
+
+.official-accounts-enqu-root .dn {
+  color: var(--pa-r);
+}
+
+.official-accounts-enqu-root .card.d .up {
+  color: #3fbf62;
+}
+
+/* Tabs & Controls */
+.official-accounts-enqu-root .tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin-bottom: 15px;
+  padding-bottom: 2px;
+}
+
+.official-accounts-enqu-root .tabs button {
+  background: var(--pa-card);
+  padding: 8px 16px;
+  font-size: 13.5px;
+  border-radius: 20px;
+  white-space: nowrap;
+  font-weight: 600;
+  border: 0;
+  color: var(--pa-ink);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.official-accounts-enqu-root .tabs button.on {
+  background: var(--pa-grey);
+  color: #ffffff;
+}
+
+.official-accounts-enqu-root .row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.official-accounts-enqu-root button,
+.official-accounts-enqu-root .btn {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 0;
+  border-radius: 14px;
+  padding: 6px 14px;
+  background: var(--pa-chip);
+  color: var(--pa-ink);
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.official-accounts-enqu-root button:hover,
+.official-accounts-enqu-root .btn:hover {
+  opacity: 0.9;
+}
+
+.official-accounts-enqu-root button:active {
+  transform: scale(0.98);
+}
+
+.official-accounts-enqu-root button.p {
+  background: var(--pa-grey);
+  color: #ffffff;
+}
+
+.official-accounts-enqu-root button.k {
+  background: var(--pa-dark);
+  color: #ffffff;
+}
+
+.official-accounts-enqu-root input[type="text"],
+.official-accounts-enqu-root input[type="number"],
+.official-accounts-enqu-root select {
+  background: var(--pa-chip);
+  border: 0;
+  border-radius: 12px;
+  padding: 9px 12px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--pa-ink);
+  outline: 0;
+}
+
+.official-accounts-enqu-root input:focus,
+.official-accounts-enqu-root select:focus {
+  box-shadow: 0 0 0 2px var(--pa-grey);
+}
+
+/* Toggle Switch */
+.official-accounts-enqu-root .tog {
+  width: 42px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--pa-chip);
+  position: relative;
+  cursor: pointer;
+  display: inline-block;
+  vertical-align: middle;
+  border: 0;
+  padding: 0;
+  flex: none;
+  transition: background 0.15s ease;
+}
+
+.official-accounts-enqu-root .tog::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: left 0.15s ease;
+}
+
+.official-accounts-enqu-root .tog.on {
+  background: var(--pa-dark);
+}
+
+.official-accounts-enqu-root .tog.on::after {
+  left: 21px;
+}
+
+/* 2-Column Accounts Grid */
+.official-accounts-enqu-root .pa-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.official-accounts-enqu-root .pac {
+  background: var(--pa-card);
+  border-radius: 22px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.15s, transform 0.15s;
+  outline: 0;
+  border: 2px solid transparent;
+}
+
+.official-accounts-enqu-root .pac:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.official-accounts-enqu-root .pac.sel {
+  box-shadow: 0 0 0 2px var(--pa-dark);
+  border-color: var(--pa-dark);
+}
+
+.official-accounts-enqu-root .pac-top {
+  padding: 16px 18px 18px;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+.official-accounts-enqu-root .pac-top::after {
+  content: "";
+  position: absolute;
+  right: -40px;
+  top: -40px;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 22px rgba(255, 255, 255, 0.04);
+}
+
+.official-accounts-enqu-root .pac-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.official-accounts-enqu-root .pac-lg {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
+.official-accounts-enqu-root .pac-lg b {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--ac, #ffffff);
+}
+
+.official-accounts-enqu-root .pas {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.official-accounts-enqu-root .pas i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c, #5fe39a);
+}
+
+.official-accounts-enqu-root .pac-num {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin: 20px 0 4px;
+  position: relative;
+  z-index: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.official-accounts-enqu-root .pac-nm {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e4e4e6;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.official-accounts-enqu-root .pri {
+  display: inline-block;
+  background: linear-gradient(135deg, #f6d453, #e08a1e);
+  color: #2a1c00;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  padding: 2px 8px;
+  border-radius: 9px;
+}
+
+.official-accounts-enqu-root .pac-bd {
+  padding: 14px 18px 16px;
+}
+
+.official-accounts-enqu-root .pac-ag {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.official-accounts-enqu-root .pac-ag small {
+  display: block;
+  color: var(--pa-mute);
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.official-accounts-enqu-root .av2 {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--pa-chip);
+  display: inline-grid;
+  place-items: center;
+  font-size: 12.5px;
+  font-weight: 800;
+  flex: none;
+  color: var(--pa-ink);
+}
+
+.official-accounts-enqu-root .av2.big {
+  width: 48px;
+  height: 48px;
+  font-size: 16px;
+}
+
+/* Progress bar */
+.official-accounts-enqu-root .pab {
+  height: 8px;
+  border-radius: 5px;
+  background: var(--pa-chip);
+  overflow: hidden;
+  margin: 6px 0 4px;
+}
+
+.official-accounts-enqu-root .pab i {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+  background: var(--pa-dark);
+  transition: width 0.3s ease;
+}
+
+.official-accounts-enqu-root .pab.w i {
+  background: var(--pa-amber);
+}
+
+.official-accounts-enqu-root .pab.x i {
+  background: var(--pa-r);
+}
+
+.official-accounts-enqu-root .pac-ft {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.official-accounts-enqu-root .pac-ft .row {
+  gap: 8px;
+  flex-wrap: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.official-accounts-enqu-root .pac.dx .pac-top {
+  filter: grayscale(1) brightness(0.85);
+}
+
+.official-accounts-enqu-root .pac.dx {
+  opacity: 0.8;
+}
+
+/* Sticky Inspector */
+.official-accounts-enqu-root .padet {
+  align-self: start;
+  position: sticky;
+  top: 20px;
+  max-height: calc(100vh - 44px);
+  overflow-y: auto;
+  border-radius: 20px;
+}
+
+.official-accounts-enqu-root .pdh {
+  border-radius: 18px;
+  padding: 16px 18px;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.official-accounts-enqu-root .pdh .pn {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin: 16px 0 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.official-accounts-enqu-root .pdh .row button {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  border-radius: 12px;
+  border: 0;
+}
+
+.official-accounts-enqu-root .sec {
+  border-top: 1px solid var(--pa-line);
+  margin-top: 16px;
+  padding-top: 4px;
+}
+
+.official-accounts-enqu-root .sec h4 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 12px 0 4px;
+  color: var(--pa-ink);
+}
+
+.official-accounts-enqu-root .lg {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 5px 0;
+}
+
+.official-accounts-enqu-root .lg span::before {
+  content: "";
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 8px;
+  background: var(--c, var(--pa-grey));
+}
+
+.official-accounts-enqu-root .b {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 14px;
+  background: var(--pa-grey);
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.official-accounts-enqu-root .b.ok {
+  background: #e4f1e8;
+  color: #1f6a37;
+}
+
+.official-accounts-enqu-root .b.am {
+  background: #fdf1d8;
+  color: #8a6500;
+}
+
+.official-accounts-enqu-root .pa-empty {
+  grid-column: 1 / -1;
+  padding: 40px 10px;
+  text-align: center;
+  color: var(--pa-mute);
+  font-weight: 600;
+  font-size: 14px;
+  background: var(--pa-card);
+  border-radius: 22px;
+}
+
+.official-accounts-enqu-root .pa-log {
+  border-left: 2px solid var(--pa-line);
+  margin: 10px 0 0 5px;
+  padding-left: 16px;
+}
+
+.official-accounts-enqu-root .pa-log div {
+  position: relative;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.official-accounts-enqu-root .pa-log div::before {
+  content: "";
+  position: absolute;
+  left: -22px;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--pa-grey);
+  border: 2px solid #ffffff;
+}
+
+.official-accounts-enqu-root .pa-log b {
+  display: block;
+  font-size: 12px;
+  color: var(--pa-mute);
+  font-weight: 600;
+}
+
+.official-accounts-enqu-root .pa-dep {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--pa-line);
+}
+
+.official-accounts-enqu-root .pa-dep:last-child {
+  border-bottom: 0;
+}
+
+.official-accounts-enqu-root .pa-dep small {
+  display: block;
+  color: var(--pa-mute);
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.official-accounts-enqu-root .pa-warn {
+  background: #fdf1d8;
+  color: #7a5200;
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 10px;
+  line-height: 1.45;
+}
+
+.official-accounts-enqu-root .pa-chk {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  font-size: 13.5px;
+  font-weight: 600;
+  margin: 12px 0 0;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+/* Modals */
+.official-accounts-enqu-root .modalbg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 9999;
+  padding: 16px;
+  backdrop-filter: blur(4px);
+}
+
+.official-accounts-enqu-root .modal {
+  background: var(--pa-card);
+  border-radius: 24px;
+  padding: 24px;
+  width: min(540px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.official-accounts-enqu-root .modal label {
+  display: block;
+  font-size: 13px;
+  color: var(--pa-mute);
+  font-weight: 600;
+  margin: 12px 0 6px;
+}
+
+.official-accounts-enqu-root .seg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.official-accounts-enqu-root .seg button {
+  padding: 10px;
+  border-radius: 14px;
+  font-size: 13.5px;
+  border: 0;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--pa-chip);
+  color: var(--pa-ink);
+}
+
+.official-accounts-enqu-root .seg button.on {
+  background: var(--pa-dark);
+  color: #ffffff;
+}
+
+.official-accounts-enqu-root .two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.official-accounts-enqu-root .toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  background: var(--pa-dark);
+  color: #ffffff;
+  padding: 11px 20px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 13.5px;
+  z-index: 10000;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+  animation: paFadeIn 0.2s ease;
+}
+
+@keyframes paFadeIn {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Responsive Media Queries */
+@media (max-width: 980px) {
+  .official-accounts-enqu-root .g4 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .official-accounts-enqu-root .g2 {
+    grid-template-columns: 1fr;
+  }
+  .official-accounts-enqu-root .padet {
+    position: static;
+    max-height: none;
+    margin-top: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .official-accounts-enqu-root {
+    padding: 14px 12px 40px;
+  }
+  .official-accounts-enqu-root .g4 {
+    grid-template-columns: 1fr;
+  }
+  .official-accounts-enqu-root .pa-grid {
+    grid-template-columns: 1fr;
+  }
+  .official-accounts-enqu-root .two {
+    grid-template-columns: 1fr;
+  }
+}
