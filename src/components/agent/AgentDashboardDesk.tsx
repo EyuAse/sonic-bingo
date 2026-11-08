@@ -10,6 +10,7 @@ interface AgentDashboardDeskProps {
   onRefresh: () => void;
   isLoading: boolean;
   showToast?: (msg: string) => void;
+  openMobile?: () => void;
 }
 
 export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
@@ -18,7 +19,8 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
   onNavigateTab,
   onRefresh,
   isLoading,
-  showToast
+  showToast,
+  openMobile
 }) => {
   // Real Analytics State directly from Neon Database
   const [analytics, setAnalytics] = useState<any>(null);
@@ -338,6 +340,17 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
           1. TOPBAR & DYNAMIC GREETING
           ------------------------------------------------------------------- */}
       <header className="enqu-topbar">
+        {openMobile && (
+          <button
+            type="button"
+            className="enqu-menu-btn"
+            onClick={openMobile}
+            title="Open navigation menu"
+            aria-label="Open navigation menu"
+          >
+            ☰
+          </button>
+        )}
         <div>
           <h1>{getGreeting()}, {firstName}</h1>
           <div className="sub">Here is how your wallet, players and targets look today.</div>
@@ -470,9 +483,18 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
       <div className="enqu-grid enqu-g4">
         {/* Stat 1: Deposits Today */}
         <div className="enqu-card enqu-stat">
-          <div className="enqu-ic">
-            <svg viewBox="0 0 24 24">
-              <path d="M12 5v14M19 12l-7 7-7-7" />
+          <div className="ic enqu-ic">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.9"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 4v12m0 0 5-5m-5 5-5-5M4 20h16" />
             </svg>
           </div>
           <div className="l">Deposits today</div>
@@ -482,8 +504,17 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
 
         {/* Stat 2: Players */}
         <div className="enqu-card enqu-stat">
-          <div className="enqu-ic">
-            <svg viewBox="0 0 24 24">
+          <div className="ic enqu-ic">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.9"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
@@ -497,9 +528,18 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
 
         {/* Stat 3: Pending Withdrawals */}
         <div className="enqu-card enqu-stat">
-          <div className="enqu-ic">
-            <svg viewBox="0 0 24 24">
-              <path d="M12 19V5M5 12l7-7 7 7" />
+          <div className="ic enqu-ic">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.9"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 20V8m0 0 5 5m-5-5-5 5M4 4h16" />
             </svg>
           </div>
           <div className="l">Pending withdrawals</div>
@@ -511,8 +551,17 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
 
         {/* Stat 4: Commission (30 days) */}
         <div className="enqu-card enqu-stat">
-          <div className="enqu-ic">
-            <svg viewBox="0 0 24 24">
+          <div className="ic enqu-ic">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.9"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <line x1="19" y1="5" x2="5" y2="19" />
               <circle cx="6.5" cy="6.5" r="2.5" />
               <circle cx="17.5" cy="17.5" r="2.5" />

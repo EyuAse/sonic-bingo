@@ -479,24 +479,56 @@
 }
 
 /* Stat Tile */
-.enqu-stat .ic {
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
-  background: var(--ag-chip);
-  display: grid;
-  place-items: center;
-  margin-bottom: 10px;
+.enqu-stat .ic,
+.enqu-stat .enqu-ic,
+.enqu-ic,
+.stat .ic {
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  max-width: 34px !important;
+  max-height: 34px !important;
+  border-radius: 12px !important;
+  background: var(--ag-chip) !important;
+  display: grid !important;
+  place-items: center !important;
+  margin-bottom: 10px !important;
+  flex: none !important;
+  overflow: hidden !important;
 }
 
-.enqu-stat .ic svg {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: var(--ag-ink);
-  stroke-width: 1.9;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.enqu-stat .ic svg,
+.enqu-stat .enqu-ic svg,
+.enqu-ic svg,
+.stat .ic svg {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
+  fill: none !important;
+  stroke: var(--ag-ink) !important;
+  stroke-width: 1.9 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  display: block !important;
+}
+
+.enqu-menu-btn {
+  display: none !important;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 12px !important;
+  background: var(--ag-card) !important;
+  border: 1px solid var(--ag-line) !important;
+  color: var(--ag-ink) !important;
+  font-size: 18px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  padding: 0 !important;
 }
 
 .enqu-stat .l {
@@ -1007,6 +1039,9 @@
 }
 
 @media (max-width: 900px) {
+  .enqu-menu-btn {
+    display: flex !important;
+  }
   .enqu-agent-dashboard-root {
     padding: 16px 14px 40px;
   }

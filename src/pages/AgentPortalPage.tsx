@@ -7,7 +7,6 @@ import { apiClient } from '../services/apiClient.ts';
 import '../styles/agent.css';
 import { AgentLoginScreen } from '../components/agent/AgentLoginScreen.tsx';
 import { AgentSidebar, AgentDeskTab } from '../components/agent/AgentSidebar.tsx';
-import { AgentHeader } from '../components/agent/AgentHeader.tsx';
 import { AgentDashboardDesk } from '../components/agent/AgentDashboardDesk.tsx';
 import { AgentDepositRequestsDesk } from '../components/agent/AgentDepositRequestsDesk.tsx';
 import { AgentCashInDesk } from '../components/agent/AgentCashInDesk.tsx';
@@ -265,21 +264,10 @@ export const AgentPortalPage: React.FC = () => {
       {/* B. Main Viewport */}
       <div
         className={`sonic-agent-main-viewport ${isCollapsed ? 'sidebar-collapsed' : ''}`}
-        style={{ backgroundColor: '#f4f6f8', minHeight: '100vh' }}
+        style={{ backgroundColor: '#f2f2f4', minHeight: '100vh' }}
       >
-        {/* Sticky Header */}
-        <AgentHeader
-          activeTab={activeTab}
-          agentProfile={profile}
-          pendingCount={pendingRequestsCount}
-          openMobile={() => setIsMobileOpen(true)}
-          onPlayBingo={() => switchPage('games')}
-          onLogout={handleLogout}
-          onNavigateTab={setActiveTab}
-        />
-
         {/* Page Content Container */}
-        <main className="sonic-agent-page-content" style={{ backgroundColor: '#f4f6f8' }}>
+        <main className="sonic-agent-page-content" style={{ backgroundColor: '#f2f2f4' }}>
           {/* Desk 1: Overview & Float */}
           {activeTab === 'overview' && (
             <AgentDashboardDesk
@@ -289,6 +277,7 @@ export const AgentPortalPage: React.FC = () => {
               onRefresh={loadAgentData}
               isLoading={loading}
               showToast={showToast}
+              openMobile={() => setIsMobileOpen(true)}
             />
           )}
 

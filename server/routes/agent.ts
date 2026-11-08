@@ -193,7 +193,7 @@ router.get('/dashboard-analytics', requireAgent, async (req: AuthenticatedReques
         `SELECT COALESCE(SUM(amount), 0) as recharge_inflow
          FROM agent_recharge_requests
          WHERE agent_id = $1 AND status = 'approved'
-           AND (updated_at AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date`,
+           AND (COALESCE(reviewed_at, created_at) AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date`,
         [agentId]
       ),
       // Inflows today: Commission converted to float today
