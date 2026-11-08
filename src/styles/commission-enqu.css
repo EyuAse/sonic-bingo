@@ -281,31 +281,54 @@
   background: var(--comm-gold);
 }
 
-/* 8-Week Stacked Bar Chart */
+/* 8-Week Stacked Bar Chart & Scroll Wrapper */
+.comm-ch-scroll-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--comm-chip) transparent;
+}
+
+.comm-ch-scroll-wrapper::-webkit-scrollbar {
+  height: 4px;
+}
+.comm-ch-scroll-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+.comm-ch-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: var(--comm-line);
+  border-radius: 4px;
+}
+
 .comm-ch {
   display: flex;
   align-items: flex-end;
-  gap: 8px;
-  height: 170px;
-  padding: 6px 0 26px;
+  gap: 12px;
+  height: 180px;
+  padding: 18px 4px 34px;
+  box-sizing: border-box;
+  min-width: 100%;
 }
 
 .comm-cb {
-  flex: 1;
+  flex: 1 1 0%;
   height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
   position: relative;
-  min-width: 0;
+  min-width: 56px;
 }
 
 .comm-cb i {
   display: block;
   width: 100%;
-  max-width: 40px;
+  max-width: 38px;
   background: var(--comm-dark);
+  transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .comm-cb i.a {
@@ -321,14 +344,52 @@
   border-radius: 8px 8px 3px 3px;
 }
 
-.comm-cb span {
+.comm-cb-empty-bar {
+  width: 100%;
+  max-width: 38px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--comm-chip);
+}
+
+.comm-cb-val {
   position: absolute;
-  top: 100%;
-  margin-top: 7px;
+  bottom: calc(100% + 4px);
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--comm-ink);
+  white-space: nowrap;
+  background: #ffffff;
+  padding: 1px 5px;
+  border-radius: 6px;
+  border: 1px solid var(--comm-line);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.comm-cb-label {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.comm-label-full {
+  display: block;
   font-size: 11.5px;
   color: var(--comm-mute);
   font-weight: 600;
-  white-space: nowrap;
+}
+
+.comm-label-short {
+  display: none;
+  font-size: 11px;
+  color: var(--comm-mute);
+  font-weight: 700;
 }
 
 /* Source Distribution Progress Bars */
@@ -781,6 +842,24 @@
   }
   .comm-g2 {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .comm-ch {
+    min-width: 520px !important;
+    gap: 8px !important;
+    height: 175px !important;
+    padding-bottom: 30px !important;
+  }
+  .comm-cb {
+    min-width: 54px !important;
+  }
+  .comm-label-full {
+    display: none !important;
+  }
+  .comm-label-short {
+    display: block !important;
   }
 }
 

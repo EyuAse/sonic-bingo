@@ -1489,3 +1489,185 @@
   }
 }
 
+/* ==========================================================================
+   6. UNIVERSAL AGENT MOBILE GLOBAL TOPBAR (Sticky On Mobile For ALL Desks)
+   ========================================================================== */
+.sonic-agent-mobile-global-topbar {
+  display: none;
+}
+
+.sonic-sidebar-mobile-close-btn {
+  display: none;
+}
+
+/* Global desk menu button style */
+.enqu-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e6e6e9;
+  color: #1b1b1b;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.enqu-menu-btn:active {
+  transform: scale(0.94);
+  background: #efeff1;
+}
+
+@media (max-width: 992px) {
+  .sonic-agent-mobile-global-topbar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
+    padding: max(8px, env(safe-area-inset-top)) 14px 8px !important;
+    background: #ffffff !important;
+    border-bottom: 1px solid #e6e6e9 !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    font-family: 'Urbanist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  }
+
+  .sonic-agent-mobile-topbar-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    min-width: 0 !important;
+  }
+
+  .sonic-agent-mobile-hamburger-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 10px !important;
+    background: #f1f5f9 !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #1b1b1b !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+    transition: all 0.15s ease !important;
+    padding: 0 !important;
+  }
+
+  .sonic-agent-mobile-hamburger-btn:active {
+    background: #e2e8f0 !important;
+    transform: scale(0.94) !important;
+  }
+
+  .sonic-agent-mobile-brand-group {
+    display: flex !important;
+    flex-direction: column !important;
+    min-width: 0 !important;
+  }
+
+  .sonic-agent-mobile-avatar {
+    width: 22px !important;
+    height: 22px !important;
+    border-radius: 7px !important;
+    background: #e6a21f !important;
+    color: #1b1b1b !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+    box-shadow: 0 2px 6px rgba(230, 162, 31, 0.3) !important;
+    flex-shrink: 0 !important;
+  }
+
+  .sonic-agent-mobile-brand-title {
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    color: #1b1b1b !important;
+    letter-spacing: -0.3px !important;
+    line-height: 1.15 !important;
+  }
+
+  .sonic-agent-mobile-desk-badge {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: #6f6f73 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.4px !important;
+    margin-top: 1px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .sonic-agent-mobile-topbar-right {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .sonic-agent-mobile-float-chip {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    padding: 4px 10px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    line-height: 1.15 !important;
+  }
+
+  .sonic-agent-mobile-float-chip .float-label {
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    color: #64748b !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.3px !important;
+  }
+
+  .sonic-agent-mobile-float-chip .float-val {
+    font-size: 12.5px !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+  }
+
+  .sonic-sidebar-mobile-close-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 9px !important;
+    background: #efeff1 !important;
+    border: none !important;
+    color: #1b1b1b !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    transition: all 0.15s ease !important;
+  }
+
+  .sonic-sidebar-mobile-close-btn:active {
+    background: #e2e8f0 !important;
+    transform: scale(0.94) !important;
+  }
+
+  .desktop-only-collapse-btn {
+    display: none !important;
+  }
+
+  .enqu-menu-btn {
+    display: inline-flex !important;
+  }
+}
+
+

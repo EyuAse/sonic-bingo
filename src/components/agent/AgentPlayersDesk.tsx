@@ -304,6 +304,22 @@ export const AgentPlayersDesk: React.FC<AgentPlayersDeskProps> = ({
     <div className="players-enqu-root">
       {/* Header Bar - STRICTLY NO "Register player" button per explicit instructions */}
       <div className="top">
+        {openMobile && (
+          <button
+            type="button"
+            className="enqu-menu-btn"
+            onClick={openMobile}
+            title="Open navigation menu"
+            aria-label="Open navigation menu"
+            style={{ marginRight: 10 }}
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+        )}
         <div>
           <h1>My players</h1>
           <div className="sub">

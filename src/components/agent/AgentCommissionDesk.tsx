@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { apiClient } from '../../services/apiClient.ts';
 import { socketService } from '../../services/socketService.ts';
 
@@ -14,10 +14,12 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
   agentProfile,
   onRefresh,
-  showToast
+  showToast,
+  openMobile
 }) => {
   const [overview, setOverview] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const chartScrollRef = useRef<HTMLDivElement>(null);
 
   // Active view tab: 'wd' (Withdrawals) or 'ea' (Earnings)
   const [activeTab, setActiveTab] = useState<'wd' | 'ea'>('wd');
@@ -62,18 +64,18 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
     const agentId = agentProfile?.id;
     const unsubApproved = agentId
       ? socketService.on(`agent_${agentId}_payout_approved`, (data: any) => {
-          showToast(`🎉 Payout Approved: ${data.amount} ETB via ${data.payoutMethod}! Ref: ${data.adminRef || 'Settled'}`);
-          fetchOverview(true);
-          onRefresh();
-        })
+        showToast(`🎉 Payout Approved: ${data.amount} ETB via ${data.payoutMethod}! Ref: ${data.adminRef || 'Settled'}`);
+        fetchOverview(true);
+        onRefresh();
+      })
       : null;
 
     const unsubRejected = agentId
       ? socketService.on(`agent_${agentId}_payout_rejected`, (data: any) => {
-          showToast(`⚠️ Payout Rejected: ${data.reason}. ${data.amount} ETB refunded to your balance.`);
-          fetchOverview(true);
-          onRefresh();
-        })
+        showToast(`⚠️ Payout Rejected: ${data.reason}. ${data.amount} ETB refunded to your balance.`);
+        fetchOverview(true);
+        onRefresh();
+      })
       : null;
 
     const unsubGeneric = socketService.on('agent_payout_status_updated', () => {
@@ -130,6 +132,23 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
     const d = new Date(isoString);
     if (isNaN(d.getTime())) return '';
     return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+  };
+
+  // Auto-scroll chart container to rightmost week on mobile/small viewports
+  useEffect(() => {
+    if (chartScrollRef.current) {
+      chartScrollRef.current.scrollLeft = chartScrollRef.current.scrollWidth;
+    }
+  }, [overview?.weeklyChart]);
+
+  // Extract concise week label for mobile (e.g. "14 Sep–20 Sep" -> "20 Sep")
+  const getShortLabel = (label: string) => {
+    if (!label) return '';
+    const parts = label.split(/[–-]/);
+    if (parts.length > 1) {
+      return parts[1].trim();
+    }
+    return label;
   };
 
   // Open withdrawal modal
@@ -230,6 +249,22 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
     <div className="comm-page">
       {/* 1. Header */}
       <div className="comm-top">
+        {openMobile && (
+          <button
+            type="button"
+            className="enqu-menu-btn"
+            onClick={openMobile}
+            title="Open navigation menu"
+            aria-label="Open navigation menu"
+            style={{ marginRight: 12 }}
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+        )}
         <div>
           <h1>Commission desk</h1>
           <div className="sub">Your earnings from top-ups and referrals. Withdraw them straight from admin.</div>
@@ -324,19 +359,29 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
             </span>
           </h3>
 
-          <div className="comm-ch">
-            {weeklyChart.map((w: any, idx: number) => {
-              const topH = maxWeekly > 0 ? (w.topUp / maxWeekly) * 88 : 0;
-              const refH = maxWeekly > 0 ? (w.referral / maxWeekly) * 88 : 0;
+          <div className="comm-ch-scroll-wrapper" ref={chartScrollRef}>
+            <div className="comm-ch">
+              {weeklyChart.map((w: any, idx: number) => {
+                const topH = maxWeekly > 0 ? (w.topUp / maxWeekly) * 88 : 0;
+                const refH = maxWeekly > 0 ? (w.referral / maxWeekly) * 88 : 0;
 
-              return (
-                <div key={idx} className="comm-cb" title={w.title}>
-                  {w.referral > 0 && <i className="a" style={{ height: `${refH}%` }} />}
-                  {w.topUp > 0 && <i className="b" style={{ height: `${topH}%` }} />}
-                  <span>{w.label}</span>
-                </div>
-              );
-            })}
+                return (
+                  <div key={idx} className="comm-cb" title={`${w.label} • ETB ${w.total.toLocaleString()} (${w.topUp} Top-up, ${w.referral} Referral)`}>
+                    {w.total > 0 ? (
+                      <div className="comm-cb-val">ETB {w.total >= 1000 ? `${(w.total / 1000).toFixed(1)}k` : w.total}</div>
+                    ) : (
+                      <div className="comm-cb-empty-bar" />
+                    )}
+                    {w.referral > 0 && <i className="a" style={{ height: `${refH}%` }} />}
+                    {w.topUp > 0 && <i className="b" style={{ height: `${topH}%` }} />}
+                    <div className="comm-cb-label">
+                      <span className="comm-label-full">{w.label}</span>
+                      <span className="comm-label-short">{getShortLabel(w.label)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 

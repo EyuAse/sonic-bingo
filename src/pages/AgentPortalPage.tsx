@@ -42,6 +42,16 @@ interface AgentPerformance {
   estimatedCommission: number;
 }
 
+const DESK_TITLES: Record<string, string> = {
+  overview: 'Dashboard',
+  deposit_requests: 'Deposit Requests',
+  players: 'My Players',
+  recharge: 'Recharge Requests',
+  commission: 'Commission Desk',
+  cash_out: 'Commission Desk',
+  profile: 'Agent Settings',
+};
+
 export const AgentPortalPage: React.FC = () => {
   const { switchPage, showToast } = useApp();
   const { user } = useAuth();
@@ -259,6 +269,38 @@ export const AgentPortalPage: React.FC = () => {
         className={`sonic-agent-main-viewport ${isCollapsed ? 'sidebar-collapsed' : ''}`}
         style={{ backgroundColor: '#f2f2f4', minHeight: '100vh' }}
       >
+        {/* Universal Sleek Mobile Topbar (Shown on mobile for ALL desks) */}
+        <header className="sonic-agent-mobile-global-topbar">
+          <div className="sonic-agent-mobile-topbar-left">
+            <button
+              type="button"
+              className="sonic-agent-mobile-hamburger-btn"
+              onClick={() => setIsMobileOpen(true)}
+              aria-label="Open Agent Navigation Drawer"
+            >
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
+            <div className="sonic-agent-mobile-brand-group">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                <span className="sonic-agent-mobile-avatar">S</span>
+                <span className="sonic-agent-mobile-brand-title">Sonic Game</span>
+              </div>
+              <span className="sonic-agent-mobile-desk-badge">{DESK_TITLES[activeTab] || 'Agent Portal'}</span>
+            </div>
+          </div>
+
+          <div className="sonic-agent-mobile-topbar-right">
+            <div className="sonic-agent-mobile-float-chip" title="Current Wallet Float">
+              <span className="float-label">Float</span>
+              <span className="float-val">ETB {Number(profile?.walletBalance || 0).toLocaleString()}</span>
+            </div>
+          </div>
+        </header>
+
         {/* Page Content Container */}
         <main className="sonic-agent-page-content" style={{ backgroundColor: '#f2f2f4' }}>
           {/* Desk 1: Overview & Float */}
@@ -310,6 +352,7 @@ export const AgentPortalPage: React.FC = () => {
               agentProfile={profile}
               onRefresh={loadAgentData}
               showToast={showToast}
+              openMobile={() => setIsMobileOpen(true)}
             />
           )}
 
@@ -320,6 +363,7 @@ export const AgentPortalPage: React.FC = () => {
               showToast={showToast}
               onRefreshProfile={loadAgentData}
               onNavigateTab={setActiveTab}
+              openMobile={() => setIsMobileOpen(true)}
             />
           )}
         </main>

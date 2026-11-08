@@ -154,6 +154,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
           {!isCollapsed && (
             <button
               type="button"
+              className="desktop-only-collapse-btn"
               onClick={() => setIsCollapsed(true)}
               title="Collapse Sidebar"
               style={{
@@ -172,6 +173,17 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
               <i className="fa-solid fa-chevron-left"></i>
             </button>
           )}
+
+          {/* Mobile Close Drawer Button (Shown on mobile when drawer is open) */}
+          <button
+            type="button"
+            className="sonic-sidebar-mobile-close-btn"
+            onClick={closeMobile}
+            title="Close navigation drawer"
+            aria-label="Close navigation drawer"
+          >
+            <i className="fa-solid fa-xmark"></i>
+          </button>
         </div>
 
         {/* Collapsed Expand Quick Button */}
