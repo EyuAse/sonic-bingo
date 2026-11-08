@@ -1764,6 +1764,96 @@ export const apiClient = {
       }>(res);
     },
 
+    async getDashboardAnalytics() {
+      const res = await fetch(`${API_BASE}/agent/dashboard-analytics`, {
+        headers: { ...getAgentAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        agent: {
+          id: string;
+          code: string;
+          name: string;
+          phone: string;
+          city: string;
+          type: string;
+          referralLink: string;
+        };
+        wallet: {
+          balance: number;
+          lowThreshold: number;
+          isLowBalance: boolean;
+          openingBalanceToday: number;
+          depositsMadeTodayCount: number;
+          depositsMadeTodayVolume: number;
+          commissionLast30Days: number;
+          commissionRate: number;
+        };
+        kpis: {
+          depositsTodayVolume: number;
+          depositsTodayCount: number;
+          totalPlayers: number;
+          newPlayersLast30Days: number;
+          pendingWithdrawalsCount: number;
+          pendingDepositRequestsCount: number;
+          commission30Days: number;
+          pendingRechargeCommission: number;
+          pendingRechargeCount: number;
+        };
+        charts: {
+          daily: Array<{
+            label: string;
+            timeRange: string;
+            volume: number;
+            isCurrent: boolean;
+          }>;
+          weekly: Array<{
+            dayKey: string;
+            label: string;
+            fullDate: string;
+            volume: number;
+            isCurrent: boolean;
+          }>;
+          monthly: Array<{
+            dayKey: string;
+            label: string;
+            fullDate: string;
+            volume: number;
+            isCurrent: boolean;
+          }>;
+        };
+        targets: {
+          overallPercent: number;
+          rank: number;
+          totalAgents: number;
+          items: Array<{
+            label: string;
+            current: number;
+            target: number;
+            text: string;
+          }>;
+        };
+        recentDeposits: Array<{
+          id: string;
+          playerName: string;
+          playerPhone: string;
+          method: string;
+          amount: number;
+          reference: string;
+          status: string;
+          createdAt: string;
+        }>;
+        alerts: Array<{
+          id: string;
+          kind: 'w' | 'p' | 'm';
+          title: string;
+          body: string;
+          time: string;
+          unread: boolean;
+        }>;
+      }>(res);
+    },
+
     async getPerformance() {
       const res = await fetch(`${API_BASE}/agent/performance`, {
         headers: { ...getAgentAuthHeader() }

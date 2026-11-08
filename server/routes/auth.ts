@@ -144,13 +144,35 @@ router.post('/telegram', async (req, res) => {
       const myReferralCode = 'SONIC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
       const result = await withTransaction(async (client) => {
-        // Resolve referrer if valid code passed
+        // Resolve referrer and agent attribution if valid code passed
         let referrerId: string | null = null;
+        let agentId: string | null = null;
+
         if (referralCode && typeof referralCode === 'string') {
-          const cleanRef = referralCode.replace(/^ref_/, '').trim().toUpperCase();
-          if (cleanRef) {
+          const rawCode = referralCode.trim();
+          let agentCandidate = rawCode.replace(/^ref_/, '');
+          if (agentCandidate.toLowerCase().startsWith('agent_')) {
+            agentCandidate = agentCandidate.substring(6);
+          }
+
+          // 1. Check if referral code belongs to an Agent Profile
+          const agentLookup = await client.query(
+            `SELECT id, user_id FROM agent_profiles 
+             WHERE UPPER(agent_code) = UPPER($1) 
+                OR id::text = $1 
+             LIMIT 1`,
+            [agentCandidate]
+          );
+
+          if (agentLookup.rows.length > 0) {
+            agentId = agentLookup.rows[0].id;
+            referrerId = agentLookup.rows[0].user_id;
+            console.log(`💼 [Agent Referral] New Telegram player attributed to Agent ${agentCandidate} (Agent Profile: ${agentId})`);
+          } else {
+            // 2. Fallback to standard player referral lookup
+            const cleanRef = rawCode.replace(/^ref_/, '').toUpperCase();
             const refLookup = await client.query(
-              `SELECT id FROM users 
+              `SELECT id, agent_id FROM users 
                WHERE referral_code = $1 
                   OR UPPER(referral_code) = $1 
                   OR id::text = $1 
@@ -160,15 +182,18 @@ router.post('/telegram', async (req, res) => {
             );
             if (refLookup.rows.length > 0) {
               referrerId = refLookup.rows[0].id;
+              if (refLookup.rows[0].agent_id) {
+                agentId = refLookup.rows[0].agent_id;
+              }
             }
           }
         }
 
         const newUserRes = await client.query(
-          `INSERT INTO users (telegram_id, telegram_username, first_name, last_name, full_name, photo_url, phone, role, status, referral_code, referred_by, bot_started, bot_blocked)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, 'player', 'active', $8, $9, TRUE, FALSE)
+          `INSERT INTO users (telegram_id, telegram_username, first_name, last_name, full_name, photo_url, phone, role, status, referral_code, referred_by, agent_id, bot_started, bot_blocked)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, 'player', 'active', $8, $9, $10, TRUE, FALSE)
            RETURNING *`,
-          [tgIdNum, cleanUsername, firstName || null, lastName || null, fullName, photoUrl || null, phone || null, myReferralCode, referrerId]
+          [tgIdNum, cleanUsername, firstName || null, lastName || null, fullName, photoUrl || null, phone || null, myReferralCode, referrerId, agentId]
         );
         const newUser = newUserRes.rows[0];
 
@@ -307,13 +332,35 @@ router.post('/register', async (req, res) => {
     const myReferralCode = 'SONIC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
     const result = await withTransaction(async (client) => {
-      // Resolve referrer if code passed
+      // Resolve referrer and agent attribution if code passed
       let referrerId: string | null = null;
+      let agentId: string | null = null;
+
       if (referralCode && typeof referralCode === 'string') {
-        const cleanRef = referralCode.replace(/^ref_/, '').trim().toUpperCase();
-        if (cleanRef) {
+        const rawCode = referralCode.trim();
+        let agentCandidate = rawCode.replace(/^ref_/, '');
+        if (agentCandidate.toLowerCase().startsWith('agent_')) {
+          agentCandidate = agentCandidate.substring(6);
+        }
+
+        // 1. Check if referral code belongs to an Agent Profile
+        const agentLookup = await client.query(
+          `SELECT id, user_id FROM agent_profiles 
+           WHERE UPPER(agent_code) = UPPER($1) 
+              OR id::text = $1 
+           LIMIT 1`,
+          [agentCandidate]
+        );
+
+        if (agentLookup.rows.length > 0) {
+          agentId = agentLookup.rows[0].id;
+          referrerId = agentLookup.rows[0].user_id;
+          console.log(`💼 [Agent Referral Web] New Web player attributed to Agent ${agentCandidate} (Agent Profile: ${agentId})`);
+        } else {
+          // 2. Standard user referral lookup
+          const cleanRef = rawCode.replace(/^ref_/, '').toUpperCase();
           const refLookup = await client.query(
-            `SELECT id FROM users 
+            `SELECT id, agent_id FROM users 
              WHERE referral_code = $1 
                 OR UPPER(referral_code) = $1 
                 OR id::text = $1 
@@ -323,15 +370,18 @@ router.post('/register', async (req, res) => {
           );
           if (refLookup.rows.length > 0) {
             referrerId = refLookup.rows[0].id;
+            if (refLookup.rows[0].agent_id) {
+              agentId = refLookup.rows[0].agent_id;
+            }
           }
         }
       }
 
       const newUserRes = await client.query(
-        `INSERT INTO users (phone, full_name, pin_hash, role, status, referral_code, referred_by)
-         VALUES ($1, $2, $3, 'player', 'active', $4, $5)
+        `INSERT INTO users (phone, full_name, pin_hash, role, status, referral_code, referred_by, agent_id)
+         VALUES ($1, $2, $3, 'player', 'active', $4, $5, $6)
          RETURNING *`,
-        [cleanPhone, name, hashedPin, myReferralCode, referrerId]
+        [cleanPhone, name, hashedPin, myReferralCode, referrerId, agentId]
       );
       const newUser = newUserRes.rows[0];
 
