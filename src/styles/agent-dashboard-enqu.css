@@ -1,0 +1,1029 @@
+/* ==========================================================================
+   ENQU GAME AGENT PORTAL LUXURY DASHBOARD STYLESHEET
+   100% Pixel-Perfect Clone of Reference UI & Design System
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  --ag-bg: #f2f2f4;
+  --ag-card: #ffffff;
+  --ag-ink: #1b1b1b;
+  --ag-mute: #6f6f73;
+  --ag-line: #e6e6e9;
+  --ag-chip: #efeff1;
+  --ag-dark: #1f2220;
+  --ag-gold: #e6a21f;
+  --ag-gold2: #f6d453;
+  --ag-g: #2e9e4f;
+  --ag-r: #b0302f;
+  --ag-am: #8a5a00;
+  --ag-amb: #fbf0d9;
+}
+
+/* Base Wrapper */
+.enqu-agent-dashboard-root {
+  font-family: 'Urbanist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--ag-bg);
+  color: var(--ag-ink);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  padding: 24px 28px 48px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Universal Button Styles within Enqu Dashboard */
+.enqu-agent-dashboard-root button,
+.enqu-agent-modal button {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  border: 0;
+  border-radius: 14px;
+  padding: 8px 15px;
+  background: var(--ag-chip);
+  color: var(--ag-ink);
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.12s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.enqu-agent-dashboard-root button:hover,
+.enqu-agent-modal button:hover {
+  filter: brightness(0.96);
+}
+
+.enqu-agent-dashboard-root button:active,
+.enqu-agent-modal button:active {
+  transform: scale(0.98);
+}
+
+.enqu-agent-dashboard-root button:disabled,
+.enqu-agent-modal button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.enqu-agent-dashboard-root button.k,
+.enqu-agent-modal button.k {
+  background: var(--ag-dark);
+  color: #ffffff;
+}
+
+.enqu-agent-dashboard-root button.gold,
+.enqu-agent-modal button.gold {
+  background: linear-gradient(135deg, var(--ag-gold2), var(--ag-gold));
+  color: #2a1c00;
+  box-shadow: 0 4px 14px rgba(230, 162, 31, 0.35);
+}
+
+.enqu-agent-dashboard-root button.ghost,
+.enqu-agent-modal button.ghost {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+
+.enqu-agent-dashboard-root button.ghost:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Focus Rings */
+.enqu-agent-dashboard-root button:focus-visible,
+.enqu-agent-dashboard-root a:focus-visible,
+.enqu-agent-modal input:focus-visible,
+.enqu-agent-modal select:focus-visible {
+  outline: 2px solid var(--ag-gold);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   1. TOPBAR & GREETING ROW
+   ========================================================================== */
+.enqu-topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.enqu-topbar h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--ag-ink);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.enqu-topbar .sub {
+  color: var(--ag-mute);
+  font-weight: 600;
+  font-size: 13.5px;
+  margin-top: 3px;
+}
+
+.enqu-topbar .sp {
+  flex: 1;
+}
+
+.enqu-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--ag-card);
+  border-radius: 16px;
+  padding: 8px 14px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ag-ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.enqu-chip small {
+  color: var(--ag-mute);
+  font-weight: 600;
+}
+
+.enqu-bell-btn {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border-radius: 50% !important;
+  background: var(--ag-card) !important;
+  display: grid !important;
+  place-items: center;
+  padding: 0 !important;
+  border: 0;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.enqu-bell-btn svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: var(--ag-ink);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.enqu-bell-btn i {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: var(--ag-r);
+  color: #ffffff;
+  border-radius: 10px;
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 800;
+  padding: 1px 6px;
+  min-width: 18px;
+  text-align: center;
+  border: 2px solid #ffffff;
+}
+
+.enqu-av {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3a3d3b, #1f2220);
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 13px;
+  flex: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.enqu-av.s {
+  width: 30px;
+  height: 30px;
+  font-size: 11px;
+}
+
+.enqu-av.g {
+  background: linear-gradient(135deg, var(--ag-gold2), var(--ag-gold));
+  color: #2a1c00;
+}
+
+/* ==========================================================================
+   2. LOW BALANCE ALERT BANNER
+   ========================================================================== */
+.enqu-alert {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: linear-gradient(90deg, #fff4d3, #ffffff 75%);
+  border-radius: 20px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  box-shadow: inset 4px 0 0 var(--ag-gold), 0 2px 8px rgba(230, 162, 31, 0.08);
+}
+
+.enqu-alert .t {
+  flex: 1;
+  min-width: 220px;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ag-ink);
+}
+
+.enqu-alert .t small {
+  display: block;
+  color: var(--ag-mute);
+  font-weight: 600;
+  font-size: 12.5px;
+  margin-top: 2px;
+}
+
+/* Status Pills */
+.enqu-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 12px;
+  padding: 4px 11px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.enqu-pill.ok {
+  background: #e4f1e8;
+  color: #1f6a37;
+}
+
+.enqu-pill.wn {
+  background: var(--ag-amb);
+  color: var(--ag-am);
+}
+
+.enqu-pill.bd {
+  background: #f6dedd;
+  color: var(--ag-r);
+}
+
+.enqu-pill.gr {
+  background: var(--ag-chip);
+  color: var(--ag-mute);
+}
+
+/* ==========================================================================
+   3. HERO AVAILABLE FLOAT LIQUIDITY BANNER (METALLIC OBSIDIAN & GOLD)
+   ========================================================================== */
+.enqu-hero {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 22px;
+  border-radius: 26px;
+  padding: 26px 28px;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 16px;
+  background: radial-gradient(circle at 90% 8%, rgba(246, 212, 83, 0.34), transparent 42%),
+              radial-gradient(circle at 5% 120%, rgba(224, 138, 30, 0.26), transparent 50%),
+              linear-gradient(135deg, #1c1e1d, #2a2d2b 55%, #1a1c1b);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+}
+
+.enqu-hero::after {
+  content: "";
+  position: absolute;
+  right: -80px;
+  top: -80px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  border: 1px solid rgba(246, 212, 83, 0.22);
+  box-shadow: 0 0 0 30px rgba(246, 212, 83, 0.045), 0 0 0 60px rgba(246, 212, 83, 0.03);
+  pointer-events: none;
+}
+
+.enqu-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.enqu-k-l {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #d6d6d9;
+}
+
+.enqu-big {
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -1.6px;
+  line-height: 1.05;
+  margin: 8px 0 14px;
+  color: #ffffff;
+}
+
+.enqu-big small {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ag-gold2);
+  margin-right: 8px;
+  letter-spacing: 0;
+}
+
+.enqu-meter {
+  height: 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.14);
+  position: relative;
+  overflow: visible;
+  margin: 4px 0 8px;
+}
+
+.enqu-meter i {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--ag-gold2), var(--ag-gold));
+  transition: width 0.4s ease;
+}
+
+.enqu-meter b {
+  position: absolute;
+  top: -5px;
+  width: 2px;
+  height: 20px;
+  background: #ffffff;
+  border-radius: 2px;
+  opacity: 0.85;
+}
+
+.enqu-mrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #d6d6d9;
+  flex-wrap: wrap;
+}
+
+.enqu-hero .enqu-pill.ok {
+  background: rgba(95, 227, 154, 0.16);
+  color: #7be8ae;
+}
+
+.enqu-hero .enqu-pill.wn {
+  background: rgba(246, 212, 83, 0.18);
+  color: var(--ag-gold2);
+}
+
+.enqu-hero-btns {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.enqu-hero-btns button {
+  padding: 11px 18px !important;
+  font-size: 13.5px !important;
+  border-radius: 16px !important;
+}
+
+/* Frosted Mini Info Cards in Hero */
+.enqu-mini {
+  display: grid;
+  gap: 10px;
+  align-content: center;
+}
+
+.enqu-mini div {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 12px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.enqu-mini span {
+  font-size: 13px;
+  color: #d6d6d9;
+  font-weight: 600;
+}
+
+.enqu-mini b {
+  font-size: 16px;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   4. STATS GRID & ELEVATED CARDS
+   ========================================================================== */
+.enqu-grid {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.enqu-g4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.enqu-g2 {
+  grid-template-columns: 1.6fr 1fr;
+}
+
+.enqu-card {
+  background: var(--ag-card);
+  border-radius: 22px;
+  padding: 18px 20px;
+  min-width: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+.enqu-card h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.2px;
+  color: var(--ag-ink);
+}
+
+.enqu-card h3 .r {
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ag-mute);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Stat Tile */
+.enqu-stat .ic {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: var(--ag-chip);
+  display: grid;
+  place-items: center;
+  margin-bottom: 10px;
+}
+
+.enqu-stat .ic svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--ag-ink);
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.enqu-stat .l {
+  font-size: 13px;
+  color: var(--ag-mute);
+  font-weight: 700;
+}
+
+.enqu-stat .v {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  margin: 8px 0 4px;
+  color: var(--ag-ink);
+}
+
+.enqu-stat .t {
+  font-size: 12.5px;
+  color: var(--ag-mute);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.enqu-up {
+  color: var(--ag-g);
+}
+
+.enqu-dn {
+  color: var(--ag-r);
+}
+
+/* ==========================================================================
+   5. DEPOSIT ACTIVITY BAR CHART
+   ========================================================================== */
+.enqu-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.enqu-tabs button {
+  background: var(--ag-chip);
+  padding: 7px 14px;
+  border-radius: 13px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ag-ink);
+}
+
+.enqu-tabs button.on {
+  background: var(--ag-dark);
+  color: #ffffff;
+}
+
+.enqu-jch {
+  position: relative;
+  height: 218px;
+  padding: 8px 0 28px 44px;
+  box-sizing: border-box;
+}
+
+.enqu-jgl {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 8px;
+  bottom: 28px;
+}
+
+.enqu-jgl i {
+  position: absolute;
+  left: 44px;
+  right: 0;
+  border-top: 1px dashed var(--ag-line);
+}
+
+.enqu-jgl span {
+  position: absolute;
+  left: 0;
+  width: 38px;
+  text-align: right;
+  font-size: 11.5px;
+  color: var(--ag-mute);
+  transform: translateY(-50%);
+  font-weight: 600;
+}
+
+.enqu-jbars {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.enqu-jcol {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  position: relative;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.enqu-jcol i {
+  display: block;
+  width: 100%;
+  max-width: 38px;
+  border-radius: 8px 8px 3px 3px;
+  background: repeating-linear-gradient(115deg, var(--ag-dark) 0 14px, #262a28 14px 28px);
+  min-height: 2px;
+  transition: height 0.3s ease, filter 0.15s ease;
+}
+
+.enqu-jcol.h i {
+  background: linear-gradient(180deg, var(--ag-gold2), var(--ag-gold));
+  box-shadow: 0 4px 12px rgba(230, 162, 31, 0.4);
+}
+
+.enqu-jcol:hover i {
+  opacity: 0.85;
+  filter: brightness(1.15);
+}
+
+.enqu-jl {
+  position: absolute;
+  top: 100%;
+  margin-top: 7px;
+  font-size: 11.5px;
+  color: var(--ag-mute);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   6. TARGETS, CIRCULAR GAUGE & PROGRESS BARS
+   ========================================================================== */
+.enqu-ring {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 2px auto 8px;
+}
+
+.enqu-ring .c {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+
+.enqu-ring b {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  color: var(--ag-ink);
+}
+
+.enqu-ring small {
+  font-size: 11.5px;
+  color: var(--ag-mute);
+  font-weight: 700;
+}
+
+.enqu-tg-row {
+  margin: 14px 0;
+}
+
+.enqu-tg-row .rw {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: var(--ag-ink);
+}
+
+.enqu-tg-row .rw span:last-child {
+  color: var(--ag-mute);
+}
+
+.enqu-pb {
+  height: 9px;
+  border-radius: 6px;
+  background: var(--ag-chip);
+  overflow: hidden;
+}
+
+.enqu-pb i {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: var(--ag-dark);
+  transition: width 0.4s ease;
+}
+
+.enqu-pb.f i {
+  background: linear-gradient(90deg, var(--ag-gold2), var(--ag-gold));
+}
+
+.enqu-pb.g i {
+  background: var(--ag-g);
+}
+
+/* ==========================================================================
+   7. RECENT DEPOSITS TABLE & REFERRAL BOX
+   ========================================================================== */
+.enqu-table-wrap {
+  overflow-x: auto;
+}
+
+.enqu-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.enqu-table th {
+  text-align: left;
+  color: var(--ag-mute);
+  font-weight: 700;
+  font-size: 12.5px;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--ag-line);
+  white-space: nowrap;
+}
+
+.enqu-table td {
+  padding: 11px 10px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--ag-line);
+  white-space: nowrap;
+  vertical-align: middle;
+  color: var(--ag-ink);
+}
+
+.enqu-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.enqu-table td small {
+  display: block;
+  color: var(--ag-mute);
+  font-weight: 600;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.enqu-empty {
+  padding: 34px 10px;
+  text-align: center;
+  color: var(--ag-mute);
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+/* Referral Card */
+.enqu-ref-box {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: var(--ag-bg);
+  border-radius: 14px;
+  padding: 6px 6px 6px 14px;
+  font-weight: 700;
+  font-size: 12.5px;
+  word-break: break-all;
+}
+
+.enqu-ref-box span {
+  flex: 1;
+  min-width: 0;
+  color: var(--ag-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.enqu-ref-box button {
+  flex-shrink: 0;
+}
+
+/* Alerts Feed */
+.enqu-nt {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--ag-line);
+}
+
+.enqu-nt:last-child {
+  border-bottom: 0;
+}
+
+.enqu-nt .ni {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.enqu-nt.w .ni {
+  background: var(--ag-amb);
+  color: var(--ag-am);
+}
+
+.enqu-nt.p .ni {
+  background: #e4f1e8;
+  color: #1f6a37;
+}
+
+.enqu-nt.m .ni {
+  background: var(--ag-chip);
+  color: var(--ag-ink);
+}
+
+.enqu-nt b {
+  display: block;
+  font-size: 13.5px;
+  color: var(--ag-ink);
+}
+
+.enqu-nt p {
+  color: var(--ag-mute);
+  font-weight: 600;
+  font-size: 12.5px;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+.enqu-nt time {
+  margin-left: auto;
+  color: var(--ag-mute);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.enqu-nt.un b::after {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ag-gold);
+  margin-left: 7px;
+  vertical-align: middle;
+}
+
+/* ==========================================================================
+   8. ENQU PRODUCTION MODALS (RECORD DEPOSIT & REQUEST RECHARGE)
+   ========================================================================== */
+.enqu-modalbg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.enqu-modal {
+  background: var(--ag-card);
+  border-radius: 26px;
+  padding: 24px;
+  width: min(500px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+  animation: enquModalIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes enquModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.enqu-mh {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.enqu-mh h3 {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--ag-ink);
+  margin: 0;
+}
+
+.enqu-mh button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  padding: 0;
+  background: var(--ag-chip);
+  font-size: 14px;
+}
+
+.enqu-modal label {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ag-mute);
+  font-weight: 600;
+  margin: 12px 0 5px;
+}
+
+.enqu-modal input,
+.enqu-modal select {
+  font: inherit;
+  font-weight: 600;
+  width: 100%;
+  padding: 11px 13px;
+  border-radius: 14px;
+  border: 1px solid var(--ag-line);
+  background: #ffffff;
+  color: var(--ag-ink);
+  box-sizing: border-box;
+}
+
+.enqu-seg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.enqu-seg.two {
+  grid-template-columns: 1fr 1fr;
+}
+
+.enqu-seg button {
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--ag-chip);
+  color: var(--ag-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.enqu-seg button.on {
+  background: var(--ag-dark);
+  color: #ffffff;
+}
+
+.enqu-note2 {
+  background: var(--ag-bg);
+  border-radius: 14px;
+  padding: 11px 13px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ag-mute);
+  line-height: 1.5;
+  margin-top: 12px;
+}
+
+.enqu-note2 b {
+  color: var(--ag-ink);
+}
+
+.enqu-err {
+  color: var(--ag-r);
+  font-weight: 700;
+  font-size: 13px;
+  min-height: 18px;
+  margin-top: 10px;
+}
+
+/* Footer note */
+.enqu-foot {
+  color: var(--ag-mute);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  margin-top: 24px;
+}
+
+/* ==========================================================================
+   9. RESPONSIVE BREAKPOINTS
+   ========================================================================== */
+@media (max-width: 1100px) {
+  .enqu-g4 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .enqu-g2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .enqu-agent-dashboard-root {
+    padding: 16px 14px 40px;
+  }
+  .enqu-hero {
+    grid-template-columns: 1fr;
+    padding: 22px;
+  }
+}
+
+@media (max-width: 560px) {
+  .enqu-g4 {
+    grid-template-columns: 1fr;
+  }
+  .enqu-big {
+    font-size: 38px;
+  }
+  .enqu-topbar h1 {
+    font-size: 23px;
+  }
+}

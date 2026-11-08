@@ -3,6 +3,8 @@
    Signature Luxury Light/White Theme matching Sonic Bingo Reference UI
    ========================================================================== */
 
+@import './agent-dashboard-enqu.css';
+
 /* Force light background on Agent Portal roots so index.css body dark bg never bleeds in */
 .agent-fullscreen-root {
   width: 100%;
