@@ -10,8 +10,6 @@ export type AdminTab =
   | 'bot-engine'
   | 'bot-players'
   | 'cartelas'
-  | 'stakes'
-  | 'bingo-settings'
   | 'telegram-bot'
   | 'agents'
   | 'agent-recharges'
@@ -118,9 +116,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       label: 'Bingo Game',
       iconPath: IC.room,
       subItems: [
-        { id: 'cartelas', label: 'Cartelas', statusTag: '600' },
-        { id: 'stakes', label: 'Stakes', statusTag: '10-100' },
-        { id: 'bingo-settings', label: 'Bingo Setting', statusTag: 'Rules' }
+        { id: 'cartelas', label: 'Cartelas', statusTag: '600' }
       ]
     },
     {
@@ -129,7 +125,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       iconPath: IC.eng,
       subItems: [
         { id: 'bot-engine', label: 'Bot Engine', statusTag: '0-50' },
-        { id: 'bot-players', label: 'Bot Player Accounts', statusTag: '260+' }
+        { id: 'bot-players', label: 'Bot Player Accounts', statusTag: '200' }
       ]
     },
     {

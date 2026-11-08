@@ -4,7 +4,7 @@ import { query, withTransaction, getDatabaseStorageStats } from '../db.ts';
 import { requireAdmin, AuthenticatedRequest } from '../middleware/auth.ts';
 import { io } from '../io.ts';
 import { gameEngine } from '../game/BingoGameEngine.ts';
-import { calculateRoom10TargetBots } from '../game/ethiopianBotRoster.ts';
+import { calculateRoom10TargetBots, ETHIOPIAN_200_BOT_ROSTER, getRoom10HourlyBounds } from '../game/ethiopianBotRoster.ts';
 import { exportDatabaseBackup } from '../scripts/backup_database.ts';
 import { coinService } from '../services/coinService.ts';
 import { adminPlayersRouter } from './admin_players.ts';
@@ -1262,6 +1262,146 @@ router.get('/bot-users', requireAdmin, async (_req, res) => {
   } catch (error: any) {
     console.error('❌ [Admin Bot Users Error]:', error);
     return res.status(500).json({ success: false, error: 'Failed to retrieve bot users' });
+  }
+});
+
+/**
+ * GET /api/admin/bot-players
+ * Real-time Ethiopian Standby Bot Roster & Live Room 10 Telemetry
+ * Zero mock, zero seed: merges 200 authentic profiles with live engine room state and Neon DB wins.
+ */
+router.get('/bot-players', requireAdmin, async (req, res) => {
+  try {
+    const room10 = gameEngine.getRoom('room-10');
+    const activeBotMap = new Map<string, { cartelaId: number; roundNumber: number }>();
+
+    if (room10 && Array.isArray(room10.opponentCards)) {
+      for (const opp of room10.opponentCards) {
+        if (opp && opp.botUserId) {
+          activeBotMap.set(opp.botUserId, {
+            cartelaId: opp.cartelaId,
+            roundNumber: room10.roundNumber
+          });
+        }
+      }
+    }
+
+    // Query Neon DB for real bot wins recorded in game_rounds
+    const roundWinsRes = await query(`
+      SELECT winner_user_ids, winner_names, winner_payout, created_at
+      FROM game_rounds
+      WHERE room_id = 'room-10' AND jsonb_array_length(winner_user_ids) > 0
+      ORDER BY created_at DESC
+      LIMIT 500
+    `);
+
+    const winsByBot: Record<string, { winsCount: number; wonAmount: number }> = {};
+    let totalBotWins = 0;
+    let totalBotWonAmount = 0;
+
+    for (const row of roundWinsRes.rows) {
+      let userIds: string[] = [];
+      if (Array.isArray(row.winner_user_ids)) {
+        userIds = row.winner_user_ids;
+      } else if (typeof row.winner_user_ids === 'string') {
+        try {
+          userIds = JSON.parse(row.winner_user_ids);
+        } catch {}
+      }
+
+      const payoutPerWinner = parseFloat(row.winner_payout || '0') / Math.max(userIds.length, 1);
+
+      for (const uid of userIds) {
+        if (typeof uid === 'string' && uid.startsWith('bot_standby_')) {
+          totalBotWins++;
+          totalBotWonAmount += payoutPerWinner;
+          if (!winsByBot[uid]) {
+            winsByBot[uid] = { winsCount: 0, wonAmount: 0 };
+          }
+          winsByBot[uid].winsCount += 1;
+          winsByBot[uid].wonAmount += payoutPerWinner;
+        }
+      }
+    }
+
+    // Calculate current Ethiopian hourly schedule window
+    const now = new Date();
+    const bounds = getRoom10HourlyBounds(now);
+    const targetBots = calculateRoom10TargetBots(room10?.dynamicBotTarget, now);
+
+    // Map the 200 authentic Ethiopian bot profiles
+    const allBots = ETHIOPIAN_200_BOT_ROSTER.map((b, idx) => {
+      const isSeated = activeBotMap.has(b.id);
+      const seatedInfo = activeBotMap.get(b.id);
+      const winData = winsByBot[b.id] || { winsCount: 0, wonAmount: 0 };
+
+      return {
+        id: b.id,
+        botCode: `BOT-${String(idx + 1).padStart(3, '0')}`,
+        name: b.name,
+        phone: b.phone,
+        gender: b.gender || (idx % 3 === 0 ? 'female' : 'male'),
+        status: isSeated ? 'Active in Room 10' : 'Standby Pool',
+        isSeated,
+        activeCartelaId: seatedInfo?.cartelaId ?? null,
+        activeRoundNumber: seatedInfo?.roundNumber ?? null,
+        totalWins: winData.winsCount,
+        totalWonAmount: Math.round(winData.wonAmount * 100) / 100,
+        source: 'Standby Pool (Room 10)',
+        joinedAt: 'Living Engine Sync',
+        lastActive: isSeated ? 'Active Now' : 'Standby'
+      };
+    });
+
+    const search = (req.query.search as string || '').trim().toLowerCase();
+    const filter = (req.query.filter as string || 'all').toLowerCase();
+
+    let filtered = allBots;
+    if (filter === 'active') {
+      filtered = filtered.filter(b => b.isSeated);
+    } else if (filter === 'top-winners') {
+      filtered = filtered.filter(b => b.totalWins > 0);
+    } else if (filter === 'female') {
+      filtered = filtered.filter(b => b.gender === 'female');
+    } else if (filter === 'male') {
+      filtered = filtered.filter(b => b.gender === 'male');
+    }
+
+    if (search) {
+      filtered = filtered.filter(b =>
+        b.name.toLowerCase().includes(search) ||
+        b.phone.includes(search) ||
+        b.id.toLowerCase().includes(search) ||
+        b.botCode.toLowerCase().includes(search)
+      );
+    }
+
+    const femaleCount = ETHIOPIAN_200_BOT_ROSTER.filter(b => b.gender === 'female').length;
+    const maleCount = ETHIOPIAN_200_BOT_ROSTER.length - femaleCount;
+
+    const stats = {
+      totalBots: ETHIOPIAN_200_BOT_ROSTER.length,
+      activeInRoom: activeBotMap.size,
+      scheduleRange: `${bounds.minBots} - ${bounds.maxBots} Bots`,
+      scheduleWindowLabel: bounds.windowLabelEnglish,
+      scheduleWindowAmharic: bounds.windowLabelAmharic,
+      isSleepMode: bounds.isSleepMode,
+      targetBots,
+      femaleCount,
+      maleCount,
+      totalBotWins,
+      totalBotWonAmount: Math.round(totalBotWonAmount * 100) / 100
+    };
+
+    return res.json({
+      success: true,
+      stats,
+      totalCount: filtered.length,
+      bots: filtered
+    });
+  } catch (error: any) {
+    console.error('❌ [Admin Bot Players Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve bot players' });
   }
 });
 

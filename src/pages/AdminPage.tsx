@@ -32,8 +32,6 @@ const TAB_TITLES: Record<AdminTab, string> = {
   'bot-engine': '🎚️ Bot Engine (0-50)',
   'bot-players': '🤖 Bot Player Accounts',
   cartelas: '🗂️ 600 Cards',
-  stakes: '🪙 Stakes & Limits',
-  'bingo-settings': '⚙️ Bingo Settings',
   'telegram-bot': '📢 Telegram Bot',
   agents: '🤝 Agents',
   'agent-recharges': '⚡ Recharges',
@@ -64,8 +62,6 @@ export const AdminPage: React.FC = () => {
     activeTab === 'cartelas' ||
     activeTab === 'bot-engine' ||
     activeTab === 'bot-players' ||
-    activeTab === 'stakes' ||
-    activeTab === 'bingo-settings' ||
     activeTab === 'settings' ||
     activeTab === 'official-accounts';
 
@@ -281,12 +277,6 @@ export const AdminPage: React.FC = () => {
 
           {/* TAB 6: 600 SERIAL CARTELA CARDS LIBRARY */}
           {activeTab === 'cartelas' && <CartelasDesk />}
-
-          {/* TAB 6b: STAKES & MULTI-ROOM LIMITS */}
-          {activeTab === 'stakes' && <AdminSettings />}
-
-          {/* TAB 6c: BINGO GAME RULES, AUTOPLAY & RTP SETTINGS */}
-          {activeTab === 'bingo-settings' && <AdminSettings />}
 
           {/* TAB 7: TELEGRAM BOT & ADS BROADCAST CENTER */}
           {activeTab === 'telegram-bot' && <TelegramBotDesk />}
