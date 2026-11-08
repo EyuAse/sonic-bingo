@@ -28,6 +28,7 @@ import './styles/admin-bot-engine.css';
 import './styles/admin-official-accounts.css';
 import './styles/agent-dashboard-enqu.css';
 import './styles/recharge-requests-enqu.css';
+import './styles/deposit-requests-enqu.css';
 import './styles/auth.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

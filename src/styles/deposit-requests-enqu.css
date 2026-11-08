@@ -1,0 +1,787 @@
+/* ==========================================================================
+   Deposit Requests Enqu Portal Theme (Luxury Obsidan & Gold Architecture)
+   100% Reference-Faithful Design Token Implementation
+   ========================================================================== */
+
+.deposit-requests-enqu-root {
+  --dep-bg: #fff;
+  --dep-card: #fff;
+  --dep-ink: #1b1b1b;
+  --dep-mute: #6f6f73;
+  --dep-line: #e6e6e9;
+  --dep-chip: #efeff1;
+  --dep-dark: #1f2220;
+  --dep-darkink: #fff;
+  --dep-gold: #e6a21f;
+  --dep-gold2: #f6d453;
+  --dep-g: #2e9e4f;
+  --dep-gbg: #e4f1e8;
+  --dep-gfg: #1f6a37;
+  --dep-r: #b0302f;
+  --dep-rbg: #f6dedd;
+  --dep-am: #8a5a00;
+  --dep-amb: #fbf0d9;
+  --dep-hi: #fff4d3;
+
+  font-family: 'Urbanist', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: transparent;
+  color: var(--dep-ink);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  padding: 0;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.deposit-requests-enqu-root * {
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   Buttons & Form Controls
+   ========================================================================== */
+.deposit-requests-enqu-root button {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  border: 0;
+  border-radius: 14px;
+  padding: 9px 16px;
+  background: var(--dep-chip);
+  color: var(--dep-ink);
+  cursor: pointer;
+  transition: filter .12s, transform .12s, background .15s;
+}
+
+.deposit-requests-enqu-root button:hover:not(:disabled) {
+  filter: brightness(.95);
+}
+
+.deposit-requests-enqu-root button:active:not(:disabled) {
+  transform: scale(.98);
+}
+
+.deposit-requests-enqu-root button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.deposit-requests-enqu-root button:focus-visible,
+.deposit-requests-enqu-root input:focus-visible,
+.deposit-requests-enqu-root textarea:focus-visible {
+  outline: 2px solid var(--dep-gold);
+  outline-offset: 2px;
+}
+
+.deposit-requests-enqu-root input,
+.deposit-requests-enqu-root textarea {
+  font: inherit;
+  font-weight: 600;
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--dep-line);
+  background: var(--dep-card);
+  color: var(--dep-ink);
+}
+
+.deposit-requests-enqu-root textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+
+/* ==========================================================================
+   Header & Sub-Navigation
+   ========================================================================== */
+.deposit-requests-enqu-root .top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.deposit-requests-enqu-root .top h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -.5px;
+  margin: 0;
+}
+
+.deposit-requests-enqu-root .top .sub {
+  color: var(--dep-mute);
+  font-weight: 600;
+  font-size: 13.5px;
+  margin-top: 2px;
+}
+
+.deposit-requests-enqu-root .sp {
+  flex: 1;
+}
+
+.deposit-requests-enqu-root .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--dep-card);
+  border-radius: 16px;
+  padding: 9px 15px;
+  font-weight: 700;
+  font-size: 13px;
+  border: 1px solid var(--dep-line);
+}
+
+.deposit-requests-enqu-root .chip small {
+  color: var(--dep-mute);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   Hero Specular Obsidian Banner
+   ========================================================================== */
+.deposit-requests-enqu-root .hero {
+  border-radius: 26px;
+  padding: 24px 28px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 16px;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 22px;
+  background: radial-gradient(circle at 90% 8%, rgba(246, 212, 83, .34), transparent 42%),
+              radial-gradient(circle at 5% 120%, rgba(224, 138, 30, .26), transparent 50%),
+              linear-gradient(135deg, #1c1e1d, #2a2d2b 55%, #1a1c1b);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.deposit-requests-enqu-root .hero::after {
+  content: "";
+  position: absolute;
+  right: -80px;
+  top: -80px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  border: 1px solid rgba(246, 212, 83, .22);
+  box-shadow: 0 0 0 30px rgba(246, 212, 83, .045), 0 0 0 60px rgba(246, 212, 83, .03);
+  pointer-events: none;
+}
+
+.deposit-requests-enqu-root .hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.deposit-requests-enqu-root .kl {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: #d6d6d9;
+}
+
+.deposit-requests-enqu-root .big {
+  font-size: 46px;
+  font-weight: 800;
+  letter-spacing: -1.6px;
+  line-height: 1.05;
+  margin: 8px 0 10px;
+}
+
+.deposit-requests-enqu-root .big small {
+  font-size: 18px;
+  color: var(--dep-gold2);
+  margin-right: 8px;
+  letter-spacing: 0;
+}
+
+.deposit-requests-enqu-root .hero p {
+  color: #d6d6d9;
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 380px;
+  margin: 0;
+}
+
+.deposit-requests-enqu-root .mini {
+  display: grid;
+  gap: 10px;
+  align-content: center;
+}
+
+.deposit-requests-enqu-root .mini div {
+  background: rgba(255, 255, 255, .07);
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 16px;
+  padding: 12px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.deposit-requests-enqu-root .mini span {
+  font-size: 13px;
+  color: #d6d6d9;
+  font-weight: 600;
+}
+
+.deposit-requests-enqu-root .mini b {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ==========================================================================
+   Statistics Grids
+   ========================================================================== */
+.deposit-requests-enqu-root .stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.deposit-requests-enqu-root .stats.s4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.deposit-requests-enqu-root .card {
+  background: var(--dep-card);
+  border-radius: 22px;
+  padding: 18px 20px;
+  border: 1px solid var(--dep-line);
+}
+
+.deposit-requests-enqu-root .stat .l {
+  font-size: 13px;
+  color: var(--dep-mute);
+  font-weight: 700;
+}
+
+.deposit-requests-enqu-root .stat .v {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -.6px;
+  margin: 6px 0 2px;
+  color: var(--dep-ink);
+}
+
+.deposit-requests-enqu-root .stat .t {
+  font-size: 12.5px;
+  color: var(--dep-mute);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   Toolbar & Segmented Navigation
+   ========================================================================== */
+.deposit-requests-enqu-root .bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.deposit-requests-enqu-root .tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.deposit-requests-enqu-root .tabs button {
+  background: var(--dep-card);
+  padding: 9px 15px;
+  border-radius: 14px;
+  border: 1px solid var(--dep-line);
+  color: var(--dep-ink);
+}
+
+.deposit-requests-enqu-root .tabs button.on {
+  background: var(--dep-dark);
+  color: var(--dep-darkink);
+  border-color: var(--dep-dark);
+}
+
+.deposit-requests-enqu-root .tabs .n {
+  display: inline-block;
+  margin-left: 7px;
+  background: var(--dep-gold);
+  color: #2a1c00;
+  border-radius: 9px;
+  padding: 0 7px;
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.deposit-requests-enqu-root .search {
+  flex: 1;
+  min-width: 180px;
+  max-width: 300px;
+  margin-left: auto;
+}
+
+/* ==========================================================================
+   Request Cards List
+   ========================================================================== */
+.deposit-requests-enqu-root .list {
+  display: grid;
+  gap: 12px;
+}
+
+.deposit-requests-enqu-root .req {
+  background: var(--dep-card);
+  border-radius: 22px;
+  padding: 16px 18px;
+  border: 1px solid var(--dep-line);
+  display: grid;
+  grid-template-columns: minmax(190px, 1.2fr) minmax(130px, .8fr) minmax(170px, 1.2fr) auto;
+  gap: 16px;
+  align-items: center;
+  transition: opacity .3s, transform .3s;
+}
+
+.deposit-requests-enqu-root .req.old {
+  box-shadow: inset 4px 0 0 var(--dep-gold);
+}
+
+.deposit-requests-enqu-root .req.out {
+  opacity: 0;
+  transform: translateX(24px);
+}
+
+.deposit-requests-enqu-root .pc {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.deposit-requests-enqu-root .pc b {
+  display: block;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.deposit-requests-enqu-root .pc small,
+.deposit-requests-enqu-root .sm {
+  display: block;
+  color: var(--dep-mute);
+  font-weight: 600;
+  font-size: 12.5px;
+}
+
+.deposit-requests-enqu-root .av {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3a3d3b, #1f2220);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 13px;
+  flex: none;
+}
+
+.deposit-requests-enqu-root .amt {
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: -.6px;
+  color: var(--dep-ink);
+}
+
+.deposit-requests-enqu-root .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 12px;
+  padding: 4px 11px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.deposit-requests-enqu-root .pill.ok {
+  background: var(--dep-gbg);
+  color: var(--dep-gfg);
+}
+
+.deposit-requests-enqu-root .pill.wn {
+  background: var(--dep-amb);
+  color: var(--dep-am);
+}
+
+.deposit-requests-enqu-root .pill.bd {
+  background: var(--dep-rbg);
+  color: var(--dep-r);
+}
+
+.deposit-requests-enqu-root .pill.gr {
+  background: var(--dep-chip);
+  color: var(--dep-mute);
+}
+
+.deposit-requests-enqu-root .ref {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--dep-chip);
+  border-radius: 12px;
+  padding: 5px 5px 5px 11px;
+  font-weight: 700;
+  font-size: 12.5px;
+  margin-top: 6px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.deposit-requests-enqu-root .ref button {
+  padding: 4px 10px;
+  border-radius: 9px;
+  font-size: 11.5px;
+  background: var(--dep-chip);
+}
+
+.deposit-requests-enqu-root .ref button:hover {
+  background: #e2e2e6;
+}
+
+.deposit-requests-enqu-root .acts {
+  display: flex;
+  gap: 8px;
+}
+
+.deposit-requests-enqu-root .acts button {
+  padding: 11px 18px;
+  border-radius: 15px;
+}
+
+.deposit-requests-enqu-root .acc {
+  background: linear-gradient(135deg, var(--dep-gold2), var(--dep-gold));
+  color: #2a1c00;
+}
+
+.deposit-requests-enqu-root .acc:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.deposit-requests-enqu-root .rej {
+  background: var(--dep-rbg);
+  color: var(--dep-r);
+}
+
+.deposit-requests-enqu-root .empty {
+  background: var(--dep-card);
+  border-radius: 22px;
+  padding: 46px 14px;
+  text-align: center;
+  color: var(--dep-mute);
+  font-weight: 700;
+  border: 1px solid var(--dep-line);
+}
+
+.deposit-requests-enqu-root .empty b {
+  display: block;
+  color: var(--dep-ink);
+  font-size: 17px;
+  margin-bottom: 4px;
+}
+
+/* ==========================================================================
+   Interactive History Bar Chart
+   ========================================================================== */
+.deposit-requests-enqu-root .card h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.deposit-requests-enqu-root .card h3 .r {
+  margin-left: auto;
+  font-size: 12.5px;
+  color: var(--dep-mute);
+  font-weight: 600;
+}
+
+.deposit-requests-enqu-root .ch {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 190px;
+  padding: 6px 0 26px;
+}
+
+.deposit-requests-enqu-root .cb {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.deposit-requests-enqu-root .cb i {
+  display: block;
+  width: 100%;
+  max-width: 40px;
+  border-radius: 8px 8px 3px 3px;
+  background: var(--dep-dark);
+  opacity: .82;
+  min-height: 4px;
+  transition: opacity .15s, background .15s;
+}
+
+.deposit-requests-enqu-root .cb:hover i {
+  opacity: 1;
+}
+
+.deposit-requests-enqu-root .cb.on i {
+  background: linear-gradient(180deg, var(--dep-gold2), var(--dep-gold));
+  opacity: 1;
+}
+
+.deposit-requests-enqu-root .cb span {
+  position: absolute;
+  top: 100%;
+  margin-top: 7px;
+  font-size: 11.5px;
+  color: var(--dep-mute);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.deposit-requests-enqu-root .cb.on span {
+  color: var(--dep-ink);
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   History Table
+   ========================================================================== */
+.deposit-requests-enqu-root .wrap {
+  overflow-x: auto;
+}
+
+.deposit-requests-enqu-root table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.deposit-requests-enqu-root th {
+  text-align: left;
+  color: var(--dep-mute);
+  font-weight: 700;
+  font-size: 12.5px;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--dep-line);
+  white-space: nowrap;
+}
+
+.deposit-requests-enqu-root td {
+  padding: 11px 10px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--dep-line);
+  white-space: nowrap;
+}
+
+.deposit-requests-enqu-root tr:last-child td {
+  border-bottom: 0;
+}
+
+/* ==========================================================================
+   Modals & Dialogs
+   ========================================================================== */
+.deposit-requests-enqu-root .mbg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .55);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  padding: 16px;
+  backdrop-filter: blur(2px);
+}
+
+.deposit-requests-enqu-root .modal {
+  background: var(--dep-card);
+  border-radius: 26px;
+  padding: 22px;
+  width: min(480px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+}
+
+.deposit-requests-enqu-root .mh {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.deposit-requests-enqu-root .mh h3 {
+  font-size: 19px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.deposit-requests-enqu-root .sum {
+  background: var(--dep-chip);
+  border-radius: 18px;
+  padding: 14px 16px;
+  margin: 10px 0;
+}
+
+.deposit-requests-enqu-root .lg {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+.deposit-requests-enqu-root .lg span {
+  color: var(--dep-mute);
+  font-weight: 600;
+}
+
+.deposit-requests-enqu-root .lg.t {
+  border-top: 1px solid var(--dep-line);
+  margin-top: 4px;
+  padding-top: 10px;
+}
+
+.deposit-requests-enqu-root .rs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.deposit-requests-enqu-root .rs button {
+  background: var(--dep-chip);
+}
+
+.deposit-requests-enqu-root .rs button.on {
+  background: var(--dep-r);
+  color: #fff;
+}
+
+.deposit-requests-enqu-root label {
+  display: block;
+  font-size: 12.5px;
+  color: var(--dep-mute);
+  font-weight: 700;
+  margin: 6px 0 2px;
+}
+
+.deposit-requests-enqu-root .note {
+  font-size: 12.5px;
+  color: var(--dep-mute);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.deposit-requests-enqu-root .warn {
+  color: var(--dep-r);
+  font-weight: 700;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.deposit-requests-enqu-root .mf {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.deposit-requests-enqu-root .dk {
+  background: var(--dep-dark);
+  color: var(--dep-darkink);
+}
+
+.deposit-requests-enqu-root .rd {
+  background: var(--dep-r);
+  color: #fff;
+}
+
+/* ==========================================================================
+   Toast Notification
+   ========================================================================== */
+.deposit-requests-enqu-root .toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(26px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  background: var(--dep-dark);
+  color: var(--dep-darkink);
+  padding: 12px 18px;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 13.5px;
+  z-index: 60;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+  max-width: 90vw;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Responsive Adaptations
+   ========================================================================== */
+@media (max-width: 900px) {
+  .deposit-requests-enqu-root .req {
+    grid-template-columns: 1fr 1fr;
+  }
+  .deposit-requests-enqu-root .acts {
+    grid-column: 1 / -1;
+  }
+  .deposit-requests-enqu-root .acts button {
+    flex: 1;
+  }
+  .deposit-requests-enqu-root .hero {
+    grid-template-columns: 1fr;
+  }
+  .deposit-requests-enqu-root .stats {
+    grid-template-columns: 1fr;
+  }
+  .deposit-requests-enqu-root .stats.s4 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .deposit-requests-enqu-root .search {
+    max-width: none;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .deposit-requests-enqu-root .req {
+    grid-template-columns: 1fr;
+  }
+  .deposit-requests-enqu-root .big {
+    font-size: 38px;
+  }
+  .deposit-requests-enqu-root .top h1 {
+    font-size: 23px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deposit-requests-enqu-root * {
+    transition: none !important;
+  }
+}

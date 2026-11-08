@@ -5,6 +5,7 @@
 
 @import './agent-dashboard-enqu.css';
 @import './recharge-requests-enqu.css';
+@import './deposit-requests-enqu.css';
 
 /* Force light background on Agent Portal roots so index.css body dark bg never bleeds in */
 .agent-fullscreen-root {
