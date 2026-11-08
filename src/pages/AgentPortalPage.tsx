@@ -287,6 +287,7 @@ export const AgentPortalPage: React.FC = () => {
               agentProfile={profile}
               onActionCompleted={loadAgentData}
               showToast={showToast}
+              openMobile={() => setIsMobileOpen(true)}
             />
           )}
 

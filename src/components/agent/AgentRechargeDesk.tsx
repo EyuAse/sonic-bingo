@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { apiClient } from '../../services/apiClient.ts';
 import { socketService } from '../../services/socketService.ts';
-import { compressImage, CompressedImageResult } from '../../utils/imageCompressor.ts';
+import { compressImage, type CompressedImageResult } from '../../utils/imageCompressor.ts';
 import '../../styles/recharge-requests-enqu.css';
 
 interface AgentRechargeDeskProps {
@@ -770,3 +770,5 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
     </div>
   );
 };
+
+export default AgentRechargeDesk;

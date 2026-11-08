@@ -42,7 +42,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
     icon: string;
   }> = [
     { id: 'overview', label: 'Dashboard', icon: 'fa-solid fa-table-cells-large' },
-    { id: 'deposit_requests', label: 'Deposit Desk & History', icon: 'fa-solid fa-inbox' },
+    { id: 'deposit_requests', label: 'Deposit Requests', icon: 'fa-solid fa-inbox' },
     { id: 'players', label: 'My Players', icon: 'fa-solid fa-user-group' },
     { id: 'cash_in', label: 'Direct Cash-In', icon: 'fa-solid fa-bolt' },
     { id: 'cash_out', label: 'Commission Desk', icon: 'fa-solid fa-coins' },

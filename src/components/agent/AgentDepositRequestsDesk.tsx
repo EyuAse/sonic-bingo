@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { apiClient } from '../../services/apiClient.ts';
 import { socketService } from '../../services/socketService.ts';
-import { TelebirrLogo, CBELogo, MpesaLogo } from '../wallet/PaymentLogos.tsx';
+import '../../styles/deposit-requests-enqu.css';
 
 interface DepositRequestItem {
   id: string;
@@ -18,1076 +18,915 @@ interface DepositRequestItem {
   resolvedAt?: string;
 }
 
-interface AnalyticsWindow {
-  amount: number;
-  count: number;
-  commission: number;
+interface DepositSummary {
+  walletBalance: number;
+  lowBalanceThreshold: number;
+  pendingSum: number;
+  pendingCount: number;
+  oldestWaitingMinutes: number;
+  walletAfterAllPending: number;
+  acceptedTodaySum: number;
+  acceptedTodayCount: number;
+  rejectedTodayCount: number;
+  rejectedTodaySum: number;
 }
 
-interface DepositAnalytics {
-  today: AnalyticsWindow;
-  week: AnalyticsWindow;
-  month: AnalyticsWindow;
-  allTime: AnalyticsWindow;
+interface HistoryBucketItem {
+  index: number;
+  label: string;
+  shortLabel: string;
+  acceptedVolume: number;
+  acceptedCount: number;
+  rejectedCount: number;
+  totalRequests: number;
+  acceptanceRate: number;
+  rows: DepositRequestItem[];
 }
 
 interface AgentDepositRequestsDeskProps {
   agentProfile: any;
   onActionCompleted: () => void;
   showToast: (msg: string) => void;
+  openMobile?: () => void;
 }
 
 export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> = ({
   agentProfile,
   onActionCompleted,
-  showToast
+  showToast,
+  openMobile
 }) => {
-  // Main Sub-Tab: 'live' (Pending Actions) vs 'history' (Settled Archive)
-  const [activeSubTab, setActiveSubTab] = useState<'live' | 'history'>('live');
+  // 1. View Navigation: 'req' (Requests) vs 'hist' (History)
+  const [view, setView] = useState<'req' | 'hist'>('req');
 
-  // Timeframe Category Filter (for history & aggregates)
-  const [timeframe, setTimeframe] = useState<'today' | 'week' | 'month' | 'all'>('today');
+  // 2. Requests View Tab Filter: 'Pending' | 'Accepted' | 'Rejected' | 'All'
+  const [tab, setTab] = useState<'Pending' | 'Accepted' | 'Rejected' | 'All'>('Pending');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // History status filter
-  const [historyStatus, setHistoryStatus] = useState<'all' | 'approved' | 'rejected'>('all');
-
+  // 3. Requests Data State
   const [requests, setRequests] = useState<DepositRequestItem[]>([]);
-  const [pendingCount, setPendingCount] = useState<number>(0);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(true);
-
-  // Authoritative SQL Analytics State
-  const [analytics, setAnalytics] = useState<DepositAnalytics>({
-    today: { amount: 0, count: 0, commission: 0 },
-    week: { amount: 0, count: 0, commission: 0 },
-    month: { amount: 0, count: 0, commission: 0 },
-    allTime: { amount: 0, count: 0, commission: 0 }
+  const [summary, setSummary] = useState<DepositSummary>({
+    walletBalance: parseFloat(agentProfile?.walletBalance || agentProfile?.wallet_balance || '0'),
+    lowBalanceThreshold: parseFloat(agentProfile?.lowBalanceThreshold || agentProfile?.low_balance_threshold || '1000'),
+    pendingSum: 0,
+    pendingCount: 0,
+    oldestWaitingMinutes: 0,
+    walletAfterAllPending: parseFloat(agentProfile?.walletBalance || agentProfile?.wallet_balance || '0'),
+    acceptedTodaySum: 0,
+    acceptedTodayCount: 0,
+    rejectedTodayCount: 0,
+    rejectedTodaySum: 0
   });
+  const [loadingRequests, setLoadingRequests] = useState(true);
 
-  // Modal State for Approval Confirmation
-  const [approvingItem, setApprovingItem] = useState<DepositRequestItem | null>(null);
-  const [isProcessingApproval, setIsProcessingApproval] = useState<boolean>(false);
+  // 4. History View State
+  const [historyPeriod, setHistoryPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [historyBuckets, setHistoryBuckets] = useState<HistoryBucketItem[]>([]);
+  const [selectedBucketIndex, setSelectedBucketIndex] = useState<number>(0);
+  const [historySummary, setHistorySummary] = useState<any>({
+    acceptedVolume: 0,
+    acceptedCount: 0,
+    rejectedCount: 0,
+    totalRequests: 0,
+    acceptanceRate: 0
+  });
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // Modal State for Rejection
-  const [rejectingItem, setRejectingItem] = useState<DepositRequestItem | null>(null);
-  const [rejectReason, setRejectReason] = useState<string>('SMS Transaction ID not found in Telebirr');
-  const [customRejectNote, setCustomRejectNote] = useState<string>('');
-  const [isProcessingRejection, setIsProcessingRejection] = useState<boolean>(false);
+  // 5. Modals State
+  const [acceptModalItem, setAcceptModalItem] = useState<DepositRequestItem | null>(null);
+  const [rejectModalItem, setRejectModalItem] = useState<DepositRequestItem | null>(null);
+  const [rejectReason, setRejectReason] = useState<string>('Reference not found');
+  const [rejectNote, setRejectNote] = useState<string>('');
+  const [rejectError, setRejectError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  // Lightbox Modal for Receipt Screenshot
-  const [activeReceiptUrl, setActiveReceiptUrl] = useState<string | null>(null);
+  // 6. Screenshot Lightbox
+  const [lightboxImg, setLightboxImg] = useState<string | null>(null);
 
-  // 1. Fetch Requests & Analytics from Neon DB Backend
-  const loadRequests = async (subTab = activeSubTab, tf = timeframe, histStat = historyStatus) => {
-    try {
-      setLoading(true);
-      const queryStatus = subTab === 'live' ? 'pending' : (histStat === 'all' ? undefined : histStat);
-      const queryTf = subTab === 'live' ? undefined : (tf === 'all' ? undefined : tf);
+  // 7. Toast notification in-desk state
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<any>(null);
 
-      const res = await apiClient.agent.getDepositRequests(queryStatus, queryTf);
-      if (res.success) {
-        setRequests(res.requests || []);
-        setPendingCount(res.pendingCount || 0);
-        if (res.analytics) {
-          setAnalytics(res.analytics);
-        }
+  const showInternalToast = (msg: string) => {
+    setToastMessage(msg);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastMessage(null);
+    }, 2800);
+  };
+
+  // Preset rejection reasons from reference design
+  const PRESET_REASONS = [
+    'Reference not found',
+    'Amount does not match',
+    'Payment not received',
+    'Duplicate request',
+    'Other'
+  ];
+
+  // Helper number formatters
+  const formatBirr = (val: number | string) => {
+    const n = typeof val === 'number' ? val : parseFloat(val || '0');
+    return isNaN(n) ? '0' : n.toLocaleString('en-US');
+  };
+
+  // Initials generator (e.g. "Abel Tadesse" -> "AT")
+  const getInitials = (name?: string, phone?: string) => {
+    if (name && name.trim()) {
+      const parts = name.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
       }
-    } catch (err: any) {
-      console.warn('Failed to load deposit requests:', err);
-      showToast(`❌ ${err.message || 'Failed to load deposit requests'}`);
-    } finally {
-      setLoading(false);
+      return name.slice(0, 2).toUpperCase();
+    }
+    if (phone) return phone.slice(-2);
+    return 'PL';
+  };
+
+  // Time ago formatter
+  const formatTimeAgo = (dateStr: string) => {
+    if (!dateStr) return 'just now';
+    const diffMin = Math.max(0, Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000));
+    if (diffMin < 1) return 'just now';
+    if (diffMin < 60) return `${diffMin} min ago`;
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours < 24) return `${diffHours} h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays} d ago`;
+  };
+
+  // Minutes ago integer
+  const getElapsedMinutes = (dateStr: string) => {
+    if (!dateStr) return 0;
+    return Math.max(0, Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000));
+  };
+
+  // Copy Reference Code with instant feedback
+  const handleCopyRef = async (code: string) => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(code);
+        showInternalToast('Reference copied');
+      } else {
+        showInternalToast('Copy is not available here');
+      }
+    } catch (_) {
+      showInternalToast('Copy is not available here');
     }
   };
 
-  useEffect(() => {
-    loadRequests(activeSubTab, timeframe, historyStatus);
-  }, [activeSubTab, timeframe, historyStatus]);
+  // =========================================================================
+  // 1. DATA FETCHING: REQUESTS & SUMMARY
+  // =========================================================================
+  const fetchRequests = async () => {
+    try {
+      setLoadingRequests(true);
+      const res = await apiClient.agent.getDepositRequests(
+        tab === 'Pending' ? 'pending' : tab === 'Accepted' ? 'approved' : tab === 'Rejected' ? 'rejected' : 'all',
+        'all',
+        searchQuery
+      );
 
-  // 2. Real-Time WebSocket Alerts for Incoming Requests
-  useEffect(() => {
-    if (!agentProfile?.id) return;
+      if (res && res.success) {
+        setRequests(res.requests || []);
+        if (res.summary) {
+          setSummary(res.summary);
+        }
+      }
+    } catch (err: any) {
+      console.warn('Failed to load deposit requests:', err.message);
+      showToast(`❌ ${err.message || 'Failed to load deposit requests'}`);
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
 
-    const unsubNewReq = socketService.on(`agent_${agentProfile.id}_new_request`, (data: any) => {
-      showToast(`📥 New Deposit Request: +${data.amount} ETB from ${data.playerPhone}`);
-      loadRequests(activeSubTab, timeframe, historyStatus);
+  // =========================================================================
+  // 2. DATA FETCHING: HISTORY
+  // =========================================================================
+  const fetchHistory = async (period = historyPeriod) => {
+    try {
+      setLoadingHistory(true);
+      const res = await apiClient.agent.getDepositHistory(period);
+      if (res && res.success) {
+        setHistoryBuckets(res.buckets || []);
+        if (res.summary) setHistorySummary(res.summary);
+        setSelectedBucketIndex(0);
+      }
+    } catch (err: any) {
+      console.warn('Failed to load deposit history:', err.message);
+      showToast(`❌ ${err.message || 'Failed to load deposit history'}`);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  // Initial load & when tab/search changes
+  useEffect(() => {
+    if (view === 'req') {
+      fetchRequests();
+    } else {
+      fetchHistory(historyPeriod);
+    }
+  }, [view, tab, searchQuery, historyPeriod]);
+
+  // Sync wallet balance when profile changes
+  useEffect(() => {
+    if (agentProfile?.walletBalance !== undefined || agentProfile?.wallet_balance !== undefined) {
+      const bal = parseFloat(agentProfile?.walletBalance ?? agentProfile?.wallet_balance ?? 0);
+      setSummary(prev => ({
+        ...prev,
+        walletBalance: bal,
+        walletAfterAllPending: bal - prev.pendingSum
+      }));
+    }
+  }, [agentProfile?.walletBalance, agentProfile?.wallet_balance]);
+
+  // =========================================================================
+  // 3. WEBSOCKET REAL-TIME SYNC
+  // =========================================================================
+  useEffect(() => {
+    const unsubReqCreated = socketService.on('agent_deposit_request_created', (data: any) => {
+      showToast(`📥 New Deposit Request: ETB ${data?.amount || ''} from ${data?.playerName || 'Player'}`);
+      showInternalToast('New deposit request received');
+      fetchRequests();
       onActionCompleted();
     });
 
-    const unsubGlobalReq = socketService.on('agent_new_deposit_request', (data: any) => {
-      if (data?.agentId === agentProfile.id) {
-        loadRequests(activeSubTab, timeframe, historyStatus);
+    const unsubReqStatus = socketService.on('agent_deposit_request_status_changed', () => {
+      fetchRequests();
+      if (view === 'hist') fetchHistory();
+      onActionCompleted();
+    });
+
+    const unsubWallet = socketService.on('wallet_updated', (data: any) => {
+      if (data?.newBalance !== undefined) {
+        const bal = parseFloat(data.newBalance);
+        setSummary(prev => ({
+          ...prev,
+          walletBalance: bal,
+          walletAfterAllPending: bal - prev.pendingSum
+        }));
       }
     });
 
     return () => {
-      unsubNewReq();
-      unsubGlobalReq();
+      unsubReqCreated();
+      unsubReqStatus();
+      unsubWallet();
     };
-  }, [agentProfile?.id, activeSubTab, timeframe, historyStatus]);
+  }, [view, tab, searchQuery, historyPeriod]);
 
-  // 3. Handle Approval
-  const handleConfirmApproval = async () => {
-    if (!approvingItem) return;
-
+  // =========================================================================
+  // 4. APPROVE DEPOSIT ACTION
+  // =========================================================================
+  const handleConfirmAccept = async () => {
+    if (!acceptModalItem) return;
     try {
-      setIsProcessingApproval(true);
-      const res = await apiClient.agent.approveDepositRequest(approvingItem.id);
-      if (res.success) {
-        showToast(`🎉 Approved: +${approvingItem.amount} ETB credited! Commission: +${res.details.commissionEarned.toFixed(2)} ETB`);
-        setApprovingItem(null);
-        loadRequests(activeSubTab, timeframe, historyStatus);
+      setIsProcessing(true);
+      const res = await apiClient.agent.approveDepositRequest(acceptModalItem.id);
+      if (res && res.success) {
+        showInternalToast(`ETB ${formatBirr(acceptModalItem.amount)} credited to ${acceptModalItem.playerName || 'Player'}`);
+        showToast(`🎉 Approved: ETB ${formatBirr(acceptModalItem.amount)} credited!`);
+        setAcceptModalItem(null);
+        await fetchRequests();
         onActionCompleted();
       }
     } catch (err: any) {
       showToast(`❌ ${err.message || 'Approval failed'}`);
     } finally {
-      setIsProcessingApproval(false);
+      setIsProcessing(false);
     }
   };
 
-  // 4. Handle Rejection
-  const handleConfirmRejection = async () => {
-    if (!rejectingItem) return;
+  // =========================================================================
+  // 5. REJECT DEPOSIT ACTION
+  // =========================================================================
+  const handleConfirmReject = async () => {
+    if (!rejectModalItem) return;
+    if (!rejectReason) {
+      setRejectError('Pick a reason so the player knows what to fix.');
+      return;
+    }
 
     try {
-      setIsProcessingRejection(true);
-      const finalReason = rejectReason === 'Other' ? (customRejectNote.trim() || 'Payment not verified') : rejectReason;
-      const res = await apiClient.agent.rejectDepositRequest(rejectingItem.id, finalReason);
-      if (res.success) {
+      setIsProcessing(true);
+      const finalReason = rejectReason === 'Other'
+        ? (rejectNote.trim() ? `Other: ${rejectNote.trim()}` : 'Other')
+        : (rejectNote.trim() ? `${rejectReason}: ${rejectNote.trim()}` : rejectReason);
+
+      const res = await apiClient.agent.rejectDepositRequest(rejectModalItem.id, finalReason);
+      if (res && res.success) {
+        showInternalToast('Deposit rejected. Player notified');
         showToast('❌ Deposit request rejected');
-        setRejectingItem(null);
-        loadRequests(activeSubTab, timeframe, historyStatus);
+        setRejectModalItem(null);
+        setRejectNote('');
+        setRejectError(null);
+        await fetchRequests();
         onActionCompleted();
       }
     } catch (err: any) {
       showToast(`❌ ${err.message || 'Rejection failed'}`);
     } finally {
-      setIsProcessingRejection(false);
+      setIsProcessing(false);
     }
   };
 
-  // Filter by search query
-  const filteredRequests = requests.filter(r => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase().trim();
-    return (
-      r.transactionCode.toLowerCase().includes(q) ||
-      r.playerPhone.toLowerCase().includes(q) ||
-      (r.playerName && r.playerName.toLowerCase().includes(q))
-    );
-  });
+  // Keyboard shortcut ESC for modal dismiss
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (acceptModalItem) setAcceptModalItem(null);
+        if (rejectModalItem) setRejectModalItem(null);
+        if (lightboxImg) setLightboxImg(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [acceptModalItem, rejectModalItem, lightboxImg]);
 
+  // Active History Bucket
+  const activeBucket = useMemo(() => {
+    if (!historyBuckets.length) return null;
+    return historyBuckets[selectedBucketIndex] || historyBuckets[0];
+  }, [historyBuckets, selectedBucketIndex]);
+
+  // Max volume in history for bar scaling
+  const maxVolume = useMemo(() => {
+    if (!historyBuckets.length) return 1;
+    const max = Math.max(...historyBuckets.map(b => b.acceptedVolume));
+    return max > 0 ? max : 1;
+  }, [historyBuckets]);
+
+  // Filter requests client-side for ultra-fast typing feel
+  const displayedRequests = useMemo(() => {
+    return requests.filter(r => {
+      // Tab filter
+      if (tab === 'Pending' && r.status !== 'pending') return false;
+      if (tab === 'Accepted' && r.status !== 'approved') return false;
+      if (tab === 'Rejected' && r.status !== 'rejected') return false;
+
+      // Query filter
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase().trim();
+      return (
+        (r.playerName && r.playerName.toLowerCase().includes(q)) ||
+        (r.playerPhone && r.playerPhone.toLowerCase().includes(q)) ||
+        (r.transactionCode && r.transactionCode.toLowerCase().includes(q)) ||
+        r.id.toLowerCase().includes(q)
+      );
+    });
+  }, [requests, tab, searchQuery]);
+
+  const isLowWallet = summary.walletBalance <= summary.lowBalanceThreshold;
+
+  // Render
   return (
-    <div style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }} className="space-y-5">
-      {/* 1. Header Banner & Live Float Liquidity Indicator */}
-      <div
-        className="sonic-white-card"
-        style={{
-          padding: '22px 24px',
-          borderRadius: '16px',
-          display: 'flex',
-          flexWrap: 'wrap',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: '16px',
-          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-          border: '1px solid #e2e8f0'
-        }}
-      >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '24px' }}>📥</span>
-            <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a', margin: 0 }}>
-              Deposit Cashier Desk
-            </h2>
-            {pendingCount > 0 && (
-              <span
-                style={{
-                  background: '#ef4444',
-                  color: '#ffffff',
-                  padding: '2px 10px',
-                  borderRadius: '9999px',
-                  fontSize: '12px',
-                  fontWeight: 900,
-                  boxShadow: '0 2px 6px rgba(239, 68, 68, 0.3)'
-                }}
-              >
-                {pendingCount} Pending
-              </span>
-            )}
-          </div>
-          <p style={{ fontSize: '13px', color: '#64748b', margin: '4px 0 0 0' }}>
-            Verify incoming mobile payments, approve player deposits, and earn instant <strong>+5% cashier commissions</strong>.
-          </p>
-        </div>
-
-        {/* Float Balance Pill */}
-        <div
-          style={{
-            background: '#ffffff',
-            border: '1px solid #cbd5e1',
-            borderRadius: '12px',
-            padding: '10px 18px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+    <div className="deposit-requests-enqu-root">
+      {/* Top Main View Switcher: Requests vs History */}
+      <div className="tabs" style={{ marginBottom: 16 }}>
+        <button
+          className={view === 'req' ? 'on' : ''}
+          onClick={() => setView('req')}
+        >
+          Requests
+          {summary.pendingCount > 0 && <span className="n">{summary.pendingCount}</span>}
+        </button>
+        <button
+          className={view === 'hist' ? 'on' : ''}
+          onClick={() => {
+            setView('hist');
+            setSelectedBucketIndex(0);
           }}
         >
-          <div>
-            <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Available Working Float
-            </div>
-            <div style={{ fontSize: '18px', fontWeight: 900, color: '#059669' }}>
-              {Number(agentProfile?.walletBalance || agentProfile?.wallet_balance || 0).toLocaleString()} ETB
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => loadRequests()}
-            className="sonic-ghost-btn"
-            style={{ padding: '8px 12px', fontSize: '12px', borderRadius: '8px' }}
-            title="Refresh List"
-          >
-            <i className={`fa-solid fa-rotate ${loading ? 'fa-spin' : ''}`}></i>
-          </button>
-        </div>
+          History
+        </button>
       </div>
 
-      {/* 2. Top KPI Analytics Ribbon (Today / Week / Month Aggregates) */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
-          gap: '12px'
-        }}
-      >
-        {/* Card 1: Today */}
-        <div
-          className="sonic-white-card"
-          style={{
-            padding: '16px',
-            borderRadius: '14px',
-            background: '#ffffff',
-            border: '1px solid #e2e8f0',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
-              Today's Deposits
-            </span>
-            <span style={{ fontSize: '15px' }}>💳</span>
-          </div>
-          <div style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a' }}>
-            {analytics.today.amount.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }}>ETB</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px' }}>
-            <span style={{ color: '#059669', fontWeight: 700 }}>
-              +{analytics.today.commission.toFixed(2)} ETB (5%)
-            </span>
-            <span style={{ color: '#64748b' }}>{analytics.today.count} txns</span>
-          </div>
-        </div>
-
-        {/* Card 2: This Week */}
-        <div
-          className="sonic-white-card"
-          style={{
-            padding: '16px',
-            borderRadius: '14px',
-            background: '#ffffff',
-            border: '1px solid #e2e8f0',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
-              This Week's Volume
-            </span>
-            <span style={{ fontSize: '15px' }}>📈</span>
-          </div>
-          <div style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a' }}>
-            {analytics.week.amount.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }}>ETB</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px' }}>
-            <span style={{ color: '#059669', fontWeight: 700 }}>
-              +{analytics.week.commission.toFixed(2)} ETB (5%)
-            </span>
-            <span style={{ color: '#64748b' }}>{analytics.week.count} txns</span>
-          </div>
-        </div>
-
-        {/* Card 3: This Month */}
-        <div
-          className="sonic-white-card"
-          style={{
-            padding: '16px',
-            borderRadius: '14px',
-            background: '#ffffff',
-            border: '1px solid #e2e8f0',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
-              This Month's Volume
-            </span>
-            <span style={{ fontSize: '15px' }}>🏆</span>
-          </div>
-          <div style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a' }}>
-            {analytics.month.amount.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }}>ETB</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px' }}>
-            <span style={{ color: '#059669', fontWeight: 700 }}>
-              +{analytics.month.commission.toFixed(2)} ETB (5%)
-            </span>
-            <span style={{ color: '#64748b' }}>{analytics.month.count} txns</span>
-          </div>
-        </div>
-
-        {/* Card 4: All-Time Cashier Earnings */}
-        <div
-          className="sonic-white-card"
-          style={{
-            padding: '16px',
-            borderRadius: '14px',
-            background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-            border: '1px solid #fcd34d',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <span style={{ fontSize: '11px', fontWeight: 800, color: '#92400e', textTransform: 'uppercase' }}>
-              Commission Earned
-            </span>
-            <span style={{ fontSize: '15px' }}>🪙</span>
-          </div>
-          <div style={{ fontSize: '20px', fontWeight: 900, color: '#92400e' }}>
-            +{analytics.allTime.commission.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 700 }}>ETB</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px', color: '#b45309' }}>
-            <span>All-Time 5% Earnings</span>
-            <span style={{ fontWeight: 800 }}>{analytics.allTime.count} settled</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. Sub-Navigation Tabs & Filters Toolbar */}
-      <div
-        className="sonic-white-card"
-        style={{
-          padding: '14px 18px',
-          borderRadius: '16px',
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px'
-        }}
-      >
-        {/* Left: Sub-Navigation (Live Requests vs Settled History) */}
-        <div style={{ display: 'flex', background: '#f1f5f9', padding: '3px', borderRadius: '10px', gap: '4px' }}>
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('live')}
-            style={{
-              padding: '8px 16px',
-              border: 'none',
-              borderRadius: '8px',
-              background: activeSubTab === 'live' ? '#ffffff' : 'transparent',
-              color: activeSubTab === 'live' ? '#0f172a' : '#64748b',
-              fontWeight: 800,
-              fontSize: '13px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              boxShadow: activeSubTab === 'live' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <span>📥 Live Requests</span>
-            {pendingCount > 0 && (
-              <span
-                style={{
-                  background: '#ef4444',
-                  color: '#ffffff',
-                  borderRadius: '9999px',
-                  padding: '1px 6px',
-                  fontSize: '10px',
-                  fontWeight: 900
-                }}
-              >
-                {pendingCount}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('history')}
-            style={{
-              padding: '8px 16px',
-              border: 'none',
-              borderRadius: '8px',
-              background: activeSubTab === 'history' ? '#ffffff' : 'transparent',
-              color: activeSubTab === 'history' ? '#0f172a' : '#64748b',
-              fontWeight: 800,
-              fontSize: '13px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              boxShadow: activeSubTab === 'history' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <span>🗄️ Settled History</span>
-          </button>
-        </div>
-
-        {/* Right: Timeframe Category Filter (For Settled History) */}
-        {activeSubTab === 'history' && (
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700 }}>Timeframe:</span>
-            {[
-              { id: 'today', label: 'Today' },
-              { id: 'week', label: 'This Week' },
-              { id: 'month', label: 'This Month' },
-              { id: 'all', label: 'All Time' }
-            ].map(tf => {
-              const isSelected = timeframe === tf.id;
-              return (
-                <button
-                  key={tf.id}
-                  type="button"
-                  onClick={() => setTimeframe(tf.id as any)}
-                  style={{
-                    padding: '5px 10px',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontWeight: isSelected ? 800 : 600,
-                    border: isSelected ? '1px solid #3b82f6' : '1px solid #e2e8f0',
-                    background: isSelected ? '#eff6ff' : '#ffffff',
-                    color: isSelected ? '#1d4ed8' : '#64748b',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {tf.label}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Search Input */}
-        <div style={{ position: 'relative', minWidth: '220px' }}>
-          <i
-            className="fa-solid fa-magnifying-glass"
-            style={{
-              position: 'absolute',
-              left: '12px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: '#94a3b8',
-              fontSize: '12px'
-            }}
-          ></i>
-          <input
-            type="text"
-            placeholder="Search phone or SMS code..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 12px 8px 32px',
-              borderRadius: '10px',
-              border: '1px solid #e2e8f0',
-              background: '#f8fafc',
-              fontSize: '13px',
-              outline: 'none',
-              boxSizing: 'border-box'
-            }}
-          />
-        </div>
-      </div>
-
-      {/* 4. Requests Table */}
-      <div
-        className="sonic-white-card"
-        style={{
-          borderRadius: '16px',
-          overflow: 'hidden',
-          padding: 0
-        }}
-      >
-        {loading ? (
-          <div style={{ padding: '48px', textAlign: 'center', color: '#64748b' }}>
-            <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '28px', color: '#f59e0b' }}></i>
-            <p style={{ marginTop: '12px', fontSize: '14px', fontWeight: 700 }}>Loading deposit records...</p>
-          </div>
-        ) : filteredRequests.length === 0 ? (
-          <div style={{ padding: '48px', textAlign: 'center', color: '#64748b' }}>
-            <i className="fa-solid fa-inbox" style={{ fontSize: '36px', color: '#cbd5e1', marginBottom: '12px' }}></i>
-            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#334155' }}>
-              {activeSubTab === 'live' ? 'No pending deposit requests right now' : 'No deposit history records found for this timeframe'}
-            </h4>
-            <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>
-              {activeSubTab === 'live'
-                ? 'When players submit deposits targeting your agent code, they will appear here instantly.'
-                : 'Approved and settled transactions will be recorded here.'}
-            </p>
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  <th style={{ padding: '14px 18px' }}>Player Details</th>
-                  <th style={{ padding: '14px 18px' }}>Amount (ETB)</th>
-                  <th style={{ padding: '14px 18px' }}>Payment Rail</th>
-                  <th style={{ padding: '14px 18px' }}>SMS Transaction Code</th>
-                  <th style={{ padding: '14px 18px' }}>Cashier Commission</th>
-                  <th style={{ padding: '14px 18px' }}>Receipt Proof</th>
-                  <th style={{ padding: '14px 18px' }}>Time</th>
-                  <th style={{ padding: '14px 18px' }}>Status</th>
-                  <th style={{ padding: '14px 18px', textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRequests.map(item => {
-                  const isPending = item.status === 'pending';
-                  const comm = Number((item.amount * 0.05).toFixed(2));
-                  return (
-                    <tr
-                      key={item.id}
-                      style={{
-                        borderBottom: '1px solid #f1f5f9',
-                        background: isPending ? '#fffbeb' : '#ffffff',
-                        transition: 'background 0.15s ease'
-                      }}
-                    >
-                      {/* Player Phone & Name */}
-                      <td style={{ padding: '14px 18px' }}>
-                        <div style={{ fontWeight: 800, color: '#0f172a' }}>
-                          {item.playerPhone}
-                        </div>
-                        {item.playerName && (
-                          <div style={{ fontSize: '11px', color: '#64748b' }}>
-                            {item.playerName}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Requested Amount */}
-                      <td style={{ padding: '14px 18px' }}>
-                        <strong style={{ fontSize: '15px', color: '#059669', fontWeight: 900 }}>
-                          +{item.amount.toLocaleString()} ETB
-                        </strong>
-                        <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: 700 }}>
-                          🪙 +{Math.round(item.amount * 1.5)} Coins
-                        </div>
-                      </td>
-
-                      {/* Payment Rail with Brand Logo */}
-                      <td style={{ padding: '14px 18px' }}>
-                        <div
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            background: item.paymentMethod === 'Telebirr'
-                              ? 'rgba(56, 189, 248, 0.12)'
-                              : item.paymentMethod === 'CBE'
-                              ? 'rgba(234, 179, 8, 0.12)'
-                              : 'rgba(16, 185, 129, 0.12)',
-                            color: item.paymentMethod === 'Telebirr'
-                              ? '#0284c7'
-                              : item.paymentMethod === 'CBE'
-                              ? '#b45309'
-                              : '#059669',
-                            padding: '4px 8px',
-                            borderRadius: '8px',
-                            fontSize: '11px',
-                            fontWeight: 800
-                          }}
-                        >
-                          {item.paymentMethod === 'Telebirr' && <TelebirrLogo size={14} />}
-                          {item.paymentMethod === 'CBE' && <CBELogo size={14} />}
-                          {item.paymentMethod === 'M-Pesa' && <MpesaLogo size={14} />}
-                          <span>{item.paymentMethod === 'CBE' ? 'CBE Bank' : item.paymentMethod}</span>
-                        </div>
-                      </td>
-
-                      {/* Transaction Code */}
-                      <td style={{ padding: '14px 18px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontFamily: 'monospace', fontWeight: 900, color: '#0f172a', background: '#f1f5f9', padding: '3px 8px', borderRadius: '6px' }}>
-                            {item.transactionCode}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigator.clipboard.writeText(item.transactionCode);
-                              showToast(`📋 Copied: ${item.transactionCode}`);
-                            }}
-                            title="Copy SMS Code"
-                            style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
-                          >
-                            <i className="fa-regular fa-copy"></i>
-                          </button>
-                        </div>
-                      </td>
-
-                      {/* Cashier Commission (+5%) */}
-                      <td style={{ padding: '14px 18px' }}>
-                        <span
-                          style={{
-                            background: '#dcfce7',
-                            color: '#15803d',
-                            fontWeight: 800,
-                            padding: '3px 8px',
-                            borderRadius: '6px',
-                            fontSize: '11px'
-                          }}
-                        >
-                          +{comm.toFixed(2)} ETB (+5%)
-                        </span>
-                      </td>
-
-                      {/* Receipt Screenshot */}
-                      <td style={{ padding: '14px 18px' }}>
-                        {item.screenshotUrl ? (
-                          <button
-                            type="button"
-                            onClick={() => setActiveReceiptUrl(item.screenshotUrl!)}
-                            style={{
-                              background: '#f8fafc',
-                              border: '1px solid #cbd5e1',
-                              borderRadius: '8px',
-                              padding: '4px 8px',
-                              fontSize: '11px',
-                              fontWeight: 700,
-                              color: '#3b82f6',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px'
-                            }}
-                          >
-                            <i className="fa-solid fa-image"></i> View Receipt
-                          </button>
-                        ) : (
-                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>None attached</span>
-                        )}
-                      </td>
-
-                      {/* Created At */}
-                      <td style={{ padding: '14px 18px', color: '#64748b', fontSize: '12px' }}>
-                        {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        <div style={{ fontSize: '10px', color: '#94a3b8' }}>
-                          {new Date(item.createdAt).toLocaleDateString()}
-                        </div>
-                      </td>
-
-                      {/* Status */}
-                      <td style={{ padding: '14px 18px' }}>
-                        {item.status === 'pending' ? (
-                          <span style={{ background: '#fef3c7', color: '#92400e', padding: '3px 10px', borderRadius: '9999px', fontSize: '11px', fontWeight: 800 }}>
-                            ⏳ Pending
-                          </span>
-                        ) : item.status === 'approved' ? (
-                          <span style={{ background: '#d1fae5', color: '#065f46', padding: '3px 10px', borderRadius: '9999px', fontSize: '11px', fontWeight: 800 }}>
-                            ✅ Approved
-                          </span>
-                        ) : (
-                          <span style={{ background: '#fee2e2', color: '#991b1b', padding: '3px 10px', borderRadius: '9999px', fontSize: '11px', fontWeight: 800 }} title={item.rejectionReason}>
-                            ❌ Rejected
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Actions */}
-                      <td style={{ padding: '14px 18px', textAlign: 'right' }}>
-                        {isPending ? (
-                          <div style={{ display: 'inline-flex', gap: '8px' }}>
-                            <button
-                              type="button"
-                              onClick={() => setApprovingItem(item)}
-                              style={{
-                                background: '#10b981',
-                                border: 'none',
-                                color: '#ffffff',
-                                padding: '6px 12px',
-                                borderRadius: '8px',
-                                fontSize: '12px',
-                                fontWeight: 800,
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)'
-                              }}
-                            >
-                              <i className="fa-solid fa-check"></i> Approve
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setRejectingItem(item);
-                                setRejectReason('SMS Transaction ID not found in Telebirr');
-                              }}
-                              style={{
-                                background: '#f8fafc',
-                                border: '1px solid #ef4444',
-                                color: '#ef4444',
-                                padding: '6px 10px',
-                                borderRadius: '8px',
-                                fontSize: '12px',
-                                fontWeight: 700,
-                                cursor: 'pointer'
-                              }}
-                            >
-                              <i className="fa-solid fa-xmark"></i> Reject
-                            </button>
-                          </div>
-                        ) : (
-                          <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>
-                            {item.status === 'approved' ? 'Settled' : 'Closed'}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* MODAL 1: APPROVAL CONFIRMATION */}
-      {approvingItem && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15, 23, 42, 0.6)',
-            backdropFilter: 'blur(4px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 100,
-            padding: '20px'
-          }}
-        >
-          <div
-            className="sonic-white-card"
-            style={{
-              maxWidth: '460px',
-              width: '100%',
-              borderRadius: '20px',
-              padding: '28px',
-              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
-            }}
-          >
-            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-              <div
-                style={{
-                  width: '60px',
-                  height: '60px',
-                  borderRadius: '50%',
-                  background: '#d1fae5',
-                  color: '#059669',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '26px',
-                  marginBottom: '10px'
-                }}
-              >
-                <i className="fa-solid fa-wallet"></i>
+      {/* =================================================================== */}
+      {/* VIEW 1: REQUESTS VIEW                                               */}
+      {/* =================================================================== */}
+      {view === 'req' && (
+        <>
+          {/* Header Bar */}
+          <div className="top">
+            <div>
+              <h1>Deposit requests</h1>
+              <div className="sub">
+                Players pay you, then ask the app to credit their balance. You accept or reject.
               </div>
-              <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#0f172a', margin: 0 }}>
-                Confirm Player Deposit Approval
-              </h3>
-              <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
-                Please confirm that you have received the mobile transfer on your phone.
+            </div>
+            <span className="sp" />
+            <span className="chip">
+              <small>Wallet</small>
+              ETB {formatBirr(summary.walletBalance)}
+              {isLowWallet && <span className="pill wn" style={{ marginLeft: 6 }}>Low</span>}
+            </span>
+          </div>
+
+          {/* Hero Specular Obsidian Banner */}
+          <div className="hero">
+            <div>
+              <div className="kl">Awaiting your review</div>
+              <div className="big">
+                <small>ETB</small>
+                {formatBirr(summary.pendingSum)}
+              </div>
+              <p>
+                {summary.pendingCount} request{summary.pendingCount === 1 ? '' : 's'} from players. Accepting credits the player and takes the amount from your wallet. Rejecting costs you nothing.
               </p>
             </div>
-
-            {/* Financial Ledger Breakdown */}
-            <div
-              style={{
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '12px',
-                padding: '16px',
-                marginBottom: '20px',
-                fontSize: '13px'
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ color: '#64748b' }}>Player Phone:</span>
-                <strong style={{ color: '#0f172a' }}>{approvingItem.playerPhone}</strong>
+            <div className="mini">
+              <div>
+                <span>Oldest waiting</span>
+                <b>
+                  {summary.pendingCount > 0
+                    ? summary.oldestWaitingMinutes < 60
+                      ? `${summary.oldestWaitingMinutes} min`
+                      : `${Math.floor(summary.oldestWaitingMinutes / 60)} h ${summary.oldestWaitingMinutes % 60} min`
+                    : 'None'}
+                </b>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ color: '#64748b' }}>SMS Transaction Code:</span>
-                <span style={{ fontFamily: 'monospace', fontWeight: 900, color: '#0284c7' }}>
-                  {approvingItem.transactionCode}
-                </span>
+              <div>
+                <span>Wallet after all pending</span>
+                <b>ETB {formatBirr(summary.walletAfterAllPending)}</b>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ color: '#64748b' }}>Deposit to Credit Player:</span>
-                <strong style={{ color: '#059669', fontSize: '15px' }}>
-                  +{approvingItem.amount.toFixed(2)} ETB
-                </strong>
+              <div>
+                <span>Low-balance alert</span>
+                <b>ETB {formatBirr(summary.lowBalanceThreshold)}</b>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ color: '#64748b' }}>Charged from Your Float:</span>
-                <strong style={{ color: '#dc2626' }}>
-                  -{approvingItem.amount.toFixed(2)} ETB
-                </strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid #e2e8f0' }}>
-                <span style={{ color: '#64748b' }}>Your Commission (+5%):</span>
-                <strong style={{ color: '#d97706', fontSize: '14px' }}>
-                  +{(approvingItem.amount * 0.05).toFixed(2)} ETB
-                </strong>
-              </div>
-            </div>
-
-            {/* Buttons */}
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                type="button"
-                onClick={() => setApprovingItem(null)}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  borderRadius: '10px',
-                  border: '1px solid #cbd5e1',
-                  background: '#ffffff',
-                  color: '#64748b',
-                  fontWeight: 700,
-                  fontSize: '13px',
-                  cursor: 'pointer'
-                }}
-                disabled={isProcessingApproval}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmApproval}
-                style={{
-                  flex: 2,
-                  padding: '12px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: '#10b981',
-                  color: '#ffffff',
-                  fontWeight: 900,
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px'
-                }}
-                disabled={isProcessingApproval}
-              >
-                {isProcessingApproval ? (
-                  <>
-                    <i className="fa-solid fa-spinner fa-spin"></i> Processing...
-                  </>
-                ) : (
-                  <>
-                    <i className="fa-solid fa-check"></i> Confirm & Credit Player
-                  </>
-                )}
-              </button>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* MODAL 2: REJECTION MODAL */}
-      {rejectingItem && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15, 23, 42, 0.6)',
-            backdropFilter: 'blur(4px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 100,
-            padding: '20px'
-          }}
-        >
-          <div
-            className="sonic-white-card"
-            style={{
-              maxWidth: '440px',
-              width: '100%',
-              borderRadius: '20px',
-              padding: '28px'
-            }}
-          >
-            <h3 style={{ fontSize: '18px', fontWeight: 900, color: '#0f172a', margin: '0 0 8px 0' }}>
-              Reject Deposit Request
-            </h3>
-            <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 16px 0' }}>
-              Please select why you cannot verify this transfer. The player will be notified immediately.
-            </p>
+          {/* 3 Stat Cards Grid */}
+          <div className="stats">
+            <div className="card stat">
+              <div className="l">Accepted today</div>
+              <div className="v">ETB {formatBirr(summary.acceptedTodaySum)}</div>
+              <div className="t">
+                {summary.acceptedTodayCount} deposit{summary.acceptedTodayCount === 1 ? '' : 's'}
+              </div>
+            </div>
+            <div className="card stat">
+              <div className="l">Rejected today</div>
+              <div className="v">{summary.rejectedTodayCount}</div>
+              <div className="t">ETB {formatBirr(summary.rejectedTodaySum)} not credited</div>
+            </div>
+            <div className="card stat">
+              <div className="l">Pending</div>
+              <div className="v">{summary.pendingCount}</div>
+              <div className="t">Players are waiting</div>
+            </div>
+          </div>
 
-            {/* Radio Reasons */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-              {[
-                'SMS Transaction ID not found in Telebirr',
-                'Payment amount does not match',
-                'Duplicate submission / already credited',
-                'Other'
-              ].map(reason => (
-                <label
-                  key={reason}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    background: rejectReason === reason ? '#fee2e2' : '#f8fafc',
-                    border: rejectReason === reason ? '1px solid #ef4444' : '1px solid #e2e8f0',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    color: '#0f172a'
-                  }}
+          {/* Toolbar: Segmented Filters + Search Bar */}
+          <div className="bar">
+            <div className="tabs">
+              {(['Pending', 'Accepted', 'Rejected', 'All'] as const).map(t => (
+                <button
+                  key={t}
+                  className={tab === t ? 'on' : ''}
+                  onClick={() => setTab(t)}
                 >
-                  <input
-                    type="radio"
-                    name="rejectReason"
-                    value={reason}
-                    checked={rejectReason === reason}
-                    onChange={() => setRejectReason(reason)}
-                  />
-                  <span>{reason}</span>
-                </label>
+                  {t}
+                  {t === 'Pending' && summary.pendingCount > 0 && (
+                    <span className="n">{summary.pendingCount}</span>
+                  )}
+                </button>
               ))}
             </div>
+            <input
+              className="search"
+              placeholder="Search name, phone or reference"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              aria-label="Search deposits"
+            />
+          </div>
 
-            {rejectReason === 'Other' && (
-              <div style={{ marginBottom: '16px' }}>
-                <input
-                  type="text"
-                  placeholder="Enter specific rejection reason..."
-                  value={customRejectNote}
-                  onChange={e => setCustomRejectNote(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '13px',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                />
+          {/* Requests List */}
+          <div className="list">
+            {displayedRequests.length > 0 ? (
+              displayedRequests.map(r => {
+                const isPending = r.status === 'pending';
+                const isApproved = r.status === 'approved';
+                const isRejected = r.status === 'rejected';
+                const elapsedMin = getElapsedMinutes(r.createdAt);
+                const isOld = isPending && elapsedMin >= 30;
+                const shortId = `D-${r.id.slice(0, 4).toUpperCase()}`;
+
+                return (
+                  <div
+                    key={r.id}
+                    className={`req ${isOld ? 'old' : ''}`}
+                    id={r.id}
+                  >
+                    {/* Column 1: Player Profile */}
+                    <div className="pc">
+                      <span className="av">
+                        {getInitials(r.playerName, r.playerPhone)}
+                      </span>
+                      <div style={{ minWidth: 0 }}>
+                        <b>{r.playerName || 'Player'}</b>
+                        <small>
+                          {r.playerPhone || 'No phone'} · {shortId}
+                        </small>
+                      </div>
+                    </div>
+
+                    {/* Column 2: Amount & Method */}
+                    <div>
+                      <div className="amt">ETB {formatBirr(r.amount)}</div>
+                      <span className="sm">
+                        {r.paymentMethod || 'Telebirr'} · {formatTimeAgo(r.createdAt)}
+                      </span>
+                    </div>
+
+                    {/* Column 3: Status Badge & Reference Copy */}
+                    <div>
+                      {isPending ? (
+                        isOld ? (
+                          <span className="pill wn">Waiting {elapsedMin} min</span>
+                        ) : (
+                          <span className="pill wn">Pending</span>
+                        )
+                      ) : isApproved ? (
+                        <span className="pill ok">Accepted</span>
+                      ) : (
+                        <span className="pill bd">Rejected</span>
+                      )}
+
+                      {r.rejectionReason && (
+                        <span className="sm" style={{ display: 'inline', marginLeft: 6 }}>
+                          {r.rejectionReason}
+                        </span>
+                      )}
+
+                      <div className="ref">
+                        <span>{r.transactionCode || '—'}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyRef(r.transactionCode)}
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Column 4: Accept / Reject Action Buttons */}
+                    <div className="acts">
+                      {isPending && (
+                        <>
+                          <button
+                            type="button"
+                            className="rej"
+                            onClick={() => {
+                              setRejectModalItem(r);
+                              setRejectReason('Reference not found');
+                              setRejectNote('');
+                              setRejectError(null);
+                            }}
+                          >
+                            Reject
+                          </button>
+                          <button
+                            type="button"
+                            className="acc"
+                            onClick={() => setAcceptModalItem(r)}
+                          >
+                            Accept
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="empty">
+                <b>{tab === 'Pending' && !searchQuery ? 'All caught up' : 'Nothing found'}</b>
+                {tab === 'Pending' && !searchQuery
+                  ? 'No deposit requests are waiting.'
+                  : 'Try another tab or search.'}
               </div>
             )}
-
-            {/* Buttons */}
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                type="button"
-                onClick={() => setRejectingItem(null)}
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  borderRadius: '10px',
-                  border: '1px solid #cbd5e1',
-                  background: '#ffffff',
-                  color: '#64748b',
-                  fontWeight: 700,
-                  fontSize: '13px',
-                  cursor: 'pointer'
-                }}
-                disabled={isProcessingRejection}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmRejection}
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: '#ef4444',
-                  color: '#ffffff',
-                  fontWeight: 900,
-                  fontSize: '13px',
-                  cursor: 'pointer'
-                }}
-                disabled={isProcessingRejection}
-              >
-                {isProcessingRejection ? 'Rejecting...' : 'Reject Request'}
-              </button>
-            </div>
           </div>
-        </div>
+        </>
       )}
 
-      {/* MODAL 3: RECEIPT LIGHTBOX */}
-      {activeReceiptUrl && (
-        <div
-          onClick={() => setActiveReceiptUrl(null)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 120,
-            padding: '20px'
-          }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              maxWidth: '90vw',
-              maxHeight: '90vh',
-              background: '#ffffff',
-              borderRadius: '16px',
-              overflow: 'hidden',
-              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
-              position: 'relative'
-            }}
-          >
-            <div style={{ padding: '12px 18px', background: '#0f172a', color: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <strong style={{ fontSize: '13px' }}>Player Receipt Screenshot</strong>
+      {/* =================================================================== */}
+      {/* VIEW 2: HISTORY VIEW                                                */}
+      {/* =================================================================== */}
+      {view === 'hist' && (
+        <>
+          {/* Header Bar */}
+          <div className="top">
+            <div>
+              <h1>Deposit history</h1>
+              <div className="sub">
+                Every deposit you accepted or rejected, by day, week or month.
+              </div>
+            </div>
+            <span className="sp" />
+            <span className="chip">
+              <small>Wallet</small>
+              ETB {formatBirr(summary.walletBalance)}
+            </span>
+          </div>
+
+          {/* Period Selector Bar */}
+          <div className="bar">
+            <div className="tabs">
+              {(['daily', 'weekly', 'monthly'] as const).map(p => (
+                <button
+                  key={p}
+                  className={historyPeriod === p ? 'on' : ''}
+                  onClick={() => {
+                    setHistoryPeriod(p);
+                    fetchHistory(p);
+                  }}
+                >
+                  {p.charAt(0).toUpperCase() + p.slice(1)}
+                </button>
+              ))}
+            </div>
+            <span className="sm" style={{ marginLeft: 'auto' }}>
+              Selected: <b>{activeBucket?.label || 'Today'}</b>
+            </span>
+          </div>
+
+          {/* 4-Stat Cards Grid for History */}
+          <div className="stats s4">
+            <div className="card stat">
+              <div className="l">Accepted volume</div>
+              <div className="v">ETB {formatBirr(activeBucket?.acceptedVolume || 0)}</div>
+              <div className="t">Credited to players</div>
+            </div>
+            <div className="card stat">
+              <div className="l">Accepted</div>
+              <div className="v">{activeBucket?.acceptedCount || 0}</div>
+              <div className="t">deposits</div>
+            </div>
+            <div className="card stat">
+              <div className="l">Rejected</div>
+              <div className="v">{activeBucket?.rejectedCount || 0}</div>
+              <div className="t">not credited</div>
+            </div>
+            <div className="card stat">
+              <div className="l">Acceptance rate</div>
+              <div className="v">{activeBucket?.acceptanceRate || 0}%</div>
+              <div className="t">of {activeBucket?.totalRequests || 0} requests</div>
+            </div>
+          </div>
+
+          {/* Interactive Volume Bar Chart Card */}
+          <div className="card" style={{ marginBottom: 16 }}>
+            <h3>
+              Accepted volume
+              <span className="r">Tap a bar to see its deposits</span>
+            </h3>
+            <div className="ch">
+              {historyBuckets
+                .slice()
+                .reverse()
+                .map(b => {
+                  const isSelected = b.index === selectedBucketIndex;
+                  const pct = Math.max(4, Math.round((b.acceptedVolume / maxVolume) * 100));
+
+                  return (
+                    <div
+                      key={b.index}
+                      className={`cb ${isSelected ? 'on' : ''}`}
+                      role="button"
+                      tabIndex={0}
+                      title={`${b.label}: ETB ${formatBirr(b.acceptedVolume)} (${b.acceptedCount} accepted, ${b.rejectedCount} rejected)`}
+                      onClick={() => setSelectedBucketIndex(b.index)}
+                    >
+                      <i style={{ height: `${pct}%` }} />
+                      <span>{b.shortLabel}</span>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+
+          {/* Deposits Table for Selected Bucket */}
+          <div className="card">
+            <h3>
+              Deposits · {activeBucket?.label || 'Selected period'}
+              <span className="r">
+                {activeBucket?.rows?.length || 0} request{(activeBucket?.rows?.length || 0) === 1 ? '' : 's'}
+              </span>
+            </h3>
+
+            {activeBucket && activeBucket.rows && activeBucket.rows.length > 0 ? (
+              <div className="wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Player</th>
+                      <th>Method</th>
+                      <th>Amount</th>
+                      <th>Reference</th>
+                      <th>Status</th>
+                      <th>When</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeBucket.rows.map(row => {
+                      const dateObj = new Date(row.createdAt);
+                      const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                      const dateStr = dateObj.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                      const isApproved = row.status === 'approved';
+
+                      return (
+                        <tr key={row.id}>
+                          <td>
+                            <div className="pc">
+                              <span
+                                className="av"
+                                style={{ width: 30, height: 30, fontSize: 11 }}
+                              >
+                                {getInitials(row.playerName, row.playerPhone)}
+                              </span>
+                              {row.playerName || 'Player'}
+                            </div>
+                          </td>
+                          <td>{row.paymentMethod || 'Telebirr'}</td>
+                          <td>ETB {formatBirr(row.amount)}</td>
+                          <td>
+                            <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>
+                              {row.transactionCode || '—'}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`pill ${isApproved ? 'ok' : 'bd'}`}>
+                              {isApproved ? 'Accepted' : 'Rejected'}
+                            </span>
+                          </td>
+                          <td>
+                            {dateStr} {timeStr}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="empty" style={{ border: 0 }}>
+                <b>No deposits</b>
+                Nothing was recorded in this period.
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* =================================================================== */}
+      {/* MODAL 1: ACCEPT DEPOSIT CONFIRMATION DIALOG                         */}
+      {/* =================================================================== */}
+      {acceptModalItem && (
+        <div className="mbg" role="dialog" aria-modal="true">
+          <div className="modal">
+            <div className="mh">
+              <h3>Accept deposit</h3>
               <button
                 type="button"
-                onClick={() => setActiveReceiptUrl(null)}
-                style={{ background: 'none', border: 'none', color: '#ffffff', fontSize: '16px', cursor: 'pointer' }}
+                onClick={() => setAcceptModalItem(null)}
+                aria-label="Close"
               >
                 ✕
               </button>
             </div>
-            <div style={{ padding: '16px', textAlign: 'center', maxHeight: '75vh', overflow: 'auto' }}>
-              <img src={activeReceiptUrl} alt="Receipt Screenshot" style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: '8px' }} />
+
+            <div className="note">
+              Check that {acceptModalItem.paymentMethod || 'Telebirr'} shows{' '}
+              <b>ETB {formatBirr(acceptModalItem.amount)}</b> from{' '}
+              {acceptModalItem.playerName || 'Player'} with reference{' '}
+              <b>{acceptModalItem.transactionCode}</b> before you accept.
+            </div>
+
+            <div className="sum">
+              <div className="lg">
+                <span>Player credited</span>
+                ETB {formatBirr(acceptModalItem.amount)}
+              </div>
+              <div className="lg">
+                <span>Wallet now</span>
+                ETB {formatBirr(summary.walletBalance)}
+              </div>
+              <div className="lg t">
+                <span>Wallet after</span>
+                <b>ETB {formatBirr(summary.walletBalance - acceptModalItem.amount)}</b>
+              </div>
+            </div>
+
+            {/* Solvency Warning Badges */}
+            {acceptModalItem.amount > summary.walletBalance ? (
+              <div className="warn">
+                Your wallet is too low for this deposit. Request a recharge first.
+              </div>
+            ) : summary.walletBalance - acceptModalItem.amount <= summary.lowBalanceThreshold ? (
+              <div className="warn">
+                This will bring your wallet to the low-balance level.
+              </div>
+            ) : null}
+
+            <div className="mf">
+              <button
+                type="button"
+                onClick={() => setAcceptModalItem(null)}
+                disabled={isProcessing}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="dk"
+                onClick={handleConfirmAccept}
+                disabled={isProcessing || acceptModalItem.amount > summary.walletBalance}
+              >
+                {isProcessing ? 'Crediting...' : 'Confirm and accept'}
+              </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* MODAL 2: REJECT DEPOSIT DIALOG                                      */}
+      {/* =================================================================== */}
+      {rejectModalItem && (
+        <div className="mbg" role="dialog" aria-modal="true">
+          <div className="modal">
+            <div className="mh">
+              <h3>Reject deposit</h3>
+              <button
+                type="button"
+                onClick={() => setRejectModalItem(null)}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="note">
+              {rejectModalItem.playerName || 'Player'} requested{' '}
+              <b>ETB {formatBirr(rejectModalItem.amount)}</b>. Your wallet will not be charged. The player sees the reason you pick.
+            </div>
+
+            <label style={{ marginTop: 14 }}>Reason</label>
+            <div className="rs">
+              {PRESET_REASONS.map(w => (
+                <button
+                  key={w}
+                  type="button"
+                  className={rejectReason === w ? 'on' : ''}
+                  onClick={() => {
+                    setRejectReason(w);
+                    setRejectError(null);
+                  }}
+                >
+                  {w}
+                </button>
+              ))}
+            </div>
+
+            <label>Note to player (optional)</label>
+            <textarea
+              placeholder="Add a short explanation"
+              value={rejectNote}
+              onChange={e => setRejectNote(e.target.value)}
+            />
+
+            {rejectError && <div className="warn">{rejectError}</div>}
+
+            <div className="mf">
+              <button
+                type="button"
+                onClick={() => setRejectModalItem(null)}
+                disabled={isProcessing}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="rd"
+                onClick={handleConfirmReject}
+                disabled={isProcessing}
+              >
+                {isProcessing ? 'Rejecting...' : 'Reject deposit'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating In-Desk Toast */}
+      {toastMessage && (
+        <div className="toast" role="status">
+          {toastMessage}
         </div>
       )}
     </div>
