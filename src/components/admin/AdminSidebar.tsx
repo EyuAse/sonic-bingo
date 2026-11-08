@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext.tsx';
 import { useApp } from '../../context/AppContext.tsx';
 
@@ -8,14 +8,18 @@ export type AdminTab =
   | 'cashier'
   | 'users'
   | 'bot-engine'
+  | 'bot-players'
   | 'cartelas'
+  | 'stakes'
+  | 'bingo-settings'
   | 'telegram-bot'
   | 'agents'
   | 'agent-recharges'
   | 'agent-payouts'
   | 'official-accounts'
   | 'jackpots'
-  | 'coins';
+  | 'coins'
+  | 'settings';
 
 interface AdminSidebarProps {
   activeTab: AdminTab;
@@ -24,9 +28,28 @@ interface AdminSidebarProps {
   closeMobileSidebar: () => void;
 }
 
-// Exact Minimalist SVG Stroke Icons from Enqu Game Admin (1).html
+export interface NavSubItem {
+  id: AdminTab;
+  label: string;
+  badge?: string | number;
+  urgentBadge?: boolean;
+  statusTag?: string;
+}
+
+export interface NavGroup {
+  id: string;
+  label: string;
+  iconPath?: string;
+  directTab?: AdminTab;
+  subItems?: NavSubItem[];
+  badge?: string | number;
+  urgentBadge?: boolean;
+}
+
+// Minimalist SVG Stroke Icons
 const IC = {
   dash: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
+  bolt: 'M13 2L3 14h9l-1 8 10-12h-9l1-8z',
   cf: 'M3 3v18h18M7 16l4-4 4 4 6-6M17 6h4v4',
   p2p: 'M4 8h14l-3-3M20 16H6l3 3',
   pl: 'M12 4a4 4 0 100 8 4 4 0 000-8zM4 20c0-4 4-6 8-6s8 2 8 6',
@@ -42,7 +65,8 @@ const IC = {
   jp: 'M12 3l3 6 6 1-4.5 4.5L18 21l-6-3-6 3 1.5-6.5L3 10l6-1z',
   co: 'M12 3a9 9 0 100 18 9 9 0 000-18zM9 12h6M12 9v6',
   set: 'M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z',
-  out: 'M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9'
+  out: 'M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9',
+  chevron: 'M6 9l6 6 6-6'
 };
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
@@ -69,34 +93,123 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     closeMobileSidebar();
   };
 
-  const navItems: Array<{
-    id: AdminTab;
-    label: string;
-    path: string;
-    n?: string | number;
-    s?: string;
-    urgentBadge?: boolean;
-  }> = [
-      { id: 'overview', label: 'Dashboard', path: IC.dash },
-      { id: 'cashflow', label: 'Cashflow & Treasury', path: IC.cf, s: 'Live' },
-      {
-        id: 'cashier',
-        label: 'P2P Cashier',
-        path: IC.p2p,
-        n: pendingCount > 0 ? pendingCount : undefined,
-        urgentBadge: pendingCount > 0
-      },
-      { id: 'users', label: 'Player Accounts', path: IC.pl, n: totalUsersCount || users.length || 7 },
-      { id: 'bot-engine', label: 'Bot Engine', path: IC.eng, s: '0-50' },
-      { id: 'cartelas', label: '600 Cartelas', path: IC.room, s: 'Cards' },
-      { id: 'telegram-bot', label: 'Telegram Bot & Ads', path: IC.tg },
-      { id: 'agents', label: 'Agents Directory', path: IC.ag, s: 'Portal' },
-      { id: 'agent-recharges', label: 'Agent Recharges', path: IC.rc, s: 'Float' },
-      { id: 'agent-payouts', label: 'Agent Payouts', path: IC.po, s: 'Cashout' },
-      { id: 'official-accounts', label: 'Official Accounts', path: IC.of, s: 'Rails' },
-      { id: 'jackpots', label: 'Progressive Jackpots', path: IC.jp, s: 'Vault' },
-      { id: 'coins', label: 'Bonus & Rewards', path: IC.co, s: 'Live' }
-    ];
+  // Structured Hierarchical Navigation Groups matching the reference design
+  const navGroups: NavGroup[] = [
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      iconPath: IC.bolt,
+      directTab: 'overview'
+    },
+    {
+      id: 'player',
+      label: 'Player',
+      iconPath: IC.pl,
+      subItems: [
+        {
+          id: 'users',
+          label: 'Player Accounts',
+          badge: totalUsersCount || users.length || 7
+        }
+      ]
+    },
+    {
+      id: 'bingo',
+      label: 'Bingo Game',
+      iconPath: IC.room,
+      subItems: [
+        { id: 'cartelas', label: 'Cartelas', statusTag: '600' },
+        { id: 'stakes', label: 'Stakes', statusTag: '10-100' },
+        { id: 'bingo-settings', label: 'Bingo Setting', statusTag: 'Rules' }
+      ]
+    },
+    {
+      id: 'bot',
+      label: 'Bot',
+      iconPath: IC.eng,
+      subItems: [
+        { id: 'bot-engine', label: 'Bot Engine', statusTag: '0-50' },
+        { id: 'bot-players', label: 'Bot Player Accounts', statusTag: '260+' }
+      ]
+    },
+    {
+      id: 'agent',
+      label: 'Agent',
+      iconPath: IC.ag,
+      subItems: [
+        { id: 'agents', label: 'Agents Directory', statusTag: 'Portal' },
+        { id: 'agent-recharges', label: 'Agent Recharges', statusTag: 'Float' },
+        { id: 'agent-payouts', label: 'Agent Payouts', statusTag: 'Cashout' }
+      ]
+    },
+    {
+      id: 'bonus',
+      label: 'Bonus & Rewards',
+      iconPath: IC.co,
+      subItems: [
+        { id: 'coins', label: 'Bonus', statusTag: 'Live' },
+        { id: 'jackpots', label: 'Jackpots', statusTag: 'Vault' }
+      ]
+    },
+    {
+      id: 'transaction',
+      label: 'Transaction',
+      iconPath: IC.cf,
+      urgentBadge: pendingCount > 0,
+      badge: pendingCount > 0 ? pendingCount : undefined,
+      subItems: [
+        { id: 'cashflow', label: 'Cash-flow & reward alert', statusTag: 'Live' },
+        {
+          id: 'cashier',
+          label: 'P2P Cashier',
+          badge: pendingCount > 0 ? pendingCount : undefined,
+          urgentBadge: pendingCount > 0
+        },
+        { id: 'official-accounts', label: 'Official Accounts', statusTag: 'Rails' }
+      ]
+    },
+    {
+      id: 'telegram',
+      label: 'Telegram Bot & Ads',
+      iconPath: IC.tg,
+      directTab: 'telegram-bot'
+    }
+  ];
+
+  // Helper to determine which group owns the given tab
+  const getGroupForTab = (tab: AdminTab): string | null => {
+    for (const g of navGroups) {
+      if (g.directTab === tab) return g.id;
+      if (g.subItems?.some(s => s.id === tab)) return g.id;
+    }
+    return null;
+  };
+
+  // State: Only the currently active group is expanded by default, others start collapsed
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    const activeGroupId = getGroupForTab(activeTab);
+    return activeGroupId && activeGroupId !== 'dashboard' && activeGroupId !== 'telegram'
+      ? { [activeGroupId]: true }
+      : {};
+  });
+
+  // Whenever activeTab changes, auto-expand its parent group
+  useEffect(() => {
+    const activeGroupId = getGroupForTab(activeTab);
+    if (activeGroupId && activeGroupId !== 'dashboard' && activeGroupId !== 'telegram') {
+      setOpenGroups(prev => ({
+        ...prev,
+        [activeGroupId]: true
+      }));
+    }
+  }, [activeTab]);
+
+  const toggleGroup = (groupId: string) => {
+    setOpenGroups(prev => ({
+      ...prev,
+      [groupId]: !prev[groupId]
+    }));
+  };
 
   return (
     <>
@@ -107,8 +220,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         aria-hidden="true"
       />
 
-      <aside className={`enqu-sidebar ${isSidebarCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}>
-        {/* Header Row: Logo, Desktop Collapse Toggle Button & Mobile Drawer Close Button */}
+      <aside className={`enqu-sidebar tree-sidebar ${isSidebarCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}>
+        {/* Header Row: Logo, Collapse Toggle Button & Mobile Close Button */}
         <div className={`sidebar-header-row ${isSidebarCollapsed ? 'collapsed' : ''}`}>
           {!isSidebarCollapsed ? (
             <div className="logo">Sonic Bingo</div>
@@ -144,57 +257,141 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           </button>
         </div>
 
-        {/* Main Navigation List */}
-        <nav className="enqu-nav">
-          {navItems.map(item => {
-            const isActive = activeTab === item.id;
-            return (
-              <a
-                key={item.id}
-                className={isActive ? 'on' : ''}
-                onClick={() => handleSelectTab(item.id)}
-                title={isSidebarCollapsed ? item.label : undefined}
-              >
-                <svg viewBox="0 0 24 24">
-                  <path d={item.path} />
-                </svg>
-                <span>{item.label}</span>
-                {item.n != null && (
-                  <span
-                    className="n"
-                    style={item.urgentBadge ? { background: '#b0302f', color: '#ffffff' } : undefined}
+        {/* Main Navigation List: Hierarchical Tree with Dropdowns */}
+        <nav className="enqu-nav tree-nav">
+          {navGroups.map(group => {
+            // Case 1: Standalone Direct Tab (Dashboard or Telegram Bot)
+            if (group.directTab) {
+              const isDirectActive = activeTab === group.directTab;
+              const isDashboard = group.id === 'dashboard';
+
+              return (
+                <div key={group.id} className="tree-direct-wrap">
+                  <a
+                    className={`${isDashboard ? 'tree-dash-pill' : 'tree-group-direct'} ${isDirectActive ? 'active' : ''}`}
+                    onClick={() => handleSelectTab(group.directTab!)}
+                    title={isSidebarCollapsed ? group.label : undefined}
                   >
-                    {item.n}
-                  </span>
+                    {group.iconPath && (
+                      <svg viewBox="0 0 24 24" className="tree-nav-svg">
+                        <path d={group.iconPath} />
+                      </svg>
+                    )}
+                    <span className="tree-nav-text">{group.label}</span>
+                  </a>
+                </div>
+              );
+            }
+
+            // Case 2: Parent Category Group with Tree Sub-Items
+            const isOpen = !!openGroups[group.id];
+            const hasActiveChild = group.subItems?.some(s => s.id === activeTab) ?? false;
+
+            return (
+              <div
+                key={group.id}
+                className={`tree-group-box ${isOpen ? 'group-open' : ''} ${hasActiveChild ? 'group-has-active' : ''}`}
+              >
+                {/* Parent Group Header (Collapsible Accordion Trigger) */}
+                <div
+                  className={`tree-group-header ${hasActiveChild ? 'active-header' : ''}`}
+                  onClick={() => {
+                    if (isSidebarCollapsed) {
+                      // If collapsed, navigate to the first sub-item
+                      if (group.subItems && group.subItems.length > 0) {
+                        handleSelectTab(group.subItems[0].id);
+                      }
+                    } else {
+                      toggleGroup(group.id);
+                    }
+                  }}
+                  title={isSidebarCollapsed ? group.label : undefined}
+                >
+                  <div className="tree-header-left">
+                    {group.iconPath && isSidebarCollapsed && (
+                      <svg viewBox="0 0 24 24" className="tree-nav-svg">
+                        <path d={group.iconPath} />
+                      </svg>
+                    )}
+                    <span className="tree-group-title">{group.label}</span>
+                  </div>
+
+                  {!isSidebarCollapsed && (
+                    <div className="tree-header-right">
+                      {group.badge != null && (
+                        <span
+                          className={`tree-count-badge ${group.urgentBadge ? 'urgent' : ''}`}
+                        >
+                          {group.badge}
+                        </span>
+                      )}
+                      <svg
+                        viewBox="0 0 24 24"
+                        className={`tree-chevron-icon ${isOpen ? 'rotated' : ''}`}
+                      >
+                        <path d={IC.chevron} />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tree Sub-Items Branch Container */}
+                {!isSidebarCollapsed && isOpen && group.subItems && (
+                  <div className="tree-branch-container">
+                    {group.subItems.map((sub, idx) => {
+                      const isSubActive = activeTab === sub.id;
+                      const isLast = idx === group.subItems!.length - 1;
+
+                      return (
+                        <a
+                          key={sub.id}
+                          className={`tree-sub-link ${isSubActive ? 'sub-active' : ''} ${isLast ? 'tree-last-branch' : ''}`}
+                          onClick={() => handleSelectTab(sub.id)}
+                        >
+                          <span className="tree-branch-line" />
+                          <span className="tree-sub-text">{sub.label}</span>
+
+                          {sub.badge != null && (
+                            <span
+                              className={`tree-sub-badge ${sub.urgentBadge ? 'urgent' : ''}`}
+                            >
+                              {sub.badge}
+                            </span>
+                          )}
+
+                          {sub.statusTag && (
+                            <span className="tree-sub-tag">{sub.statusTag}</span>
+                          )}
+                        </a>
+                      );
+                    })}
+                  </div>
                 )}
-                {item.s && <span className="s">{item.s}</span>}
-                {isSidebarCollapsed && item.urgentBadge && (
-                  <span className="collapsed-urgent-dot" />
-                )}
-              </a>
+              </div>
             );
           })}
         </nav>
 
-        {/* Exact Footer Actions */}
-        <div className="foot nav">
+        {/* Pinned Footer Actions */}
+        <div className="foot nav tree-foot">
+          <div className="tree-divider" />
           <nav>
             <a
               onClick={() => switchPage('withdrawals')}
               title={isSidebarCollapsed ? 'Withdrawals Desk' : undefined}
-              style={{ cursor: 'pointer' }}
+              className="tree-footer-link"
             >
-              <svg viewBox="0 0 24 24">
+              <svg viewBox="0 0 24 24" className="tree-nav-svg">
                 <path d="M12 15V3M7 8l5-5 5 5M4 17v3h16v-3" />
               </svg>
               <span>Withdrawals Desk</span>
-              <span className="s" style={{ background: '#1c1e1d', color: '#fff' }}>Desk</span>
             </a>
             <a
-              onClick={() => showToast('⚙️ System Settings & Security')}
+              onClick={() => handleSelectTab('settings')}
               title={isSidebarCollapsed ? 'Settings' : undefined}
+              className={`tree-footer-link ${activeTab === 'settings' ? 'sub-active' : ''}`}
             >
-              <svg viewBox="0 0 24 24">
+              <svg viewBox="0 0 24 24" className="tree-nav-svg">
                 <path d={IC.set} />
               </svg>
               <span>Settings</span>
@@ -205,8 +402,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 showToast('👋 Logged out from Admin Portal');
               }}
               title={isSidebarCollapsed ? 'Log out' : undefined}
+              className="tree-footer-link logout"
             >
-              <svg viewBox="0 0 24 24">
+              <svg viewBox="0 0 24 24" className="tree-nav-svg">
                 <path d={IC.out} />
               </svg>
               <span>Log out</span>

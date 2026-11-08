@@ -9740,3 +9740,295 @@ tr.sel td {
     min-width: 660px !important;
   }
 }
+
+
+/* ==========================================================================
+   HIERARCHICAL TREE DROPDOWN SIDEBAR STYLES (MATCHING REFERENCE DESIGN)
+   ========================================================================== */
+.tree-sidebar {
+  user-select: none;
+}
+
+.tree-nav {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin !important;
+}
+
+.tree-direct-wrap {
+  width: 100%;
+}
+
+.tree-nav-svg {
+  width: 18px !important;
+  height: 18px !important;
+  flex-shrink: 0 !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 1.8 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+/* 1. Solid Dark-Gray Dashboard Pill */
+.tree-dash-pill {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 9px 12px !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  color: var(--ink) !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  transition: all 0.15s ease !important;
+}
+
+.tree-dash-pill:hover {
+  background: #f1f5f9 !important;
+}
+
+.tree-dash-pill.active {
+  background: #737373 !important; /* solid dark-gray in reference image */
+  color: #ffffff !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15) !important;
+}
+
+.tree-dash-pill.active .tree-nav-svg {
+  stroke: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+/* 2. Direct Group Item (e.g. Telegram Bot & Ads) */
+.tree-group-direct {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 8px 10px !important;
+  border-radius: 10px !important;
+  color: #1e293b !important;
+  font-size: 14.5px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  transition: all 0.15s ease !important;
+}
+
+.tree-group-direct:hover {
+  background: #f8fafc !important;
+}
+
+.tree-group-direct.active {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+/* 3. Parent Category Accordion Box */
+.tree-group-box {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 2px;
+}
+
+.tree-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 10px;
+  color: #1e293b;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tree-group-header:hover {
+  background: #f8fafc;
+}
+
+.tree-group-header.active-header {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.tree-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tree-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tree-chevron-icon {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: #94a3b8;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tree-chevron-icon.rotated {
+  transform: rotate(180deg);
+}
+
+/* 4. Tree Sub-Items Branch Container & Connector Lines */
+.tree-branch-container {
+  position: relative;
+  margin-left: 18px;
+  padding-left: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+  margin-bottom: 6px;
+}
+
+/* The vertical directory trunk line */
+.tree-branch-container::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 14px; /* stops at the horizontal branch of the last child item */
+  width: 1.5px;
+  background-color: #cbd5e1;
+}
+
+/* Each sub-item in the tree */
+.tree-sub-link {
+  position: relative;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 6px 10px !important;
+  border-radius: 8px !important;
+  color: #475569 !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: all 0.12s ease !important;
+}
+
+/* The horizontal branch connector line (├──) */
+.tree-sub-link::before {
+  content: '';
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  width: 12px;
+  height: 1.5px;
+  background-color: #cbd5e1;
+}
+
+.tree-sub-link:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.tree-sub-link.sub-active {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+.tree-sub-text {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.tree-sub-badge,
+.tree-count-badge {
+  font-size: 11px;
+  background: #e2e8f0;
+  color: #334155;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.tree-sub-badge.urgent,
+.tree-count-badge.urgent {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.tree-sub-tag {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+/* 5. Pinned Footer Section */
+.tree-foot {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.tree-divider {
+  height: 1px;
+  background-color: #e2e8f0;
+  margin: 10px 0;
+}
+
+.tree-footer-link {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 8px 10px !important;
+  border-radius: 8px !important;
+  color: #334155 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  transition: all 0.15s ease !important;
+}
+
+.tree-footer-link:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.tree-footer-link.sub-active {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+.tree-footer-link.logout:hover {
+  color: #dc2626 !important;
+  background: #fef2f2 !important;
+}
+
+/* 6. Collapsed State Behavior */
+.enqu-sidebar.collapsed .tree-group-title,
+.enqu-sidebar.collapsed .tree-branch-container,
+.enqu-sidebar.collapsed .tree-header-right,
+.enqu-sidebar.collapsed .tree-nav-text,
+.enqu-sidebar.collapsed .tree-footer-link span {
+  display: none !important;
+}
+
+.enqu-sidebar.collapsed .tree-dash-pill,
+.enqu-sidebar.collapsed .tree-group-direct,
+.enqu-sidebar.collapsed .tree-group-header,
+.enqu-sidebar.collapsed .tree-footer-link {
+  justify-content: center !important;
+  padding: 9px !important;
+}

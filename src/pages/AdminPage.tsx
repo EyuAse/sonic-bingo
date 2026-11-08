@@ -16,6 +16,8 @@ import { AgentPayoutsDesk } from '../components/admin/AgentPayoutsDesk.tsx';
 import { JackpotDesk } from '../components/admin/JackpotDesk.tsx';
 import { BonusRewardsDesk } from '../components/admin/BonusRewardsDesk.tsx';
 import { OfficialAccountsDesk } from '../components/admin/OfficialAccountsDesk.tsx';
+import { BotsSimulatorDesk } from '../components/admin/BotsSimulatorDesk.tsx';
+import { AdminSettings } from '../components/admin/AdminSettings.tsx';
 import '../styles/admin.css';
 import '../styles/admin-jackpot.css';
 import '../styles/admin-cartelas.css';
@@ -28,14 +30,18 @@ const TAB_TITLES: Record<AdminTab, string> = {
   cashier: '🛡️ P2P Cashier',
   users: '👥 Players',
   'bot-engine': '🎚️ Bot Engine (0-50)',
+  'bot-players': '🤖 Bot Player Accounts',
   cartelas: '🗂️ 600 Cards',
+  stakes: '🪙 Stakes & Limits',
+  'bingo-settings': '⚙️ Bingo Settings',
   'telegram-bot': '📢 Telegram Bot',
   agents: '🤝 Agents',
   'agent-recharges': '⚡ Recharges',
   'agent-payouts': '💸 Payouts',
   'official-accounts': '🏛️ Official Accounts',
   jackpots: '🎰 Jackpots',
-  coins: '🎁 Bonus & Rewards'
+  coins: '🎁 Bonus & Rewards',
+  settings: '⚙️ System Settings'
 };
 
 export const AdminPage: React.FC = () => {
@@ -57,6 +63,10 @@ export const AdminPage: React.FC = () => {
     activeTab === 'jackpots' ||
     activeTab === 'cartelas' ||
     activeTab === 'bot-engine' ||
+    activeTab === 'bot-players' ||
+    activeTab === 'stakes' ||
+    activeTab === 'bingo-settings' ||
+    activeTab === 'settings' ||
     activeTab === 'official-accounts';
 
   // If not authenticated, render the PIN lock guard
@@ -266,8 +276,17 @@ export const AdminPage: React.FC = () => {
           {/* TAB 5b: ROOM 10 DYNAMIC BOT ENGINE (0-50) */}
           {activeTab === 'bot-engine' && <BotEngineControllerDesk />}
 
+          {/* TAB 5c: BOT PLAYER ACCOUNTS (260+ BOT ROSTER) */}
+          {activeTab === 'bot-players' && <BotsSimulatorDesk />}
+
           {/* TAB 6: 600 SERIAL CARTELA CARDS LIBRARY */}
           {activeTab === 'cartelas' && <CartelasDesk />}
+
+          {/* TAB 6b: STAKES & MULTI-ROOM LIMITS */}
+          {activeTab === 'stakes' && <AdminSettings />}
+
+          {/* TAB 6c: BINGO GAME RULES, AUTOPLAY & RTP SETTINGS */}
+          {activeTab === 'bingo-settings' && <AdminSettings />}
 
           {/* TAB 7: TELEGRAM BOT & ADS BROADCAST CENTER */}
           {activeTab === 'telegram-bot' && <TelegramBotDesk />}
@@ -289,6 +308,9 @@ export const AdminPage: React.FC = () => {
 
           {/* TAB 11: BONUS & REWARD MANAGEMENT */}
           {activeTab === 'coins' && <BonusRewardsDesk />}
+
+          {/* TAB 12: SYSTEM CONFIGURATION & COMMISSION SETTINGS */}
+          {activeTab === 'settings' && <AdminSettings />}
         </main>
       </div>
     </div>
