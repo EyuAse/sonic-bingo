@@ -293,18 +293,26 @@ export const AgentStatementDesk: React.FC<AgentStatementDeskProps> = ({ showToas
                               gap: '4px',
                               fontSize: '11px',
                               fontWeight: 800,
-                              color: '#065f46',
-                              background: '#ecfdf5',
+                              color: Number(t.agent_commission_earned || 0) > 0 ? '#065f46' : '#475569',
+                              background: Number(t.agent_commission_earned || 0) > 0 ? '#ecfdf5' : '#f1f5f9',
                               padding: '2px 8px',
                               borderRadius: '6px',
-                              border: '1px solid #a7f3d0',
+                              border: Number(t.agent_commission_earned || 0) > 0 ? '1px solid #a7f3d0' : '1px solid #e2e8f0',
                               width: 'fit-content'
                             }}
                           >
-                            <span>+{Number(t.agent_commission_earned || (isCashIn ? t.amount * 0.05 : t.amount * 0.02)).toFixed(2)} ETB</span>
-                            <span style={{ fontSize: '9px', color: '#059669', fontWeight: 700 }}>
-                              ({isCashIn ? '5%' : '2%'})
-                            </span>
+                            {Number(t.agent_commission_earned || 0) > 0 ? (
+                              <>
+                                <span>+{Number(t.agent_commission_earned).toFixed(2)} ETB</span>
+                                <span style={{ fontSize: '9px', color: '#059669', fontWeight: 700 }}>
+                                  ({isCashIn ? '10% Ref' : '2% Cashier'})
+                                </span>
+                              </>
+                            ) : (
+                              <span style={{ fontSize: '10px' }}>
+                                {isCashIn ? 'Pure Float Transfer' : 'Cash Payout'}
+                              </span>
+                            )}
                           </span>
                           {t.agent_balance_after !== undefined && t.agent_balance_after !== null && (
                             <span style={{ fontSize: '10px', color: '#64748b' }}>

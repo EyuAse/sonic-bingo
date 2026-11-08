@@ -1968,6 +1968,8 @@ export const apiClient = {
         newAgentBalance: number;
         isLowBalance: boolean;
         warning: string | null;
+        referralBonusAwarded?: boolean;
+        referralBonusAmount?: number;
       }>(res);
     },
 

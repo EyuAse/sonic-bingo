@@ -3052,7 +3052,7 @@ router.get('/commission/overview', requireAgent, async (req: AuthenticatedReques
     commStatsRes.rows.forEach(r => {
       const earned = parseFloat(r.total_earned || '0');
       lifetimeEarned += earned;
-      if (['recharge', 'top_up', 'cash_in'].includes(r.source_type)) {
+      if (['recharge', 'top_up', 'cash_in', 'topup_commission', 'upfront_float_bonus'].includes(r.source_type)) {
         topUpCommission += earned;
       } else {
         referralBonus += earned;
@@ -3119,7 +3119,7 @@ router.get('/commission/overview', requireAgent, async (req: AuthenticatedReques
       const w = parseInt(r.week_idx, 10);
       if (w >= 0 && w < 8) {
         const amt = parseFloat(r.earned || '0');
-        if (['recharge', 'top_up', 'cash_in'].includes(r.source_type)) {
+        if (['recharge', 'top_up', 'cash_in', 'topup_commission', 'upfront_float_bonus'].includes(r.source_type)) {
           weekMap[w].topUp += amt;
         } else {
           weekMap[w].referral += amt;
@@ -3148,19 +3148,19 @@ router.get('/commission/overview', requireAgent, async (req: AuthenticatedReques
       const baseAmt = parseFloat(row.amount || '0');
       const earned = parseFloat(row.commission_earned || '0');
       const rate = parseFloat(row.commission_rate || `${commissionRate}`);
-      const isTopUp = ['recharge', 'top_up', 'cash_in'].includes(row.source_type);
+      const isTopUp = ['recharge', 'top_up', 'cash_in', 'topup_commission', 'upfront_float_bonus'].includes(row.source_type);
       
       let details = '';
       if (isTopUp) {
-        details = `Top-up · ETB ${baseAmt.toLocaleString()} · ${rate}%`;
+        details = `Upfront float recharge · ETB ${baseAmt.toLocaleString()} · ${rate}%`;
       } else {
-        details = `Player deposit · ETB ${baseAmt.toLocaleString()} · ${rate}%`;
+        details = `Player first deposit · ETB ${baseAmt.toLocaleString()} · 10% referral bonus`;
       }
 
       return {
         id: row.id,
         date: row.created_at,
-        source: isTopUp ? ('Top-up commission' as const) : ('Referral bonus' as const),
+        source: isTopUp ? ('Float bonus' as const) : ('Referral bonus' as const),
         rawSource: row.source_type,
         amount: baseAmt,
         commissionRate: rate,

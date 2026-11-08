@@ -39,3 +39,4 @@ main().catch(err => {
   console.error('❌ Error updating settings:', err);
   process.exit(1);
 });
+

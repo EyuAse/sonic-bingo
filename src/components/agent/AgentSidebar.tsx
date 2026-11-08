@@ -42,7 +42,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
     { id: 'players', label: 'Players', icon: 'fa-solid fa-user-group' },
     { id: 'deposit_requests', label: 'Deposits', icon: 'fa-solid fa-arrow-down-to-bracket', badge: pendingRequestsCount },
     { id: 'recharge', label: 'Recharge Requests', icon: 'fa-solid fa-plus' },
-    { id: 'commission', label: 'Commissions', icon: 'fa-solid fa-percent' },
+    { id: 'commission', label: 'Referral Bonus', icon: 'fa-solid fa-gift' },
     { id: 'profile', label: 'Settings', icon: 'fa-solid fa-gear' },
   ];
 

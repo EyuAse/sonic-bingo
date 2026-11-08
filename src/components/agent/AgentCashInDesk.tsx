@@ -121,13 +121,13 @@ export const AgentCashInDesk: React.FC<AgentCashInDeskProps> = ({
           playerName: res.playerName,
           playerPhone: res.playerPhone,
           amount: res.amount,
-          commissionEarned: res.amount * 0.05,
+          commissionEarned: res.referralBonusAwarded ? res.referralBonusAmount : 0,
           coinsAwarded: Math.round(res.amount * 1.5),
           newFloat: res.newAgentBalance,
           date: new Date().toLocaleTimeString()
         });
 
-        showToast(`🎉 Successfully credited ${amount} ETB to ${selectedPlayer.fullName}! (+${(amount * 0.05).toFixed(2)} ETB commission earned)`);
+        showToast(`🎉 Successfully credited ${amount} ETB to ${selectedPlayer.fullName}! Pure float transfer.${res.referralBonusAwarded ? ` (+${res.referralBonusAmount} ETB 10% Referral Bonus earned!)` : ''}`);
         onDepositSuccess();
         fetchRecentCashIns();
         handleClearSelected();
@@ -514,7 +514,7 @@ export const AgentCashInDesk: React.FC<AgentCashInDeskProps> = ({
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>
                   <th style={{ padding: '12px 20px', fontWeight: 700 }}>Player</th>
                   <th style={{ padding: '12px 20px', fontWeight: 700 }}>Amount Credited</th>
-                  <th style={{ padding: '12px 20px', fontWeight: 700 }}>Your Commission</th>
+                  <th style={{ padding: '12px 20px', fontWeight: 700 }}>Transfer / Reward</th>
                   <th style={{ padding: '12px 20px', fontWeight: 700 }}>Method</th>
                   <th style={{ padding: '12px 20px', fontWeight: 700 }}>Ref Code</th>
                   <th style={{ padding: '12px 20px', fontWeight: 700 }}>Time</th>
@@ -538,19 +538,35 @@ export const AgentCashInDesk: React.FC<AgentCashInDeskProps> = ({
                       +{Number(tx.amount).toFixed(2)} ETB
                     </td>
                     <td style={{ padding: '12px 20px' }}>
-                      <span
-                        style={{
-                          background: '#ecfdf5',
-                          border: '1px solid #a7f3d0',
-                          color: '#065f46',
-                          padding: '3px 8px',
-                          borderRadius: '9999px',
-                          fontSize: '11px',
-                          fontWeight: 800
-                        }}
-                      >
-                        +{Number(tx.agent_commission_earned || tx.amount * 0.05).toFixed(2)} ETB (5%)
-                      </span>
+                      {Number(tx.agent_commission_earned || 0) > 0 ? (
+                        <span
+                          style={{
+                            background: '#ecfdf5',
+                            border: '1px solid #a7f3d0',
+                            color: '#065f46',
+                            padding: '3px 8px',
+                            borderRadius: '9999px',
+                            fontSize: '11px',
+                            fontWeight: 800
+                          }}
+                        >
+                          +{Number(tx.agent_commission_earned).toFixed(2)} ETB (10% Referral)
+                        </span>
+                      ) : (
+                        <span
+                          style={{
+                            background: '#f1f5f9',
+                            border: '1px solid #e2e8f0',
+                            color: '#475569',
+                            padding: '3px 8px',
+                            borderRadius: '9999px',
+                            fontSize: '11px',
+                            fontWeight: 700
+                          }}
+                        >
+                          Float Transfer (0% Cut)
+                        </span>
+                      )}
                     </td>
                     <td style={{ padding: '12px 20px' }}>
                       <span
@@ -638,8 +654,10 @@ export const AgentCashInDesk: React.FC<AgentCashInDeskProps> = ({
                 <strong style={{ color: '#047857', fontSize: '15px' }}>+{receipt.amount.toFixed(2)} ETB</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#64748b' }}>Your Commission (+5%):</span>
-                <strong style={{ color: '#047857' }}>+{receipt.commissionEarned.toFixed(2)} ETB</strong>
+                <span style={{ color: '#64748b' }}>Referral Bonus:</span>
+                <strong style={{ color: '#047857' }}>
+                  {receipt.commissionEarned > 0 ? `+${receipt.commissionEarned.toFixed(2)} ETB (10% 1st Deposit)` : 'Float Transfer (0% Cut)'}
+                </strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: '#64748b' }}>Loyalty Coins:</span>

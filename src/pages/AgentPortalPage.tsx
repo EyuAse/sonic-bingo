@@ -47,8 +47,8 @@ const DESK_TITLES: Record<string, string> = {
   deposit_requests: 'Deposit Requests',
   players: 'My Players',
   recharge: 'Recharge Requests',
-  commission: 'Commission Desk',
-  cash_out: 'Commission Desk',
+  commission: 'Referral Bonus Desk',
+  cash_out: 'Referral Bonus Desk',
   profile: 'Agent Settings',
 };
 

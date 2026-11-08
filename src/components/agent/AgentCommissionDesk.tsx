@@ -24,8 +24,8 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
   // Active view tab: 'wd' (Withdrawals) or 'ea' (Earnings)
   const [activeTab, setActiveTab] = useState<'wd' | 'ea'>('wd');
 
-  // Earnings source filter: 'All' | 'Top-up commission' | 'Referral bonus'
-  const [sourceFilter, setSourceFilter] = useState<'All' | 'Top-up commission' | 'Referral bonus'>('All');
+  // Earnings source filter: 'All' | 'Float bonus' | 'Referral bonus'
+  const [sourceFilter, setSourceFilter] = useState<'All' | 'Float bonus' | 'Referral bonus'>('All');
 
   // Withdraw Commission Modal State
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -115,7 +115,10 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
 
   const filteredLedger = earningsLedger.filter((item: any) => {
     if (sourceFilter === 'All') return true;
-    return item.source === sourceFilter;
+    if (sourceFilter === 'Float bonus') {
+      return item.source === 'Float bonus' || item.source === 'Top-up commission' || item.rawSource === 'recharge' || item.rawSource === 'topup_commission';
+    }
+    return item.source === 'Referral bonus' || item.rawSource === 'referral_first_deposit';
   });
 
   const maskAccount = (method: string, acc: string) => {
@@ -266,8 +269,8 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
           </button>
         )}
         <div>
-          <h1>Commission desk</h1>
-          <div className="sub">Your earnings from top-ups and referrals. Withdraw them straight from admin.</div>
+          <h1>Referral bonus &amp; rewards</h1>
+          <div className="sub">Your earnings from upfront float bonuses and player referral rewards. Withdraw them straight from admin.</div>
         </div>
       </div>
 
@@ -288,7 +291,7 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
               onClick={handleOpenModal}
               disabled={availableBalance < 500}
             >
-              Withdraw commission
+              Cash out referral balance
             </button>
             <button
               type="button"
@@ -331,9 +334,9 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
           <div className="comm-t">Since you joined</div>
         </div>
         <div className="comm-card comm-stat">
-          <div className="comm-l">Top-up commission</div>
+          <div className="comm-l">Upfront float bonus</div>
           <div className="comm-v">ETB {topUpCommission.toLocaleString()}</div>
-          <div className="comm-t">{commissionRate}% of every approved recharge</div>
+          <div className="comm-t">{commissionRate}% upfront float added on approved recharges</div>
         </div>
         <div className="comm-card comm-stat">
           <div className="comm-l">Referral bonus</div>
@@ -354,7 +357,7 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
           <h3>
             Earnings by week
             <span className="r">
-              <span><i className="comm-dot"></i>Top-up</span>
+              <span><i className="comm-dot"></i>Float bonus</span>
               <span><i className="comm-dot g2c"></i>Referral</span>
             </span>
           </h3>
@@ -391,7 +394,7 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
 
           <div className="comm-fn">
             <div className="comm-rw">
-              <span>Top-up commission ({commissionRate}%)</span>
+              <span>Upfront float bonus ({commissionRate}%)</span>
               <span>ETB {topUpCommission.toLocaleString()} · {topUpPercent}%</span>
             </div>
             <div className="comm-pb">
@@ -410,7 +413,7 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
           </div>
 
           <div className="comm-sm" style={{ marginTop: '16px', lineHeight: 1.5 }}>
-            Top-up commission is added when admin approves your recharge. Referral bonus is added when your player makes a first deposit.
+            Upfront float bonus is added when admin approves your recharge. Referral bonus (10%) is added when your referred player makes their first deposit.
           </div>
         </div>
       </div>
@@ -437,7 +440,7 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
 
           {activeTab === 'ea' ? (
             <div className="comm-tabs" style={{ marginLeft: 'auto' }}>
-              {(['All', 'Top-up commission', 'Referral bonus'] as const).map(f => (
+              {(['All', 'Float bonus', 'Referral bonus'] as const).map(f => (
                 <button
                   key={f}
                   type="button"
@@ -538,7 +541,7 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
                     <tr key={row.id}>
                       <td>{formatDate(row.date)}</td>
                       <td>
-                        <span className={`comm-pill ${row.source === 'Top-up commission' ? 'gr' : 'wn'}`}>
+                        <span className={`comm-pill ${row.source === 'Top-up commission' || row.source === 'Float bonus' ? 'gr' : 'wn'}`}>
                           {row.source}
                         </span>
                       </td>
@@ -558,7 +561,7 @@ export const AgentCommissionDesk: React.FC<AgentCommissionDeskProps> = ({
         <div className="comm-mbg" onClick={() => setIsModalOpen(false)}>
           <div className="comm-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
             <div className="comm-mh">
-              <h3>Withdraw commission</h3>
+              <h3>Cash out referral balance</h3>
               <button type="button" onClick={() => setIsModalOpen(false)} aria-label="Close">
                 ✕
               </button>

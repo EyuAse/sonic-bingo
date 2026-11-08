@@ -191,7 +191,7 @@ export const AgentWithdrawalRequestsDesk: React.FC<AgentWithdrawalRequestsDeskPr
             )}
           </div>
           <p style={{ fontSize: '13px', color: '#64748b', margin: '4px 0 0 0' }}>
-            Pay cash or transfer via mobile banking. Receive 100% float reimbursement + <strong>2% Cashier Commission</strong> directly to your float!
+            Pay cash or transfer via mobile banking. Receive 100% float reimbursement + <strong>2% Cashier Fee</strong> directly to your float!
           </p>
         </div>
 
@@ -630,7 +630,7 @@ export const AgentWithdrawalRequestsDesk: React.FC<AgentWithdrawalRequestsDeskPr
                         <span style={{ fontWeight: 800, color: '#047857' }}>+{Number(req.amount).toFixed(2)} ETB</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
-                        <span style={{ color: '#065f46', fontWeight: 600 }}>3. Cashier Commission (+2%):</span>
+                        <span style={{ color: '#065f46', fontWeight: 600 }}>3. Cashier Fee (+2%):</span>
                         <span style={{ fontWeight: 900, color: '#059669' }}>+{commissionVal.toFixed(2)} ETB</span>
                       </div>
                       <div
@@ -735,7 +735,7 @@ export const AgentWithdrawalRequestsDesk: React.FC<AgentWithdrawalRequestsDeskPr
                     <th style={{ padding: '14px 18px', fontWeight: 700 }}>Status</th>
                     <th style={{ padding: '14px 18px', fontWeight: 700 }}>Player</th>
                     <th style={{ padding: '14px 18px', fontWeight: 700 }}>Payout Amount</th>
-                    <th style={{ padding: '14px 18px', fontWeight: 700 }}>Commission (+2%)</th>
+                    <th style={{ padding: '14px 18px', fontWeight: 700 }}>Cashier Fee (+2%)</th>
                     <th style={{ padding: '14px 18px', fontWeight: 700 }}>Destination Rail & Account</th>
                     <th style={{ padding: '14px 18px', fontWeight: 700 }}>Bank / SMS Tx Ref</th>
                     <th style={{ padding: '14px 18px', fontWeight: 700 }}>Date & Time</th>

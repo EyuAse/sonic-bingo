@@ -344,7 +344,7 @@ adminRechargesRouter.post('/:id/credit', requireAdmin, async (req: Authenticated
 
     const result = await withTransaction(async (client) => {
       const rRes = await client.query(`
-        SELECT arr.*, ap.wallet_balance, ap.user_id as agent_user_id, ap.agent_code, u.full_name as agent_name
+        SELECT arr.*, ap.wallet_balance, ap.commission_rate, ap.user_id as agent_user_id, ap.agent_code, u.full_name as agent_name
         FROM agent_recharge_requests arr
         JOIN agent_profiles ap ON arr.agent_id = ap.id
         JOIN users u ON ap.user_id = u.id
@@ -397,15 +397,19 @@ adminRechargesRouter.post('/:id/credit', requireAdmin, async (req: Authenticated
         };
       }
 
-      // Approved / Second Approved -> Execute Credit
+      // Approved / Second Approved -> Execute Credit with Upfront Commission Bonus
+      const commissionRate = parseFloat(recharge.commission_rate || '5.0');
+      const commissionEarned = Math.round(creditAmt * (commissionRate / 100) * 100) / 100;
+      const totalFloatCredit = creditAmt + commissionEarned;
+
       const currentBal = parseFloat(recharge.wallet_balance || '0');
-      const newBal = currentBal + creditAmt;
+      const newBal = currentBal + totalFloatCredit;
       const txCode = `TX-${Date.now().toString().slice(-6)}`;
 
       // 1. Update recharge request status
       const newEvent: [string, string] = [
         formatTimelineDate(),
-        `Credited ${creditAmt.toLocaleString('en-US')} ETB${creditAmt !== requestedAmt ? ` (received amount, requested ${requestedAmt.toLocaleString('en-US')})` : ''}. Balance ${currentBal.toLocaleString('en-US')} to ${newBal.toLocaleString('en-US')} ETB. Transaction ${txCode}. Agent notified`
+        `Credited ${totalFloatCredit.toLocaleString('en-US')} ETB (${creditAmt.toLocaleString('en-US')} ETB principal + ${commissionEarned.toLocaleString('en-US')} ETB upfront float bonus @ ${commissionRate}%). Balance ${currentBal.toLocaleString('en-US')} to ${newBal.toLocaleString('en-US')} ETB. Transaction ${txCode}. Agent notified`
       ];
       const updatedTl = [newEvent, ...currentTl];
 
@@ -421,15 +425,23 @@ adminRechargesRouter.post('/:id/credit', requireAdmin, async (req: Authenticated
         WHERE id = $5
       `, [creditAmt, adminUser?.id || null, normStatus, JSON.stringify(updatedTl), id]);
 
-      // 2. Increment Agent Wallet Balance
+      // 2. Increment Agent Wallet Balance with Total Float (Principal + Upfront Bonus)
       await client.query(`
         UPDATE agent_profiles
         SET wallet_balance = wallet_balance + $1,
+            low_balance_alert_sent = FALSE,
             updated_at = NOW()
         WHERE id = $2
-      `, [creditAmt, recharge.agent_id]);
+      `, [totalFloatCredit, recharge.agent_id]);
 
-      // 3. Record in wallet_transactions for agent ledger
+      // 3. Record in agent_commissions audit table
+      await client.query(`
+        INSERT INTO agent_commissions 
+          (agent_id, source_type, source_id, amount, commission_rate, commission_earned)
+        VALUES ($1, 'topup_commission', $2, $3, $4, $5)
+      `, [recharge.agent_id, id, creditAmt, commissionRate, commissionEarned]);
+
+      // 4. Record in wallet_transactions for agent ledger
       await client.query(`
         INSERT INTO wallet_transactions (
           user_id,
@@ -443,20 +455,23 @@ adminRechargesRouter.post('/:id/credit', requireAdmin, async (req: Authenticated
         ) VALUES ($1, 'deposit', $2, $3, $4, 'completed', $5, $6)
       `, [
         recharge.agent_user_id,
-        creditAmt,
+        totalFloatCredit,
         newBal,
         txCode,
         recharge.payment_method || 'Telebirr',
-        `Agent Float Recharge: ${creditAmt.toFixed(2)} ETB (Ref: ${recharge.transaction_code || txCode})`
+        `Agent Float Recharge: ${creditAmt.toFixed(2)} ETB + ${commissionEarned.toFixed(2)} ETB (${commissionRate}% Upfront Float Bonus) (Ref: ${recharge.transaction_code || txCode})`
       ]);
 
       return {
         status: 'Credited',
-        message: `Wallet credited: ${creditAmt.toLocaleString('en-US')} ETB`,
+        message: `Wallet credited: ${totalFloatCredit.toLocaleString('en-US')} ETB (${creditAmt.toLocaleString('en-US')} ETB + ${commissionEarned.toLocaleString('en-US')} ETB upfront bonus)`,
         txCode,
         agentId: recharge.agent_id,
         agentUserId: recharge.agent_user_id,
         newBalance: newBal,
+        totalFloatCredit,
+        creditAmt,
+        commissionEarned,
         timeline: updatedTl
       };
     });
@@ -467,6 +482,13 @@ adminRechargesRouter.post('/:id/credit', requireAdmin, async (req: Authenticated
         agentId: result.agentId,
         walletBalance: result.newBalance,
         message: `Your agent wallet has been credited with ${result.message}`
+      });
+      io.emit(`agent_${result.agentId}_balance`, {
+        type: 'recharge_approved',
+        amount: result.totalFloatCredit,
+        baseAmount: result.creditAmt,
+        commissionEarned: result.commissionEarned,
+        newBalance: result.newBalance
       });
       io.emit('admin_agent_recharge_update', { id, status: 'Credited', balance: result.newBalance });
     } else {

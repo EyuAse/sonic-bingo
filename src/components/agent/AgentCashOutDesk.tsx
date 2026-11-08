@@ -55,7 +55,7 @@ export const AgentCashOutDesk: React.FC<AgentCashOutDeskProps> = ({
           date: new Date().toLocaleTimeString()
         });
 
-        showToast(`🎉 Payout confirmed! Received +${res.commissionEarned.toFixed(2)} ETB commission.`);
+        showToast(`🎉 Payout confirmed! Received +${res.commissionEarned.toFixed(2)} ETB cashier fee.`);
         setVerifiedVoucher(null);
         setVoucherCodeInput('');
         onPayoutSuccess();
@@ -257,7 +257,7 @@ export const AgentCashOutDesk: React.FC<AgentCashOutDeskProps> = ({
                 <strong style={{ color: '#047857', fontSize: '15px' }}>{receipt.amount.toFixed(2)} ETB</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#64748b' }}>Agent Commission Earned:</span>
+                <span style={{ color: '#64748b' }}>Cashier Fee Earned:</span>
                 <strong style={{ color: '#b45309' }}>+{receipt.commission.toFixed(2)} ETB</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #e2e8f0', paddingTop: '4px' }}>

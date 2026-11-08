@@ -471,7 +471,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
             <b>{depositsTodayCount} · ETB {formatETB(depositsTodayVol)}</b>
           </div>
           <div>
-            <span>Commission, last 30 days</span>
+            <span>Referral Bonus, last 30 days</span>
             <b>ETB {formatETB(commission30d)}</b>
           </div>
         </div>
@@ -549,7 +549,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
           </div>
         </div>
 
-        {/* Stat 4: Commission (30 days) */}
+        {/* Stat 4: Referral Bonus (30 days) */}
         <div className="enqu-card enqu-stat">
           <div className="ic enqu-ic">
             <svg
@@ -567,12 +567,12 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
               <circle cx="17.5" cy="17.5" r="2.5" />
             </svg>
           </div>
-          <div className="l">Commission (30 days)</div>
+          <div className="l">Referral Bonus (30 days)</div>
           <div className="v">ETB {formatETB(commission30d)}</div>
           <div className="t">
             {pendingRechargeComm > 0
               ? `ETB ${formatETB(pendingRechargeComm)} pending on open recharges`
-              : 'All commissions credited'}
+              : 'All referral bonuses credited'}
           </div>
         </div>
       </div>
@@ -794,7 +794,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                 { label: 'Players registered', current: totalPlayers, target: 10, text: `${totalPlayers} / 10` },
                 { label: 'Deposit volume', current: depositsTodayVol, target: 35000, text: `ETB ${formatETB(depositsTodayVol)} / 35k` },
                 { label: 'Transactions', current: depositsTodayCount, target: 90, text: `${depositsTodayCount} / 90` },
-                { label: 'Commission earned', current: commission30d, target: 1500, text: `ETB ${formatETB(commission30d)} / 1,500` }
+                { label: 'Referral bonus earned', current: commission30d, target: 1500, text: `ETB ${formatETB(commission30d)} / 1,500` }
               ]).map((tg: any, idx: number) => {
                 const pct = tg.target > 0 ? Math.min(100, Math.round((tg.current / tg.target) * 100)) : 0;
                 return (
@@ -1041,7 +1041,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
             </div>
 
             <p style={{ color: 'var(--ag-mute)', fontSize: '13px', margin: '4px 0 16px', fontWeight: 600 }}>
-              Top up your agent float. Receive an instant <strong>4% bonus commission</strong> upon admin verification.
+              Top up your agent float. Receive an instant <strong>upfront float bonus</strong> upon admin verification.
             </p>
 
             <form onSubmit={handleSubmitRecharge}>
@@ -1106,15 +1106,15 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                 required
               />
 
-              {/* Live 4% Commission Note */}
+              {/* Live Upfront Float Bonus Note */}
               {(() => {
                 const amt = Number(rchAmount || 0);
-                const comm = Math.round(amt * 0.04);
+                const comm = Math.round(amt * 0.05);
                 const totalCredit = amt + comm;
                 return (
                   <div className="enqu-note2">
                     <div>Recharge amount: <b>ETB {formatETB(amt)}</b></div>
-                    <div>Agent bonus commission (4%): <b style={{ color: 'var(--ag-g)' }}>+ETB {formatETB(comm)}</b></div>
+                    <div>Upfront float bonus (5%): <b style={{ color: 'var(--ag-g)' }}>+ETB {formatETB(comm)}</b></div>
                     <div style={{ marginTop: '4px', borderTop: '1px solid var(--ag-line)', paddingTop: '4px' }}>
                       Total credited to wallet: <b>ETB {formatETB(totalCredit)}</b>
                     </div>
