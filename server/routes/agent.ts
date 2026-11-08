@@ -1731,14 +1731,19 @@ router.get('/available', async (_req, res) => {
 router.get('/deposit-requests', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
-    const agentRes = await query('SELECT id, agent_code FROM agent_profiles WHERE user_id = $1', [userId]);
+    const agentRes = await query(
+      'SELECT id, agent_code, wallet_balance, low_balance_threshold, commission_rate FROM agent_profiles WHERE user_id = $1',
+      [userId]
+    );
     if (agentRes.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Agent profile not found' });
     }
 
-    const agentId = agentRes.rows[0].id;
+    const agent = agentRes.rows[0];
+    const agentId = agent.id;
     const statusFilter = (req.query.status as string) || 'all';
     const timeframe = (req.query.timeframe as string) || 'all';
+    const searchQuery = (req.query.q as string)?.trim().toLowerCase() || '';
 
     let sql = `
       SELECT req.id, req.amount, req.payment_method, req.player_phone, req.transaction_code,
@@ -1763,11 +1768,34 @@ router.get('/deposit-requests', requireAgent, async (req: AuthenticatedRequest, 
       sql += ` AND req.created_at >= NOW() - INTERVAL '30 days'`;
     }
 
+    if (searchQuery) {
+      params.push(`%${searchQuery}%`);
+      sql += ` AND (
+        req.transaction_code ILIKE $${params.length} OR
+        req.player_phone ILIKE $${params.length} OR
+        u.full_name ILIKE $${params.length} OR
+        u.telegram_username ILIKE $${params.length} OR
+        req.id::text ILIKE $${params.length}
+      )`;
+    }
+
     sql += ` ORDER BY req.created_at DESC LIMIT 100`;
 
-    const [requestsRes, pendingCountRes, analyticsRes] = await Promise.all([
+    const [requestsRes, summaryRes, analyticsRes] = await Promise.all([
       query(sql, params),
-      query(`SELECT COUNT(*) as count FROM agent_deposit_requests WHERE agent_id = $1 AND status = 'pending'`, [agentId]),
+      query(
+        `SELECT
+           COUNT(*) FILTER (WHERE status = 'pending') as pending_count,
+           COALESCE(SUM(amount) FILTER (WHERE status = 'pending'), 0) as pending_sum,
+           COALESCE(ROUND(EXTRACT(EPOCH FROM (NOW() - MIN(created_at) FILTER (WHERE status = 'pending'))) / 60), 0) as oldest_waiting_min,
+           COUNT(*) FILTER (WHERE status = 'approved' AND (COALESCE(resolved_at, created_at) AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date) as accepted_today_count,
+           COALESCE(SUM(amount) FILTER (WHERE status = 'approved' AND (COALESCE(resolved_at, created_at) AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date), 0) as accepted_today_sum,
+           COUNT(*) FILTER (WHERE status = 'rejected' AND (COALESCE(resolved_at, created_at) AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date) as rejected_today_count,
+           COALESCE(SUM(amount) FILTER (WHERE status = 'rejected' AND (COALESCE(resolved_at, created_at) AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date), 0) as rejected_today_sum
+         FROM agent_deposit_requests
+         WHERE agent_id = $1`,
+        [agentId]
+      ),
       query(
         `SELECT
            COALESCE(SUM(amount) FILTER (WHERE (created_at AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date), 0) as today_amount,
@@ -1784,7 +1812,18 @@ router.get('/deposit-requests', requireAgent, async (req: AuthenticatedRequest, 
       )
     ]);
 
-    const pendingCount = parseInt(pendingCountRes.rows[0]?.count || '0', 10);
+    const s = summaryRes.rows[0] || {};
+    const walletBalance = parseFloat(agent.wallet_balance || '0');
+    const lowBalanceThreshold = parseFloat(agent.low_balance_threshold || '5000');
+    const pendingSum = parseFloat(s.pending_sum || '0');
+    const pendingCount = parseInt(s.pending_count || '0', 10);
+    const oldestWaitingMinutes = parseInt(s.oldest_waiting_min || '0', 10);
+    const acceptedTodaySum = parseFloat(s.accepted_today_sum || '0');
+    const acceptedTodayCount = parseInt(s.accepted_today_count || '0', 10);
+    const rejectedTodayCount = parseInt(s.rejected_today_count || '0', 10);
+    const rejectedTodaySum = parseFloat(s.rejected_today_sum || '0');
+    const walletAfterAllPending = walletBalance - pendingSum;
+
     const a = analyticsRes.rows[0] || {};
     const todayAmount = parseFloat(a.today_amount || '0');
     const weekAmount = parseFloat(a.week_amount || '0');
@@ -1794,6 +1833,18 @@ router.get('/deposit-requests', requireAgent, async (req: AuthenticatedRequest, 
     return res.json({
       success: true,
       pendingCount,
+      summary: {
+        walletBalance,
+        lowBalanceThreshold,
+        pendingSum,
+        pendingCount,
+        oldestWaitingMinutes,
+        walletAfterAllPending,
+        acceptedTodaySum,
+        acceptedTodayCount,
+        rejectedTodayCount,
+        rejectedTodaySum
+      },
       analytics: {
         today: { amount: todayAmount, count: parseInt(a.today_count || '0', 10), commission: Number((todayAmount * 0.05).toFixed(2)) },
         week: { amount: weekAmount, count: parseInt(a.week_count || '0', 10), commission: Number((weekAmount * 0.05).toFixed(2)) },
@@ -1818,6 +1869,204 @@ router.get('/deposit-requests', requireAgent, async (req: AuthenticatedRequest, 
   } catch (error: any) {
     console.error('❌ [Agent Deposit Requests GET Error]:', error);
     return res.status(500).json({ success: false, error: 'Failed to retrieve deposit requests' });
+  }
+});
+
+/**
+ * GET /api/agent/deposit-requests/history
+ * Authoritative periodic history (daily, weekly, monthly) for deposit requests.
+ * 100% calculated from live Neon PostgreSQL records. Zero mock data.
+ */
+router.get('/deposit-requests/history', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const agentRes = await query(
+      'SELECT id, agent_code, wallet_balance, low_balance_threshold FROM agent_profiles WHERE user_id = $1',
+      [userId]
+    );
+    if (agentRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent profile not found' });
+    }
+
+    const agent = agentRes.rows[0];
+    const agentId = agent.id;
+    const period = ((req.query.period as string) || 'daily').toLowerCase();
+
+    // Months dictionary
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    // 1. Fetch settled requests from Neon DB for past 180 days
+    const settledRes = await query(
+      `SELECT req.id, req.amount, req.payment_method, req.player_phone, req.transaction_code,
+              req.screenshot_url, req.status, req.rejection_reason, req.created_at, req.resolved_at,
+              u.full_name as player_name, u.telegram_username as player_username
+       FROM agent_deposit_requests req
+       JOIN users u ON req.player_id = u.id
+       WHERE req.agent_id = $1 AND req.status IN ('approved', 'rejected')
+         AND req.created_at >= NOW() - INTERVAL '180 days'
+       ORDER BY req.created_at DESC`,
+      [agentId]
+    );
+
+    const now = new Date();
+    // Offset for East Africa Time (UTC+3)
+    const EAT_OFFSET = 3 * 60 * 60 * 1000;
+    const nowEAT = new Date(now.getTime() + EAT_OFFSET);
+
+    const getDayKey = (d: Date) => {
+      const eat = new Date(d.getTime() + EAT_OFFSET);
+      return `${eat.getUTCFullYear()}-${String(eat.getUTCMonth() + 1).padStart(2, '0')}-${String(eat.getUTCDate()).padStart(2, '0')}`;
+    };
+
+    const formatDayLabel = (d: Date) => {
+      const eat = new Date(d.getTime() + EAT_OFFSET);
+      return `${eat.getUTCDate()} ${MONTHS[eat.getUTCMonth()]}`;
+    };
+
+    // 2. Prepare buckets based on period
+    interface HistoryBucketItem {
+      index: number;
+      label: string;
+      shortLabel: string;
+      acceptedVolume: number;
+      acceptedCount: number;
+      rejectedCount: number;
+      totalRequests: number;
+      acceptanceRate: number;
+      rows: any[];
+    }
+
+    let bucketCount = 14;
+    let buckets: HistoryBucketItem[] = [];
+
+    if (period === 'weekly') {
+      bucketCount = 8;
+      for (let i = 0; i < bucketCount; i++) {
+        const startWeek = new Date(now.getTime() - (i + 1) * 7 * 86400000);
+        const endWeek = new Date(now.getTime() - i * 7 * 86400000);
+        const label = `${formatDayLabel(startWeek)} – ${formatDayLabel(endWeek)}`;
+        const shortLabel = formatDayLabel(startWeek);
+        buckets.push({
+          index: i,
+          label,
+          shortLabel,
+          acceptedVolume: 0,
+          acceptedCount: 0,
+          rejectedCount: 0,
+          totalRequests: 0,
+          acceptanceRate: 0,
+          rows: []
+        });
+      }
+    } else if (period === 'monthly') {
+      bucketCount = 6;
+      for (let i = 0; i < bucketCount; i++) {
+        const targetMonthDate = new Date(nowEAT.getUTCFullYear(), nowEAT.getUTCMonth() - i, 1);
+        const monthName = MONTHS[targetMonthDate.getUTCMonth()];
+        const year = targetMonthDate.getUTCFullYear();
+        const label = i === 0 ? `This Month (${monthName} ${year})` : `${monthName} ${year}`;
+        const shortLabel = monthName;
+        buckets.push({
+          index: i,
+          label,
+          shortLabel,
+          acceptedVolume: 0,
+          acceptedCount: 0,
+          rejectedCount: 0,
+          totalRequests: 0,
+          acceptanceRate: 0,
+          rows: []
+        });
+      }
+    } else {
+      // 'daily' -> past 14 days
+      bucketCount = 14;
+      for (let i = 0; i < bucketCount; i++) {
+        const d = new Date(now.getTime() - i * 86400000);
+        const label = i === 0 ? 'Today' : i === 1 ? 'Yesterday' : formatDayLabel(d);
+        const shortLabel = i === 0 ? 'Today' : formatDayLabel(d).split(' ')[0];
+        buckets.push({
+          index: i,
+          label,
+          shortLabel,
+          acceptedVolume: 0,
+          acceptedCount: 0,
+          rejectedCount: 0,
+          totalRequests: 0,
+          acceptanceRate: 0,
+          rows: []
+        });
+      }
+    }
+
+    // 3. Assign real database rows to respective buckets
+    settledRes.rows.forEach(r => {
+      const createdAt = new Date(r.created_at);
+      const rowItem = {
+        id: r.id,
+        amount: parseFloat(r.amount),
+        paymentMethod: r.payment_method,
+        playerPhone: r.player_phone,
+        playerName: r.player_name || r.player_username || 'Player',
+        playerUsername: r.player_username,
+        transactionCode: r.transaction_code,
+        screenshotUrl: r.screenshot_url,
+        status: r.status,
+        rejectionReason: r.rejection_reason,
+        createdAt: r.created_at,
+        resolvedAt: r.resolved_at
+      };
+
+      const diffMs = now.getTime() - createdAt.getTime();
+      const diffDays = Math.floor(diffMs / 86400000);
+
+      let bucketIndex = -1;
+      if (period === 'weekly') {
+        bucketIndex = Math.floor(diffDays / 7);
+      } else if (period === 'monthly') {
+        const createdEAT = new Date(createdAt.getTime() + EAT_OFFSET);
+        bucketIndex = (nowEAT.getUTCFullYear() - createdEAT.getUTCFullYear()) * 12 + (nowEAT.getUTCMonth() - createdEAT.getUTCMonth());
+      } else {
+        bucketIndex = diffDays;
+      }
+
+      if (bucketIndex >= 0 && bucketIndex < bucketCount) {
+        const b = buckets[bucketIndex];
+        b.rows.push(rowItem);
+        if (r.status === 'approved') {
+          b.acceptedVolume += rowItem.amount;
+          b.acceptedCount++;
+        } else if (r.status === 'rejected') {
+          b.rejectedCount++;
+        }
+        b.totalRequests = b.acceptedCount + b.rejectedCount;
+        b.acceptanceRate = b.totalRequests > 0 ? Math.round((b.acceptedCount / b.totalRequests) * 100) : 0;
+      }
+    });
+
+    // 4. Period-wide overall summary
+    const overallAcceptedVolume = buckets.reduce((acc, b) => acc + b.acceptedVolume, 0);
+    const overallAcceptedCount = buckets.reduce((acc, b) => acc + b.acceptedCount, 0);
+    const overallRejectedCount = buckets.reduce((acc, b) => acc + b.rejectedCount, 0);
+    const overallTotal = overallAcceptedCount + overallRejectedCount;
+    const overallAcceptanceRate = overallTotal > 0 ? Math.round((overallAcceptedCount / overallTotal) * 100) : 0;
+
+    return res.json({
+      success: true,
+      period,
+      walletBalance: parseFloat(agent.wallet_balance || '0'),
+      summary: {
+        acceptedVolume: overallAcceptedVolume,
+        acceptedCount: overallAcceptedCount,
+        rejectedCount: overallRejectedCount,
+        totalRequests: overallTotal,
+        acceptanceRate: overallAcceptanceRate
+      },
+      buckets
+    });
+  } catch (error: any) {
+    console.error('❌ [Agent Deposit History GET Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve deposit history' });
   }
 });
 

@@ -2068,10 +2068,11 @@ export const apiClient = {
     },
 
     // Agent Deposit Requests (Decentralized Player Deposit Flow)
-    async getDepositRequests(status?: string, timeframe?: string) {
+    async getDepositRequests(status?: string, timeframe?: string, q?: string) {
       const params = new URLSearchParams();
       if (status && status !== 'all') params.append('status', status);
       if (timeframe && timeframe !== 'all') params.append('timeframe', timeframe);
+      if (q && q.trim()) params.append('q', q.trim());
       const queryStr = params.toString() ? `?${params.toString()}` : '';
       const res = await fetch(`${API_BASE}/agent/deposit-requests${queryStr}`, {
         headers: { ...getAgentAuthHeader() }
@@ -2079,6 +2080,18 @@ export const apiClient = {
       return handleResponse<{
         success: boolean;
         pendingCount: number;
+        summary?: {
+          walletBalance: number;
+          lowBalanceThreshold: number;
+          pendingSum: number;
+          pendingCount: number;
+          oldestWaitingMinutes: number;
+          walletAfterAllPending: number;
+          acceptedTodaySum: number;
+          acceptedTodayCount: number;
+          rejectedTodayCount: number;
+          rejectedTodaySum: number;
+        };
         analytics?: {
           today: { amount: number; count: number; commission: number };
           week: { amount: number; count: number; commission: number };
@@ -2098,6 +2111,48 @@ export const apiClient = {
           rejectionReason?: string;
           createdAt: string;
           resolvedAt?: string;
+        }>;
+      }>(res);
+    },
+
+    async getDepositHistory(period: 'daily' | 'weekly' | 'monthly' = 'daily') {
+      const res = await fetch(`${API_BASE}/agent/deposit-requests/history?period=${period}`, {
+        headers: { ...getAgentAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        period: 'daily' | 'weekly' | 'monthly';
+        walletBalance: number;
+        summary: {
+          acceptedVolume: number;
+          acceptedCount: number;
+          rejectedCount: number;
+          totalRequests: number;
+          acceptanceRate: number;
+        };
+        buckets: Array<{
+          index: number;
+          label: string;
+          shortLabel: string;
+          acceptedVolume: number;
+          acceptedCount: number;
+          rejectedCount: number;
+          totalRequests: number;
+          acceptanceRate: number;
+          rows: Array<{
+            id: string;
+            amount: number;
+            paymentMethod: string;
+            playerPhone: string;
+            playerName?: string;
+            playerUsername?: string;
+            transactionCode: string;
+            screenshotUrl?: string;
+            status: 'approved' | 'rejected';
+            rejectionReason?: string;
+            createdAt: string;
+            resolvedAt?: string;
+          }>;
         }>;
       }>(res);
     },
