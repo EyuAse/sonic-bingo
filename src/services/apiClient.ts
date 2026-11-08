@@ -2364,20 +2364,55 @@ export const apiClient = {
         walletBalance: number;
         lifetimeEarned: number;
         commissionRate: number;
-        breakdown: {
-          deposit: number;
-          withdrawal: number;
-          referral_first_deposit: number;
-        };
-        recentPayouts: Array<{
+        earned30d: number;
+        topUpCommission: number;
+        referralBonus: number;
+        pendingPayoutAmount: number;
+        pendingPayoutCount: number;
+        paidOutTotal: number;
+        recentPayoutRequests: Array<{
           id: string;
+          code: string;
           amount: number;
           payoutMethod: string;
           payoutAccount: string;
-          status: string;
+          accountName: string;
+          status: 'Paid' | 'Under review' | 'Rejected' | 'Cancelled';
+          payoutTxRef?: string | null;
           createdAt: string;
-          settledAt?: string;
+          settledAt?: string | null;
         }>;
+        payoutRequests: Array<{
+          id: string;
+          code: string;
+          amount: number;
+          payoutMethod: string;
+          payoutAccount: string;
+          accountName: string;
+          status: 'Paid' | 'Under review' | 'Rejected' | 'Cancelled';
+          payoutTxRef?: string | null;
+          createdAt: string;
+          settledAt?: string | null;
+        }>;
+        earningsLedger: Array<{
+          id: string;
+          date: string;
+          source: 'Top-up commission' | 'Referral bonus';
+          rawSource: string;
+          amount: number;
+          commissionRate: number;
+          commissionEarned: number;
+          details: string;
+        }>;
+        weeklyChart: Array<{
+          topUp: number;
+          referral: number;
+          total: number;
+          label: string;
+          title: string;
+        }>;
+        agentName?: string;
+        agentPhone?: string;
       }>(res);
     },
 
@@ -2398,20 +2433,41 @@ export const apiClient = {
 
     async requestCommissionCashout(payload: {
       amount: number;
-      payoutMethod: 'Telebirr' | 'CBE' | 'CBEBirr' | string;
+      payoutMethod: 'Telebirr' | 'M-Pesa' | 'Bank transfer' | 'CBE' | 'CBEBirr' | string;
       payoutAccount: string;
+      accountName?: string;
       payoutAccountName?: string;
     }) {
       const res = await fetch(`${API_BASE}/agent/commission/request-cashout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAgentAuthHeader() },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          amount: payload.amount,
+          payoutMethod: payload.payoutMethod,
+          payoutAccount: payload.payoutAccount,
+          accountName: payload.accountName || payload.payoutAccountName
+        })
       });
       return handleResponse<{
         success: boolean;
         message: string;
         payoutId: string;
+        code?: string;
         amount: number;
+        newCommissionBalance: number;
+      }>(res);
+    },
+
+    async cancelCommissionCashout(payoutId: string) {
+      const res = await fetch(`${API_BASE}/agent/commission/cancel-cashout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAgentAuthHeader() },
+        body: JSON.stringify({ payoutId })
+      });
+      return handleResponse<{
+        success: boolean;
+        message: string;
+        refundAmount: number;
         newCommissionBalance: number;
       }>(res);
     },

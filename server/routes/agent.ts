@@ -2924,14 +2924,21 @@ router.post('/withdrawal-requests/:id/reject', requireAgent, async (req: Authent
 
 /**
  * GET /api/agent/commission/overview
- * Returns commission balance, lifetime earnings, and source breakdown
+ * Returns 100% authoritative Neon DB commission data:
+ * - Available balance, lifetime earned, 30d earned, top-up comm, referral bonus
+ * - Pending payout total, paid-out total, and recent payout requests
+ * - 8-week rolling stacked bar chart (Top-up vs Referral)
+ * - High-density earnings ledger
  */
 router.get('/commission/overview', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
     const agentRes = await query(
-      `SELECT id, agent_code, wallet_balance, commission_balance, commission_rate, target_monthly 
-       FROM agent_profiles WHERE user_id = $1`,
+      `SELECT ap.id, ap.agent_code, ap.wallet_balance, ap.commission_balance, ap.commission_rate, ap.target_monthly,
+              u.full_name, u.phone
+       FROM agent_profiles ap
+       JOIN users u ON ap.user_id = u.id
+       WHERE ap.user_id = $1`,
       [userId]
     );
 
@@ -2941,82 +2948,205 @@ router.get('/commission/overview', requireAgent, async (req: AuthenticatedReques
 
     const agent = agentRes.rows[0];
     const agentId = agent.id;
+    const commissionBalance = parseFloat(agent.commission_balance || '0');
+    const commissionRate = parseFloat(agent.commission_rate || '4.0');
 
-    // Aggregate lifetime earnings by source
-    const commStats = await query(
-      `SELECT source_type, 
-              SUM(commission_earned) as total_earned,
-              COUNT(*) as count
-       FROM agent_commissions
-       WHERE agent_id = $1 AND commission_earned > 0
-       GROUP BY source_type`,
-      [agentId]
-    );
+    // 2. Parallel aggregation of earnings, payouts, ledger, and weekly buckets
+    const [commStatsRes, comm30dRes, payoutsRes, ledgerRes, weeklyRes] = await Promise.all([
+      // Lifetime by source
+      query(
+        `SELECT source_type, 
+                SUM(commission_earned) as total_earned,
+                COUNT(*) as count
+         FROM agent_commissions
+         WHERE agent_id = $1 AND commission_earned > 0
+         GROUP BY source_type`,
+        [agentId]
+      ),
+      // Last 30 days total
+      query(
+        `SELECT COALESCE(SUM(commission_earned), 0) as earned_30d
+         FROM agent_commissions
+         WHERE agent_id = $1 AND commission_earned > 0 AND created_at >= NOW() - INTERVAL '30 days'`,
+        [agentId]
+      ),
+      // Payout requests (with code, method, account, status, timeline)
+      query(
+        `SELECT id, code, amount, payout_method, payout_account, account_name, status,
+                payout_tx_ref, admin_notes, created_at, settled_at
+         FROM agent_commission_payout_requests
+         WHERE agent_id = $1
+         ORDER BY created_at DESC
+         LIMIT 50`,
+        [agentId]
+      ),
+      // Raw earnings ledger (recent 100 rows)
+      query(
+        `SELECT id, source_type, source_id, amount, commission_rate, commission_earned, created_at
+         FROM agent_commissions
+         WHERE agent_id = $1 AND commission_earned > 0
+         ORDER BY created_at DESC
+         LIMIT 100`,
+        [agentId]
+      ),
+      // 8-week weekly breakdown (56 days)
+      query(
+        `SELECT 
+           FLOOR(EXTRACT(EPOCH FROM (NOW() - created_at)) / 604800)::int as week_idx,
+           source_type,
+           SUM(commission_earned) as earned
+         FROM agent_commissions
+         WHERE agent_id = $1 AND commission_earned > 0 
+           AND created_at >= NOW() - INTERVAL '56 days'
+         GROUP BY 1, 2`,
+        [agentId]
+      )
+    ]);
 
+    // Parse aggregates
     let lifetimeEarned = 0;
-    let depositCommission = 0;
-    let depositCount = 0;
-    let withdrawalCommission = 0;
-    let withdrawalCount = 0;
+    let topUpCommission = 0;
+    let referralBonus = 0;
 
-    const breakdown: Record<string, number> = {
-      deposit: 0,
-      withdrawal: 0,
-      cash_in: 0,
-      cashout_voucher: 0,
-      referral_first_deposit: 0
-    };
-
-    commStats.rows.forEach(r => {
+    commStatsRes.rows.forEach(r => {
       const earned = parseFloat(r.total_earned || '0');
-      const count = parseInt(r.count || '0', 10);
       lifetimeEarned += earned;
-      if (r.source_type) {
-        breakdown[r.source_type] = earned;
-        if (r.source_type === 'deposit' || r.source_type === 'cash_in') {
-          depositCommission += earned;
-          depositCount += count;
-        } else if (r.source_type === 'withdrawal') {
-          withdrawalCommission += earned;
-          withdrawalCount += count;
+      if (['recharge', 'top_up', 'cash_in'].includes(r.source_type)) {
+        topUpCommission += earned;
+      } else {
+        referralBonus += earned;
+      }
+    });
+
+    const earned30d = parseFloat(comm30dRes.rows[0]?.earned_30d || '0');
+
+    // Parse Payouts
+    let pendingPayoutAmount = 0;
+    let pendingPayoutCount = 0;
+    let paidOutTotal = 0;
+
+    const formattedPayouts = payoutsRes.rows.map(p => {
+      const amt = parseFloat(p.amount);
+      const rawStatus = (p.status || '').toLowerCase();
+      let normalizedStatus: 'Paid' | 'Under review' | 'Rejected' | 'Cancelled' = 'Under review';
+      if (['paid', 'approved'].includes(rawStatus)) {
+        normalizedStatus = 'Paid';
+        paidOutTotal += amt;
+      } else if (['rejected'].includes(rawStatus)) {
+        normalizedStatus = 'Rejected';
+      } else if (['cancelled'].includes(rawStatus)) {
+        normalizedStatus = 'Cancelled';
+      } else {
+        normalizedStatus = 'Under review';
+        pendingPayoutAmount += amt;
+        pendingPayoutCount++;
+      }
+
+      return {
+        id: p.id,
+        code: p.code || `W-${p.id.slice(0, 4).toUpperCase()}`,
+        amount: amt,
+        payoutMethod: p.payout_method,
+        payoutAccount: p.payout_account,
+        accountName: p.account_name || agent.full_name,
+        status: normalizedStatus,
+        payoutTxRef: p.payout_tx_ref || p.admin_notes || null,
+        createdAt: p.created_at,
+        settledAt: p.settled_at
+      };
+    });
+
+    // 8-Week Stacked Rolling Bar Chart
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const nowMs = Date.now();
+    const dayMs = 86400000;
+    const weeklyChart: Array<{
+      topUp: number;
+      referral: number;
+      total: number;
+      label: string;
+      title: string;
+    }> = [];
+
+    // Map week indices 0..7
+    const weekMap: Record<number, { topUp: number; referral: number }> = {};
+    for (let w = 0; w < 8; w++) {
+      weekMap[w] = { topUp: 0, referral: 0 };
+    }
+
+    weeklyRes.rows.forEach(r => {
+      const w = parseInt(r.week_idx, 10);
+      if (w >= 0 && w < 8) {
+        const amt = parseFloat(r.earned || '0');
+        if (['recharge', 'top_up', 'cash_in'].includes(r.source_type)) {
+          weekMap[w].topUp += amt;
+        } else {
+          weekMap[w].referral += amt;
         }
       }
     });
 
-    // Recent payout requests (including admin notes and full tracking)
-    const payoutsRes = await query(
-      `SELECT id, amount, payout_method, payout_account, status, admin_notes, created_at, settled_at
-       FROM agent_commission_payout_requests
-       WHERE agent_id = $1
-       ORDER BY created_at DESC
-       LIMIT 20`,
-      [agentId]
-    );
+    // Build 8 periods from oldest (w=7) to newest (w=0)
+    for (let w = 7; w >= 0; w--) {
+      const startD = new Date(nowMs - (w * 7 + 6) * dayMs);
+      const endD = new Date(nowMs - w * 7 * dayMs);
+      const label = `${startD.getUTCDate()} ${MONTHS[startD.getUTCMonth()]}–${endD.getUTCDate()} ${MONTHS[endD.getUTCMonth()]}`;
+      const topUp = Math.round(weekMap[w].topUp * 100) / 100;
+      const referral = Math.round(weekMap[w].referral * 100) / 100;
+      weeklyChart.push({
+        topUp,
+        referral,
+        total: Math.round((topUp + referral) * 100) / 100,
+        label,
+        title: `ETB ${(topUp + referral).toLocaleString()}`
+      });
+    }
 
-    const formattedPayouts = payoutsRes.rows.map(p => ({
-      id: p.id,
-      amount: parseFloat(p.amount),
-      payoutMethod: p.payout_method,
-      payoutAccount: p.payout_account,
-      status: p.status,
-      adminNotes: p.admin_notes || null,
-      createdAt: p.created_at,
-      settledAt: p.settled_at
-    }));
+    // High-Density Earnings Ledger
+    const earningsLedger = ledgerRes.rows.map(row => {
+      const baseAmt = parseFloat(row.amount || '0');
+      const earned = parseFloat(row.commission_earned || '0');
+      const rate = parseFloat(row.commission_rate || `${commissionRate}`);
+      const isTopUp = ['recharge', 'top_up', 'cash_in'].includes(row.source_type);
+      
+      let details = '';
+      if (isTopUp) {
+        details = `Top-up · ETB ${baseAmt.toLocaleString()} · ${rate}%`;
+      } else {
+        details = `Player deposit · ETB ${baseAmt.toLocaleString()} · ${rate}%`;
+      }
+
+      return {
+        id: row.id,
+        date: row.created_at,
+        source: isTopUp ? ('Top-up commission' as const) : ('Referral bonus' as const),
+        rawSource: row.source_type,
+        amount: baseAmt,
+        commissionRate: rate,
+        commissionEarned: earned,
+        details
+      };
+    });
 
     return res.json({
       success: true,
-      commissionBalance: parseFloat(agent.commission_balance || '0'),
+      commissionBalance,
       walletBalance: parseFloat(agent.wallet_balance || '0'),
+      commissionRate,
       lifetimeEarned,
-      commissionRate: parseFloat(agent.commission_rate || '5.0'),
-      depositCommission,
-      depositCount,
-      withdrawalCommission,
-      withdrawalCount,
-      breakdown,
+      earned30d,
+      topUpCommission,
+      referralBonus,
+      pendingPayoutAmount,
+      pendingPayoutCount,
+      paidOutTotal,
       recentPayoutRequests: formattedPayouts,
-      recentPayouts: formattedPayouts
+      payoutRequests: formattedPayouts,
+      recentPayouts: formattedPayouts,
+      earningsLedger,
+      weeklyChart,
+      agentName: agent.full_name,
+      agentPhone: agent.phone
     });
   } catch (error: any) {
     console.error('❌ [Agent Commission Overview Error]:', error);
@@ -3115,29 +3245,29 @@ router.post('/commission/convert-to-float', requireAgent, async (req: Authentica
 
 /**
  * POST /api/agent/commission/request-cashout
- * Option B: Agent requests direct mobile payout of accumulated commission from Admin
+ * Requests commission withdrawal from Admin (Minimum ETB 500, zero fee)
  */
 router.post('/commission/request-cashout', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
-    const { amount, payoutMethod, payoutAccount } = req.body;
+    const { amount, payoutMethod, payoutAccount, accountName } = req.body;
 
     if (!amount || !payoutMethod || !payoutAccount) {
       return res.status(400).json({
         success: false,
-        error: 'Amount, payout method, and payout account are required'
+        error: 'Amount, payout method, and receiving account are required'
       });
     }
 
     const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount < 50) {
+    if (isNaN(numAmount) || numAmount < 500) {
       return res.status(400).json({
         success: false,
-        error: 'Minimum commission cash-out payout is 50 ETB'
+        error: 'Minimum withdrawal is ETB 500'
       });
     }
 
-    const validMethods = ['Telebirr', 'CBE'];
+    const validMethods = ['Telebirr', 'M-Pesa', 'Bank transfer', 'CBE', 'CBEBirr'];
     if (!validMethods.includes(payoutMethod)) {
       return res.status(400).json({
         success: false,
@@ -3145,8 +3275,22 @@ router.post('/commission/request-cashout', requireAgent, async (req: Authenticat
       });
     }
 
+    const cleanAccount = payoutAccount.trim();
+    if (payoutMethod === 'Bank transfer' || payoutMethod === 'CBE') {
+      if (cleanAccount.length < 8) {
+        return res.status(400).json({ success: false, error: 'Enter a valid bank account number (min 8 digits).' });
+      }
+    } else {
+      if (!/^0[79]\d{8}$/.test(cleanAccount.replace(/\D/g, ''))) {
+        return res.status(400).json({ success: false, error: 'Phone numbers are 10 digits starting with 09 or 07.' });
+      }
+    }
+
     const agentRes = await query(
-      'SELECT id, agent_code, commission_balance FROM agent_profiles WHERE user_id = $1',
+      `SELECT ap.id, ap.agent_code, ap.commission_balance, u.full_name 
+       FROM agent_profiles ap 
+       JOIN users u ON ap.user_id = u.id 
+       WHERE ap.user_id = $1`,
       [userId]
     );
     if (agentRes.rows.length === 0) {
@@ -3175,12 +3319,24 @@ router.post('/commission/request-cashout', requireAgent, async (req: Authenticat
         [newCommissionBal, agent.id]
       );
 
+      // Generate next human-friendly code e.g. W-9006
+      const countRes = await client.query(
+        `SELECT COUNT(*) as count FROM agent_commission_payout_requests`
+      );
+      const nextCode = `W-${9001 + parseInt(countRes.rows[0]?.count || '0', 10)}`;
+      const holderName = accountName?.trim() || agent.full_name;
+
+      const timeline = [
+        [new Date().toISOString(), 'Cashout requested. Commission held in escrow.']
+      ];
+
       // Create payout request
       const insRes = await client.query(
-        `INSERT INTO agent_commission_payout_requests (agent_id, amount, payout_method, payout_account, status)
-         VALUES ($1, $2, $3, $4, 'pending')
-         RETURNING id, created_at, status`,
-        [agent.id, numAmount, payoutMethod, payoutAccount.trim()]
+        `INSERT INTO agent_commission_payout_requests 
+          (agent_id, code, amount, payout_method, payout_account, account_name, status, timeline)
+         VALUES ($1, $2, $3, $4, $5, $6, 'Requested', $7::jsonb)
+         RETURNING id, code, amount, payout_method, payout_account, account_name, status, created_at`,
+        [agent.id, nextCode, numAmount, payoutMethod, cleanAccount, holderName, JSON.stringify(timeline)]
       );
 
       return {
@@ -3191,14 +3347,95 @@ router.post('/commission/request-cashout', requireAgent, async (req: Authenticat
 
     return res.json({
       success: true,
-      message: `Commission cash-out request of ${numAmount.toFixed(2)} ETB submitted to Admin. Payout will be sent to your ${payoutMethod} (${payoutAccount.trim()}).`,
+      message: `${numAmount.toLocaleString()} ETB requested. Admin will review it soon`,
       payoutId: result.payoutRequest.id,
+      code: result.payoutRequest.code,
       amount: numAmount,
       newCommissionBalance: result.newCommissionBal
     });
   } catch (error: any) {
     console.error('❌ [Agent Commission Cashout Error]:', error);
     return res.status(400).json({ success: false, error: error.message || 'Failed to request commission cash-out' });
+  }
+});
+
+/**
+ * POST /api/agent/commission/cancel-cashout
+ * Allows agent to cancel an unreviewed payout request and instantly refund money back to commission balance
+ */
+router.post('/commission/cancel-cashout', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { payoutId } = req.body;
+
+    if (!payoutId) {
+      return res.status(400).json({ success: false, error: 'Payout request ID is required' });
+    }
+
+    const agentRes = await query(
+      `SELECT id FROM agent_profiles WHERE user_id = $1`,
+      [userId]
+    );
+    if (agentRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent profile not found' });
+    }
+    const agentId = agentRes.rows[0].id;
+
+    const result = await withTransaction(async (client) => {
+      const pRes = await client.query(
+        `SELECT id, amount, status, timeline 
+         FROM agent_commission_payout_requests 
+         WHERE id = $1 AND agent_id = $2 FOR UPDATE`,
+        [payoutId, agentId]
+      );
+
+      if (pRes.rows.length === 0) {
+        throw new Error('Payout request not found or not assigned to your agency');
+      }
+
+      const payout = pRes.rows[0];
+      const validCancellable = ['Requested', 'Under review', 'pending'];
+      if (!validCancellable.includes(payout.status)) {
+        throw new Error(`Cannot cancel payout request in status "${payout.status}". Only pending/unreviewed requests can be cancelled.`);
+      }
+
+      const refundAmount = parseFloat(payout.amount);
+
+      // Refund amount back to agent commission_balance
+      const apRes = await client.query(
+        `UPDATE agent_profiles 
+         SET commission_balance = commission_balance + $1, updated_at = NOW() 
+         WHERE id = $2 
+         RETURNING commission_balance`,
+        [refundAmount, agentId]
+      );
+
+      const timeline = Array.isArray(payout.timeline) ? payout.timeline : [];
+      timeline.push([new Date().toISOString(), 'Request cancelled by agent. Commission refunded to balance.']);
+
+      // Update payout status to Cancelled
+      await client.query(
+        `UPDATE agent_commission_payout_requests 
+         SET status = 'Cancelled', timeline = $1::jsonb 
+         WHERE id = $2`,
+        [JSON.stringify(timeline), payoutId]
+      );
+
+      return {
+        refundAmount,
+        newCommissionBalance: parseFloat(apRes.rows[0]?.commission_balance || '0')
+      };
+    });
+
+    return res.json({
+      success: true,
+      message: 'Request cancelled. Money is back in your balance',
+      refundAmount: result.refundAmount,
+      newCommissionBalance: result.newCommissionBalance
+    });
+  } catch (error: any) {
+    console.error('❌ [Agent Cancel Cashout Error]:', error);
+    return res.status(400).json({ success: false, error: error.message || 'Failed to cancel payout request' });
   }
 });
 
