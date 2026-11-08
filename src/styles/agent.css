@@ -1665,8 +1665,16 @@
     display: none !important;
   }
 
+  /* On mobile (< 992px), global topbar provides the primary navigation drawer toggle and float chip.
+     Suppress duplicate in-content hamburger buttons and redundant wallet balance chips */
   .enqu-menu-btn {
-    display: inline-flex !important;
+    display: none !important;
+  }
+  .sonic-agent-page-content .enqu-menu-btn {
+    display: none !important;
+  }
+  .sonic-agent-page-content .enqu-topbar .enqu-chip {
+    display: none !important;
   }
 }
 

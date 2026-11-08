@@ -1041,7 +1041,10 @@
 
 @media (max-width: 900px) {
   .enqu-menu-btn {
-    display: flex !important;
+    display: none !important;
+  }
+  .enqu-topbar .enqu-chip {
+    display: none !important;
   }
   .enqu-hero {
     grid-template-columns: 1fr;
