@@ -46,7 +46,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
     { id: 'players', label: 'My Players', icon: 'fa-solid fa-user-group' },
     { id: 'cash_in', label: 'Direct Cash-In', icon: 'fa-solid fa-bolt' },
     { id: 'cash_out', label: 'Commission Desk', icon: 'fa-solid fa-coins' },
-    { id: 'recharge', label: 'Recharge Float', icon: 'fa-solid fa-wallet' },
+    { id: 'recharge', label: 'Recharge Requests', icon: 'fa-solid fa-wallet' },
     { id: 'statements', label: 'Transactions', icon: 'fa-solid fa-clock-rotate-left' },
     { id: 'profile', label: 'Payment Rails & Settings', icon: 'fa-solid fa-gear' },
   ];

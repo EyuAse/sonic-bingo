@@ -312,8 +312,10 @@ export const AgentPortalPage: React.FC = () => {
           {/* Desk 4: Float Recharge */}
           {activeTab === 'recharge' && (
             <AgentRechargeDesk
+              agentProfile={profile}
               onRechargeSubmitted={loadAgentData}
               showToast={showToast}
+              openMobile={() => setIsMobileOpen(true)}
             />
           )}
 
