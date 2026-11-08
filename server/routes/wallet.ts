@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { query, withTransaction } from '../db.ts';
-import { requireAuth, AuthenticatedRequest } from '../middleware/auth.ts';
+import { requireAuth, optionalAuth, AuthenticatedRequest } from '../middleware/auth.ts';
 import { io } from '../io.ts';
 import { gameEngine } from '../game/BingoGameEngine.ts';
 import { generateCardFromId } from '../game/cartelaGenerator.ts';
@@ -944,6 +944,136 @@ router.get('/game-history', requireAuth, async (req: AuthenticatedRequest, res) 
   } catch (error: any) {
     console.error('❌ [Wallet Game History Error]:', error);
     return res.status(500).json({ success: false, error: 'Failed to retrieve game history' });
+  }
+});
+
+/**
+ * GET /api/wallet/recent-games
+ * Public & authenticated ledger of recent completed rounds across rooms with stake filtering & search
+ */
+router.get('/recent-games', optionalAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const currentUserId = req.user?.id || null;
+    const { roomId, search, limit = '50', offset = '0' } = req.query;
+
+    const parsedLimit = Math.min(Math.max(parseInt(limit as string, 10) || 50, 1), 100);
+    const parsedOffset = Math.max(parseInt(offset as string, 10) || 0, 0);
+
+    const conditions: string[] = ["gr.phase = 'ended'"];
+    const params: any[] = [];
+    let pIdx = 1;
+
+    // Optional user ID for participation check ($1)
+    params.push(currentUserId);
+    pIdx++; // 2
+
+    // Filter by roomId (e.g. 'room-10', 'room-20', 'room-50', 'room-100')
+    if (roomId && roomId !== 'all' && typeof roomId === 'string') {
+      conditions.push(`gr.room_id = $${pIdx}`);
+      params.push(roomId);
+      pIdx++;
+    }
+
+    // Filter by search query (e.g. '1042', '#1042', or round id)
+    if (search && typeof search === 'string' && search.trim()) {
+      const cleanSearch = search.trim().replace(/^#/, '');
+      if (/^\d+$/.test(cleanSearch)) {
+        conditions.push(`(gr.round_number = $${pIdx} OR gr.id::text ILIKE $${pIdx + 1})`);
+        params.push(parseInt(cleanSearch, 10), `%${cleanSearch}%`);
+        pIdx += 2;
+      } else {
+        conditions.push(`gr.id::text ILIKE $${pIdx}`);
+        params.push(`%${cleanSearch}%`);
+        pIdx++;
+      }
+    }
+
+    const whereClause = `WHERE ${conditions.join(' AND ')}`;
+    const limitParam = `$${pIdx}`;
+    const offsetParam = `$${pIdx + 1}`;
+    params.push(parsedLimit, parsedOffset);
+
+    const sql = `
+      SELECT 
+        gr.id,
+        gr.room_id,
+        gr.round_number,
+        gr.phase,
+        gr.drawn_numbers,
+        gr.total_pot,
+        gr.platform_fee,
+        gr.winner_payout,
+        gr.winner_user_ids,
+        gr.winner_cartelas,
+        gr.winner_names,
+        gr.started_at,
+        gr.ended_at,
+        gr.created_at,
+        COALESCE(rm.name, gr.room_id) as room_name,
+        COALESCE(rm.stake_amount, 
+          CASE 
+            WHEN gr.room_id = 'room-10' THEN 10
+            WHEN gr.room_id = 'room-20' THEN 20
+            WHEN gr.room_id = 'room-50' THEN 50
+            WHEN gr.room_id = 'room-100' THEN 100
+            ELSE 10 
+          END
+        ) as room_stake,
+        (
+          SELECT COUNT(*) FROM game_tickets gt WHERE gt.round_id = gr.id
+        ) as total_tickets,
+        CASE 
+          WHEN $1::text IS NOT NULL THEN EXISTS (
+            SELECT 1 FROM game_tickets gt WHERE gt.round_id = gr.id AND gt.user_id::text = $1
+          )
+          ELSE false
+        END as user_participated
+      FROM game_rounds gr
+      LEFT JOIN game_rooms rm ON gr.room_id = rm.id
+      ${whereClause}
+      ORDER BY gr.ended_at DESC NULLS LAST, gr.created_at DESC
+      LIMIT ${limitParam} OFFSET ${offsetParam}
+    `;
+
+    const result = await query(sql, params);
+
+    const rounds = result.rows.map(row => {
+      const drawn = Array.isArray(row.drawn_numbers) ? row.drawn_numbers : [];
+      const winnerNames = Array.isArray(row.winner_names) ? row.winner_names : [];
+      const winnerCartelas = Array.isArray(row.winner_cartelas) ? row.winner_cartelas : [];
+      const winnerUserIds = Array.isArray(row.winner_user_ids) ? row.winner_user_ids : [];
+
+      return {
+        id: row.id,
+        roomId: row.room_id,
+        roomName: row.room_name,
+        roomStake: parseFloat(row.room_stake || '10'),
+        roundNumber: row.round_number,
+        phase: row.phase,
+        drawnNumbers: drawn,
+        ballsCount: drawn.length,
+        totalPot: parseFloat(row.total_pot || '0'),
+        platformFee: parseFloat(row.platform_fee || '0'),
+        winnerPayout: parseFloat(row.winner_payout || '0'),
+        winnerNames,
+        winnerCartelas,
+        winnerUserIds,
+        endedAt: row.ended_at || row.created_at,
+        totalTickets: parseInt(row.total_tickets || '0', 10),
+        userParticipated: Boolean(row.user_participated)
+      };
+    });
+
+    return res.json({
+      success: true,
+      rounds,
+      total: rounds.length,
+      limit: parsedLimit,
+      offset: parsedOffset
+    });
+  } catch (error: any) {
+    console.error('❌ [Wallet Recent Games Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve recent games' });
   }
 });
 

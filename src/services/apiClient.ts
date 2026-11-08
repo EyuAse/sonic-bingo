@@ -454,6 +454,44 @@ export const apiClient = {
       }>(res);
     },
 
+    async getRecentGames(params?: { roomId?: string; search?: string; limit?: number; offset?: number }) {
+      const q = new URLSearchParams();
+      if (params?.roomId && params.roomId !== 'all') q.append('roomId', params.roomId);
+      if (params?.search && params.search.trim()) q.append('search', params.search.trim());
+      if (params?.limit) q.append('limit', String(params.limit));
+      if (params?.offset) q.append('offset', String(params.offset));
+      const qStr = q.toString() ? `?${q.toString()}` : '';
+
+      const res = await fetch(`${API_BASE}/wallet/recent-games${qStr}`, {
+        headers: { ...getAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        rounds: Array<{
+          id: string;
+          roomId: string;
+          roomName: string;
+          roomStake: number;
+          roundNumber: number;
+          phase: string;
+          drawnNumbers: number[];
+          ballsCount: number;
+          totalPot: number;
+          platformFee: number;
+          winnerPayout: number;
+          winnerNames: string[];
+          winnerCartelas: number[];
+          winnerUserIds: string[];
+          endedAt: string;
+          totalTickets: number;
+          userParticipated: boolean;
+        }>;
+        total: number;
+        limit: number;
+        offset: number;
+      }>(res);
+    },
+
     // Agent Cash-Out Voucher (Player Counter Payout)
     async createAgentVoucher(amount: number) {
       const res = await fetch(`${API_BASE}/wallet/agent-voucher/create`, {

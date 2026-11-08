@@ -50,6 +50,24 @@ export function clearUserStatusCache(userId?: string) {
 }
 
 /**
+ * Optional Authentication Middleware (populates req.user if valid token provided)
+ */
+export function optionalAuth(req: AuthenticatedRequest, _res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as AuthUser;
+    req.user = decoded;
+  } catch (_) {
+    // invalid or expired token, proceed unauthenticated
+  }
+  next();
+}
+
+/**
  * Verify JWT Bearer Token Middleware & Enforce Active Status
  */
 export async function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
