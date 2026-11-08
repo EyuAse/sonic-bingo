@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AgentDeskTab } from './AgentSidebar.tsx';
 import { apiClient } from '../../services/apiClient.ts';
+import '../../styles/agent-dashboard-enqu.css';
 
 interface AgentDashboardDeskProps {
   profile: any;
@@ -19,980 +20,1090 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
   isLoading,
   showToast
 }) => {
+  // Real Analytics State directly from Neon Database
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+
+  // Timeframe Tab for Deposit Activity Chart ('daily' | 'weekly' | 'monthly')
+  const [activeChartTab, setActiveChartTab] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
+
+  // Modals state: null | 'dep' (Record deposit) | 'rch' (Request recharge)
+  const [activeModal, setActiveModal] = useState<'dep' | 'rch' | null>(null);
+
+  // Clipboard copy feedback
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Real feeds state
-  const [realPlayers, setRealPlayers] = useState<any[]>([]);
-  const [realTransactions, setRealTransactions] = useState<any[]>([]);
-  const [loadingFeeds, setLoadingFeeds] = useState(false);
+  // Real Agent Players for Deposit Modal
+  const [agentPlayers, setAgentPlayers] = useState<any[]>([]);
+  const [loadingPlayers, setLoadingPlayers] = useState(false);
 
-  // Cashier Timeframe Analytics State (Live database metrics)
-  const [depositAnalytics, setDepositAnalytics] = useState({
-    today: { amount: 0, count: 0, commission: 0 },
-    week: { amount: 0, count: 0, commission: 0 },
-    month: { amount: 0, count: 0, commission: 0 },
-    allTime: { amount: 0, count: 0, commission: 0 }
-  });
-  const [pendingDepositCount, setPendingDepositCount] = useState<number>(0);
+  // Deposit Modal Form State
+  const [depPlayerId, setDepPlayerId] = useState('');
+  const [depPlayerSearch, setDepPlayerSearch] = useState('');
+  const [depMethod, setDepMethod] = useState<'Telebirr' | 'M-Pesa' | 'In person'>('Telebirr');
+  const [depAmount, setDepAmount] = useState<number | string>(200);
+  const [depReference, setDepReference] = useState('');
+  const [depSubmitting, setDepSubmitting] = useState(false);
+  const [depError, setDepError] = useState<string | null>(null);
 
-  const [withdrawalAnalytics, setWithdrawalAnalytics] = useState({
-    today: { amount: 0, count: 0, commission: 0 },
-    week: { amount: 0, count: 0, commission: 0 },
-    month: { amount: 0, count: 0, commission: 0 },
-    allTime: { amount: 0, count: 0, commission: 0 }
-  });
-  const [pendingWithdrawalCount, setPendingWithdrawalCount] = useState<number>(0);
+  // Recharge Modal Form State
+  const [rchAmount, setRchAmount] = useState<number | string>(5000);
+  const [rchMethod, setRchMethod] = useState<'Telebirr' | 'CBE' | 'M-Pesa'>('Telebirr');
+  const [rchTxCode, setRchTxCode] = useState('');
+  const [rchSubmitting, setRchSubmitting] = useState(false);
+  const [rchError, setRchError] = useState<string | null>(null);
 
-  // Fetch real database records for players, transactions, deposits & withdrawals
-  const fetchFeeds = async () => {
+  // =========================================================================
+  // 1. DATA FETCHING: 100% REAL NEON POSTGRESQL ANALYTICS
+  // =========================================================================
+  const fetchDashboardData = async () => {
     try {
-      setLoadingFeeds(true);
-      const [pRes, tRes, depRes, withRes] = await Promise.all([
-        apiClient.agent.getPlayers().catch(() => null),
-        apiClient.agent.getTransactions().catch(() => null),
-        apiClient.agent.getDepositRequests().catch(() => null),
-        apiClient.agent.getWithdrawalRequests().catch(() => null)
-      ]);
-      if (pRes?.success && pRes.players && pRes.players.length > 0) {
-        setRealPlayers(pRes.players);
+      setLoadingAnalytics(true);
+      setAnalyticsError(null);
+      const res = await apiClient.agent.getDashboardAnalytics();
+      if (res && res.success) {
+        setAnalytics(res);
+      } else {
+        setAnalyticsError('Could not load analytics from database.');
       }
-      if (tRes?.success && tRes.transactions && tRes.transactions.length > 0) {
-        setRealTransactions(tRes.transactions);
-      }
-      if (depRes?.success && depRes.analytics) {
-        setDepositAnalytics(depRes.analytics);
-        if (typeof depRes.pendingCount === 'number') setPendingDepositCount(depRes.pendingCount);
-      }
-      if (withRes?.success && withRes.analytics) {
-        setWithdrawalAnalytics(withRes.analytics);
-        if (typeof withRes.pendingCount === 'number') setPendingWithdrawalCount(withRes.pendingCount);
+    } catch (err: any) {
+      console.error('Error fetching agent dashboard analytics:', err);
+      setAnalyticsError(err?.message || 'Database connection error.');
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
+
+  const fetchPlayersForModal = async () => {
+    try {
+      setLoadingPlayers(true);
+      const res = await apiClient.agent.getPlayers();
+      if (res && res.success && Array.isArray(res.players)) {
+        setAgentPlayers(res.players);
       }
     } catch (err) {
-      console.warn('Dashboard feeds error:', err);
+      console.warn('Could not load agent players:', err);
     } finally {
-      setLoadingFeeds(false);
+      setLoadingPlayers(false);
     }
   };
 
   useEffect(() => {
-    fetchFeeds();
+    fetchDashboardData();
   }, []);
 
-  // Format relative timestamp helper
-  const formatRelativeTime = (dateStr: string): string => {
-    if (!dateStr) return '1d ago';
-    const now = new Date().getTime();
-    const past = new Date(dateStr).getTime();
-    const diffSec = Math.floor((now - past) / 1000);
-    if (diffSec < 60) return 'Just now';
-    const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `${diffMin}m ago`;
-    const diffHours = Math.floor(diffMin / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays < 30) return `${diffDays}d ago`;
-    return '1d ago';
+  // When opening deposit modal, ensure player list is fetched
+  useEffect(() => {
+    if (activeModal === 'dep' && agentPlayers.length === 0) {
+      fetchPlayersForModal();
+    }
+    if (activeModal === 'dep' && depMethod === 'In person' && !depReference) {
+      setDepReference(`CASH-${Date.now().toString().slice(-6)}`);
+    }
+  }, [activeModal, depMethod]);
+
+  // =========================================================================
+  // 2. FORMATTING HELPERS
+  // =========================================================================
+  const formatETB = (val: number | string | undefined | null): string => {
+    const num = Number(val || 0);
+    return num.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    });
   };
 
-  // Values matching reference UI fallback
-  const agentName = profile?.fullName || profile?.agentCode || 'Natan';
-  const agentCode = profile?.agentCode || 'AGT-8532';
-  
-  const rawWalletBalance = profile?.walletBalance ?? profile?.wallet_balance;
-  const walletBalance = rawWalletBalance !== undefined && rawWalletBalance !== null ? Number(rawWalletBalance) : 14150.00;
-  const lowThreshold = Number(profile?.lowBalanceThreshold ?? 1000);
+  const formatShortETB = (val: number): string => {
+    if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`;
+    if (val >= 1000) return `${(val / 1000).toFixed(1)}k`;
+    return val.toString();
+  };
 
-  const activePlayers = metrics?.activePlayers !== undefined ? Number(metrics.activePlayers) : 2;
-  const targetPlayers = 5000;
-  const totalDeposits = metrics?.monthDeposited !== undefined ? Number(metrics.monthDeposited) : 750;
-  const commissionEarned = metrics?.estimatedCommission !== undefined ? Number(metrics.estimatedCommission) : 32.50;
-  const depCommission = Number(metrics?.commissionBreakdown?.depositCommission || 0);
-  const withCommission = Number(metrics?.commissionBreakdown?.withdrawalCommission || 0);
-  const targetPercent = metrics?.targetProgress !== undefined ? Number(metrics.targetProgress) : 2;
+  const getGreeting = (): string => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
 
-  const inviteLink = profile?.inviteLink || `https://t.me/SonicGameOfficialBot?start=agent_${agentCode}`;
+  const getInitials = (name?: string): string => {
+    if (!name) return 'AG';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  };
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(inviteLink);
+  // Derive agent name, wallet, kpis from analytics (or fallback to profile/props safely)
+  const agentName = analytics?.agent?.name || profile?.fullName || profile?.name || 'Agent';
+  const firstName = agentName.split(' ')[0];
+  const agentCode = analytics?.agent?.code || profile?.agentCode || 'AGT';
+  const walletBalance = Number(analytics?.wallet?.balance ?? profile?.walletBalance ?? profile?.wallet_balance ?? 0);
+  const lowThreshold = Number(analytics?.wallet?.lowThreshold ?? profile?.lowBalanceThreshold ?? 5000);
+  const isLowBalance = Boolean(analytics?.wallet?.isLowBalance ?? (walletBalance <= lowThreshold));
+
+  const openingBalance = Number(analytics?.wallet?.openingBalanceToday ?? 0);
+  const depositsTodayCount = Number(analytics?.kpis?.depositsTodayCount ?? 0);
+  const depositsTodayVol = Number(analytics?.kpis?.depositsTodayVolume ?? 0);
+  const commission30d = Number(analytics?.kpis?.commission30Days ?? 0);
+  const pendingRechargeComm = Number(analytics?.kpis?.pendingRechargeCommission ?? 0);
+  const totalPlayers = Number(analytics?.kpis?.totalPlayers ?? 0);
+  const newPlayers30d = Number(analytics?.kpis?.newPlayersLast30Days ?? 0);
+  const pendingWithdrawals = Number(analytics?.kpis?.pendingWithdrawalsCount ?? 0);
+
+  // Meter scale computation
+  const maxMeterScale = Math.max(15000, walletBalance * 1.35, lowThreshold * 2);
+  const meterFillPercent = Math.min(100, Math.max(0, (walletBalance / maxMeterScale) * 100));
+  const meterPinPercent = Math.min(100, Math.max(0, (lowThreshold / maxMeterScale) * 100));
+
+  // Referral Link
+  const referralLink = analytics?.agent?.referralLink ||
+    `https://t.me/SonicGameOfficialBot?start=agent_${agentCode}`;
+
+  const handleCopyReferral = () => {
+    navigator.clipboard.writeText(referralLink);
     setCopiedLink(true);
     if (showToast) {
-      showToast('📋 Referral link copied to clipboard!');
+      showToast('📋 Real referral link copied to clipboard!');
     }
-    setTimeout(() => setCopiedLink(false), 2500);
+    setTimeout(() => setCopiedLink(false), 2400);
   };
 
-  // Fallback demo players matching reference UI
-  const displayPlayers = realPlayers.length > 0 ? realPlayers.slice(0, 4) : [
-    { id: '1', fullName: 'Mebi Mety', createdAt: '2026-11-01', hasDeposited: true },
-    { id: '2', fullName: 'Eyu Ase', createdAt: '2026-11-01', hasDeposited: true }
-  ];
+  // =========================================================================
+  // 3. CHART METRICS CALCULATION (DYNAMIC Y-AXIS & BAR HEIGHTS)
+  // =========================================================================
+  const chartBars = useMemo(() => {
+    if (!analytics?.charts) return [];
+    const series = analytics.charts[activeChartTab] || [];
+    return series;
+  }, [analytics, activeChartTab]);
 
-  // Fallback demo transactions matching reference UI
-  const displayTransactions = realTransactions.length > 0 ? realTransactions.slice(0, 4) : [
-    { id: 't1', type: 'cash_in', amount: 50, payment_method: 'Telebirr', reference_code: 'ID: HD' },
-    { id: 't2', type: 'cash_in', amount: 300, payment_method: 'Telebirr', reference_code: 'WWW' },
-    { id: 't3', type: 'cash_in', amount: 200, payment_method: 'Telebirr', reference_code: 'BB345' },
-    { id: 't4', type: 'cash_in', amount: 100, payment_method: 'Telebirr', reference_code: 'HS45' }
-  ];
+  const chartMaxVolume = useMemo(() => {
+    if (!chartBars || chartBars.length === 0) return 2800;
+    const maxVal = Math.max(...chartBars.map((b: any) => Number(b.volume || 0)));
+    if (maxVal <= 0) return 2800;
+    // Round up nicely to nearest 500 or 1000
+    return Math.ceil((maxVal * 1.15) / 500) * 500;
+  }, [chartBars]);
 
+  // Generate 4 gridline ticks
+  const gridTicks = useMemo(() => {
+    return [
+      { label: formatShortETB(chartMaxVolume), topPercent: 0 },
+      { label: formatShortETB(Math.round(chartMaxVolume * 0.75)), topPercent: 25 },
+      { label: formatShortETB(Math.round(chartMaxVolume * 0.5)), topPercent: 50 },
+      { label: formatShortETB(Math.round(chartMaxVolume * 0.25)), topPercent: 75 },
+      { label: '0', topPercent: 100 }
+    ];
+  }, [chartMaxVolume]);
+
+  // Target Circle Progress Math
+  const overallTargetPercent = Math.min(100, Math.max(0, Number(analytics?.targets?.overallPercent || 0)));
+  const ringCircumference = 2 * Math.PI * 44; // 276.46
+  const ringStrokeOffset = ringCircumference - (ringCircumference * (overallTargetPercent / 100));
+
+  // Alerts
+  const alertsList = analytics?.alerts || [];
+  const unreadAlertsCount = alertsList.filter((a: any) => a.unread).length;
+
+  // Recent deposits
+  const recentDeposits = analytics?.recentDeposits || [];
+
+  // =========================================================================
+  // 4. MODAL ACTION HANDLERS
+  // =========================================================================
+  const handleOpenDepositModal = () => {
+    setDepError(null);
+    setDepAmount(200);
+    setDepMethod('Telebirr');
+    setDepPlayerId('');
+    setDepPlayerSearch('');
+    setDepReference('');
+    setActiveModal('dep');
+  };
+
+  const handleOpenRechargeModal = () => {
+    setRchError(null);
+    setRchAmount(5000);
+    setRchMethod('Telebirr');
+    setRchTxCode('');
+    setActiveModal('rch');
+  };
+
+  const handleCloseModal = () => {
+    setActiveModal(null);
+    setDepError(null);
+    setRchError(null);
+  };
+
+  // Submit Record Deposit (Cash-in)
+  const handleSubmitDeposit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amt = Number(depAmount);
+    if (!amt || amt <= 0) {
+      setDepError('Please enter a valid deposit amount.');
+      return;
+    }
+    if (amt > walletBalance) {
+      setDepError(`Insufficient float! Your wallet balance is ETB ${formatETB(walletBalance)}.`);
+      return;
+    }
+
+    let targetPlayerId = depPlayerId;
+    let targetPhone = '';
+    let targetUsername = '';
+
+    if (!targetPlayerId && depPlayerSearch.trim()) {
+      if (depPlayerSearch.startsWith('+') || /^\d+$/.test(depPlayerSearch.trim())) {
+        targetPhone = depPlayerSearch.trim();
+      } else {
+        targetUsername = depPlayerSearch.trim().replace(/^@/, '');
+      }
+    }
+
+    if (!targetPlayerId && !targetPhone && !targetUsername) {
+      setDepError('Please select a player or enter a player phone/username.');
+      return;
+    }
+
+    try {
+      setDepSubmitting(true);
+      setDepError(null);
+      const res = await apiClient.agent.depositForPlayer({
+        playerId: targetPlayerId || undefined,
+        playerPhone: targetPhone || undefined,
+        username: targetUsername || undefined,
+        amount: amt,
+        paymentMethod: depMethod
+      });
+
+      if (res && res.success) {
+        if (showToast) showToast(`✅ Successfully deposited ETB ${formatETB(amt)} for player!`);
+        handleCloseModal();
+        fetchDashboardData();
+        onRefresh();
+      } else {
+        setDepError((res as any)?.message || 'Failed to record deposit.');
+      }
+    } catch (err: any) {
+      setDepError(err?.message || 'Error processing player deposit.');
+    } finally {
+      setDepSubmitting(false);
+    }
+  };
+
+  // Submit Recharge Request
+  const handleSubmitRecharge = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amt = Number(rchAmount);
+    if (!amt || amt < 500) {
+      setRchError('Minimum wallet recharge is ETB 500.');
+      return;
+    }
+    if (!rchTxCode.trim()) {
+      setRchError('Please enter the payment confirmation transaction code / reference.');
+      return;
+    }
+
+    try {
+      setRchSubmitting(true);
+      setRchError(null);
+      const res = await apiClient.agent.requestRecharge({
+        amount: amt,
+        paymentMethod: rchMethod,
+        transactionCode: rchTxCode.trim()
+      });
+
+      if (res && res.success) {
+        if (showToast) showToast(`🚀 Recharge request for ETB ${formatETB(amt)} submitted for admin review!`);
+        handleCloseModal();
+        fetchDashboardData();
+        onRefresh();
+      } else {
+        setRchError(res?.message || 'Failed to submit recharge request.');
+      }
+    } catch (err: any) {
+      setRchError(err?.message || 'Error submitting recharge request.');
+    } finally {
+      setRchSubmitting(false);
+    }
+  };
+
+  // =========================================================================
+  // 5. RENDER MAIN LUXURY ENQU VIEW
+  // =========================================================================
   return (
-    <div className="sonic-dashboard-root">
-      {/* ===================================================================
-          1. WELCOME GREETING & TIER HEADER (WITH CROWN WATERMARK)
-          =================================================================== */}
-      <div className="sonic-dashboard-welcome-header">
-        {/* Left: Welcome Greeting */}
-        <div className="sonic-dashboard-welcome-left">
-          <div style={{ fontSize: '15px', color: '#334155', fontWeight: 500 }}>Welcome back,</div>
-          <h1 className="sonic-dashboard-welcome-title">
-            {agentName}!
-          </h1>
-          <p style={{ fontSize: '13px', color: '#64748b', margin: 0, fontWeight: 500 }}>
-            Your performance, rewards and players at a glance.
-          </p>
+    <div className="enqu-agent-dashboard-root">
+      {/* -------------------------------------------------------------------
+          1. TOPBAR & DYNAMIC GREETING
+          ------------------------------------------------------------------- */}
+      <header className="enqu-topbar">
+        <div>
+          <h1>{getGreeting()}, {firstName}</h1>
+          <div className="sub">Here is how your wallet, players and targets look today.</div>
         </div>
 
-        {/* Center: Crown Watermark */}
-        <div className="sonic-dashboard-welcome-crown">
-          <svg width="190" height="90" viewBox="0 0 24 24" fill="#f59e0b">
-            <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5m14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z" />
+        <div className="sp" />
+
+        {/* Live Wallet Chip */}
+        <div className="enqu-chip" title="Current Agent Wallet Balance">
+          <small>Wallet</small>
+          <span>ETB {formatETB(walletBalance)}</span>
+          {isLowBalance && (
+            <span className="enqu-pill wn" style={{ padding: '2px 7px', fontSize: '11px', marginLeft: '2px' }}>
+              Low
+            </span>
+          )}
+        </div>
+
+        {/* Notifications Bell */}
+        <button
+          type="button"
+          className="enqu-bell-btn"
+          aria-label="Alerts"
+          onClick={() => {
+            const alertsSection = document.getElementById('enqu-alerts-container');
+            if (alertsSection) alertsSection.scrollIntoView({ behavior: 'smooth' });
+          }}
+          title={unreadAlertsCount > 0 ? `${unreadAlertsCount} unread alerts` : 'No unread alerts'}
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
+          {unreadAlertsCount > 0 && <i>{unreadAlertsCount}</i>}
+        </button>
+
+        {/* User Initials Avatar */}
+        <div className="enqu-av g" title={`${agentName} (${agentCode})`}>
+          {getInitials(agentName)}
         </div>
+      </header>
 
-        {/* Right: Gold Agent Pill, Date Pill, and Monthly Target */}
-        <div className="sonic-dashboard-welcome-meta">
-          <div className="sonic-dashboard-welcome-pills">
-            {/* Gold Agent Pill */}
-            <div
-              style={{
-                background: '#fef3c7',
-                border: '1px solid #fde68a',
-                color: '#b45309',
-                borderRadius: '9999px',
-                padding: '6px 14px',
-                fontSize: '12px',
-                fontWeight: 800,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                boxShadow: '0 2px 6px rgba(245, 158, 11, 0.15)',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              <span>👑</span>
-              <span>Gold Agent</span>
-            </div>
-
-            {/* Date Pill Selector */}
-            <div
-              style={{
-                background: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: '10px',
-                padding: '6px 14px',
-                fontSize: '12px',
-                fontWeight: 700,
-                color: '#0f172a',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap'
-              }}
-              onClick={() => {
-                onRefresh();
-                fetchFeeds();
-              }}
-              title="Click to refresh live database metrics"
-            >
-              <i className={`fa-regular fa-calendar ${isLoading || loadingFeeds ? 'fa-spin' : ''}`} style={{ color: '#64748b' }}></i>
-              <span>Nov 1, 2026</span>
-              <i className="fa-solid fa-chevron-down" style={{ fontSize: '9px', color: '#94a3b8' }}></i>
-            </div>
+      {/* -------------------------------------------------------------------
+          2. CONDITIONAL LOW BALANCE ALERT BANNER
+          ------------------------------------------------------------------- */}
+      {isLowBalance && (
+        <section className="enqu-alert" role="alert">
+          <div className="t">
+            Low wallet balance · ETB {formatETB(walletBalance)} remaining
+            <small>
+              Your balance is below ETB {formatETB(lowThreshold)}. Players will experience failed cash-in deposits if float runs out.
+            </small>
           </div>
-
-          {/* Monthly Target Progress Widget */}
-          <div className="sonic-dashboard-target-progress-box">
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
-              <span>Monthly Target: {targetPlayers.toLocaleString()} Players</span>
-              <span style={{ fontWeight: 800, color: '#0f172a' }}>{activePlayers} / {targetPlayers.toLocaleString()}</span>
-            </div>
-            <div style={{ width: '100%', height: '6px', background: '#e2e8f0', borderRadius: '9999px', overflow: 'hidden' }}>
-              <div
-                style={{
-                  width: `${Math.min(100, (activePlayers / targetPlayers) * 100)}%`,
-                  height: '100%',
-                  background: '#f59e0b',
-                  borderRadius: '9999px',
-                  transition: 'width 0.4s ease'
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ===================================================================
-          2. HERO AVAILABLE FLOAT LIQUIDITY CARD (EXACT CLONE)
-          =================================================================== */}
-      <div className="sonic-dashboard-float-card">
-        <div className="sonic-dashboard-float-info">
-          {/* Circular 3D Gold Wallet Icon Halo */}
-          <div className="sonic-dashboard-float-icon">
-            👝
-          </div>
-          <div className="sonic-dashboard-float-details">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                AVAILABLE FLOAT LIQUIDITY
-              </span>
-              <span
-                style={{
-                  background: '#dcfce7',
-                  color: '#16a34a',
-                  padding: '2px 8px',
-                  borderRadius: '9999px',
-                  fontSize: '11px',
-                  fontWeight: 800,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-              >
-                <span>🟢</span> Healthy
-              </span>
-            </div>
-            <div className="sonic-dashboard-float-amount">
-              {walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ETB
-            </div>
-            <div className="sonic-dashboard-float-meta">
-              Agent Code: <strong style={{ color: '#0f172a' }}>{agentCode}</strong> • Warning Threshold: {lowThreshold.toLocaleString()} ETB
-            </div>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="sonic-dashboard-float-actions">
           <button
             type="button"
-            onClick={() => onNavigateTab('deposit_requests')}
-            className="sonic-dashboard-float-btn sonic-dashboard-float-btn-desk"
+            className="gold"
+            onClick={handleOpenRechargeModal}
           >
-            <span>📥</span>
-            <span>Deposit Desk</span>
-            {pendingDepositCount > 0 && (
-              <span
-                style={{
-                  background: '#ef4444',
-                  color: '#ffffff',
-                  borderRadius: '9999px',
-                  padding: '1px 6px',
-                  fontSize: '10px',
-                  fontWeight: 900
-                }}
-              >
-                {pendingDepositCount}
-              </span>
-            )}
+            Top up now
           </button>
+        </section>
+      )}
 
-          <button
-            type="button"
-            onClick={() => onNavigateTab('withdrawal_requests')}
-            className="sonic-dashboard-float-btn sonic-dashboard-float-btn-desk"
-          >
-            <span>📤</span>
-            <span>Withdrawal Desk</span>
-            {pendingWithdrawalCount > 0 && (
-              <span
-                style={{
-                  background: '#ef4444',
-                  color: '#ffffff',
-                  borderRadius: '9999px',
-                  padding: '1px 6px',
-                  fontSize: '10px',
-                  fontWeight: 900
-                }}
-              >
-                {pendingWithdrawalCount}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onNavigateTab('recharge')}
-            className="sonic-dashboard-float-btn sonic-dashboard-float-btn-recharge"
-          >
-            <i className="fa-solid fa-bolt"></i>
-            <span>Recharge Float</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ===================================================================
-          3. FOUR KEY METRIC CARDS ROW (ICON ON LEFT, WATERMARK ON RIGHT)
-          =================================================================== */}
-      <div className="sonic-dashboard-metrics-grid">
-        {/* Card 1: Active Players */}
-        <div className="sonic-dashboard-metric-card">
-          <div className="sonic-dashboard-metric-icon">
-            👥
-          </div>
-          <div className="sonic-dashboard-metric-content">
-            <div className="sonic-dashboard-metric-value">
-              {activePlayers.toLocaleString()}
-            </div>
-            <div className="sonic-dashboard-metric-label">
-              Active Players
-            </div>
-            <div className="sonic-dashboard-metric-trend">
-              <span>↑</span> +100%
-            </div>
+      {/* -------------------------------------------------------------------
+          3. HERO WALLET BALANCE CARD (OBSIDIAN & GOLD METALLIC GRADIENT)
+          ------------------------------------------------------------------- */}
+      <section className="enqu-hero">
+        <div>
+          <div className="enqu-k-l">AGENT WALLET BALANCE</div>
+          <div className="enqu-big">
+            <small>ETB</small>
+            {formatETB(walletBalance)}
           </div>
 
-          {/* Faint Graph Watermark */}
-          <div className="sonic-dashboard-metric-watermark">
-            <svg width="60" height="40" viewBox="0 0 60 40" fill="#f59e0b">
-              <rect x="5" y="24" width="8" height="16" rx="2" />
-              <rect x="18" y="18" width="8" height="22" rx="2" />
-              <rect x="31" y="10" width="8" height="30" rx="2" />
-              <rect x="44" y="4" width="8" height="36" rx="2" />
-            </svg>
-          </div>
-        </div>
-
-        {/* Card 2: Total Deposits */}
-        <div className="sonic-dashboard-metric-card">
-          <div className="sonic-dashboard-metric-icon">
-            🪙
-          </div>
-          <div className="sonic-dashboard-metric-content">
-            <div className="sonic-dashboard-metric-value">
-              {totalDeposits.toLocaleString()} <span style={{ fontSize: '15px', fontWeight: 700 }}>ETB</span>
-            </div>
-            <div className="sonic-dashboard-metric-label">
-              Total Deposits
-            </div>
-            <div className="sonic-dashboard-metric-trend">
-              <span>↑</span> +15%
-            </div>
+          {/* Dynamic Balance Meter Bar */}
+          <div className="enqu-meter" title={`Balance: ETB ${formatETB(walletBalance)}`}>
+            <i style={{ width: `${meterFillPercent}%` }} />
+            <b
+              style={{ left: `${meterPinPercent}%` }}
+              title={`Alert threshold at ETB ${formatETB(lowThreshold)}`}
+            />
           </div>
 
-          {/* Faint Graph Watermark */}
-          <div className="sonic-dashboard-metric-watermark">
-            <svg width="60" height="40" viewBox="0 0 60 40" fill="#f59e0b">
-              <rect x="5" y="20" width="8" height="20" rx="2" />
-              <rect x="18" y="14" width="8" height="26" rx="2" />
-              <rect x="31" y="8" width="8" height="32" rx="2" />
-              <rect x="44" y="2" width="8" height="38" rx="2" />
-            </svg>
+          <div className="enqu-mrow">
+            <span>Low-balance alert at ETB {formatETB(lowThreshold)}</span>
+            <span className={`enqu-pill ${isLowBalance ? 'wn' : 'ok'}`}>
+              {isLowBalance ? 'Low Float' : 'Healthy'}
+            </span>
           </div>
-        </div>
 
-        {/* Card 3: Commission Earned */}
-        <div className="sonic-dashboard-metric-card">
-          <div className="sonic-dashboard-metric-icon">
-            👝
-          </div>
-          <div className="sonic-dashboard-metric-content">
-            <div className="sonic-dashboard-metric-value">
-              {commissionEarned.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style={{ fontSize: '15px', fontWeight: 700 }}>ETB</span>
-            </div>
-            <div className="sonic-dashboard-metric-label">
-              Total Commission Earned
-            </div>
-            <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 700, marginTop: '2px', display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <span>📥 +{depCommission.toFixed(1)} Dep</span>
-              <span style={{ color: '#cbd5e1' }}>•</span>
-              <span style={{ color: '#0284c7' }}>📤 +{withCommission.toFixed(1)} With</span>
-            </div>
+          {/* Action Buttons */}
+          <div className="enqu-hero-btns">
             <button
               type="button"
-              onClick={() => onNavigateTab('cash_out')}
-              style={{
-                marginTop: '4px',
-                background: '#fef3c7',
-                border: 'none',
-                color: '#b45309',
-                padding: '3px 10px',
-                borderRadius: '9999px',
-                fontSize: '11px',
-                fontWeight: 800,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}
+              className="gold"
+              onClick={handleOpenRechargeModal}
             >
-              <span>Manage Desk</span>
-              <span>→</span>
+              Request recharge
             </button>
-          </div>
-
-          {/* Faint Graph Watermark */}
-          <div className="sonic-dashboard-metric-watermark">
-            <svg width="60" height="40" viewBox="0 0 60 40" fill="#f59e0b">
-              <rect x="5" y="26" width="8" height="14" rx="2" />
-              <rect x="18" y="20" width="8" height="20" rx="2" />
-              <rect x="31" y="12" width="8" height="28" rx="2" />
-              <rect x="44" y="6" width="8" height="34" rx="2" />
-            </svg>
+            <button
+              type="button"
+              className="ghost"
+              onClick={handleOpenDepositModal}
+            >
+              Record deposit
+            </button>
           </div>
         </div>
 
-        {/* Card 4: Target Progress */}
-        <div className="sonic-dashboard-metric-card">
-          <div className="sonic-dashboard-metric-icon">
-            🎯
+        {/* Frosted Translucent Summary Pills */}
+        <div className="enqu-mini">
+          <div>
+            <span>Opening balance today</span>
+            <b>ETB {formatETB(openingBalance)}</b>
           </div>
-          <div className="sonic-dashboard-metric-content">
-            <div className="sonic-dashboard-metric-value">
-              {targetPercent}%
-            </div>
-            <div className="sonic-dashboard-metric-label">
-              Target Progress
-            </div>
-            <div style={{ width: '100%', height: '6px', background: '#f1f5f9', borderRadius: '9999px', marginTop: '6px', overflow: 'hidden' }}>
-              <div
-                style={{
-                  width: `${Math.min(100, targetPercent)}%`,
-                  height: '100%',
-                  background: '#f59e0b',
-                  borderRadius: '9999px'
-                }}
-              />
-            </div>
+          <div>
+            <span>Deposits made today</span>
+            <b>{depositsTodayCount} · ETB {formatETB(depositsTodayVol)}</b>
           </div>
+          <div>
+            <span>Commission, last 30 days</span>
+            <b>ETB {formatETB(commission30d)}</b>
+          </div>
+        </div>
+      </section>
 
-          {/* Faint Graph Watermark */}
-          <div className="sonic-dashboard-metric-watermark">
-            <svg width="60" height="40" viewBox="0 0 60 40" fill="#f59e0b">
-              <rect x="5" y="24" width="8" height="16" rx="2" />
-              <rect x="18" y="16" width="8" height="24" rx="2" />
-              <rect x="31" y="10" width="8" height="30" rx="2" />
-              <rect x="44" y="4" width="8" height="36" rx="2" />
+      {/* -------------------------------------------------------------------
+          4. 4-METRIC STATS GRID
+          ------------------------------------------------------------------- */}
+      <div className="enqu-grid enqu-g4">
+        {/* Stat 1: Deposits Today */}
+        <div className="enqu-card enqu-stat">
+          <div className="enqu-ic">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 5v14M19 12l-7 7-7-7" />
             </svg>
+          </div>
+          <div className="l">Deposits today</div>
+          <div className="v">ETB {formatETB(depositsTodayVol)}</div>
+          <div className="t">{depositsTodayCount} deposits recorded</div>
+        </div>
+
+        {/* Stat 2: Players */}
+        <div className="enqu-card enqu-stat">
+          <div className="enqu-ic">
+            <svg viewBox="0 0 24 24">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          </div>
+          <div className="l">Players</div>
+          <div className="v">{totalPlayers}</div>
+          <div className="t">+{newPlayers30d} joined in the last 30 days</div>
+        </div>
+
+        {/* Stat 3: Pending Withdrawals */}
+        <div className="enqu-card enqu-stat">
+          <div className="enqu-ic">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 19V5M5 12l7-7 7 7" />
+            </svg>
+          </div>
+          <div className="l">Pending withdrawals</div>
+          <div className="v">{pendingWithdrawals}</div>
+          <div className="t">
+            {pendingWithdrawals > 0 ? 'Waiting for admin staff' : 'All requests settled'}
+          </div>
+        </div>
+
+        {/* Stat 4: Commission (30 days) */}
+        <div className="enqu-card enqu-stat">
+          <div className="enqu-ic">
+            <svg viewBox="0 0 24 24">
+              <line x1="19" y1="5" x2="5" y2="19" />
+              <circle cx="6.5" cy="6.5" r="2.5" />
+              <circle cx="17.5" cy="17.5" r="2.5" />
+            </svg>
+          </div>
+          <div className="l">Commission (30 days)</div>
+          <div className="v">ETB {formatETB(commission30d)}</div>
+          <div className="t">
+            {pendingRechargeComm > 0
+              ? `ETB ${formatETB(pendingRechargeComm)} pending on open recharges`
+              : 'All commissions credited'}
           </div>
         </div>
       </div>
 
-      {/* ===================================================================
-          4. CASHIER DESKS & TIMEFRAME PERFORMANCE HUB (100% CLONE)
-          =================================================================== */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
-        {/* Full-Width Dark Obsidian Header */}
-        <div className="sonic-dashboard-hub-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '18px' }}>📊</span>
-            <div>
-              <div className="sonic-dashboard-hub-title">
-                Cashier Desks & Timeframe Performance Hub
+      {/* -------------------------------------------------------------------
+          5. TWO-COLUMN LAYOUT (1.6fr Left : 1.0fr Right)
+          ------------------------------------------------------------------- */}
+      <div className="enqu-grid enqu-g2">
+        {/* =================================================================
+            LEFT COLUMN: DEPOSIT ACTIVITY CHART & RECENT DEPOSITS TABLE
+            ================================================================= */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0 }}>
+          {/* Card: Deposit Activity Chart */}
+          <section className="enqu-card">
+            <h3>
+              <span>Deposit activity</span>
+              <div className="r">
+                <div className="enqu-tabs" role="tablist">
+                  <button
+                    type="button"
+                    className={activeChartTab === 'daily' ? 'on' : ''}
+                    onClick={() => setActiveChartTab('daily')}
+                  >
+                    Daily
+                  </button>
+                  <button
+                    type="button"
+                    className={activeChartTab === 'weekly' ? 'on' : ''}
+                    onClick={() => setActiveChartTab('weekly')}
+                  >
+                    Weekly
+                  </button>
+                  <button
+                    type="button"
+                    className={activeChartTab === 'monthly' ? 'on' : ''}
+                    onClick={() => setActiveChartTab('monthly')}
+                  >
+                    Monthly
+                  </button>
+                </div>
               </div>
-              <div className="sonic-dashboard-hub-subtitle">
-                Authoritative Neon DB metrics across Today, This Week, and This Month with 1-click desk access.
+            </h3>
+
+            {/* SVG/CSS Bar Chart with Dashed Gridlines & Striped Bars */}
+            <div className="enqu-jch">
+              {/* Gridlines */}
+              <div className="enqu-jgl">
+                {gridTicks.map((tick, idx) => (
+                  <React.Fragment key={idx}>
+                    <i style={{ top: `${tick.topPercent}%` }} />
+                    <span style={{ top: `${tick.topPercent}%` }}>{tick.label}</span>
+                  </React.Fragment>
+                ))}
+              </div>
+
+              {/* Dynamic Bar Columns */}
+              <div className="enqu-jbars">
+                {chartBars.length === 0 ? (
+                  <div className="enqu-empty" style={{ width: '100%' }}>
+                    No deposit activity recorded for this period.
+                  </div>
+                ) : (
+                  chartBars.map((bar: any, idx: number) => {
+                    const vol = Number(bar.volume || 0);
+                    const heightPercent = chartMaxVolume > 0
+                      ? Math.min(100, Math.max(2, (vol / chartMaxVolume) * 100))
+                      : 2;
+
+                    return (
+                      <div
+                        key={idx}
+                        className={`enqu-jcol ${bar.isCurrent ? 'h' : ''}`}
+                        title={`${bar.timeRange || bar.fullDate || bar.label}: ETB ${formatETB(vol)}`}
+                      >
+                        <i style={{ height: `${heightPercent}%` }} />
+                        <span className="enqu-jl">{bar.label}</span>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Timeframe Dropdown Selector */}
-          <div
-            style={{
-              background: '#1e293b',
-              color: '#ffffff',
-              padding: '6px 14px',
-              borderRadius: '8px',
-              fontSize: '12px',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer',
-              flexShrink: 0,
-              width: 'fit-content'
-            }}
-          >
-            <span>Last 30 Days</span>
-            <i className="fa-solid fa-chevron-down" style={{ fontSize: '9px', color: '#94a3b8' }}></i>
-          </div>
+          {/* Card: Recent Deposits Table */}
+          <section className="enqu-card">
+            <h3>
+              <span>Recent deposits</span>
+              <div className="r">
+                <button
+                  type="button"
+                  style={{ fontSize: '12px', padding: '5px 11px', background: 'transparent' }}
+                  onClick={() => onNavigateTab('deposit_requests')}
+                >
+                  View all →
+                </button>
+              </div>
+            </h3>
+
+            <div className="enqu-table-wrap">
+              <table className="enqu-table">
+                <thead>
+                  <tr>
+                    <th>Player</th>
+                    <th>Method</th>
+                    <th style={{ textAlign: 'right' }}>Amount</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: 'right' }}>Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentDeposits.length === 0 ? (
+                    <tr>
+                      <td colSpan={5}>
+                        <div className="enqu-empty">
+                          No deposits recorded yet. Click "Record deposit" above to credit players.
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    recentDeposits.map((dep: any) => {
+                      const isConfirmed = dep.status === 'approved' || dep.status === 'completed';
+                      const isPending = dep.status === 'pending';
+                      const isRejected = dep.status === 'rejected';
+
+                      return (
+                        <tr key={dep.id}>
+                          <td>
+                            <div style={{ fontWeight: 700, color: 'var(--ag-ink)' }}>
+                              {dep.playerName || 'Player'}
+                            </div>
+                            <small>{dep.playerPhone || dep.reference || '—'}</small>
+                          </td>
+                          <td>
+                            <span style={{ fontWeight: 600 }}>{dep.method || 'Cash'}</span>
+                          </td>
+                          <td style={{ textAlign: 'right', fontWeight: 800 }}>
+                            ETB {formatETB(dep.amount)}
+                          </td>
+                          <td>
+                            <span
+                              className={`enqu-pill ${
+                                isConfirmed ? 'ok' : isPending ? 'wn' : isRejected ? 'bd' : 'gr'
+                              }`}
+                            >
+                              {isConfirmed ? 'Confirmed' : isPending ? 'Pending' : isRejected ? 'Rejected' : dep.status}
+                            </span>
+                          </td>
+                          <td style={{ textAlign: 'right', color: 'var(--ag-mute)', fontSize: '12.5px' }}>
+                            {dep.createdAt ? new Date(dep.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
         </div>
 
-        {/* Two Rich Interactive Cashier Multi-Rail Desks */}
-        <div className="sonic-dashboard-desks-grid">
-          {/* Desk 1: Deposit Cashier Desk */}
-          <div className="sonic-dashboard-desk-card">
-            <div>
-              {/* Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '18px' }}>📥</span>
-                    <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                      Deposit Cashier Desk
-                    </h3>
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#16a34a', fontWeight: 700, marginTop: '3px' }}>
-                    ↑ {(profile?.commissionRate || 5.0).toFixed(2)}% Instant Cashier Commission
-                  </div>
-                </div>
-
-                <span
-                  style={{
-                    background: '#dcfce7',
-                    color: '#16a34a',
-                    borderRadius: '9999px',
-                    padding: '3px 10px',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  {pendingDepositCount > 0 ? `⚡ ${pendingDepositCount} Pending` : '✓ All Settled'}
+        {/* =================================================================
+            RIGHT COLUMN: TARGETS GAUGE, REFERRAL LINK, LATEST ALERTS
+            ================================================================= */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0 }}>
+          {/* Card: Targets, Last 30 Days */}
+          <section className="enqu-card">
+            <h3>
+              <span>Targets, last 30 days</span>
+              <div className="r">
+                <span className="enqu-pill gr" style={{ fontSize: '11px', padding: '3px 8px' }}>
+                  Rank #{analytics?.targets?.rank || 1} of {analytics?.targets?.totalAgents || 1}
                 </span>
               </div>
+            </h3>
 
-              {/* 3 Columns: TODAY, THIS WEEK, THIS MONTH (100% Real Live DB Data) */}
-              <div className="sonic-dashboard-desk-timeframes">
-                <div className="sonic-dashboard-desk-box">
-                  <div className="sonic-dashboard-desk-box-title" style={{ color: '#dc2626' }}>
-                    <span>v</span> TODAY
-                  </div>
-                  <div className="sonic-dashboard-desk-box-amount">
-                    {depositAnalytics.today.amount.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
-                  </div>
-                  <div className="sonic-dashboard-desk-box-sub" style={{ color: '#16a34a' }}>
-                    +{depositAnalytics.today.commission.toFixed(1)} ETB ({depositAnalytics.today.count})
-                  </div>
-                </div>
+            {/* Circular SVG Ring Gauge */}
+            <div className="enqu-ring">
+              <svg width="120" height="120" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+                {/* Background Track */}
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="44"
+                  fill="none"
+                  stroke="var(--ag-chip)"
+                  strokeWidth="8"
+                />
+                {/* Progress Circle */}
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="44"
+                  fill="none"
+                  stroke="url(#enquGoldGrad)"
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                  strokeDasharray={ringCircumference}
+                  strokeDashoffset={ringStrokeOffset}
+                  style={{ transition: 'stroke-dashoffset 0.6s ease' }}
+                />
+                <defs>
+                  <linearGradient id="enquGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="var(--ag-gold2)" />
+                    <stop offset="100%" stopColor="var(--ag-gold)" />
+                  </linearGradient>
+                </defs>
+              </svg>
 
-                <div className="sonic-dashboard-desk-box">
-                  <div className="sonic-dashboard-desk-box-title" style={{ color: '#64748b' }}>
-                    <span>★</span> THIS WEEK
-                  </div>
-                  <div className="sonic-dashboard-desk-box-amount">
-                    {depositAnalytics.week.amount.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
-                  </div>
-                  <div className="sonic-dashboard-desk-box-sub" style={{ color: '#16a34a' }}>
-                    +{depositAnalytics.week.commission.toFixed(1)} ETB ({depositAnalytics.week.count})
-                  </div>
-                </div>
-
-                <div className="sonic-dashboard-desk-box">
-                  <div className="sonic-dashboard-desk-box-title" style={{ color: '#64748b' }}>
-                    <span>★</span> THIS MONTH
-                  </div>
-                  <div className="sonic-dashboard-desk-box-amount">
-                    {depositAnalytics.month.amount.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
-                  </div>
-                  <div className="sonic-dashboard-desk-box-sub" style={{ color: '#16a34a' }}>
-                    +{depositAnalytics.month.commission.toFixed(1)} ETB ({depositAnalytics.month.count})
-                  </div>
-                </div>
+              <div className="c">
+                <b>{overallTargetPercent}%</b>
+                <small>overall</small>
               </div>
             </div>
 
-            {/* Jump Button */}
-            <button
-              type="button"
-              onClick={() => onNavigateTab('deposit_requests')}
-              className="sonic-dashboard-desk-jump-btn"
-              style={{
-                background: '#fef3c7',
-                color: '#92400e'
-              }}
-            >
-              <span>📥</span>
-              <span>Open Deposit Desk & Settled History (Phase 5) →</span>
-            </button>
-          </div>
-
-          {/* Desk 2: Withdrawal Cashier Desk */}
-          <div className="sonic-dashboard-desk-card">
-            <div>
-              {/* Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '18px' }}>📤</span>
-                    <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                      Withdrawal Cashier Desk
-                    </h3>
+            {/* 4 Target Progress Rows */}
+            <div style={{ marginTop: '16px' }}>
+              {(analytics?.targets?.items || [
+                { label: 'Players registered', current: totalPlayers, target: 10, text: `${totalPlayers} / 10` },
+                { label: 'Deposit volume', current: depositsTodayVol, target: 35000, text: `ETB ${formatETB(depositsTodayVol)} / 35k` },
+                { label: 'Transactions', current: depositsTodayCount, target: 90, text: `${depositsTodayCount} / 90` },
+                { label: 'Commission earned', current: commission30d, target: 1500, text: `ETB ${formatETB(commission30d)} / 1,500` }
+              ]).map((tg: any, idx: number) => {
+                const pct = tg.target > 0 ? Math.min(100, Math.round((tg.current / tg.target) * 100)) : 0;
+                return (
+                  <div key={idx} className="enqu-tg-row">
+                    <div className="rw">
+                      <span>{tg.label}</span>
+                      <span>{tg.text}</span>
+                    </div>
+                    <div className="enqu-pb f">
+                      <i style={{ width: `${pct}%` }} />
+                    </div>
                   </div>
-                  <div style={{ fontSize: '12px', color: '#7c3aed', fontWeight: 700, marginTop: '3px' }}>
-                    + 2.00% Instant Cashout Incentive Fee
-                  </div>
-                </div>
-
-                <span
-                  style={{
-                    background: '#dcfce7',
-                    color: '#16a34a',
-                    borderRadius: '9999px',
-                    padding: '3px 10px',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  {pendingWithdrawalCount > 0 ? `⚡ ${pendingWithdrawalCount} Pending` : '✓ All Paid Out'}
-                </span>
-              </div>
-
-              {/* 3 Columns (100% Real Live DB Data) */}
-              <div className="sonic-dashboard-desk-timeframes">
-                <div className="sonic-dashboard-desk-box">
-                  <div className="sonic-dashboard-desk-box-title" style={{ color: '#7c3aed' }}>
-                    <span>v</span> TODAY
-                  </div>
-                  <div className="sonic-dashboard-desk-box-amount">
-                    {withdrawalAnalytics.today.amount.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
-                  </div>
-                  <div className="sonic-dashboard-desk-box-sub" style={{ color: '#7c3aed' }}>
-                    +{withdrawalAnalytics.today.commission.toFixed(1)} ETB ({withdrawalAnalytics.today.count})
-                  </div>
-                </div>
-
-                <div className="sonic-dashboard-desk-box">
-                  <div className="sonic-dashboard-desk-box-title" style={{ color: '#64748b' }}>
-                    <span>★</span> THIS WEEK
-                  </div>
-                  <div className="sonic-dashboard-desk-box-amount">
-                    {withdrawalAnalytics.week.amount.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
-                  </div>
-                  <div className="sonic-dashboard-desk-box-sub" style={{ color: '#7c3aed' }}>
-                    +{withdrawalAnalytics.week.commission.toFixed(1)} ETB ({withdrawalAnalytics.week.count})
-                  </div>
-                </div>
-
-                <div className="sonic-dashboard-desk-box">
-                  <div className="sonic-dashboard-desk-box-title" style={{ color: '#64748b' }}>
-                    <span>★</span> THIS MONTH
-                  </div>
-                  <div className="sonic-dashboard-desk-box-amount">
-                    {withdrawalAnalytics.month.amount.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 700 }}>ETB</span>
-                  </div>
-                  <div className="sonic-dashboard-desk-box-sub" style={{ color: '#7c3aed' }}>
-                    +{withdrawalAnalytics.month.commission.toFixed(1)} ETB ({withdrawalAnalytics.month.count})
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Jump Button */}
-            <button
-              type="button"
-              onClick={() => onNavigateTab('withdrawal_requests')}
-              className="sonic-dashboard-desk-jump-btn"
-              style={{
-                background: '#f5f3ff',
-                color: '#6d28d9'
-              }}
-            >
-              <span>📤</span>
-              <span>Open Withdrawal Desk & Settled History (Phase 6) →</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ===================================================================
-          5. TWO-COLUMN FEEDS: MY PLAYERS & RECENT TRANSACTIONS
-          =================================================================== */}
-      <div className="sonic-dashboard-feeds-grid">
-        {/* Left Column: My Players */}
-        <div className="sonic-dashboard-feed-card">
-          {/* Card Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '18px' }}>👥</span>
-              <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                My Players ({displayPlayers.length})
-              </h2>
+                );
+              })}
             </div>
 
             <button
               type="button"
-              onClick={() => onNavigateTab('players')}
-              style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '12px',
-                fontWeight: 700,
-                color: '#64748b',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                cursor: 'pointer'
-              }}
+              className="k"
+              style={{ width: '100%', marginTop: '18px', padding: '11px' }}
+              onClick={() => onNavigateTab('commission')}
             >
-              <span>View All</span>
-              <span>→</span>
+              View performance
             </button>
-          </div>
+          </section>
 
-          {/* Players Rows */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {displayPlayers.map((p, idx) => (
-              <div
-                key={p.id || idx}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  paddingBottom: idx !== displayPlayers.length - 1 ? '10px' : '0',
-                  borderBottom: idx !== displayPlayers.length - 1 ? '1px solid #f1f5f9' : 'none',
-                  minWidth: 0
-                }}
+          {/* Card: 100% Real Telegram Referral Link */}
+          <section className="enqu-card">
+            <h3>
+              <span>Your referral link</span>
+            </h3>
+
+            <div className="enqu-ref-box">
+              <span title={referralLink}>{referralLink}</span>
+              <button
+                type="button"
+                className="gold"
+                onClick={handleCopyReferral}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-                  {/* Silhouette User Circle */}
+                {copiedLink ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+
+            <div style={{ fontSize: '12.5px', color: 'var(--ag-mute)', lineHeight: '1.45', marginTop: '12px', fontWeight: 600 }}>
+              🎁 <strong>ተጫዋቾች በቦት በቀጥታ ይመዘገባሉ</strong> — አዲስ ተጫዋቾች በቴሌግራም ሲገቡ የ 50 ብር ነፃ ቦነስ ያገኛሉ፣ ለእርስዎም ከመጀመሪያ ተቀማጭ 10% ኮሚሽን ይቆጠራል!
+            </div>
+          </section>
+
+          {/* Card: Dynamic Alerts Feed */}
+          <section className="enqu-card" id="enqu-alerts-container">
+            <h3>
+              <span>Latest alerts</span>
+              <div className="r">
+                <span style={{ fontSize: '12px' }}>{alertsList.length} updates</span>
+              </div>
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {alertsList.length === 0 ? (
+                <div className="enqu-empty" style={{ padding: '20px 0' }}>
+                  No active alerts. All systems healthy.
+                </div>
+              ) : (
+                alertsList.map((alt: any) => (
                   <div
-                    style={{
-                      width: '38px',
-                      height: '38px',
-                      borderRadius: '50%',
-                      background: '#1e293b',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#ffffff',
-                      fontSize: '14px',
-                      flexShrink: 0
-                    }}
+                    key={alt.id}
+                    className={`enqu-nt ${alt.kind || 'm'} ${alt.unread ? 'un' : ''}`}
                   >
-                    <i className="fa-solid fa-user"></i>
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {p.fullName || 'Registered Player'}
+                    <div className="ni">
+                      {alt.kind === 'w' ? '⚠️' : alt.kind === 'p' ? '💵' : 'ℹ️'}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-                      Registered {formatRelativeTime(p.createdAt)}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <b>{alt.title}</b>
+                      <p>{alt.body}</p>
                     </div>
+                    <time>{alt.time}</time>
                   </div>
-                </div>
-
-                {/* Active Pill */}
-                <span
-                  style={{
-                    background: '#dcfce7',
-                    color: '#16a34a',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    padding: '3px 10px',
-                    borderRadius: '9999px',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0
-                  }}
-                >
-                  Active
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right Column: Recent Transactions */}
-        <div className="sonic-dashboard-feed-card">
-          {/* Card Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '18px' }}>📄</span>
-              <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                Recent Transactions ({displayTransactions.length})
-              </h2>
+                ))
+              )}
             </div>
-
-            <button
-              type="button"
-              onClick={() => onNavigateTab('statements')}
-              style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '12px',
-                fontWeight: 700,
-                color: '#64748b',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              <span>View All</span>
-              <span>→</span>
-            </button>
-          </div>
-
-          {/* Transactions Rows */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {displayTransactions.map((tx, idx) => (
-              <div
-                key={tx.id || idx}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  paddingBottom: idx !== displayTransactions.length - 1 ? '10px' : '0',
-                  borderBottom: idx !== displayTransactions.length - 1 ? '1px solid #f1f5f9' : 'none',
-                  minWidth: 0
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-                  {/* Green Down-Arrow Circle */}
-                  <div
-                    style={{
-                      width: '34px',
-                      height: '34px',
-                      borderRadius: '50%',
-                      background: '#10b981',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#ffffff',
-                      fontSize: '14px',
-                      fontWeight: 800,
-                      flexShrink: 0
-                    }}
-                  >
-                    ↓
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      Deposit via {tx.payment_method || 'Telebirr'}
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '1px' }}>
-                      {tx.reference_code || 'ID: HD'}
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                  <span style={{ fontSize: '13px', fontWeight: 900, color: '#16a34a', whiteSpace: 'nowrap' }}>
-                    +{tx.amount} ETB
-                  </span>
-                  <span
-                    style={{
-                      background: '#dcfce7',
-                      color: '#16a34a',
-                      fontSize: '11px',
-                      fontWeight: 800,
-                      padding: '3px 10px',
-                      borderRadius: '9999px',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    Success
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+          </section>
         </div>
       </div>
 
-      {/* ===================================================================
-          6. BOTTOM REFERRAL CALL-TO-ACTION BANNER (100% CLONE)
-          =================================================================== */}
-      <div className="sonic-dashboard-referral-banner">
-        <div className="sonic-dashboard-referral-left">
-          {/* 3D Gift Box */}
-          <div className="sonic-dashboard-referral-gift">
-            🎁
-          </div>
+      {/* -------------------------------------------------------------------
+          6. PRODUCTION MODAL: RECORD DEPOSIT (CASH-IN)
+          ------------------------------------------------------------------- */}
+      {activeModal === 'dep' && (
+        <div className="enqu-modalbg" onClick={handleCloseModal}>
+          <div className="enqu-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="enqu-mh">
+              <h3>Record player deposit</h3>
+              <button type="button" onClick={handleCloseModal}>✕</button>
+            </div>
 
-          <div className="sonic-dashboard-referral-text">
-            <h2 className="sonic-dashboard-referral-title">
-              Bring More Players, Earn More!
-            </h2>
-            <p className="sonic-dashboard-referral-desc">
-              Share your referral link and get 10% of their first deposit.
+            <p style={{ color: 'var(--ag-mute)', fontSize: '13px', margin: '4px 0 16px', fontWeight: 600 }}>
+              Deduct funds from your agent float to credit a player's casino wallet instantly.
             </p>
-          </div>
 
-          {/* Copy Button */}
-          <button
-            type="button"
-            onClick={handleCopyLink}
-            className="sonic-dashboard-referral-copy-btn"
-          >
-            <span>🔗</span>
-            <span>{copiedLink ? 'Link Copied!' : 'Copy Referral Link'}</span>
-          </button>
+            <form onSubmit={handleSubmitDeposit}>
+              {/* Select Registered Player or Search */}
+              <label>Select Player</label>
+              {agentPlayers.length > 0 ? (
+                <select
+                  value={depPlayerId}
+                  onChange={(e) => {
+                    setDepPlayerId(e.target.value);
+                    if (e.target.value) setDepPlayerSearch('');
+                  }}
+                >
+                  <option value="">-- Choose from your registered players --</option>
+                  {agentPlayers.map((p: any) => (
+                    <option key={p.id} value={p.id}>
+                      {p.fullName || p.username || 'Player'} ({p.phoneNumber || p.id.slice(0, 8)})
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+
+              {/* Or manual Phone/Username input */}
+              <div style={{ marginTop: '8px' }}>
+                <input
+                  type="text"
+                  placeholder="Or enter player phone (09... / +251...) or @username"
+                  value={depPlayerSearch}
+                  onChange={(e) => {
+                    setDepPlayerSearch(e.target.value);
+                    if (e.target.value) setDepPlayerId('');
+                  }}
+                />
+              </div>
+
+              {/* Payment Method Segmented Toggle */}
+              <label>Payment Method (Received from player)</label>
+              <div className="enqu-seg">
+                <button
+                  type="button"
+                  className={depMethod === 'Telebirr' ? 'on' : ''}
+                  onClick={() => setDepMethod('Telebirr')}
+                >
+                  Telebirr
+                </button>
+                <button
+                  type="button"
+                  className={depMethod === 'M-Pesa' ? 'on' : ''}
+                  onClick={() => setDepMethod('M-Pesa')}
+                >
+                  M-Pesa
+                </button>
+                <button
+                  type="button"
+                  className={depMethod === 'In person' ? 'on' : ''}
+                  onClick={() => {
+                    setDepMethod('In person');
+                    if (!depReference) setDepReference(`CASH-${Date.now().toString().slice(-6)}`);
+                  }}
+                >
+                  In person (Cash)
+                </button>
+              </div>
+
+              {/* Deposit Amount */}
+              <label>Deposit Amount (ETB)</label>
+              <input
+                type="number"
+                min="50"
+                max="10000"
+                step="10"
+                value={depAmount}
+                onChange={(e) => setDepAmount(e.target.value)}
+                required
+              />
+
+              {/* Quick Chips */}
+              <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
+                {[100, 200, 500, 1000].map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    style={{ padding: '6px 12px', fontSize: '12px' }}
+                    onClick={() => setDepAmount(chip)}
+                  >
+                    +{chip}
+                  </button>
+                ))}
+              </div>
+
+              {/* Reference Code */}
+              <label>Payment Reference / Receipt ID</label>
+              <input
+                type="text"
+                placeholder="e.g. TH94JF823 or CASH-728192"
+                value={depReference}
+                onChange={(e) => setDepReference(e.target.value)}
+              />
+
+              {/* Balance Preview Note */}
+              <div className="enqu-note2">
+                <div>Current wallet float: <b>ETB {formatETB(walletBalance)}</b></div>
+                <div style={{ marginTop: '3px' }}>
+                  Wallet after deposit: <b>ETB {formatETB(walletBalance - Number(depAmount || 0))}</b>
+                </div>
+                {Number(depAmount || 0) > walletBalance && (
+                  <div style={{ color: 'var(--ag-r)', fontWeight: 700, marginTop: '4px' }}>
+                    ⚠️ Warning: Amount exceeds available float balance!
+                  </div>
+                )}
+              </div>
+
+              {depError && <div className="enqu-err">{depError}</div>}
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
+                <button
+                  type="button"
+                  style={{ flex: 1, padding: '12px' }}
+                  onClick={handleCloseModal}
+                  disabled={depSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="gold"
+                  style={{ flex: 2, padding: '12px' }}
+                  disabled={depSubmitting || Number(depAmount || 0) > walletBalance}
+                >
+                  {depSubmitting ? 'Processing...' : 'Confirm & Credit Player'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
+      )}
 
-        {/* Right Graphic: Crowned Player Silhouettes & Golden Swirl */}
-        <div className="sonic-dashboard-referral-right">
-          {/* Luminous Golden Crown above Silhouettes */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '-18px',
-              left: '40px',
-              fontSize: '26px',
-              filter: 'drop-shadow(0 2px 6px rgba(245, 158, 11, 0.5))'
-            }}
-          >
-            👑
-          </div>
+      {/* -------------------------------------------------------------------
+          7. PRODUCTION MODAL: REQUEST WALLET RECHARGE
+          ------------------------------------------------------------------- */}
+      {activeModal === 'rch' && (
+        <div className="enqu-modalbg" onClick={handleCloseModal}>
+          <div className="enqu-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="enqu-mh">
+              <h3>Request wallet recharge</h3>
+              <button type="button" onClick={handleCloseModal}>✕</button>
+            </div>
 
-          {/* Three Player Avatar Silhouettes */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px' }}>
-            <div
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                background: '#0f172a',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#ffffff',
-                fontSize: '14px'
-              }}
-            >
-              <i className="fa-solid fa-user"></i>
-            </div>
-            <div
-              style={{
-                width: '46px',
-                height: '46px',
-                borderRadius: '50%',
-                background: '#0f172a',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#ffffff',
-                fontSize: '18px',
-                border: '2px solid #fbbf24'
-              }}
-            >
-              <i className="fa-solid fa-user"></i>
-            </div>
-            <div
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                background: '#0f172a',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#ffffff',
-                fontSize: '14px'
-              }}
-            >
-              <i className="fa-solid fa-user"></i>
-            </div>
+            <p style={{ color: 'var(--ag-mute)', fontSize: '13px', margin: '4px 0 16px', fontWeight: 600 }}>
+              Top up your agent float. Receive an instant <strong>4% bonus commission</strong> upon admin verification.
+            </p>
+
+            <form onSubmit={handleSubmitRecharge}>
+              {/* Quick Amount Chips */}
+              <label>Recharge Amount (ETB)</label>
+              <div className="enqu-seg" style={{ marginBottom: '8px' }}>
+                {[5000, 10000, 20000].map((amt) => (
+                  <button
+                    key={amt}
+                    type="button"
+                    className={Number(rchAmount) === amt ? 'on' : ''}
+                    onClick={() => setRchAmount(amt)}
+                  >
+                    ETB {formatETB(amt)}
+                  </button>
+                ))}
+              </div>
+
+              <input
+                type="number"
+                min="500"
+                max="100000"
+                step="500"
+                value={rchAmount}
+                onChange={(e) => setRchAmount(e.target.value)}
+                required
+              />
+
+              {/* Payment Rail */}
+              <label>Payment Method (Transferred to Platform)</label>
+              <div className="enqu-seg">
+                <button
+                  type="button"
+                  className={rchMethod === 'Telebirr' ? 'on' : ''}
+                  onClick={() => setRchMethod('Telebirr')}
+                >
+                  Telebirr
+                </button>
+                <button
+                  type="button"
+                  className={rchMethod === 'CBE' ? 'on' : ''}
+                  onClick={() => setRchMethod('CBE')}
+                >
+                  CBE Bank
+                </button>
+                <button
+                  type="button"
+                  className={rchMethod === 'M-Pesa' ? 'on' : ''}
+                  onClick={() => setRchMethod('M-Pesa')}
+                >
+                  M-Pesa
+                </button>
+              </div>
+
+              {/* Transaction Code */}
+              <label>Payment Transaction Code / Reference</label>
+              <input
+                type="text"
+                placeholder="e.g. FT26081294829 or Telebirr Trans ID"
+                value={rchTxCode}
+                onChange={(e) => setRchTxCode(e.target.value)}
+                required
+              />
+
+              {/* Live 4% Commission Note */}
+              {(() => {
+                const amt = Number(rchAmount || 0);
+                const comm = Math.round(amt * 0.04);
+                const totalCredit = amt + comm;
+                return (
+                  <div className="enqu-note2">
+                    <div>Recharge amount: <b>ETB {formatETB(amt)}</b></div>
+                    <div>Agent bonus commission (4%): <b style={{ color: 'var(--ag-g)' }}>+ETB {formatETB(comm)}</b></div>
+                    <div style={{ marginTop: '4px', borderTop: '1px solid var(--ag-line)', paddingTop: '4px' }}>
+                      Total credited to wallet: <b>ETB {formatETB(totalCredit)}</b>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {rchError && <div className="enqu-err">{rchError}</div>}
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
+                <button
+                  type="button"
+                  style={{ flex: 1, padding: '12px' }}
+                  onClick={handleCloseModal}
+                  disabled={rchSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="gold"
+                  style={{ flex: 2, padding: '12px' }}
+                  disabled={rchSubmitting}
+                >
+                  {rchSubmitting ? 'Submitting...' : 'Submit recharge request'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* -------------------------------------------------------------------
+          8. FOOTER NOTE
+          ------------------------------------------------------------------- */}
+      <footer className="enqu-foot">
+        Lomi Bingo Agent System · Real-time Neon PostgreSQL · 100% Secure Float Settlement
+      </footer>
     </div>
   );
 };
