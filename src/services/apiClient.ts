@@ -2028,15 +2028,64 @@ export const apiClient = {
       });
       return handleResponse<{
         success: boolean;
+        referralLink?: string;
+        commissionRate?: number;
+        summary?: {
+          totalPlayers: number;
+          newPlayersLast30Days: number;
+          activePlayers: number;
+          inactivePlayers: number;
+          waitingFirstDepositCount: number;
+          depositsLast30DaysVolume: number;
+          referralBonusEarned: number;
+          bonusEarnedLast30Days: number;
+          firstDepositsCount: number;
+          conversion: {
+            registered: number;
+            madeFirstDeposit: number;
+            activeNow: number;
+          };
+        };
+        periods5Day?: Array<{
+          periodIndex: number;
+          label: string;
+          count: number;
+        }>;
         players: Array<{
           id: string;
           fullName: string;
           phone: string;
-          username: string;
+          username?: string;
           hasDeposited: boolean;
           balance: number;
-          totalDepositedByAgent: number;
           createdAt: string;
+          joinDaysAgo: number;
+          deposits: Array<{
+            id: string;
+            amount: number;
+            paymentMethod: string;
+            referenceCode: string;
+            createdAt: string;
+          }>;
+          depositCount: number;
+          totalDeposited: number;
+          totalDepositedByAgent: number;
+          firstDeposit?: {
+            id: string;
+            amount: number;
+            paymentMethod: string;
+            referenceCode: string;
+            createdAt: string;
+          } | null;
+          lastDeposit?: {
+            id: string;
+            amount: number;
+            paymentMethod: string;
+            referenceCode: string;
+            createdAt: string;
+          } | null;
+          bonusEarned: number;
+          status: 'active' | 'inactive' | 'new' | 'awaiting_deposit';
         }>;
       }>(res);
     },

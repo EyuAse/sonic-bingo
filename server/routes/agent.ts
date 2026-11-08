@@ -1357,37 +1357,163 @@ router.post('/cashout/redeem', requireAgent, async (req: AuthenticatedRequest, r
 router.get('/players', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
-    const agentRes = await query('SELECT id FROM agent_profiles WHERE user_id = $1', [userId]);
+    const agentRes = await query(
+      'SELECT id, agent_code, commission_rate, wallet_balance FROM agent_profiles WHERE user_id = $1',
+      [userId]
+    );
     if (agentRes.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Agent profile not found' });
     }
 
-    const agentId = agentRes.rows[0].id;
+    const agent = agentRes.rows[0];
+    const agentId = agent.id;
+    const commissionRatePercent = parseFloat(agent.commission_rate || '10.0');
+    const rate = commissionRatePercent / 100;
 
-    const playersRes = await query(
-      `SELECT u.id, u.full_name, u.phone, u.telegram_username as username, u.has_deposited, u.created_at,
-              COALESCE(w.balance, 0) as balance,
-              COALESCE((SELECT SUM(amount) FROM agent_player_deposits WHERE player_user_id = u.id AND agent_id = $1), 0) as total_deposited_by_agent
-       FROM users u
-       LEFT JOIN wallets w ON u.id = w.user_id
-       WHERE u.agent_id = $1
-       ORDER BY u.created_at DESC
-       LIMIT 100`,
-      [agentId]
-    );
+    const [playersRes, depositsRes] = await Promise.all([
+      query(
+        `SELECT u.id, u.full_name, u.phone, u.telegram_username as username, u.has_deposited, u.created_at,
+                COALESCE(w.balance, 0) as balance
+         FROM users u
+         LEFT JOIN wallets w ON u.id = w.user_id
+         WHERE u.agent_id = $1
+            OR u.id IN (SELECT player_user_id FROM agent_player_deposits WHERE agent_id = $1)
+            OR u.id IN (SELECT player_id FROM agent_deposit_requests WHERE agent_id = $1)
+         ORDER BY u.created_at DESC`,
+        [agentId]
+      ),
+      query(
+        `SELECT id, player_user_id, amount, payment_method, reference_code, created_at
+         FROM agent_player_deposits
+         WHERE agent_id = $1
+         ORDER BY created_at ASC`,
+        [agentId]
+      )
+    ]);
+
+    // Group deposits by player user id
+    const depositsByPlayer: Record<string, any[]> = {};
+    depositsRes.rows.forEach(d => {
+      const pid = d.player_user_id;
+      if (!depositsByPlayer[pid]) depositsByPlayer[pid] = [];
+      depositsByPlayer[pid].push({
+        id: d.id,
+        amount: parseFloat(d.amount),
+        paymentMethod: d.payment_method || 'Telebirr',
+        referenceCode: d.reference_code || '—',
+        createdAt: d.created_at
+      });
+    });
+
+    const now = new Date();
+    const nowMs = now.getTime();
+
+    let totalDepositsVolume30Days = 0;
+    let totalReferralBonus = 0;
+    let bonusLast30Days = 0;
+    let activeCount = 0;
+    let inactiveCount = 0;
+    let awaitingCount = 0;
+    let firstDepositsCount = 0;
+    let new30DaysCount = 0;
+
+    const playersList = playersRes.rows.map(p => {
+      const deps = depositsByPlayer[p.id] || [];
+      const totalDeposited = deps.reduce((sum, d) => sum + d.amount, 0);
+      const firstDep = deps.length > 0 ? deps[0] : null;
+      const lastDep = deps.length > 0 ? deps[deps.length - 1] : null;
+      const bonus = firstDep ? Number((firstDep.amount * rate).toFixed(2)) : 0;
+
+      const createdAt = new Date(p.created_at);
+      const joinDaysAgo = Math.floor((nowMs - createdAt.getTime()) / 86400000);
+      if (joinDaysAgo < 30) new30DaysCount++;
+
+      const lastDepDaysAgo = lastDep ? Math.floor((nowMs - new Date(lastDep.createdAt).getTime()) / 86400000) : 999;
+
+      let status: 'active' | 'inactive' | 'new' | 'awaiting_deposit' = 'awaiting_deposit';
+      if (deps.length === 0) {
+        status = joinDaysAgo <= 3 ? 'new' : 'awaiting_deposit';
+        awaitingCount++;
+      } else {
+        firstDepositsCount++;
+        totalReferralBonus += bonus;
+        if (firstDep && Math.floor((nowMs - new Date(firstDep.createdAt).getTime()) / 86400000) < 30) {
+          bonusLast30Days += bonus;
+        }
+        if (lastDepDaysAgo <= 14) {
+          status = 'active';
+          activeCount++;
+        } else {
+          status = 'inactive';
+          inactiveCount++;
+        }
+      }
+
+      deps.forEach(d => {
+        if (Math.floor((nowMs - new Date(d.createdAt).getTime()) / 86400000) < 30) {
+          totalDepositsVolume30Days += d.amount;
+        }
+      });
+
+      return {
+        id: p.id,
+        fullName: p.full_name || 'Anonymous Player',
+        phone: p.phone || 'No phone',
+        username: p.username,
+        hasDeposited: deps.length > 0,
+        balance: parseFloat(p.balance || '0'),
+        createdAt: p.created_at,
+        joinDaysAgo,
+        deposits: deps,
+        depositCount: deps.length,
+        totalDeposited,
+        totalDepositedByAgent: totalDeposited,
+        firstDeposit: firstDep,
+        lastDeposit: lastDep,
+        bonusEarned: bonus,
+        status
+      };
+    });
+
+    // Calculate 6 5-day periods for last 30 days
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const periods5Day: Array<{ periodIndex: number; label: string; count: number }> = [];
+    for (let k = 5; k >= 0; k--) {
+      const periodStart = new Date(nowMs - (k + 1) * 5 * 86400000);
+      const periodEnd = new Date(nowMs - k * 5 * 86400000);
+      const label = `${periodStart.getUTCDate()} ${MONTHS[periodStart.getUTCMonth()]}`;
+      const count = playersList.filter(p => {
+        const d = new Date(p.createdAt).getTime();
+        return d >= periodStart.getTime() && d < periodEnd.getTime();
+      }).length;
+      periods5Day.push({ periodIndex: 5 - k, label, count });
+    }
+
+    const botUsername = (process.env.TELEGRAM_BOT_USERNAME || 'SonicGameOfficialBot').replace(/^@/, '');
+    const referralLink = `https://t.me/${botUsername}?start=agent_${agent.agent_code}`;
 
     return res.json({
       success: true,
-      players: playersRes.rows.map(r => ({
-        id: r.id,
-        fullName: r.full_name,
-        phone: r.phone,
-        username: r.username,
-        hasDeposited: r.has_deposited,
-        balance: parseFloat(r.balance || '0'),
-        totalDepositedByAgent: parseFloat(r.total_deposited_by_agent || '0'),
-        createdAt: r.created_at
-      }))
+      referralLink,
+      commissionRate: commissionRatePercent,
+      summary: {
+        totalPlayers: playersList.length,
+        newPlayersLast30Days: new30DaysCount,
+        activePlayers: activeCount,
+        inactivePlayers: inactiveCount,
+        waitingFirstDepositCount: awaitingCount,
+        depositsLast30DaysVolume: totalDepositsVolume30Days,
+        referralBonusEarned: totalReferralBonus,
+        bonusEarnedLast30Days: bonusLast30Days,
+        firstDepositsCount,
+        conversion: {
+          registered: playersList.length,
+          madeFirstDeposit: firstDepositsCount,
+          activeNow: activeCount
+        }
+      },
+      periods5Day,
+      players: playersList
     });
   } catch (error: any) {
     console.error('❌ [Agent Players GET Error]:', error);
