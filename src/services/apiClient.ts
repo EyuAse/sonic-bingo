@@ -2001,6 +2001,13 @@ export const apiClient = {
       });
       return handleResponse<{
         success: boolean;
+        wallet?: {
+          balance: number;
+          lowThreshold: number;
+          commissionRate: number;
+          openingBalanceToday: number;
+          isLowBalance: boolean;
+        };
         recharges: any[];
         analytics?: {
           totalApprovedAmount: number;

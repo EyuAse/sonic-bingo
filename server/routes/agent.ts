@@ -826,12 +826,21 @@ router.post('/recharge', requireAgent, async (req: AuthenticatedRequest, res: Re
 router.get('/recharges', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
-    const agentRes = await query('SELECT id FROM agent_profiles WHERE user_id = $1', [userId]);
+    const agentRes = await query(
+      `SELECT id, agent_code, wallet_balance, low_balance_threshold, commission_rate 
+       FROM agent_profiles WHERE user_id = $1`,
+      [userId]
+    );
     if (agentRes.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Agent profile not found' });
     }
 
-    const agentId = agentRes.rows[0].id;
+    const agent = agentRes.rows[0];
+    const agentId = agent.id;
+    const walletBalance = parseFloat(agent.wallet_balance || '0');
+    const lowThreshold = parseFloat(agent.low_balance_threshold || '5000');
+    const commissionRate = parseFloat(agent.commission_rate || '4');
+
     const timeframe = (req.query.timeframe as string) || 'all';
     const status = (req.query.status as string) || 'all';
 
@@ -839,8 +848,8 @@ router.get('/recharges', requireAgent, async (req: AuthenticatedRequest, res: Re
     const params: any[] = [agentId];
 
     if (status && status !== 'all') {
-      params.push(status);
-      sql += ` AND status = $${params.length}`;
+      params.push(status.toLowerCase());
+      sql += ` AND LOWER(status) = $${params.length}`;
     }
 
     if (timeframe === 'today') {
@@ -853,28 +862,61 @@ router.get('/recharges', requireAgent, async (req: AuthenticatedRequest, res: Re
 
     sql += ` ORDER BY created_at DESC LIMIT 100`;
 
-    const [listRes, analyticsRes] = await Promise.all([
+    const [listRes, analyticsRes, todayOutflowRes, todayInflowRechargeRes, todayInflowCommRes] = await Promise.all([
       query(sql, params),
       query(
         `SELECT
-           COALESCE(SUM(amount) FILTER (WHERE status = 'approved'), 0) as approved_amount,
-           COUNT(*) FILTER (WHERE status = 'approved') as approved_count,
-           COALESCE(SUM(amount) FILTER (WHERE status = 'pending'), 0) as pending_amount,
-           COUNT(*) FILTER (WHERE status = 'pending') as pending_count,
-           COALESCE(SUM(amount) FILTER (WHERE status = 'rejected'), 0) as rejected_amount,
-           COUNT(*) FILTER (WHERE status = 'rejected') as rejected_count,
+           COALESCE(SUM(amount) FILTER (WHERE LOWER(status) = 'approved'), 0) as approved_amount,
+           COUNT(*) FILTER (WHERE LOWER(status) = 'approved') as approved_count,
+           COALESCE(SUM(amount) FILTER (WHERE LOWER(status) = 'pending'), 0) as pending_amount,
+           COUNT(*) FILTER (WHERE LOWER(status) = 'pending') as pending_count,
+           COALESCE(SUM(amount) FILTER (WHERE LOWER(status) = 'rejected'), 0) as rejected_amount,
+           COUNT(*) FILTER (WHERE LOWER(status) = 'rejected') as rejected_count,
            COALESCE(SUM(amount), 0) as all_time_amount,
            COUNT(*) as all_time_count
          FROM agent_recharge_requests
          WHERE agent_id = $1`,
         [agentId]
+      ),
+      query(
+        `SELECT COALESCE(SUM(amount), 0) as outflow
+         FROM agent_player_deposits
+         WHERE agent_id = $1 
+           AND (created_at AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date`,
+        [agentId]
+      ),
+      query(
+        `SELECT COALESCE(SUM(amount), 0) as recharge_inflow
+         FROM agent_recharge_requests
+         WHERE agent_id = $1 AND LOWER(status) = 'approved'
+           AND (COALESCE(reviewed_at, created_at) AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date`,
+        [agentId]
+      ),
+      query(
+        `SELECT COALESCE(SUM(amount), 0) as comm_inflow
+         FROM agent_commissions
+         WHERE agent_id = $1 AND source_type = 'commission_to_float'
+           AND (created_at AT TIME ZONE 'Africa/Addis_Ababa')::date = (NOW() AT TIME ZONE 'Africa/Addis_Ababa')::date`,
+        [agentId]
       )
     ]);
 
     const a = analyticsRes.rows[0] || {};
+    const todayOutflow = parseFloat(todayOutflowRes.rows[0]?.outflow || '0');
+    const todayRechargeInflow = parseFloat(todayInflowRechargeRes.rows[0]?.recharge_inflow || '0');
+    const todayCommInflow = parseFloat(todayInflowCommRes.rows[0]?.comm_inflow || '0');
+    const calculatedOpening = walletBalance + todayOutflow - todayRechargeInflow - todayCommInflow;
+    const openingBalance = Math.max(0, parseFloat(calculatedOpening.toFixed(1)));
 
     return res.json({
       success: true,
+      wallet: {
+        balance: walletBalance,
+        lowThreshold,
+        commissionRate,
+        openingBalanceToday: openingBalance,
+        isLowBalance: walletBalance <= lowThreshold
+      },
       recharges: listRes.rows,
       analytics: {
         totalApprovedAmount: parseFloat(a.approved_amount || '0'),
@@ -2792,10 +2834,10 @@ router.post('/commission/request-cashout', requireAgent, async (req: Authenticat
 router.get('/official-accounts', requireAgent, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const result = await query(
-      `SELECT id, provider, account_title, account_name, account_number, badge, daily_limit, is_active, display_order 
+      `SELECT id, provider, account_title, account_name, account_number, badge, daily_limit, is_primary, is_active, status, display_order 
        FROM payment_accounts 
-       WHERE is_active = true 
-       ORDER BY display_order ASC, created_at ASC`
+       WHERE is_active = true AND status = 'Active'
+       ORDER BY is_primary DESC, display_order ASC, created_at ASC`
     );
     return res.json({
       success: true,
