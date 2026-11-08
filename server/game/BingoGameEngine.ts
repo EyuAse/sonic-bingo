@@ -471,6 +471,7 @@ class BingoGameEngine {
       houseFee: r.houseFee || 0,
       jackpotFee: r.jackpotFee || 0,
       jackpotPool: r.jackpotPoolBalance || 0,
+      isJackpotActive: (r.jackpotPoolBalance || 0) >= 500,
       winResult: r.winResult
     });
 
@@ -1195,7 +1196,7 @@ class BingoGameEngine {
 
     room.totalPot = pot > 0 ? pot : 0;
     room.houseFee = room.commissionEnabled ? Math.floor(room.totalPot * 0.20) : 0;
-    room.jackpotFee = room.commissionEnabled ? Math.floor(room.totalPot * 0.10) : 0;
+    room.jackpotFee = room.commissionEnabled ? Math.floor(room.totalPot * 0.024 * 100) / 100 : 0;
     room.winnerPayout = room.totalPot - room.houseFee - room.jackpotFee;
   }
 
@@ -2982,19 +2983,29 @@ class BingoGameEngine {
       const isRoom10 = room.id === 'room-10' || room.id === ARENA_ROOM_ID || room.id === 'default';
       const dbRoomId = isRoom10 ? 'room-10' : room.id;
 
-      // Phase 3: Progressive Jackpot Hit Detection (Real player wins in <= 15 balls drawn - "Speed 15 Golden Strike")
+      // Accumulative Jackpot Hit Detection (Client Specification):
+      // When cumulative pool reaches >= 500 ETB, the winner of this round wins Bingo Net Prize + Jackpot together!
       const ballsDrawn = room.drawnNumbers.length;
-      const isJackpotHit = realWinners.length > 0 && ballsDrawn <= 15 && (room.jackpotPoolBalance || 0) > 0;
-      const totalJackpotAwarded = isJackpotHit ? (room.jackpotPoolBalance || 0) : 0;
-      const jackpotSharePerRealUser = (isJackpotHit && realWinnersByUser.size > 0)
-        ? Math.floor(totalJackpotAwarded / realWinnersByUser.size)
-        : 0;
+      const currentJackpotPool = room.jackpotPoolBalance || 0;
+      const isJackpotHit = realWinners.length > 0 && currentJackpotPool >= 500;
+      const totalJackpotAwarded = isJackpotHit ? 500 : 0;
+      const excessJackpotCarryover = isJackpotHit ? Math.max(0, currentJackpotPool - 500) : currentJackpotPool;
 
       const netPayout = room.winnerPayout > 0 ? room.winnerPayout : room.totalPot;
-      const perCardPayout = Math.max(1, Math.floor(netPayout / totalWinningCards));
+      const totalCombinedPot = netPayout + totalJackpotAwarded;
+
+      // Two-Winner 64% / 36% Distribution:
+      // If 2 players achieve bingo, order is determined by recorded claim time.
+      // 1st recorded winner receives 64% of net prize, 2nd receives 36%.
+      const distinctWinningUsers = Array.from(realWinnersByUser.keys());
+      const winnerCount = distinctWinningUsers.length;
+
+      // Speed bonus for < 10 calls (Customer Rule):
+      const isSpeedBonus = ballsDrawn < 10;
+      const speedBonusPerWinner = isSpeedBonus ? 100 : 0;
 
       let primaryUserPayout = 0;
-      let displayWinnerPayout = netPayout;
+      let displayWinnerPayout = totalCombinedPot;
 
       // 1. Credit all winning real players atomically via Neon PostgreSQL
       if (realWinnersByUser.size > 0) {
@@ -3002,11 +3013,31 @@ class BingoGameEngine {
           await withTransaction(async (client) => {
             for (const [userId, userWinningCards] of realWinnersByUser.entries()) {
               const userTickets = room.tickets.get(userId) || [];
+              const userIndex = distinctWinningUsers.indexOf(userId);
 
-              // Calculate total payout: regular 70% pot share + progressive jackpot share (if hit)
-              const normalWin = userWinningCards.length * perCardPayout;
-              const userJackpotShare = isJackpotHit ? jackpotSharePerRealUser : 0;
-              const userTotalWin = normalWin + userJackpotShare;
+              // Calculate total payout: regular net pot share + progressive jackpot share (if hit) + speed bonus
+              let normalWin = 0;
+              let userJackpotShare = 0;
+
+              if (winnerCount === 1) {
+                normalWin = netPayout;
+                userJackpotShare = totalJackpotAwarded;
+              } else if (winnerCount === 2) {
+                if (userIndex === 0) {
+                  // 1st recorded winner receives 64%
+                  normalWin = Math.floor(netPayout * 0.64);
+                  userJackpotShare = isJackpotHit ? Math.floor(totalJackpotAwarded * 0.64) : 0;
+                } else {
+                  // 2nd recorded winner receives 36%
+                  normalWin = netPayout - Math.floor(netPayout * 0.64);
+                  userJackpotShare = isJackpotHit ? (totalJackpotAwarded - Math.floor(totalJackpotAwarded * 0.64)) : 0;
+                }
+              } else {
+                normalWin = Math.floor(netPayout / winnerCount);
+                userJackpotShare = isJackpotHit ? Math.floor(totalJackpotAwarded / winnerCount) : 0;
+              }
+
+              const userTotalWin = normalWin + userJackpotShare + speedBonusPerWinner;
 
               primaryUserPayout = userTotalWin;
               displayWinnerPayout = userTotalWin;
@@ -3033,10 +3064,10 @@ class BingoGameEngine {
                 const ticketStake = firstTicket?.betAmount || room.stakeAmount;
 
                 const description = isJackpotHit
-                  ? `🔥 PROGRESSIVE JACKPOT + Bingo Winner (${userWinningCards.length} cards, ${ticketStake} ETB Stake) in ${room.name} (Cartela ${winningCardIds}) [${normalWin} ETB Pot + ${userJackpotShare} ETB Jackpot Hit in ${ballsDrawn} balls!]${isOffline ? ' [Protected Offline Auto-Claim]' : ''}`
+                  ? `🔥 PROGRESSIVE JACKPOT (500 ETB) + Bingo Winner (${userWinningCards.length} cards, ${ticketStake} ETB Stake) in ${room.name} (Cartela ${winningCardIds}) [${normalWin} ETB Bingo + ${userJackpotShare} ETB Jackpot Hit!]${speedBonusPerWinner > 0 ? ' [Speed Bonus: +100 ETB for < 10 calls!]' : ''}${isOffline ? ' [Protected Offline Auto-Claim]' : ''}`
                   : isSplit
-                    ? `Split Pot Winner (${userWinningCards.length} of ${totalWinningCards} cards, ${ticketStake} ETB Stake) in ${room.name} (Cartela ${winningCardIds})${isOffline ? ' [Protected Offline Auto-Claim]' : ''}`
-                    : `Bingo Solo Winner (${ticketStake} ETB Stake) in ${room.name} (Cartela ${winningCardIds})${isOffline ? ' [Protected Offline Auto-Claim]' : ''}`;
+                    ? `Split Pot Winner (${userIndex === 0 ? '64%' : '36%'}, ${userWinningCards.length} of ${totalWinningCards} cards, ${ticketStake} ETB Stake) in ${room.name} (Cartela ${winningCardIds})${speedBonusPerWinner > 0 ? ' [Speed Bonus: +100 ETB for < 10 calls!]' : ''}${isOffline ? ' [Protected Offline Auto-Claim]' : ''}`
+                    : `Bingo Solo Winner (${ticketStake} ETB Stake) in ${room.name} (Cartela ${winningCardIds})${speedBonusPerWinner > 0 ? ' [Speed Bonus: +100 ETB for < 10 calls!]' : ''}${isOffline ? ' [Protected Offline Auto-Claim]' : ''}`;
 
                 await client.query(
                   `INSERT INTO wallet_transactions (user_id, type, amount, balance_after, reference_code, status, payment_method, description)
@@ -3096,21 +3127,21 @@ class BingoGameEngine {
               }
             }
 
-            // Reset jackpot pool in DB back to seed_amount on jackpot hit
+            // Carryover jackpot pool in DB (500 ETB awarded, excess carries over)
             if (isJackpotHit) {
               const resetRes = await client.query(
                 `UPDATE jackpot_pool 
-                 SET balance = seed_amount, 
-                     last_won_amount = $1, 
-                     last_winner_user_id = $2, 
+                 SET balance = $1, 
+                     last_won_amount = $2, 
+                     last_winner_user_id = $3, 
                      last_won_at = NOW(), 
                      updated_at = NOW() 
-                 WHERE room_id = $3 
-                 RETURNING balance, seed_amount`,
-                [totalJackpotAwarded, Array.from(realWinnersByUser.keys())[0], dbRoomId]
+                 WHERE room_id = $4 
+                 RETURNING balance`,
+                [excessJackpotCarryover, totalJackpotAwarded, distinctWinningUsers[0], dbRoomId]
               );
               if (resetRes.rows.length > 0) {
-                const seedBal = parseFloat(resetRes.rows[0].balance || resetRes.rows[0].seed_amount || '0');
+                const seedBal = parseFloat(resetRes.rows[0].balance || '0');
                 room.jackpotPoolBalance = seedBal;
                 if (isRoom10) {
                   const r10 = this.rooms.get('room-10');
@@ -3130,10 +3161,11 @@ class BingoGameEngine {
               roomName: room.name,
               winnerNames: Array.from(new Set(realWinners.map(w => w.userName))),
               amount: totalJackpotAwarded,
+              excessCarryover: excessJackpotCarryover,
               ballsCount: ballsDrawn,
               newPoolBalance: room.jackpotPoolBalance
             });
-            console.log(`🏆 [Jackpot Hit!] Real player(s) won progressive jackpot of ${totalJackpotAwarded} ETB in ${room.id} (${ballsDrawn} balls)!`);
+            console.log(`🏆 [Jackpot Hit!] Real player(s) won progressive jackpot of ${totalJackpotAwarded} ETB in ${room.id} together with Bingo Net Prize! Excess carryover: ${room.jackpotPoolBalance} ETB`);
           }
         } catch (err) {
           console.error(`❌ [GameEngine Error processing winning payout in ${room.id}]:`, err);
@@ -3165,9 +3197,18 @@ class BingoGameEngine {
           io.emit('jackpot_update', {
             roomId: room.id,
             balance: room.jackpotPoolBalance,
-            added: room.jackpotFee
+            added: room.jackpotFee,
+            isJackpotActive: room.jackpotPoolBalance >= 500
           });
-          console.log(`🎰 [Progressive Jackpot Rollover] +${room.jackpotFee} ETB (10% pot) -> ${room.id} pool. Current Balance: ${room.jackpotPoolBalance} ETB`);
+          if (room.jackpotPoolBalance >= 500) {
+            io.emit('jackpot_hit_active', {
+              roomId: room.id,
+              balance: room.jackpotPoolBalance,
+              threshold: 500
+            });
+            console.log(`🚨 [HIT JACKPOT ACTIVE] Room ${room.id} jackpot reached ${room.jackpotPoolBalance} ETB! The winner of the round will win this jackpot together with the Bingo Net Prize!`);
+          }
+          console.log(`🎰 [Progressive Jackpot Rollover] +${room.jackpotFee} ETB (2.4% pot) -> ${room.id} pool. Current Balance: ${room.jackpotPoolBalance} ETB`);
         } catch (rollErr) {
           console.error(`⚠️ [GameEngine] Error rolling over jackpot fee in ${room.id}:`, rollErr);
         }
@@ -3232,7 +3273,7 @@ class BingoGameEngine {
       const isBotSoloWinInRoom10 = isRoom10 && botWinners.length > 0 && realWinners.length === 0;
       const effectiveIsSplit = isBotSoloWinInRoom10 ? false : isSplit;
       const effectiveCoWinners = isBotSoloWinInRoom10 ? [] : (isSplit ? externalCoWinners : []);
-      const effectiveShare = isBotSoloWinInRoom10 ? netPayout : (isSplit ? perCardPayout : displayWinnerPayout);
+      const effectiveShare = isBotSoloWinInRoom10 ? netPayout : (isSplit ? (realWinnersByUser.size === 2 ? Math.floor(totalCombinedPot * 0.64) : Math.floor(totalCombinedPot / (realWinnersByUser.size || 2))) : displayWinnerPayout);
       const effectiveWinnerPayout = isBotSoloWinInRoom10 ? netPayout : displayWinnerPayout;
 
       const winResult = {
@@ -3620,6 +3661,7 @@ class BingoGameEngine {
       houseFee: room.houseFee || 0,
       jackpotFee: room.jackpotFee || 0,
       jackpotPool: room.jackpotPoolBalance || 0,
+      isJackpotActive: (room.jackpotPoolBalance || 0) >= 500,
       stakeAmount: room.stakeAmount,
       drawnNumbers: room.drawnNumbers,
       drawnNumbersCount: room.drawnNumbers.length,

@@ -661,24 +661,34 @@ router.post('/deposit-for-player', requireAgent, async (req: AuthenticatedReques
       const commissionRate = parseFloat(agent.commission_rate || '5.0');
       const commissionEarned = Math.round(numAmount * (commissionRate / 100) * 100) / 100;
 
-      // 3. Deduct from agent wallet & credit 5% cashier commission
+      // 3. Deduct from agent wallet (pure float transfer - commission was received upfront during recharge)
       await client.query(
         `UPDATE agent_profiles 
          SET wallet_balance = $1, 
-             commission_balance = COALESCE(commission_balance, 0.00) + $2,
              low_balance_alert_sent = (CASE WHEN $1 <= low_balance_threshold THEN TRUE ELSE FALSE END),
              updated_at = NOW() 
-         WHERE id = $3`,
-        [newAgentBal, commissionEarned, agent.id]
+         WHERE id = $2`,
+        [newAgentBal, agent.id]
       );
 
-      // 3b. Record commission in audit ledger
-      await client.query(
-        `INSERT INTO agent_commissions 
-          (agent_id, source_type, source_id, amount, commission_rate, commission_earned)
-         VALUES ($1, 'cash_in', $2, $3, $4, $5)`,
-        [agent.id, refCode, numAmount, commissionRate, commissionEarned]
-      );
+      // 3b. Check first deposit referral bonus (Customer Rule: Referrers receive 10% of first deposit)
+      const isFirstDeposit = !player.has_deposited;
+      let referralBonusEarned = 0;
+      if (isFirstDeposit) {
+        referralBonusEarned = Math.round(numAmount * 0.10 * 100) / 100;
+        await client.query(
+          `UPDATE agent_profiles 
+           SET commission_balance = COALESCE(commission_balance, 0.00) + $1, updated_at = NOW() 
+           WHERE id = $2`,
+          [referralBonusEarned, agent.id]
+        );
+        await client.query(
+          `INSERT INTO agent_commissions 
+            (agent_id, source_type, source_id, amount, commission_rate, commission_earned)
+           VALUES ($1, 'referral_bonus', $2, $3, 10.0, $4)`,
+          [agent.id, refCode, numAmount, referralBonusEarned]
+        );
+      }
 
       // 4. Atomically upsert player wallet
       await client.query(
@@ -2271,17 +2281,14 @@ router.post('/deposit-requests/:id/approve', requireAgent, async (req: Authentic
       const agentBalAfter = agentBalance - depositAmount;
       const playerBalAfter = playerOldBalance + depositAmount;
       const coinsEarned = Math.round(depositAmount * 1.5);
-      const commissionRate = parseFloat(agentProfile.commission_rate || '5.0');
-      const commissionEarned = depositAmount * (commissionRate / 100);
 
-      // D. Deduct Agent Float & Credit 5% Cashier Commission
+      // D. Deduct Agent Float (Pure float transfer - commission was received upfront during recharge)
       await client.query(
         `UPDATE agent_profiles 
          SET wallet_balance = $1, 
-             commission_balance = COALESCE(commission_balance, 0.00) + $2, 
              updated_at = NOW() 
-         WHERE id = $3`,
-        [agentBalAfter, commissionEarned, agentId]
+         WHERE id = $2`,
+        [agentBalAfter, agentId]
       );
 
       // E. Credit Player Balance
@@ -2293,18 +2300,51 @@ router.post('/deposit-requests/:id/approve', requireAgent, async (req: Authentic
       // F. Award 1.5x Coins via coinService (using same transaction client)
       await coinService.awardCoinsForDeposit(depReq.player_id, depositAmount, depReq.transaction_code, client);
 
-      // G. Mark Player as has_deposited & link to agent if not yet linked
+      // G. Check if this is the player's first deposit (Referral bonus: 10% of first deposit)
+      const playerUserRes = await client.query(
+        `SELECT has_deposited, referred_by, agent_id FROM users WHERE id = $1 FOR UPDATE`,
+        [depReq.player_id]
+      );
+      const isFirstDeposit = !playerUserRes.rows[0]?.has_deposited;
+      const playerReferrerId = playerUserRes.rows[0]?.referred_by;
+
+      let referralBonusEarned = 0;
+      if (isFirstDeposit) {
+        // Customer Rule: Referrers receive 10% of the referred user's first deposit
+        referralBonusEarned = Math.round(depositAmount * 0.10 * 100) / 100;
+
+        if (agentId) {
+          await client.query(
+            `UPDATE agent_profiles 
+             SET commission_balance = COALESCE(commission_balance, 0.00) + $1, 
+                 updated_at = NOW() 
+             WHERE id = $2`,
+            [referralBonusEarned, agentId]
+          );
+          await client.query(
+            `INSERT INTO agent_commissions 
+              (agent_id, source_type, source_id, amount, commission_rate, commission_earned)
+             VALUES ($1, 'referral_bonus', $2, $3, 10.0, $4)`,
+            [agentId, requestId, depositAmount, referralBonusEarned]
+          );
+        } else if (playerReferrerId) {
+          await client.query(
+            `UPDATE wallets SET balance = balance + $1, updated_at = NOW() WHERE user_id = $2`,
+            [referralBonusEarned, playerReferrerId]
+          );
+          await client.query(
+            `INSERT INTO wallet_transactions 
+              (user_id, type, amount, balance_after, reference_code, status, payment_method, description)
+             VALUES ($1, 'referral_bonus', $2, (SELECT balance FROM wallets WHERE user_id = $1), $3, 'completed', 'bonus', '10% Referral Bonus on friend first deposit')`,
+            [playerReferrerId, referralBonusEarned, `REF-${Date.now().toString().slice(-6)}`]
+          );
+        }
+      }
+
+      // H. Mark Player as has_deposited & link to agent if not yet linked
       await client.query(
         `UPDATE users SET has_deposited = true, agent_id = COALESCE(agent_id, $1) WHERE id = $2`,
         [agentId, depReq.player_id]
-      );
-
-      // H. Record in agent_commissions audit table
-      await client.query(
-        `INSERT INTO agent_commissions 
-          (agent_id, source_type, source_id, amount, commission_rate, commission_earned)
-         VALUES ($1, 'deposit', $2, $3, $4, $5)`,
-        [agentId, requestId, depositAmount, commissionRate, commissionEarned]
       );
 
       // I. Record in agent_player_deposits
@@ -2347,7 +2387,8 @@ router.post('/deposit-requests/:id/approve', requireAgent, async (req: Authentic
         requestId,
         depositAmount,
         coinsEarned,
-        commissionEarned,
+        commissionEarned: referralBonusEarned,
+        referralBonusEarned,
         agentBalAfter,
         playerBalAfter,
         playerId: depReq.player_id,

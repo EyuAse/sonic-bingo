@@ -2015,16 +2015,30 @@ router.post('/agents/create', requireAdmin, async (req: AuthenticatedRequest, re
         throw new Error('This user is already registered as an agent.');
       }
 
+      const baseDeposit = parseFloat(initDeposit) || 0;
+      const commRate = parseFloat(depCommission) || 5.0;
+      const upfrontComm = Math.round(baseDeposit * (commRate / 100) * 100) / 100;
+      const totalInitialFloat = baseDeposit + upfrontComm;
+
       const apRes = await client.query(
         `INSERT INTO agent_profiles (
           user_id, agent_code, status, wallet_balance, initial_deposit,
           low_balance_threshold, target_monthly, target_players,
           commission_rate, cashout_commission_rate, city, portal_access
         )
-        VALUES ($1, $2, 'active', $3, $3, 5000.00, $4, $5, $6, $7, $8, true)
+        VALUES ($1, $2, 'active', $3, $4, 5000.00, $5, $6, $7, $8, $9, true)
         RETURNING *`,
-        [userId, agentCode, initDeposit, target, playersTarget, depCommission, withCommission, cleanCity]
+        [userId, agentCode, totalInitialFloat, baseDeposit, target, playersTarget, depCommission, withCommission, cleanCity]
       );
+
+      if (upfrontComm > 0) {
+        await client.query(
+          `INSERT INTO agent_commissions 
+            (agent_id, source_type, source_id, amount, commission_rate, commission_earned)
+           VALUES ($1, 'topup_commission', $2, $3, $4, $5)`,
+          [apRes.rows[0].id, apRes.rows[0].id, baseDeposit, commRate, upfrontComm]
+        );
+      }
 
       return {
         userId,
@@ -2317,6 +2331,15 @@ router.post('/agents/recharges/:id/approve', requireAdmin, async (req: Authentic
 
       const amount = parseFloat(recharge.amount);
 
+      // Fetch agent commission rate (e.g. 5%)
+      const apRes = await client.query(
+        'SELECT commission_rate FROM agent_profiles WHERE id = $1',
+        [recharge.agent_id]
+      );
+      const commissionRate = parseFloat(apRes.rows[0]?.commission_rate || '5.0');
+      const commissionEarned = Math.round(amount * (commissionRate / 100) * 100) / 100;
+      const totalFloatCredit = amount + commissionEarned;
+
       // 1. Mark recharge approved
       await client.query(
         `UPDATE agent_recharge_requests 
@@ -2325,7 +2348,7 @@ router.post('/agents/recharges/:id/approve', requireAdmin, async (req: Authentic
         [adminId, id]
       );
 
-      // 2. Credit agent wallet
+      // 2. Credit agent wallet with Upfront Commission + Amount
       const agentRes = await client.query(
         `UPDATE agent_profiles 
          SET wallet_balance = wallet_balance + $1, 
@@ -2333,12 +2356,22 @@ router.post('/agents/recharges/:id/approve', requireAdmin, async (req: Authentic
              updated_at = NOW() 
          WHERE id = $2 
          RETURNING wallet_balance, agent_code`,
-        [amount, recharge.agent_id]
+        [totalFloatCredit, recharge.agent_id]
+      );
+
+      // 3. Record in agent_commissions audit table
+      await client.query(
+        `INSERT INTO agent_commissions 
+          (agent_id, source_type, source_id, amount, commission_rate, commission_earned)
+         VALUES ($1, 'topup_commission', $2, $3, $4, $5)`,
+        [recharge.agent_id, id, amount, commissionRate, commissionEarned]
       );
 
       return {
         agentId: recharge.agent_id,
         amount,
+        commissionEarned,
+        totalFloatCredit,
         newBalance: parseFloat(agentRes.rows[0]?.wallet_balance || '0'),
         agentCode: agentRes.rows[0]?.agent_code
       };
@@ -2347,7 +2380,9 @@ router.post('/agents/recharges/:id/approve', requireAdmin, async (req: Authentic
     // Notify agent via WebSocket
     io.emit(`agent_${result.agentId}_balance`, {
       type: 'recharge_approved',
-      amount: result.amount,
+      amount: result.totalFloatCredit,
+      baseAmount: result.amount,
+      commissionEarned: result.commissionEarned,
       newBalance: result.newBalance
     });
 
