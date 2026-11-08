@@ -1,0 +1,800 @@
+/* ==========================================================================
+   My Players Enqu Portal Theme (Luxury Obsidian & Gold Architecture)
+   100% Reference-Faithful Design Token Implementation
+   ========================================================================== */
+
+.players-enqu-root {
+  --plr-bg: #fff;
+  --plr-card: #fff;
+  --plr-ink: #1b1b1b;
+  --plr-mute: #6f6f73;
+  --plr-line: #e6e6e9;
+  --plr-chip: #efeff1;
+  --plr-dark: #1f2220;
+  --plr-gold: #e6a21f;
+  --plr-gold2: #f6d453;
+  --plr-g: #2e9e4f;
+  --plr-gbg: #e4f1e8;
+  --plr-gfg: #1f6a37;
+  --plr-r: #b0302f;
+  --plr-amb: #fbf0d9;
+  --plr-am: #8a5a00;
+
+  font-family: 'Urbanist', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: transparent;
+  color: var(--plr-ink);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  padding: 0;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.players-enqu-root * {
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   Buttons & Form Controls
+   ========================================================================== */
+.players-enqu-root button {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  border: 0;
+  border-radius: 14px;
+  padding: 10px 16px;
+  background: var(--plr-chip);
+  color: var(--plr-ink);
+  cursor: pointer;
+  transition: filter .12s, transform .12s;
+}
+
+.players-enqu-root button:hover:not(:disabled) {
+  filter: brightness(.95);
+}
+
+.players-enqu-root button:active:not(:disabled) {
+  transform: scale(.98);
+}
+
+.players-enqu-root button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.players-enqu-root button:focus-visible,
+.players-enqu-root input:focus-visible,
+.players-enqu-root select:focus-visible,
+.players-enqu-root tr:focus-visible {
+  outline: 2px solid var(--plr-gold);
+  outline-offset: 2px;
+}
+
+.players-enqu-root .k {
+  background: var(--plr-dark);
+  color: #fff;
+}
+
+.players-enqu-root .gold {
+  background: linear-gradient(135deg, var(--plr-gold2), var(--plr-gold));
+  color: #2a1c00;
+}
+
+.players-enqu-root .ghost {
+  background: rgba(255, 255, 255, .12);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .25);
+}
+
+.players-enqu-root .ghost:hover {
+  background: rgba(255, 255, 255, .18);
+}
+
+/* ==========================================================================
+   Header Bar
+   ========================================================================== */
+.players-enqu-root .top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.players-enqu-root .top h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -.5px;
+  margin: 0;
+}
+
+.players-enqu-root .top .sub {
+  color: var(--plr-mute);
+  font-weight: 600;
+  font-size: 13.5px;
+  margin-top: 2px;
+}
+
+.players-enqu-root .sp {
+  flex: 1;
+}
+
+/* ==========================================================================
+   Hero Specular Obsidian Banner
+   ========================================================================== */
+.players-enqu-root .hero {
+  border-radius: 26px;
+  padding: 24px 28px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 16px;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 22px;
+  background: radial-gradient(circle at 90% 8%, rgba(246, 212, 83, .34), transparent 42%),
+              radial-gradient(circle at 5% 120%, rgba(224, 138, 30, .26), transparent 50%),
+              linear-gradient(135deg, #1c1e1d, #2a2d2b 55%, #1a1c1b);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.players-enqu-root .hero::after {
+  content: "";
+  position: absolute;
+  right: -80px;
+  top: -80px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  border: 1px solid rgba(246, 212, 83, .22);
+  box-shadow: 0 0 0 30px rgba(246, 212, 83, .045), 0 0 0 60px rgba(246, 212, 83, .03);
+  pointer-events: none;
+}
+
+.players-enqu-root .hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.players-enqu-root .kl {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: #d6d6d9;
+}
+
+.players-enqu-root .hero h2 {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -.5px;
+  margin: 8px 0 6px;
+  color: #fff;
+}
+
+.players-enqu-root .hero h2 em {
+  font-style: normal;
+  color: var(--plr-gold2);
+}
+
+.players-enqu-root .hero p {
+  color: #d6d6d9;
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 440px;
+  margin: 0;
+}
+
+.players-enqu-root .link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, .1);
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 16px;
+  padding: 6px 6px 6px 15px;
+  margin-top: 16px;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.players-enqu-root .link span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.players-enqu-root .btns {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.players-enqu-root .mini {
+  display: grid;
+  gap: 10px;
+  align-content: center;
+}
+
+.players-enqu-root .mini div {
+  background: rgba(255, 255, 255, .07);
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 16px;
+  padding: 12px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.players-enqu-root .mini span {
+  font-size: 13px;
+  color: #d6d6d9;
+  font-weight: 600;
+}
+
+.players-enqu-root .mini b {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ==========================================================================
+   Grids & Cards
+   ========================================================================== */
+.players-enqu-root .grid {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.players-enqu-root .g4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.players-enqu-root .g2 {
+  grid-template-columns: 1.3fr 1fr;
+}
+
+.players-enqu-root .card {
+  background: var(--plr-card);
+  border: 1px solid var(--plr-line);
+  border-radius: 22px;
+  padding: 18px 20px;
+  min-width: 0;
+}
+
+.players-enqu-root .card h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.players-enqu-root .card h3 .r {
+  margin-left: auto;
+  font-size: 12.5px;
+  color: var(--plr-mute);
+  font-weight: 600;
+}
+
+.players-enqu-root .stat .l {
+  font-size: 13px;
+  color: var(--plr-mute);
+  font-weight: 700;
+}
+
+.players-enqu-root .stat .v {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -.6px;
+  margin: 6px 0 2px;
+  color: var(--plr-ink);
+}
+
+.players-enqu-root .stat .t {
+  font-size: 12.5px;
+  color: var(--plr-mute);
+  font-weight: 600;
+}
+
+.players-enqu-root .up {
+  color: var(--plr-g);
+}
+
+/* ==========================================================================
+   Registration 5-Day Intervals Bar Chart
+   ========================================================================== */
+.players-enqu-root .ch {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 150px;
+  padding: 6px 0 26px;
+}
+
+.players-enqu-root .cb {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: relative;
+  min-width: 0;
+}
+
+.players-enqu-root .cb i {
+  display: block;
+  width: 100%;
+  max-width: 44px;
+  border-radius: 8px 8px 3px 3px;
+  background: var(--plr-dark);
+  min-height: 4px;
+  transition: opacity .15s;
+}
+
+.players-enqu-root .cb:hover i {
+  opacity: .85;
+}
+
+.players-enqu-root .cb:last-child i {
+  background: linear-gradient(180deg, var(--plr-gold2), var(--plr-gold));
+}
+
+.players-enqu-root .cb b {
+  position: absolute;
+  bottom: 100%;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.players-enqu-root .cb span {
+  position: absolute;
+  top: 100%;
+  margin-top: 7px;
+  font-size: 11.5px;
+  color: var(--plr-mute);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Conversion Funnel Bars
+   ========================================================================== */
+.players-enqu-root .fn {
+  margin: 12px 0;
+}
+
+.players-enqu-root .fn .rw {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.players-enqu-root .fn .rw span:last-child {
+  color: var(--plr-mute);
+}
+
+.players-enqu-root .pb {
+  height: 10px;
+  border-radius: 6px;
+  background: var(--plr-chip);
+  overflow: hidden;
+}
+
+.players-enqu-root .pb i {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: var(--plr-dark);
+}
+
+.players-enqu-root .pb.f i {
+  background: linear-gradient(90deg, var(--plr-gold2), var(--plr-gold));
+}
+
+/* ==========================================================================
+   Toolbar & Segmented Navigation
+   ========================================================================== */
+.players-enqu-root .bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.players-enqu-root .tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.players-enqu-root .tabs button {
+  background: var(--plr-card);
+  border: 1px solid var(--plr-line);
+}
+
+.players-enqu-root .tabs button.on {
+  background: var(--plr-dark);
+  color: #fff;
+  border-color: var(--plr-dark);
+}
+
+.players-enqu-root .tabs .n {
+  margin-left: 7px;
+  color: var(--plr-mute);
+  font-weight: 700;
+}
+
+.players-enqu-root .tabs .on .n {
+  color: #d6d6d9;
+}
+
+.players-enqu-root input,
+.players-enqu-root select {
+  font: inherit;
+  font-weight: 600;
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--plr-line);
+  background: #fff;
+  color: var(--plr-ink);
+}
+
+.players-enqu-root .search {
+  flex: 1;
+  min-width: 190px;
+  max-width: 300px;
+  margin-left: auto;
+}
+
+.players-enqu-root .sort {
+  width: auto;
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   Players Table
+   ========================================================================== */
+.players-enqu-root .wrap {
+  overflow-x: auto;
+}
+
+.players-enqu-root table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.players-enqu-root th {
+  text-align: left;
+  color: var(--plr-mute);
+  font-weight: 700;
+  font-size: 12.5px;
+  padding: 10px;
+  border-bottom: 1px solid var(--plr-line);
+  white-space: nowrap;
+}
+
+.players-enqu-root td {
+  padding: 12px 10px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--plr-line);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.players-enqu-root tr:last-child td {
+  border-bottom: 0;
+}
+
+.players-enqu-root tbody tr {
+  cursor: pointer;
+  transition: background .12s;
+}
+
+.players-enqu-root tbody tr:hover td {
+  background: #fafafb;
+}
+
+.players-enqu-root td small,
+.players-enqu-root .sm {
+  display: block;
+  color: var(--plr-mute);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.players-enqu-root th.r,
+.players-enqu-root td.r {
+  text-align: right;
+}
+
+.players-enqu-root .pc {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.players-enqu-root .pc b {
+  display: block;
+  font-size: 14px;
+}
+
+.players-enqu-root .av {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3a3d3b, #1f2220);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 12.5px;
+  flex: none;
+}
+
+.players-enqu-root .av.gd {
+  background: linear-gradient(135deg, var(--plr-gold2), var(--plr-gold));
+  color: #2a1c00;
+}
+
+.players-enqu-root .av.lg {
+  width: 54px;
+  height: 54px;
+  font-size: 17px;
+}
+
+.players-enqu-root .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 12px;
+  padding: 4px 11px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.players-enqu-root .pill.ok {
+  background: var(--plr-gbg);
+  color: var(--plr-gfg);
+}
+
+.players-enqu-root .pill.wn {
+  background: var(--plr-amb);
+  color: var(--plr-am);
+}
+
+.players-enqu-root .pill.gr {
+  background: var(--plr-chip);
+  color: var(--plr-mute);
+}
+
+.players-enqu-root .pill.nw {
+  background: #e8eefc;
+  color: #2a4fa8;
+}
+
+.players-enqu-root .bonus {
+  color: var(--plr-gfg);
+  font-weight: 800;
+}
+
+.players-enqu-root .empty {
+  padding: 40px 10px;
+  text-align: center;
+  color: var(--plr-mute);
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   Modals
+   ========================================================================== */
+.players-enqu-root .mbg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .45);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  padding: 16px;
+  backdrop-filter: blur(2px);
+}
+
+.players-enqu-root .modal {
+  background: #fff;
+  border-radius: 26px;
+  padding: 22px;
+  width: min(500px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.players-enqu-root .mh {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.players-enqu-root .mh h3 {
+  font-size: 19px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.players-enqu-root label {
+  display: block;
+  font-size: 12.5px;
+  color: var(--plr-mute);
+  font-weight: 700;
+  margin: 12px 0 5px;
+}
+
+.players-enqu-root .note {
+  background: var(--plr-chip);
+  border-radius: 14px;
+  padding: 11px 13px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--plr-mute);
+  line-height: 1.5;
+  margin-top: 12px;
+}
+
+.players-enqu-root .note b {
+  color: var(--plr-ink);
+}
+
+.players-enqu-root .err {
+  color: var(--plr-r);
+  font-weight: 700;
+  font-size: 13px;
+  min-height: 18px;
+  margin-top: 10px;
+}
+
+.players-enqu-root .mf {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.players-enqu-root .ph {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.players-enqu-root .ph h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.players-enqu-root .k3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.players-enqu-root .k3 div {
+  background: var(--plr-chip);
+  border-radius: 16px;
+  padding: 12px;
+}
+
+.players-enqu-root .k3 small {
+  display: block;
+  color: var(--plr-mute);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.players-enqu-root .k3 b {
+  font-size: 17px;
+}
+
+.players-enqu-root .tl {
+  margin: 6px 0 4px 6px;
+}
+
+.players-enqu-root .tl div {
+  position: relative;
+  padding: 0 0 16px 22px;
+  border-left: 2px solid var(--plr-line);
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+.players-enqu-root .tl div:last-child {
+  border-color: transparent;
+  padding-bottom: 0;
+}
+
+.players-enqu-root .tl div::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--plr-gold);
+  border: 2px solid #fff;
+}
+
+/* ==========================================================================
+   Toast Notification
+   ========================================================================== */
+.players-enqu-root .toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(26px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  background: var(--plr-dark);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 13.5px;
+  z-index: 60;
+  max-width: 90vw;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Responsive Adaptations
+   ========================================================================== */
+@media (max-width: 900px) {
+  .players-enqu-root .hero {
+    grid-template-columns: 1fr;
+  }
+  .players-enqu-root .g4 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .players-enqu-root .g2 {
+    grid-template-columns: 1fr;
+  }
+  .players-enqu-root .search {
+    max-width: none;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .players-enqu-root .g4 {
+    grid-template-columns: 1fr;
+  }
+  .players-enqu-root .top h1 {
+    font-size: 23px;
+  }
+  .players-enqu-root .k3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .players-enqu-root * {
+    transition: none !important;
+  }
+}

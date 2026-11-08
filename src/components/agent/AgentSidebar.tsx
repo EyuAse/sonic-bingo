@@ -36,19 +36,22 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
   pendingWithdrawalsCount = 0,
   onLogout
 }) => {
+  // Navigation tabs preserving full functional compatibility with Enqu light luxury styling
   const navItems: Array<{
     id: AgentDeskTab;
     label: string;
     icon: string;
+    badge?: number;
   }> = [
     { id: 'overview', label: 'Dashboard', icon: 'fa-solid fa-table-cells-large' },
-    { id: 'deposit_requests', label: 'Deposit Requests', icon: 'fa-solid fa-inbox' },
-    { id: 'players', label: 'My Players', icon: 'fa-solid fa-user-group' },
-    { id: 'cash_in', label: 'Direct Cash-In', icon: 'fa-solid fa-bolt' },
-    { id: 'cash_out', label: 'Commission Desk', icon: 'fa-solid fa-coins' },
-    { id: 'recharge', label: 'Recharge Requests', icon: 'fa-solid fa-wallet' },
-    { id: 'statements', label: 'Transactions', icon: 'fa-solid fa-clock-rotate-left' },
-    { id: 'profile', label: 'Payment Rails & Settings', icon: 'fa-solid fa-gear' },
+    { id: 'players', label: 'Players', icon: 'fa-solid fa-user-group' },
+    { id: 'deposit_requests', label: 'Deposits', icon: 'fa-solid fa-arrow-down-to-bracket', badge: pendingRequestsCount },
+    { id: 'cash_out', label: 'Withdrawals', icon: 'fa-solid fa-arrow-up-from-bracket', badge: pendingWithdrawalsCount },
+    { id: 'cash_in', label: 'Agent Wallet', icon: 'fa-solid fa-wallet' },
+    { id: 'recharge', label: 'Recharge Requests', icon: 'fa-solid fa-plus' },
+    { id: 'commission', label: 'Commissions', icon: 'fa-solid fa-percent' },
+    { id: 'statements', label: 'Transactions', icon: 'fa-solid fa-bars' },
+    { id: 'profile', label: 'Settings', icon: 'fa-solid fa-gear' },
   ];
 
   const handleTabClick = (tab: AgentDeskTab) => {
@@ -64,7 +67,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
         onClick={closeMobile}
       />
 
-      {/* Main Collapsible Sidebar (Dark Luxury Obsidian Theme 100% Reference Clone) */}
+      {/* Main Collapsible Sidebar (Enqu Luxury White & Obsidian Theme) */}
       <aside
         className={`sonic-agent-sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}
         style={{
@@ -75,199 +78,231 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
           overflowY: 'auto',
           flexShrink: 0,
           zIndex: 40,
-          background: '#0a0d14',
-          borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-          boxShadow: '4px 0 24px rgba(0, 0, 0, 0.45)',
+          width: isCollapsed ? '72px' : '260px',
+          minWidth: isCollapsed ? '72px' : '260px',
+          background: '#ffffff',
+          borderRight: '1px solid #e6e6e9',
+          boxShadow: '0 0 16px rgba(0, 0, 0, 0.03)',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          transition: 'width 0.2s ease, min-width 0.2s ease',
+          fontFamily: "'Urbanist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
         }}
       >
-        {/* Brand Top Header: Centered 3D Gold Crown with Stacked Sonic Bingo */}
+        {/* Brand Top Header: Rounded Gold "E" Square + Enqu Game Title */}
         <div
-          className="sonic-sidebar-brand-box"
           style={{
-            padding: isCollapsed ? '20px 8px' : '22px 18px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            padding: isCollapsed ? '18px 12px' : '20px 18px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: isCollapsed ? 'center' : 'space-between',
-            position: 'relative'
+            position: 'relative',
+            borderBottom: '1px solid #f2f2f4'
           }}
         >
           <div
-            className="sonic-brand-row"
             style={{
               display: 'flex',
-              flexDirection: isCollapsed ? 'row' : 'column',
-              alignItems: isCollapsed ? 'center' : 'center',
-              width: isCollapsed ? 'auto' : '100%',
-              textAlign: 'center'
+              alignItems: 'center',
+              gap: '12px',
+              minWidth: 0
             }}
           >
-            {/* Luminous 3D Crown */}
-            <span
+            {/* Rounded Gold "E" Avatar Badge */}
+            <div
               style={{
-                fontSize: '28px',
-                lineHeight: 1,
-                filter: 'drop-shadow(0 2px 10px rgba(245, 158, 11, 0.6))',
-                marginBottom: isCollapsed ? 0 : '4px'
+                width: '40px',
+                height: '40px',
+                borderRadius: '14px',
+                background: '#e6a21f',
+                color: '#1b1b1b',
+                display: 'grid',
+                placeItems: 'center',
+                fontWeight: 800,
+                fontSize: '18px',
+                flexShrink: 0,
+                boxShadow: '0 2px 8px rgba(230, 162, 31, 0.35)'
               }}
             >
-              👑
-            </span>
+              E
+            </div>
 
             {!isCollapsed && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <span
+              <div style={{ minWidth: 0 }}>
+                <div
                   style={{
-                    fontSize: '20px',
-                    fontWeight: 900,
-                    color: '#ffffff',
-                    letterSpacing: '-0.3px',
-                    lineHeight: 1.1
+                    fontSize: '16px',
+                    fontWeight: 800,
+                    color: '#1b1b1b',
+                    lineHeight: 1.2,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
                   }}
                 >
-                  Sonic
-                </span>
-                <span
+                  Enqu Game
+                </div>
+                <div
                   style={{
-                    fontSize: '20px',
-                    fontWeight: 900,
-                    color: '#f59e0b',
-                    letterSpacing: '-0.3px',
-                    lineHeight: 1.1
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: '#6f6f73',
+                    lineHeight: 1.2
                   }}
                 >
-                  Bingo
-                </span>
+                  Agent Portal
+                </div>
               </div>
             )}
           </div>
 
-          {/* Desktop Toggle Button */}
+          {/* Desktop Collapse / Expand Toggle Button */}
           {!isCollapsed && (
             <button
               type="button"
-              className="sonic-sidebar-toggle-btn"
-              onClick={() => setIsCollapsed(prev => !prev)}
+              onClick={() => setIsCollapsed(true)}
               title="Collapse Sidebar"
               style={{
-                position: 'absolute',
-                right: '12px',
-                top: '16px',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                color: '#94a3b8',
-                borderRadius: '6px',
-                padding: '4px 6px',
+                background: 'transparent',
+                border: 'none',
+                color: '#6f6f73',
                 cursor: 'pointer',
-                fontSize: '11px'
+                padding: '6px 8px',
+                borderRadius: '8px',
+                fontSize: '12px',
+                transition: 'background 0.15s'
               }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#f4f4f6')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
               <i className="fa-solid fa-chevron-left"></i>
             </button>
           )}
         </div>
 
+        {/* Collapsed Expand Quick Button */}
+        {isCollapsed && (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 4px' }}>
+            <button
+              type="button"
+              onClick={() => setIsCollapsed(false)}
+              title="Expand Sidebar"
+              style={{
+                background: '#f4f4f6',
+                border: '1px solid #e6e6e9',
+                borderRadius: '8px',
+                width: '32px',
+                height: '32px',
+                display: 'grid',
+                placeItems: 'center',
+                color: '#1b1b1b',
+                cursor: 'pointer',
+                fontSize: '11px'
+              }}
+            >
+              <i className="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        )}
+
         {/* Navigation List */}
         <nav
-          className="sonic-sidebar-nav"
           style={{
-            padding: '16px 12px',
+            padding: '12px 0',
             display: 'flex',
             flexDirection: 'column',
-            gap: '6px',
+            gap: '3px',
             flex: 1,
             overflowY: 'auto'
           }}
         >
           {navItems.map((item, index) => {
-            const isActive = item.id === activeTab;
+            const isActive =
+              item.id === activeTab ||
+              (item.id === 'cash_out' && activeTab === 'withdrawal_requests') ||
+              (item.id === 'commission' && activeTab === 'cash_out');
 
             return (
               <button
-                key={`${item.id}-${item.label}-${index}`}
+                key={`${item.id}-${index}`}
                 type="button"
                 onClick={() => handleTabClick(item.id)}
                 title={isCollapsed ? item.label : undefined}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '14px',
-                  padding: '12px 16px',
-                  borderRadius: '12px',
+                  gap: '12px',
+                  padding: isCollapsed ? '11px 0' : '11px 16px',
+                  margin: isCollapsed ? '3px 8px' : '3px 12px',
+                  borderRadius: '14px',
                   border: 'none',
-                  background: isActive ? 'linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)' : 'transparent',
-                  color: isActive ? '#000000' : '#94a3b8',
-                  fontWeight: isActive ? 900 : 600,
-                  fontSize: '13px',
+                  background: isActive ? '#1f2220' : 'transparent',
+                  color: isActive ? '#ffffff' : '#1b1b1b',
+                  fontWeight: 700,
+                  fontSize: '14px',
                   cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  width: '100%',
-                  textAlign: 'left',
-                  boxShadow: isActive ? '0 4px 16px rgba(245, 158, 11, 0.4)' : 'none',
+                  transition: 'background 0.12s, color 0.12s',
+                  justifyContent: isCollapsed ? 'center' : 'flex-start',
                   position: 'relative'
                 }}
                 onMouseEnter={e => {
                   if (!isActive) {
-                    e.currentTarget.style.color = '#ffffff';
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                    e.currentTarget.style.background = '#f4f4f6';
                   }
                 }}
                 onMouseLeave={e => {
                   if (!isActive) {
-                    e.currentTarget.style.color = '#94a3b8';
                     e.currentTarget.style.background = 'transparent';
                   }
                 }}
               >
                 <i
-                  className={`${item.icon}`}
+                  className={item.icon}
                   style={{
-                    fontSize: '16px',
+                    fontSize: '15px',
                     width: '20px',
                     textAlign: 'center',
-                    color: isActive ? '#000000' : '#94a3b8'
+                    color: isActive ? '#ffffff' : '#1b1b1b',
+                    flexShrink: 0
                   }}
-                ></i>
+                />
 
                 {!isCollapsed && (
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
-                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
-                    {item.id === 'deposit_requests' && pendingRequestsCount > 0 && (
+                  <>
+                    <span
+                      style={{
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        flex: 1,
+                        textAlign: 'left'
+                      }}
+                    >
+                      {item.label}
+                    </span>
+
+                    {/* Circular Amber Counter Badge */}
+                    {item.badge !== undefined && item.badge > 0 && (
                       <span
                         style={{
-                          background: '#ef4444',
-                          color: '#ffffff',
-                          borderRadius: '9999px',
-                          padding: '1px 7px',
-                          fontSize: '10px',
-                          fontWeight: 900,
-                          lineHeight: '14px'
+                          background: '#e6a21f',
+                          color: '#1b1b1b',
+                          fontWeight: 800,
+                          fontSize: '11px',
+                          padding: '1px 8px',
+                          borderRadius: '10px',
+                          marginLeft: 'auto',
+                          lineHeight: '16px'
                         }}
                       >
-                        {pendingRequestsCount}
+                        {item.badge}
                       </span>
                     )}
-                    {item.id === 'withdrawal_requests' && pendingWithdrawalsCount > 0 && (
-                      <span
-                        style={{
-                          background: '#f59e0b',
-                          color: '#000000',
-                          borderRadius: '9999px',
-                          padding: '1px 7px',
-                          fontSize: '10px',
-                          fontWeight: 900,
-                          lineHeight: '14px'
-                        }}
-                      >
-                        {pendingWithdrawalsCount}
-                      </span>
-                    )}
-                  </span>
+                  </>
                 )}
 
-                {isCollapsed && item.id === 'deposit_requests' && pendingRequestsCount > 0 && (
+                {/* Collapsed dot badge indicator */}
+                {isCollapsed && item.badge !== undefined && item.badge > 0 && (
                   <span
                     style={{
                       position: 'absolute',
@@ -276,20 +311,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
                       width: '8px',
                       height: '8px',
                       borderRadius: '50%',
-                      background: '#ef4444'
-                    }}
-                  />
-                )}
-                {isCollapsed && item.id === 'withdrawal_requests' && pendingWithdrawalsCount > 0 && (
-                  <span
-                    style={{
-                      position: 'absolute',
-                      top: '6px',
-                      right: '10px',
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      background: '#f59e0b'
+                      background: '#e6a21f'
                     }}
                   />
                 )}
@@ -298,77 +320,11 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
           })}
         </nav>
 
-        {/* Bottom Card: "Grow Together with Sonic" 3D Golden Card */}
-        {!isCollapsed && (
-          <div style={{ padding: '0 12px 14px 12px' }}>
-            <div
-              style={{
-                background: 'linear-gradient(180deg, #131722 0%, #0b0e14 100%)',
-                border: '1px solid rgba(245, 158, 11, 0.35)',
-                borderRadius: '16px',
-                padding: '16px',
-                position: 'relative',
-                overflow: 'hidden',
-                textAlign: 'center',
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)'
-              }}
-            >
-              {/* Gold Ambient Radial Glow */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '-20px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: '120px',
-                  height: '80px',
-                  background: 'radial-gradient(circle, rgba(245, 158, 11, 0.35) 0%, transparent 70%)',
-                  zIndex: 0
-                }}
-              />
-
-              <div style={{ position: 'relative', zIndex: 1 }}>
-                <div style={{ fontSize: '20px', marginBottom: '2px' }}>👑</div>
-                <div style={{ fontSize: '13px', fontWeight: 900, color: '#ffffff', lineHeight: 1.2 }}>
-                  Grow Together
-                </div>
-                <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700 }}>
-                  with Sonic
-                </div>
-
-                {/* 3D Bingo Ball Graphic with Glowing Halo */}
-                <div style={{ margin: '12px auto 6px auto', display: 'flex', justifyContent: 'center' }}>
-                  <div
-                    style={{
-                      width: '54px',
-                      height: '54px',
-                      borderRadius: '50%',
-                      background: 'radial-gradient(circle at 35% 35%, #fef08a 0%, #f59e0b 50%, #b45309 100%)',
-                      boxShadow: '0 6px 18px rgba(245, 158, 11, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.7)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      border: '2px solid rgba(255, 255, 255, 0.4)'
-                    }}
-                  >
-                    <span style={{ fontSize: '22px', fontWeight: 900, color: '#000000', fontFamily: 'sans-serif' }}>
-                      B
-                    </span>
-                  </div>
-                </div>
-
-                {/* Gold Swirl Ribbon Arc */}
-                <div style={{ height: '3px', background: 'linear-gradient(90deg, transparent, #f59e0b, transparent)', borderRadius: '2px', marginTop: '8px' }} />
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Sidebar Footer Logout Button */}
         <div
           style={{
-            padding: isCollapsed ? '16px 8px' : '16px 20px',
-            borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+            padding: isCollapsed ? '16px 8px' : '16px 18px',
+            borderTop: '1px solid #f2f2f4',
             display: 'flex',
             alignItems: 'center',
             justifyContent: isCollapsed ? 'center' : 'flex-start'
@@ -380,18 +336,26 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
             style={{
               background: 'none',
               border: 'none',
-              color: '#94a3b8',
+              color: '#6f6f73',
               fontSize: '13px',
               fontWeight: 700,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
-              padding: 0,
-              transition: 'color 0.15s ease'
+              padding: '6px 8px',
+              borderRadius: '10px',
+              transition: 'color 0.15s, background 0.15s',
+              width: '100%'
             }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}
+            onMouseEnter={e => {
+              e.currentTarget.style.color = '#b0302f';
+              e.currentTarget.style.background = '#f6dedd';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.color = '#6f6f73';
+              e.currentTarget.style.background = 'none';
+            }}
             title="Logout"
           >
             <i className="fa-solid fa-arrow-right-from-bracket" style={{ fontSize: '15px' }}></i>
