@@ -23,6 +23,14 @@ const formatInt = (n: number) => {
   return Number(n || 0).toLocaleString('en-US');
 };
 
+const formatYAxisVal = (n: number) => {
+  const val = Math.round(n || 0);
+  if (val >= 1000000) return `${(val / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
+  if (val >= 10000) return `${Math.round(val / 1000)}k`;
+  if (val >= 1000) return `${(val / 1000).toFixed(1).replace(/\.0$/, '')}k`;
+  return val.toLocaleString('en-US');
+};
+
 export const CashflowDesk: React.FC = () => {
   const { showToast } = useApp();
 
@@ -519,19 +527,25 @@ export const CashflowDesk: React.FC = () => {
         }
 
         /* Redesigned Dashboard-Matched Velocity Bars Shell */
+        .cf-chart-scroll-wrapper {
+          width: 100%;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+        }
         .cf-velocity-bars-shell {
           position: relative;
           height: 195px;
-          padding: 0 10px 0 65px;
+          padding: 0 10px 0 52px;
           display: flex;
           align-items: flex-end;
           gap: 12px;
           border-bottom: 1.5px solid var(--line, #e2e8f0);
           margin-top: 10px;
+          min-width: 100%;
         }
         .cf-grid-line {
           position: absolute;
-          left: 65px;
+          left: 52px;
           right: 10px;
           height: 1px;
           border-top: 1px dashed #e2e8f0;
@@ -540,7 +554,7 @@ export const CashflowDesk: React.FC = () => {
         .cf-yl-label {
           position: absolute;
           left: 0;
-          width: 58px;
+          width: 44px;
           text-align: right;
           font-size: 11px;
           font-weight: 700;
@@ -567,14 +581,14 @@ export const CashflowDesk: React.FC = () => {
           width: 100%;
         }
         .cf-bar-in {
-          width: clamp(10px, 2.5vw, 18px);
+          width: clamp(9px, 2vw, 16px);
           background: #10b981;
           border-radius: 5px 5px 0 0;
           transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           display: block;
         }
         .cf-bar-out {
-          width: clamp(10px, 2.5vw, 18px);
+          width: clamp(9px, 2vw, 16px);
           background: #f43f5e;
           border-radius: 5px 5px 0 0;
           transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -589,15 +603,31 @@ export const CashflowDesk: React.FC = () => {
           box-shadow: 0 0 8px rgba(244, 63, 94, 0.4);
         }
         .cf-date-label {
-          font-size: 11.5px;
-          font-weight: 600;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          line-height: 1.1;
+          text-align: center;
+          margin-top: 4px;
+          pointer-events: none;
+        }
+        .cf-day-name {
+          font-size: 11px;
+          font-weight: 700;
           color: var(--mute, #707070);
           white-space: nowrap;
-          margin-top: 4px;
         }
-        .cf-bar-column.is-today .cf-date-label {
+        .cf-bar-column.is-today .cf-day-name {
           color: var(--ink, #1b1b1b);
           font-weight: 800;
+        }
+        .cf-day-date {
+          font-size: 9px;
+          font-weight: 600;
+          color: #8e8e93;
+          white-space: nowrap;
+          margin-top: 1px;
         }
         .cf-tooltip {
           position: absolute;
@@ -653,6 +683,14 @@ export const CashflowDesk: React.FC = () => {
           flex-wrap: wrap;
           gap: 12px;
           margin-bottom: 18px;
+        }
+        .enqu-cf-filter-controls {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex: 1;
+          justify-content: flex-end;
+          flex-wrap: wrap;
         }
         .enqu-cf-search-box {
           display: flex;
@@ -777,9 +815,179 @@ export const CashflowDesk: React.FC = () => {
           }
         }
         @media (max-width: 640px) {
-          .enqu-cashflow-desk { padding: 16px; }
-          .enqu-cf-kpi-grid { grid-template-columns: 1fr; }
-          .enqu-cf-period-ribbon { flex-direction: column; align-items: stretch; }
+          .enqu-cashflow-desk { padding: 12px; }
+          .enqu-cf-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 14px;
+          }
+          .enqu-cf-title h1 {
+            font-size: 19px;
+          }
+          .enqu-cf-title p {
+            font-size: 12px;
+          }
+          .enqu-cf-actions {
+            width: 100%;
+            display: flex;
+            gap: 8px;
+          }
+          .enqu-cf-actions .enqu-cf-btn {
+            flex: 1;
+            justify-content: center;
+            font-size: 12px;
+            padding: 8px 10px;
+          }
+          .enqu-cf-period-ribbon {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 8px;
+            gap: 8px;
+            margin-bottom: 14px;
+            border-radius: 14px;
+          }
+          .enqu-cf-period-ribbon .enqu-cf-pills {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            flex-wrap: nowrap;
+            gap: 4px;
+            padding-bottom: 2px;
+          }
+          .enqu-cf-period-ribbon .enqu-cf-pill {
+            flex-shrink: 0;
+            padding: 6px 10px;
+            font-size: 11.5px;
+          }
+          .enqu-cf-custom-range {
+            flex-wrap: wrap;
+            gap: 6px;
+          }
+          .enqu-cf-kpi-grid {
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 14px;
+          }
+          .enqu-cf-kpi-card {
+            padding: 16px;
+            border-radius: 16px;
+          }
+          .enqu-cf-kpi-val {
+            font-size: 22px;
+          }
+          .enqu-cf-chart-card {
+            padding: 16px 12px;
+            border-radius: 16px;
+            margin-bottom: 14px;
+          }
+          .enqu-cf-chart-top {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 12px;
+          }
+          .enqu-cf-chart-top h3 {
+            font-size: 15px;
+          }
+          .enqu-cf-legend {
+            flex-wrap: wrap;
+            gap: 6px 12px;
+            font-size: 11px;
+            width: 100%;
+          }
+          .cf-chart-scroll-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+          .cf-velocity-bars-shell {
+            height: 185px;
+            padding: 0 4px 0 38px;
+            gap: 4px;
+            min-width: 300px;
+          }
+          .cf-grid-line {
+            left: 38px;
+            right: 4px;
+          }
+          .cf-yl-label {
+            width: 34px;
+            font-size: 9.5px;
+          }
+          .cf-bar-in,
+          .cf-bar-out {
+            width: clamp(7px, 2vw, 11px);
+            min-width: 6px;
+            border-radius: 3px 3px 0 0;
+          }
+          .cf-dual-pair {
+            gap: 2px;
+          }
+          .cf-day-name {
+            font-size: 10px;
+          }
+          .cf-day-date {
+            font-size: 8.5px;
+          }
+          .enqu-cf-tabs-nav {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            flex-wrap: nowrap;
+            gap: 6px;
+            margin-bottom: 14px;
+            padding-bottom: 2px;
+          }
+          .enqu-cf-tab-btn {
+            flex-shrink: 0;
+            padding: 8px 14px;
+            font-size: 12px;
+          }
+          .enqu-cf-table-card {
+            padding: 16px 12px;
+            border-radius: 16px;
+          }
+          .enqu-cf-filter-bar {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+          }
+          .enqu-cf-filter-bar .enqu-cf-pills {
+            display: flex;
+            width: 100%;
+            gap: 6px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            flex-wrap: nowrap;
+            padding-bottom: 2px;
+          }
+          .enqu-cf-filter-bar .enqu-cf-pill {
+            flex: 1;
+            min-width: 90px;
+            text-align: center;
+            padding: 7px 8px;
+            font-size: 11.5px;
+            white-space: nowrap;
+          }
+          .enqu-cf-filter-controls {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+            width: 100%;
+          }
+          .enqu-cf-select {
+            width: 100%;
+            font-size: 12.5px;
+            padding: 8px 12px;
+          }
+          .enqu-cf-search-box {
+            width: 100%;
+            max-width: none;
+            padding: 8px 12px;
+          }
+          .enqu-cf-search-box input {
+            font-size: 12.5px;
+          }
         }
       `}</style>
 
@@ -973,61 +1181,75 @@ export const CashflowDesk: React.FC = () => {
               🔄 Streaming daily velocity telemetry from Neon PostgreSQL...
             </div>
           ) : (
-            <div className="cf-velocity-bars-shell">
-              {/* Y-Axis Step Gridlines & Currency Labels */}
-              {[100, 75, 50, 25, 0].map((pct, i) => (
-                <React.Fragment key={pct}>
-                  <div className="cf-grid-line" style={{ top: `${i * 35 + 8}px` }} />
-                  <span className="cf-yl-label" style={{ top: `${i * 35 + 8}px` }}>
-                    {formatETB(Math.round((chartMaxVal * pct) / 100))}
-                  </span>
-                </React.Fragment>
-              ))}
+            <div className="cf-chart-scroll-wrapper">
+              <div className="cf-velocity-bars-shell">
+                {/* Y-Axis Step Gridlines & Currency Labels */}
+                {[100, 75, 50, 25, 0].map((pct, i) => (
+                  <React.Fragment key={pct}>
+                    <div className="cf-grid-line" style={{ top: `${i * 35 + 8}px` }} />
+                    <span className="cf-yl-label" style={{ top: `${i * 35 + 8}px` }}>
+                      {formatYAxisVal(Math.round((chartMaxVal * pct) / 100))}
+                    </span>
+                  </React.Fragment>
+                ))}
 
-              {/* Daily Dual Bar Columns */}
-              {displayTrendBuckets.map((bucket, idx) => {
-                const inHeight = Math.max(6, Math.round((bucket.inflow / chartMaxVal) * 140));
-                const outHeight = Math.max(6, Math.round((bucket.outflow / chartMaxVal) * 140));
-                const isHovered = hoveredDayIdx === idx;
-                const isToday = idx === displayTrendBuckets.length - 1;
+                {/* Daily Dual Bar Columns */}
+                {displayTrendBuckets.map((bucket, idx) => {
+                  const inHeight = Math.max(6, Math.round((bucket.inflow / chartMaxVal) * 140));
+                  const outHeight = Math.max(6, Math.round((bucket.outflow / chartMaxVal) * 140));
+                  const isHovered = hoveredDayIdx === idx;
+                  const isToday = idx === displayTrendBuckets.length - 1;
 
-                return (
-                  <div
-                    key={bucket.date}
-                    className={`cf-bar-column ${isToday ? 'is-today' : ''}`}
-                    onMouseEnter={() => setHoveredDayIdx(idx)}
-                    onMouseLeave={() => setHoveredDayIdx(null)}
-                  >
-                    {isHovered && (
-                      <div className="cf-tooltip">
-                        <div style={{ fontWeight: 800, marginBottom: '3px' }}>{bucket.label || bucket.date}</div>
-                        <div style={{ color: '#34d399', fontWeight: 700 }}>+ Inflow: ETB {formatETB(bucket.inflow)}</div>
-                        <div style={{ color: '#f87171', fontWeight: 700 }}>- Outflow: ETB {formatETB(bucket.outflow)}</div>
-                        <div style={{ color: bucket.net >= 0 ? '#60a5fa' : '#f59e0b', fontWeight: 800, borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '2px', marginTop: '2px' }}>
-                          Net Margin: ETB {formatETB(bucket.net)}
+                  const parts = bucket.label ? bucket.label.split(' ') : [];
+                  const dayName = isToday ? 'Today' : (parts[0] || 'Day');
+                  const datePart = bucket.date ? bucket.date.slice(5) : '';
+
+                  const tooltipStyle: React.CSSProperties = {
+                    left: idx === 0 ? '0' : idx === displayTrendBuckets.length - 1 ? 'auto' : '50%',
+                    right: idx === displayTrendBuckets.length - 1 ? '0' : 'auto',
+                    transform: idx === 0 || idx === displayTrendBuckets.length - 1 ? 'none' : 'translateX(-50%)',
+                  };
+
+                  return (
+                    <div
+                      key={bucket.date}
+                      className={`cf-bar-column ${isToday ? 'is-today' : ''}`}
+                      onMouseEnter={() => setHoveredDayIdx(idx)}
+                      onMouseLeave={() => setHoveredDayIdx(null)}
+                      onClick={() => setHoveredDayIdx(hoveredDayIdx === idx ? null : idx)}
+                    >
+                      {isHovered && (
+                        <div className="cf-tooltip" style={tooltipStyle}>
+                          <div style={{ fontWeight: 800, marginBottom: '3px' }}>{bucket.label || bucket.date}</div>
+                          <div style={{ color: '#34d399', fontWeight: 700 }}>+ Inflow: ETB {formatETB(bucket.inflow)}</div>
+                          <div style={{ color: '#f87171', fontWeight: 700 }}>- Outflow: ETB {formatETB(bucket.outflow)}</div>
+                          <div style={{ color: bucket.net >= 0 ? '#60a5fa' : '#f59e0b', fontWeight: 800, borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '2px', marginTop: '2px' }}>
+                            Net Margin: ETB {formatETB(bucket.net)}
+                          </div>
                         </div>
+                      )}
+
+                      <div className="cf-dual-pair">
+                        <i
+                          className="cf-bar-in"
+                          style={{ height: `${inHeight}px` }}
+                          title={`Inflow: ETB ${formatETB(bucket.inflow)}`}
+                        />
+                        <i
+                          className="cf-bar-out"
+                          style={{ height: `${outHeight}px` }}
+                          title={`Outflow: ETB ${formatETB(bucket.outflow)}`}
+                        />
                       </div>
-                    )}
 
-                    <div className="cf-dual-pair">
-                      <i
-                        className="cf-bar-in"
-                        style={{ height: `${inHeight}px` }}
-                        title={`Inflow: ETB ${formatETB(bucket.inflow)}`}
-                      />
-                      <i
-                        className="cf-bar-out"
-                        style={{ height: `${outHeight}px` }}
-                        title={`Outflow: ETB ${formatETB(bucket.outflow)}`}
-                      />
+                      <div className="cf-date-label">
+                        <span className="cf-day-name">{dayName}</span>
+                        {!isToday && <span className="cf-day-date">{datePart}</span>}
+                      </div>
                     </div>
-
-                    <div className="cf-date-label">
-                      {isToday ? 'Today' : (bucket.label ? bucket.label.split(' ')[0] + ' ' + bucket.date.slice(5) : bucket.date.slice(5))}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
@@ -1088,38 +1310,40 @@ export const CashflowDesk: React.FC = () => {
                 </button>
               </div>
 
-              {/* Category Filter Dropdown */}
-              <select
-                className="enqu-cf-select"
-                value={categoryFilter}
-                onChange={e => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
-              >
-                <option value="all">All Categories</option>
-                <option value="deposit">Player Deposits</option>
-                <option value="recharge">Agent Float Recharges</option>
-                <option value="withdrawal">Player Withdrawals</option>
-                <option value="payout">Agent Commission Payouts</option>
-                <option value="p2p">P2P Cash-Outs</option>
-              </select>
+              <div className="enqu-cf-filter-controls">
+                {/* Category Filter Dropdown */}
+                <select
+                  className="enqu-cf-select"
+                  value={categoryFilter}
+                  onChange={e => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
+                >
+                  <option value="all">All Categories</option>
+                  <option value="deposit">Player Deposits</option>
+                  <option value="recharge">Agent Float Recharges</option>
+                  <option value="withdrawal">Player Withdrawals</option>
+                  <option value="payout">Agent Commission Payouts</option>
+                  <option value="p2p">P2P Cash-Outs</option>
+                </select>
 
-              {/* Search Bar */}
-              <div className="enqu-cf-search-box">
-                <span>🔍</span>
-                <input
-                  type="text"
-                  placeholder="Search ref code, player, agent, phone..."
-                  value={searchQuery}
-                  onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    style={{ background: 'transparent', border: 0, cursor: 'pointer', color: '#999' }}
-                    onClick={() => setSearchQuery('')}
-                  >
-                    ✕
-                  </button>
-                )}
+                {/* Search Bar */}
+                <div className="enqu-cf-search-box">
+                  <span>🔍</span>
+                  <input
+                    type="text"
+                    placeholder="Search ref code, player, agent, phone..."
+                    value={searchQuery}
+                    onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      style={{ background: 'transparent', border: 0, cursor: 'pointer', color: '#999' }}
+                      onClick={() => setSearchQuery('')}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
