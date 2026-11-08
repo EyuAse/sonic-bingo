@@ -333,11 +333,15 @@ adminCashflowRouter.get('/kpis', requireAdmin, async (req: AuthenticatedRequest,
  */
 adminCashflowRouter.get('/trend', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const period = (req.query.period as string) || 'week';
+    const rawPeriod = (req.query.period as string) || 'week';
     const from = req.query.from as string | undefined;
     const to = req.query.to as string | undefined;
 
-    const { startIso, endIso } = resolveTimeBounds(period, from, to);
+    // For a meaningful daily velocity trend chart, if 'today' or 'yesterday' is selected,
+    // display the rolling 7-day velocity series leading up to today so the chart is never a blank stub
+    const chartPeriod = (rawPeriod === 'today' || rawPeriod === 'yesterday') && !from ? 'week' : rawPeriod;
+
+    const { startIso, endIso } = resolveTimeBounds(chartPeriod, from, to);
 
     // Day series aggregation
     const trendRes = await query(`

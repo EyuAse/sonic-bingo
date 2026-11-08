@@ -515,20 +515,30 @@ export const CashflowDesk: React.FC = () => {
         .enqu-cf-bars-group {
           display: flex;
           align-items: flex-end;
-          gap: 3px;
+          gap: 4px;
           width: 100%;
+          height: 130px;
           justify-content: center;
         }
         .bar-inflow {
           background: #10b981;
           border-radius: 4px 4px 0 0;
-          width: 10px;
+          width: 11px;
+          min-height: 4px;
           transition: height 0.3s ease;
         }
         .bar-outflow {
           background: #f43f5e;
           border-radius: 4px 4px 0 0;
-          width: 10px;
+          width: 11px;
+          min-height: 4px;
+          transition: height 0.3s ease;
+        }
+        .bar-net {
+          background: #3b82f6;
+          border-radius: 4px 4px 0 0;
+          width: 11px;
+          min-height: 4px;
           transition: height 0.3s ease;
         }
         .bar-date-lbl {
@@ -751,13 +761,6 @@ export const CashflowDesk: React.FC = () => {
             </button>
             <button
               type="button"
-              className="enqu-cf-btn secondary"
-              onClick={handleExportCSV}
-            >
-              📊 Export CSV
-            </button>
-            <button
-              type="button"
               className="enqu-cf-btn primary"
               onClick={() => setShowReportModal(true)}
             >
@@ -909,8 +912,17 @@ export const CashflowDesk: React.FC = () => {
           ) : (
             <div className="enqu-cf-bars-tray">
               {trendBuckets.map((bucket, idx) => {
-                const inHeightPct = Math.max(Math.min((bucket.inflow / chartMaxVal) * 100, 100), 4);
-                const outHeightPct = Math.max(Math.min((bucket.outflow / chartMaxVal) * 100, 100), 4);
+                const maxBarPx = 120;
+                const inHeightPx = bucket.inflow > 0
+                  ? Math.max(8, Math.round((bucket.inflow / chartMaxVal) * maxBarPx))
+                  : (bucket.outflow > 0 ? 0 : 4);
+                const outHeightPx = bucket.outflow > 0
+                  ? Math.max(8, Math.round((bucket.outflow / chartMaxVal) * maxBarPx))
+                  : 0;
+                const netVal = Math.max(bucket.net, 0);
+                const netHeightPx = netVal > 0
+                  ? Math.max(6, Math.round((netVal / chartMaxVal) * maxBarPx))
+                  : 0;
                 const isHovered = hoveredDayIdx === idx;
 
                 return (
@@ -925,12 +937,25 @@ export const CashflowDesk: React.FC = () => {
                         <div style={{ fontWeight: 800, marginBottom: '2px' }}>{bucket.label}</div>
                         <div style={{ color: '#34d399' }}>+ Inflow: {formatETB(bucket.inflow)} ETB</div>
                         <div style={{ color: '#f87171' }}>- Outflow: {formatETB(bucket.outflow)} ETB</div>
-                        <div style={{ color: '#60a5fa' }}>Net: {formatETB(bucket.net)} ETB</div>
+                        <div style={{ color: '#60a5fa' }}>Net Margin: {formatETB(bucket.net)} ETB</div>
                       </div>
                     )}
                     <div className="enqu-cf-bars-group">
-                      <div className="bar-inflow" style={{ height: `${inHeightPct}%` }}></div>
-                      <div className="bar-outflow" style={{ height: `${outHeightPct}%` }}></div>
+                      <div
+                        className="bar-inflow"
+                        style={{ height: `${inHeightPx}px` }}
+                        title={`Inflow: ${formatETB(bucket.inflow)} ETB`}
+                      />
+                      <div
+                        className="bar-outflow"
+                        style={{ height: `${outHeightPx}px` }}
+                        title={`Outflow: ${formatETB(bucket.outflow)} ETB`}
+                      />
+                      <div
+                        className="bar-net"
+                        style={{ height: `${netHeightPx}px` }}
+                        title={`Net Margin: ${formatETB(bucket.net)} ETB`}
+                      />
                     </div>
                     <div className="bar-date-lbl">
                       {bucket.date.slice(5)}
