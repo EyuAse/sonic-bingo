@@ -46,7 +46,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
     { id: 'overview', label: 'Dashboard', icon: 'fa-solid fa-table-cells-large' },
     { id: 'players', label: 'Players', icon: 'fa-solid fa-user-group' },
     { id: 'deposit_requests', label: 'Deposits', icon: 'fa-solid fa-arrow-down-to-bracket', badge: pendingRequestsCount },
-    { id: 'cash_out', label: 'Withdrawals', icon: 'fa-solid fa-arrow-up-from-bracket', badge: pendingWithdrawalsCount },
+    { id: 'withdrawal_requests', label: 'Withdrawals', icon: 'fa-solid fa-arrow-up-from-bracket', badge: pendingWithdrawalsCount },
     { id: 'cash_in', label: 'Agent Wallet', icon: 'fa-solid fa-wallet' },
     { id: 'recharge', label: 'Recharge Requests', icon: 'fa-solid fa-plus' },
     { id: 'commission', label: 'Commissions', icon: 'fa-solid fa-percent' },
@@ -91,6 +91,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
       >
         {/* Brand Top Header: Rounded Gold "E" Square + Enqu Game Title */}
         <div
+          className="enqu-sidebar-brand"
           style={{
             padding: isCollapsed ? '18px 12px' : '20px 18px',
             display: 'flex',
@@ -110,6 +111,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
           >
             {/* Rounded Gold "E" Avatar Badge */}
             <div
+              className="enqu-sidebar-brand-avatar"
               style={{
                 width: '40px',
                 height: '40px',
@@ -219,13 +221,13 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
           {navItems.map((item, index) => {
             const isActive =
               item.id === activeTab ||
-              (item.id === 'cash_out' && activeTab === 'withdrawal_requests') ||
               (item.id === 'commission' && activeTab === 'cash_out');
 
             return (
               <button
                 key={`${item.id}-${index}`}
                 type="button"
+                className={`enqu-sidebar-nav-item ${isActive ? 'active' : ''}`}
                 onClick={() => handleTabClick(item.id)}
                 title={isCollapsed ? item.label : undefined}
                 style={{
@@ -236,7 +238,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
                   margin: isCollapsed ? '3px 8px' : '3px 12px',
                   borderRadius: '14px',
                   border: 'none',
-                  background: isActive ? '#1f2220' : 'transparent',
+                  background: isActive ? '#1b1b1b' : 'transparent',
                   color: isActive ? '#ffffff' : '#1b1b1b',
                   fontWeight: 700,
                   fontSize: '14px',

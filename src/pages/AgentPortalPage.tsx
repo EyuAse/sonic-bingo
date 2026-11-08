@@ -9,6 +9,7 @@ import { AgentLoginScreen } from '../components/agent/AgentLoginScreen.tsx';
 import { AgentSidebar, AgentDeskTab } from '../components/agent/AgentSidebar.tsx';
 import { AgentDashboardDesk } from '../components/agent/AgentDashboardDesk.tsx';
 import { AgentDepositRequestsDesk } from '../components/agent/AgentDepositRequestsDesk.tsx';
+import { AgentWithdrawalRequestsDesk } from '../components/agent/AgentWithdrawalRequestsDesk.tsx';
 import { AgentCashInDesk } from '../components/agent/AgentCashInDesk.tsx';
 import { AgentCashOutDesk } from '../components/agent/AgentCashOutDesk.tsx';
 import { AgentCommissionDesk } from '../components/agent/AgentCommissionDesk.tsx';
@@ -98,6 +99,7 @@ export const AgentPortalPage: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [pendingRequestsCount, setPendingRequestsCount] = useState<number>(0);
+  const [pendingWithdrawalsCount, setPendingWithdrawalsCount] = useState<number>(0);
 
   // Agent Session & Data
   const [profile, setProfile] = useState<AgentProfile | null>(null);
@@ -118,10 +120,11 @@ export const AgentPortalPage: React.FC = () => {
   const loadAgentData = async () => {
     try {
       setLoading(true);
-      const [profileRes, perfRes, reqsRes] = await Promise.all([
+      const [profileRes, perfRes, reqsRes, withRes] = await Promise.all([
         apiClient.agent.getProfile(),
         apiClient.agent.getPerformance(),
-        apiClient.agent.getDepositRequests('pending').catch(() => ({ success: false, pendingCount: 0 }))
+        apiClient.agent.getDepositRequests('pending').catch(() => ({ success: false, pendingCount: 0 })),
+        apiClient.agent.getWithdrawalRequests('pending').catch(() => ({ success: false, pendingCount: 0 }))
       ]);
 
       if (profileRes.success && profileRes.profile) {
@@ -134,6 +137,9 @@ export const AgentPortalPage: React.FC = () => {
       }
       if (reqsRes.success && typeof reqsRes.pendingCount === 'number') {
         setPendingRequestsCount(reqsRes.pendingCount);
+      }
+      if (withRes.success && typeof withRes.pendingCount === 'number') {
+        setPendingWithdrawalsCount(withRes.pendingCount);
       }
     } catch (err: any) {
       console.warn('Agent session not active:', err.message);
@@ -258,6 +264,7 @@ export const AgentPortalPage: React.FC = () => {
         closeMobile={() => setIsMobileOpen(false)}
         agentProfile={profile}
         pendingRequestsCount={pendingRequestsCount}
+        pendingWithdrawalsCount={pendingWithdrawalsCount}
         onLogout={handleLogout}
       />
 
@@ -288,6 +295,15 @@ export const AgentPortalPage: React.FC = () => {
               onActionCompleted={loadAgentData}
               showToast={showToast}
               openMobile={() => setIsMobileOpen(true)}
+            />
+          )}
+
+          {/* Desk: Player Withdrawal Requests Queue */}
+          {activeTab === 'withdrawal_requests' && (
+            <AgentWithdrawalRequestsDesk
+              agentProfile={profile}
+              onActionCompleted={loadAgentData}
+              showToast={showToast}
             />
           )}
 

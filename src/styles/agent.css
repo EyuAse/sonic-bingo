@@ -67,12 +67,12 @@
 }
 
 /* ==========================================================================
-   1. COLLAPSIBLE SIDEBAR
+   1. COLLAPSIBLE SIDEBAR (Enqu Luxury White & Obsidian Theme)
    ========================================================================== */
 .sonic-agent-sidebar {
-  width: var(--sonic-sidebar-expanded);
-  background: #0a0d14 !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  width: 260px;
+  background: #ffffff !important;
+  border-right: 1px solid #e6e6e9 !important;
   display: flex;
   flex-direction: column;
   position: sticky !important;
@@ -82,12 +82,100 @@
   overflow-y: auto !important;
   flex-shrink: 0 !important;
   z-index: 40;
-  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
+  transition: width 0.2s ease, min-width 0.2s ease;
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.03) !important;
 }
 
 .sonic-agent-sidebar.collapsed {
-  width: var(--sonic-sidebar-collapsed);
+  width: 72px !important;
+  min-width: 72px !important;
+}
+
+.sonic-agent-sidebar.collapsed .enqu-sidebar-nav-item {
+  padding: 11px 0 !important;
+  margin: 3px 8px !important;
+  justify-content: center !important;
+  width: calc(100% - 16px) !important;
+}
+
+.sonic-agent-sidebar.collapsed .enqu-sidebar-brand {
+  padding: 18px 12px !important;
+  justify-content: center !important;
+}
+
+.enqu-sidebar-brand {
+  padding: 18px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f2f2f4;
+  background: #ffffff;
+}
+
+.enqu-sidebar-brand-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: #e6a21f;
+  color: #1b1b1b;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 18px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(230, 162, 31, 0.35);
+}
+
+.enqu-sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  margin: 3px 12px;
+  border-radius: 14px;
+  border: none;
+  background: transparent;
+  color: #1b1b1b !important;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  text-align: left;
+  width: calc(100% - 24px);
+  text-decoration: none;
+}
+
+.enqu-sidebar-nav-item i {
+  color: #1b1b1b !important;
+  font-size: 15px;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.enqu-sidebar-nav-item:hover:not(.active) {
+  background: #f4f4f6 !important;
+  color: #1b1b1b !important;
+}
+
+.enqu-sidebar-nav-item.active {
+  background: #1f2220 !important;
+  color: #ffffff !important;
+}
+
+.enqu-sidebar-nav-item.active i {
+  color: #ffffff !important;
+}
+
+.enqu-sidebar-badge {
+  background: #e6a21f !important;
+  color: #1b1b1b !important;
+  font-weight: 800;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  margin-left: auto;
+  line-height: 16px;
 }
 
 /* Sidebar Top Brand Header */
@@ -660,6 +748,8 @@
     bottom: 0 !important;
     transform: translateX(-100%);
     width: 260px !important;
+    background: #ffffff !important;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.15) !important;
   }
   .sonic-agent-sidebar.mobile-open {
     transform: translateX(0);
