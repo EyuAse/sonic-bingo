@@ -7,7 +7,7 @@ import { telegramBotService } from '../services/telegramBotService.ts';
 
 async function main() {
   const cliArg = process.argv[2];
-  const newUrl = cliArg || process.env.TELEGRAM_WEBAPP_URL || 'https://bingo-mini-app-3li9.onrender.com';
+  const newUrl = cliArg || process.env.TELEGRAM_WEBAPP_URL || 'https://sonic-bingo.asoeyo029.workers.dev';
   console.log(`Setting telegram_webapp_url in database to: ${newUrl}`);
 
   await query(
@@ -21,9 +21,15 @@ async function main() {
   console.log('Current telegram admin settings:');
   console.table(res.rows);
 
-  console.log(`\nRegistering webhook with Telegram API...`);
   telegramBotService.clearConfigCache();
-  const webhookResult = await telegramBotService.setWebhook();
+
+  console.log(`\nSetting Telegram Chat Menu Button to ${newUrl}...`);
+  const menuResult = await telegramBotService.setChatMenuButton('web_app', newUrl);
+  console.log('Menu button update result:', menuResult);
+
+  console.log(`\nRegistering webhook with Telegram API...`);
+  const backendWebhookUrl = 'https://sonic-bingo-enod.onrender.com/api/telegram-webhook';
+  const webhookResult = await telegramBotService.setWebhook(backendWebhookUrl);
   console.log('Webhook registration result:', webhookResult);
 
   await pool.end();
