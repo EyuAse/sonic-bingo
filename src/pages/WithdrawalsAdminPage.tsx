@@ -180,10 +180,6 @@ export const WithdrawalsAdminPage: React.FC = () => {
           </div>
 
           <div className="admin-mobile-topbar-right">
-            <div className="admin-mobile-lang-chip" title="Ethiopian Amharic">
-              <span style={{ fontSize: '13px' }}>🇪🇹</span>
-              <span>አማ</span>
-            </div>
             <div
               className="admin-mobile-profile-avatar"
               title={adminUser?.name || 'Withdrawal Officer'}

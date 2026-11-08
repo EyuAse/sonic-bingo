@@ -317,7 +317,6 @@ export const BonusRewardsDesk: React.FC = () => {
         <div className="enqu-top">
           <h1>Bonus & Reward Management</h1>
           <div className="enqu-pillbox">● Live System</div>
-          <div className="enqu-av" title="Administrator">A</div>
         </div>
 
         {/* 3 Top KPI Cards (Redemptions Card Removed) */}

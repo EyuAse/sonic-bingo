@@ -105,10 +105,6 @@ export const AdminPage: React.FC = () => {
           </div>
 
           <div className="admin-mobile-topbar-right">
-            <div className="admin-mobile-lang-chip" title="Ethiopian Amharic">
-              <span style={{ fontSize: '13px' }}>🇪🇹</span>
-              <span>አማ</span>
-            </div>
             <div className="admin-mobile-profile-avatar" title="Super Admin">
               <i className="fa-solid fa-crown gold" style={{ fontSize: '11px', color: '#f59e0b' }}></i>
             </div>

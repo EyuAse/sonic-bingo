@@ -9,3 +9,4 @@ ALTER TABLE agent_profiles
 UPDATE agent_profiles 
   SET low_balance_threshold = 5000.00 
   WHERE low_balance_threshold = 1000.00 OR low_balance_threshold IS NULL;
+
