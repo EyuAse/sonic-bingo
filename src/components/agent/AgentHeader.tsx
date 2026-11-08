@@ -20,8 +20,8 @@ export const AgentHeader: React.FC<AgentHeaderProps> = ({
   openMobile,
   onNavigateTab
 }) => {
-  const agentName = agentProfile?.fullName || agentProfile?.agentCode || 'Admin';
-  const initial = (agentProfile?.fullName || agentProfile?.agentCode || 'A').charAt(0).toUpperCase();
+  const agentName = agentProfile?.fullName || (agentProfile?.agentCode ? `Agent ${agentProfile.agentCode}` : 'Agent');
+  const initial = (agentProfile?.fullName || agentProfile?.agentCode || 'Agent').charAt(0).toUpperCase();
 
   return (
     <header
@@ -179,9 +179,14 @@ export const AgentHeader: React.FC<AgentHeaderProps> = ({
             {initial}
           </div>
 
-          <span style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a' }}>
-            {agentName}
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.15 }}>
+            <span style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a' }}>
+              {agentName}
+            </span>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: '#16a34a' }}>
+              Agent Portal
+            </span>
+          </div>
 
           <i className="fa-solid fa-chevron-down" style={{ fontSize: '9px', color: '#94a3b8' }}></i>
         </div>

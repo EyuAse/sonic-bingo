@@ -42,8 +42,8 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated && (currentPage === 'landing' || currentPage === 'login' || currentPage === 'signup')) {
       const isAgentHash = typeof window !== 'undefined' && (
-        window.location.hash.includes('agent') ||
-        window.location.pathname.includes('agent') ||
+        (window.location.hash || '').toLowerCase().includes('agent') ||
+        (window.location.pathname || '').toLowerCase().includes('agent') ||
         localStorage.getItem('sonic_active_portal') === 'agent'
       );
       if (isAgentHash) {

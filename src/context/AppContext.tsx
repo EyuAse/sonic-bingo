@@ -31,26 +31,31 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentPage, setCurrentPage] = useState<PageId>(() => {
     if (typeof window !== 'undefined') {
-      const hash = window.location.hash;
-      const path = window.location.pathname;
+      const hash = (window.location.hash || '').toLowerCase();
+      const path = (window.location.pathname || '').toLowerCase();
       const savedPortal = localStorage.getItem('sonic_active_portal');
 
-      if (hash.includes('lomibingo-Admin-vBingo') || path.includes('lomibingo-Admin-vBingo') || hash.includes('admin')) {
-        return 'admin';
+      // 1. Explicit Hash/Path routing ALWAYS has highest priority!
+      if (hash.includes('agent') || path.includes('agent')) {
+        return 'agent';
       }
-      if (
-        hash.includes('withdrawals') ||
-        path.includes('withdrawals') ||
-        savedPortal === 'withdrawals'
-      ) {
+      if (hash.includes('withdrawals') || path.includes('withdrawals')) {
         return 'withdrawals';
       }
       if (
-        hash.includes('agent') ||
-        path.includes('agent') ||
-        savedPortal === 'agent'
+        hash.includes('lomibingo-admin-vbingo') ||
+        hash.includes('admin') ||
+        path.includes('lomibingo-admin-vbingo') ||
+        path.includes('admin')
       ) {
-        return 'agent';
+        return 'admin';
+      }
+
+      // 2. Saved portal fallback ONLY when URL has no explicit routing hash
+      if (!hash || hash === '#' || hash === '#/') {
+        if (savedPortal === 'agent') return 'agent';
+        if (savedPortal === 'withdrawals') return 'withdrawals';
+        if (savedPortal === 'admin') return 'admin';
       }
     }
     return 'landing';
@@ -58,27 +63,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastTimeout, setToastTimeout] = useState<number | null>(null);
 
-  // URL Hash routing listener for private route
+  // URL Hash routing listener for private routes
   React.useEffect(() => {
     const handleHashChange = () => {
-      const hash = window.location.hash;
-      const path = window.location.pathname;
-      const savedPortal = localStorage.getItem('sonic_active_portal');
+      const hash = (window.location.hash || '').toLowerCase();
+      const path = (window.location.pathname || '').toLowerCase();
 
-      if (hash.includes('lomibingo-Admin-vBingo') || path.includes('lomibingo-Admin-vBingo') || hash.includes('admin')) {
-        setCurrentPage('admin');
-      } else if (
-        hash.includes('withdrawals') ||
-        path.includes('withdrawals') ||
-        savedPortal === 'withdrawals'
-      ) {
-        setCurrentPage('withdrawals');
-      } else if (
-        hash.includes('agent') ||
-        path.includes('agent') ||
-        savedPortal === 'agent'
-      ) {
+      // 1. Explicit Hash/Path routing ALWAYS has highest priority!
+      if (hash.includes('agent') || path.includes('agent')) {
         setCurrentPage('agent');
+        localStorage.setItem('sonic_active_portal', 'agent');
+      } else if (hash.includes('withdrawals') || path.includes('withdrawals')) {
+        setCurrentPage('withdrawals');
+        localStorage.setItem('sonic_active_portal', 'withdrawals');
+      } else if (
+        hash.includes('lomibingo-admin-vbingo') ||
+        hash.includes('admin') ||
+        path.includes('lomibingo-admin-vbingo') ||
+        path.includes('admin')
+      ) {
+        setCurrentPage('admin');
+        localStorage.setItem('sonic_active_portal', 'admin');
       }
     };
     window.addEventListener('hashchange', handleHashChange);
