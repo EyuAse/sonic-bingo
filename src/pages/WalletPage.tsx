@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { ProfileHeader } from '../components/wallet/ProfileHeader.tsx';
 import { BalanceCard } from '../components/wallet/BalanceCard.tsx';
 import { TransactionHistory } from '../components/wallet/TransactionHistory.tsx';
 import { WalletMenu } from '../components/wallet/WalletMenu.tsx';
@@ -10,8 +9,6 @@ export const WalletPage: React.FC = () => {
 
   return (
     <div className="page active" id="page-wallet" style={{ paddingBottom: '100px' }}>
-      <ProfileHeader />
-
       {activeHistoryTab === 'bets' ? (
         /* Dedicated Game & Bet History View */
         <BetHistoryView onBack={() => setActiveHistoryTab(null)} />

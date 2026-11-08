@@ -36,8 +36,8 @@ export const CurrentCallBanner: React.FC = () => {
   } = useBingo();
   const { t, lang } = useLanguage();
 
-  // Last 3-4 previous balls (skip the active one)
-  const prevTrail = [...calledNumbers].reverse().slice(currentCall ? 1 : 0, 4);
+  // Last 6 previous balls (skip the active one)
+  const prevTrail = [...calledNumbers].reverse().slice(currentCall ? 1 : 0, currentCall ? 7 : 6);
 
   const mainColClass = currentCall
     ? `col-${currentCall.col.toLowerCase()}`
@@ -155,6 +155,9 @@ export const CurrentCallBanner: React.FC = () => {
               })
             ) : (
               <div className="compact-recent-empty-dots">
+                <span className="recent-empty-ball">--</span>
+                <span className="recent-empty-ball">--</span>
+                <span className="recent-empty-ball">--</span>
                 <span className="recent-empty-ball">--</span>
                 <span className="recent-empty-ball">--</span>
                 <span className="recent-empty-ball">--</span>
