@@ -338,7 +338,7 @@ adminCashflowRouter.get('/trend', requireAdmin, async (req: AuthenticatedRequest
     const to = req.query.to as string | undefined;
 
     // For a meaningful daily velocity trend chart, if 'today' or 'yesterday' is selected,
-    // display the rolling 7-day velocity series leading up to today so the chart is never a blank stub
+    // display the rolling 7-day velocity series leading up to today so the chart is never an empty 1-2 day stub
     const chartPeriod = (rawPeriod === 'today' || rawPeriod === 'yesterday') && !from ? 'week' : rawPeriod;
 
     const { startIso, endIso } = resolveTimeBounds(chartPeriod, from, to);

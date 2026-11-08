@@ -224,11 +224,48 @@ export const CashflowDesk: React.FC = () => {
     }
   };
 
+  // Ensure we always have at least 7 rolling days leading up to today so the chart is never an empty 1-2 day stub
+  const displayTrendBuckets = React.useMemo(() => {
+    if (trendBuckets.length >= 7) {
+      return trendBuckets;
+    }
+
+    // Build rolling 7 days ending with today
+    const now = new Date();
+    const days: typeof trendBuckets = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+      const monthDay = `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const label = `${dayName} ${monthDay}`;
+
+      const existing = trendBuckets.find(b => b.date === dateStr);
+      if (existing) {
+        days.push(existing);
+      } else {
+        days.push({
+          date: dateStr,
+          label,
+          inflow: 0,
+          outflow: 0,
+          net: 0,
+          ggr: 0,
+          pot: 0
+        });
+      }
+    }
+    return days;
+  }, [trendBuckets]);
+
   // Chart max value calculation for proportional bar heights
-  const chartMaxVal = Math.max(
-    ...trendBuckets.map(b => Math.max(b.inflow, b.outflow)),
-    100
-  );
+  const chartMaxVal = React.useMemo(() => {
+    return Math.max(
+      ...displayTrendBuckets.map(b => Math.max(b.inflow, b.outflow)),
+      100
+    );
+  }, [displayTrendBuckets]);
 
   return (
     <div className="enqu-cashflow-desk">
@@ -467,76 +504,114 @@ export const CashflowDesk: React.FC = () => {
           gap: 16px;
           font-size: 12.5px;
           font-weight: 700;
+          color: var(--ink, #1b1b1b);
+        }
+        .enqu-cf-legend .legend-item {
+          display: flex;
+          align-items: center;
+          gap: 6px;
         }
         .legend-dot {
           display: inline-block;
-          width: 10px;
-          height: 10px;
-          border-radius: 3px;
-          margin-right: 6px;
+          width: 9px;
+          height: 9px;
+          border-radius: 50%;
         }
 
-        .enqu-cf-bars-tray {
+        /* Redesigned Dashboard-Matched Velocity Bars Shell */
+        .cf-velocity-bars-shell {
+          position: relative;
+          height: 195px;
+          padding: 0 10px 0 65px;
           display: flex;
           align-items: flex-end;
-          gap: 8px;
-          height: 170px;
-          padding-top: 20px;
-          border-bottom: 1px solid #e5e5ea;
-          overflow-x: auto;
-          position: relative;
+          gap: 12px;
+          border-bottom: 1.5px solid var(--line, #e2e8f0);
+          margin-top: 10px;
         }
-        .enqu-cf-bar-col {
+        .cf-grid-line {
+          position: absolute;
+          left: 65px;
+          right: 10px;
+          height: 1px;
+          border-top: 1px dashed #e2e8f0;
+          pointer-events: none;
+        }
+        .cf-yl-label {
+          position: absolute;
+          left: 0;
+          width: 58px;
+          text-align: right;
+          font-size: 11px;
+          font-weight: 700;
+          color: var(--mute, #707070);
+          transform: translateY(-50%);
+          pointer-events: none;
+        }
+        .cf-bar-column {
           flex: 1;
-          min-width: 28px;
-          height: 100%;
           display: flex;
           flex-direction: column;
-          justify-content: flex-end;
           align-items: center;
-          cursor: pointer;
+          justify-content: flex-end;
+          height: 100%;
+          gap: 8px;
           position: relative;
+          cursor: pointer;
         }
-        .enqu-cf-bars-group {
+        .cf-dual-pair {
           display: flex;
           align-items: flex-end;
-          gap: 3px;
-          width: 100%;
           justify-content: center;
+          gap: 4px;
+          width: 100%;
         }
-        .bar-inflow {
+        .cf-bar-in {
+          width: clamp(10px, 2.5vw, 18px);
           background: #10b981;
-          border-radius: 4px 4px 0 0;
-          width: 10px;
-          transition: height 0.3s ease;
+          border-radius: 5px 5px 0 0;
+          transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          display: block;
         }
-        .bar-outflow {
+        .cf-bar-out {
+          width: clamp(10px, 2.5vw, 18px);
           background: #f43f5e;
-          border-radius: 4px 4px 0 0;
-          width: 10px;
-          transition: height 0.3s ease;
+          border-radius: 5px 5px 0 0;
+          transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          display: block;
         }
-        .bar-date-lbl {
-          font-size: 10.5px;
-          font-weight: 700;
-          color: #8e8e93;
-          margin-top: 8px;
+        .cf-bar-column:hover .cf-bar-in {
+          background: #059669;
+          box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+        }
+        .cf-bar-column:hover .cf-bar-out {
+          background: #e11d48;
+          box-shadow: 0 0 8px rgba(244, 63, 94, 0.4);
+        }
+        .cf-date-label {
+          font-size: 11.5px;
+          font-weight: 600;
+          color: var(--mute, #707070);
           white-space: nowrap;
+          margin-top: 4px;
         }
-
-        /* Tooltip */
-        .enqu-cf-tooltip {
+        .cf-bar-column.is-today .cf-date-label {
+          color: var(--ink, #1b1b1b);
+          font-weight: 800;
+        }
+        .cf-tooltip {
           position: absolute;
-          bottom: 105%;
-          background: #1c1e1d;
+          bottom: calc(100% - 15px);
+          left: 50%;
+          transform: translateX(-50%);
+          background: #0f172a;
           color: #ffffff;
           padding: 8px 12px;
-          border-radius: 10px;
+          border-radius: 8px;
           font-size: 11px;
-          font-weight: 600;
           white-space: nowrap;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-          z-index: 10;
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+          z-index: 100;
           pointer-events: none;
         }
 
@@ -865,53 +940,90 @@ export const CashflowDesk: React.FC = () => {
           </div>
         </div>
 
-        {/* Dynamic Visual Trend Chart Card */}
+        {/* Dynamic Visual Trend Chart Card (Dashboard-Matched Architecture) */}
         <div className="enqu-cf-chart-card">
           <div className="enqu-cf-chart-top">
-            <h3>Daily Cashflow Velocity (Inflows vs Outflows)</h3>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--ink)' }}>
+                Daily Cashflow Velocity
+              </h3>
+              <span style={{ fontSize: '12px', color: 'var(--mute)', fontWeight: 600 }}>
+                Inflows vs Outflows (Last 7 Days)
+              </span>
+            </div>
+
             <div className="enqu-cf-legend">
-              <div><span className="legend-dot" style={{ background: '#10b981' }}></span>Inflows</div>
-              <div><span className="legend-dot" style={{ background: '#f43f5e' }}></span>Outflows</div>
-              <div><span className="legend-dot" style={{ background: '#3b82f6' }}></span>Net Margin</div>
+              <div className="legend-item">
+                <span className="legend-dot" style={{ background: '#10b981' }} />
+                <span>Inflows (Deposits)</span>
+              </div>
+              <div className="legend-item">
+                <span className="legend-dot" style={{ background: '#f43f5e' }} />
+                <span>Outflows (Disbursements)</span>
+              </div>
+              <div className="legend-item">
+                <span className="legend-dot" style={{ background: '#3b82f6' }} />
+                <span>Net Margin</span>
+              </div>
             </div>
           </div>
 
           {isLoadingTrend ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
-              Loading velocity trend...
-            </div>
-          ) : trendBuckets.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
-              No transactions recorded for this period.
+            <div style={{ textAlign: 'center', padding: '50px 0', color: 'var(--mute)', fontWeight: 600 }}>
+              🔄 Streaming daily velocity telemetry from Neon PostgreSQL...
             </div>
           ) : (
-            <div className="enqu-cf-bars-tray">
-              {trendBuckets.map((bucket, idx) => {
-                const inHeightPct = Math.max(Math.min((bucket.inflow / chartMaxVal) * 100, 100), 4);
-                const outHeightPct = Math.max(Math.min((bucket.outflow / chartMaxVal) * 100, 100), 4);
+            <div className="cf-velocity-bars-shell">
+              {/* Y-Axis Step Gridlines & Currency Labels */}
+              {[100, 75, 50, 25, 0].map((pct, i) => (
+                <React.Fragment key={pct}>
+                  <div className="cf-grid-line" style={{ top: `${i * 35 + 8}px` }} />
+                  <span className="cf-yl-label" style={{ top: `${i * 35 + 8}px` }}>
+                    {formatETB(Math.round((chartMaxVal * pct) / 100))}
+                  </span>
+                </React.Fragment>
+              ))}
+
+              {/* Daily Dual Bar Columns */}
+              {displayTrendBuckets.map((bucket, idx) => {
+                const inHeight = Math.max(6, Math.round((bucket.inflow / chartMaxVal) * 140));
+                const outHeight = Math.max(6, Math.round((bucket.outflow / chartMaxVal) * 140));
                 const isHovered = hoveredDayIdx === idx;
+                const isToday = idx === displayTrendBuckets.length - 1;
 
                 return (
                   <div
                     key={bucket.date}
-                    className="enqu-cf-bar-col"
+                    className={`cf-bar-column ${isToday ? 'is-today' : ''}`}
                     onMouseEnter={() => setHoveredDayIdx(idx)}
                     onMouseLeave={() => setHoveredDayIdx(null)}
                   >
                     {isHovered && (
-                      <div className="enqu-cf-tooltip">
-                        <div style={{ fontWeight: 800, marginBottom: '2px' }}>{bucket.label}</div>
-                        <div style={{ color: '#34d399' }}>+ Inflow: {formatETB(bucket.inflow)} ETB</div>
-                        <div style={{ color: '#f87171' }}>- Outflow: {formatETB(bucket.outflow)} ETB</div>
-                        <div style={{ color: '#60a5fa' }}>Net: {formatETB(bucket.net)} ETB</div>
+                      <div className="cf-tooltip">
+                        <div style={{ fontWeight: 800, marginBottom: '3px' }}>{bucket.label || bucket.date}</div>
+                        <div style={{ color: '#34d399', fontWeight: 700 }}>+ Inflow: ETB {formatETB(bucket.inflow)}</div>
+                        <div style={{ color: '#f87171', fontWeight: 700 }}>- Outflow: ETB {formatETB(bucket.outflow)}</div>
+                        <div style={{ color: bucket.net >= 0 ? '#60a5fa' : '#f59e0b', fontWeight: 800, borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '2px', marginTop: '2px' }}>
+                          Net Margin: ETB {formatETB(bucket.net)}
+                        </div>
                       </div>
                     )}
-                    <div className="enqu-cf-bars-group">
-                      <div className="bar-inflow" style={{ height: `${inHeightPct}%` }}></div>
-                      <div className="bar-outflow" style={{ height: `${outHeightPct}%` }}></div>
+
+                    <div className="cf-dual-pair">
+                      <i
+                        className="cf-bar-in"
+                        style={{ height: `${inHeight}px` }}
+                        title={`Inflow: ETB ${formatETB(bucket.inflow)}`}
+                      />
+                      <i
+                        className="cf-bar-out"
+                        style={{ height: `${outHeight}px` }}
+                        title={`Outflow: ETB ${formatETB(bucket.outflow)}`}
+                      />
                     </div>
-                    <div className="bar-date-lbl">
-                      {bucket.date.slice(5)}
+
+                    <div className="cf-date-label">
+                      {isToday ? 'Today' : (bucket.label ? bucket.label.split(' ')[0] + ' ' + bucket.date.slice(5) : bucket.date.slice(5))}
                     </div>
                   </div>
                 );
