@@ -276,7 +276,7 @@ CREATE TABLE IF NOT EXISTS agent_profiles (
     status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'suspended', 'pending')),
     wallet_balance NUMERIC(12, 2) NOT NULL DEFAULT 10000.00 CHECK (wallet_balance >= 0),
     initial_deposit NUMERIC(12, 2) NOT NULL DEFAULT 10000.00,
-    low_balance_threshold NUMERIC(12, 2) NOT NULL DEFAULT 1000.00,
+    low_balance_threshold NUMERIC(12, 2) NOT NULL DEFAULT 5000.00,
     target_monthly NUMERIC(12, 2) NOT NULL DEFAULT 50000.00,
     commission_rate NUMERIC(5, 2) NOT NULL DEFAULT 5.00,
     low_balance_alert_sent BOOLEAN NOT NULL DEFAULT FALSE,

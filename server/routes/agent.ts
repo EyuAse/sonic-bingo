@@ -71,7 +71,7 @@ router.post('/login', async (req, res) => {
         phone: user.phone,
         agentCode: user.agent_code,
         walletBalance: parseFloat(user.wallet_balance || '0'),
-        lowBalanceThreshold: parseFloat(user.low_balance_threshold || '1000'),
+        lowBalanceThreshold: parseFloat(user.low_balance_threshold || '5000'),
         targetMonthly: parseFloat(user.target_monthly || '50000'),
         commissionRate: parseFloat(user.commission_rate || '5'),
         refLink: `https://t.me/SonicGameOfficialBot?start=agent_${user.agent_code}`
@@ -104,7 +104,7 @@ router.get('/profile', requireAgent, async (req: AuthenticatedRequest, res: Resp
 
     const ap = resProfile.rows[0];
     const balance = parseFloat(ap.wallet_balance || '0');
-    const threshold = parseFloat(ap.low_balance_threshold || '1000');
+    const threshold = parseFloat(ap.low_balance_threshold || '5000');
     const isLowBalance = balance <= threshold;
 
     return res.json({
@@ -736,7 +736,7 @@ router.post('/deposit-for-player', requireAgent, async (req: AuthenticatedReques
         playerPhone: player.phone,
         playerUsername: player.telegram_username,
         newPlayerBal,
-        isLowBalance: newAgentBal <= parseFloat(agent.low_balance_threshold || '1000')
+        isLowBalance: newAgentBal <= parseFloat(agent.low_balance_threshold || '5000')
       };
     });
 
@@ -1062,8 +1062,8 @@ router.get('/performance', requireAgent, async (req: AuthenticatedRequest, res: 
       success: true,
       agentCode: agent.agent_code,
       walletBalance: parseFloat(agent.wallet_balance || '0'),
-      lowBalanceThreshold: parseFloat(agent.low_balance_threshold || '1000'),
-      isLowBalance: parseFloat(agent.wallet_balance || '0') <= parseFloat(agent.low_balance_threshold || '1000'),
+      lowBalanceThreshold: parseFloat(agent.low_balance_threshold || '5000'),
+      isLowBalance: parseFloat(agent.wallet_balance || '0') <= parseFloat(agent.low_balance_threshold || '5000'),
       metrics: {
         totalPlayers: parseInt(p.total_players || '0', 10),
         activePlayers: totalActive,

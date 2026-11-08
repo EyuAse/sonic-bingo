@@ -1840,7 +1840,7 @@ router.get('/agents', requireAdmin, async (_req, res) => {
         portal_access: row.portal_access ?? true,
         wallet_balance: parseFloat(row.wallet_balance || '0'),
         initial_deposit: parseFloat(row.initial_deposit || '10000'),
-        low_balance_threshold: parseFloat(row.low_balance_threshold || '1000'),
+        low_balance_threshold: parseFloat(row.low_balance_threshold || '5000'),
         target_monthly: parseFloat(row.target_monthly || '50000'),
         commission_rate: parseFloat(row.commission_rate || '3.00'),
         cashout_commission_rate: parseFloat(row.cashout_commission_rate || '2.00'),
@@ -1923,7 +1923,7 @@ router.get('/agents/:id/details', requireAdmin, async (req: AuthenticatedRequest
         commission_rate: parseFloat(agent.commission_rate || '3.00'),
         cashout_commission_rate: parseFloat(agent.cashout_commission_rate || '2.00'),
         target_monthly: parseFloat(agent.target_monthly || '50000.00'),
-        low_balance_threshold: parseFloat(agent.low_balance_threshold || '1000.00'),
+        low_balance_threshold: parseFloat(agent.low_balance_threshold || '5000.00'),
         refLink: `https://t.me/SonicGameOfficialBot?start=agent_${agent.agent_code}`
       },
       stats: {
@@ -2021,7 +2021,7 @@ router.post('/agents/create', requireAdmin, async (req: AuthenticatedRequest, re
           low_balance_threshold, target_monthly, target_players,
           commission_rate, cashout_commission_rate, city, portal_access
         )
-        VALUES ($1, $2, 'active', $3, $3, 1000.00, $4, $5, $6, $7, $8, true)
+        VALUES ($1, $2, 'active', $3, $3, 5000.00, $4, $5, $6, $7, $8, true)
         RETURNING *`,
         [userId, agentCode, initDeposit, target, playersTarget, depCommission, withCommission, cleanCity]
       );

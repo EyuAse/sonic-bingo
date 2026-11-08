@@ -163,7 +163,7 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
   };
 
   const walletBalance = Number(profile?.walletBalance || 0);
-  const lowThreshold = Number(profile?.lowBalanceThreshold || 1000);
+  const lowThreshold = Number(profile?.lowBalanceThreshold || 5000);
   const isLowFloat = walletBalance <= lowThreshold;
 
   return (
@@ -1197,7 +1197,7 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
               </span>
             </div>
             <div style={{ fontSize: '22px', fontWeight: 900, color: '#dc2626' }}>
-              {(profile?.lowBalanceThreshold || 1000).toLocaleString()} <span style={{ fontSize: '13px', color: '#94a3b8' }}>ETB</span>
+              {(profile?.lowBalanceThreshold || 5000).toLocaleString()} <span style={{ fontSize: '13px', color: '#94a3b8' }}>ETB</span>
             </div>
             <div style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.4 }}>
               Terminal warning flags when liquidity drops below this safety buffer.

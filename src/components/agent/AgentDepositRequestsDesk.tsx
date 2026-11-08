@@ -67,7 +67,7 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
   const [requests, setRequests] = useState<DepositRequestItem[]>([]);
   const [summary, setSummary] = useState<DepositSummary>({
     walletBalance: parseFloat(agentProfile?.walletBalance || agentProfile?.wallet_balance || '0'),
-    lowBalanceThreshold: parseFloat(agentProfile?.lowBalanceThreshold || agentProfile?.low_balance_threshold || '1000'),
+    lowBalanceThreshold: parseFloat(agentProfile?.lowBalanceThreshold || agentProfile?.low_balance_threshold || '5000'),
     pendingSum: 0,
     pendingCount: 0,
     oldestWaitingMinutes: 0,

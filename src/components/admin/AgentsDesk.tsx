@@ -161,7 +161,7 @@ export const AgentsDesk: React.FC = () => {
             if (a.status === 'active') ac++;
             if (a.status === 'pending') pd++;
             fl += a.wallet_balance;
-            if (a.wallet_balance < (a.low_balance_threshold || 1000) && a.status === 'active') lw++;
+            if (a.wallet_balance < (a.low_balance_threshold || 5000) && a.status === 'active') lw++;
           });
           setSummary({
             totalAgents: list.length,
@@ -658,7 +658,7 @@ export const AgentsDesk: React.FC = () => {
                 ) : (
                   filteredAgents.map((ag) => {
                     const isSelected = selectedAgentId === ag.id;
-                    const isLow = ag.wallet_balance < (ag.low_balance_threshold || 1000);
+                    const isLow = ag.wallet_balance < (ag.low_balance_threshold || 5000);
                     const targetPl = ag.target_players || 50;
                     const pct = Math.min(100, Math.round((ag.total_players / targetPl) * 100));
                     const portalActive = ag.portal_access ?? true;
@@ -781,8 +781,8 @@ export const AgentsDesk: React.FC = () => {
                   {formatNumber(selectedAgent.wallet_balance)} ETB
                 </div>
                 <div className="tr">
-                  {selectedAgent.wallet_balance < (selectedAgent.low_balance_threshold || 1000) ? (
-                    <span className="dn">Below 1,000 ETB warning</span>
+                  {selectedAgent.wallet_balance < (selectedAgent.low_balance_threshold || 5000) ? (
+                    <span className="dn">Below {formatNumber(selectedAgent.low_balance_threshold || 5000)} ETB warning</span>
                   ) : (
                     <span className="up">Healthy balance</span>
                   )}

@@ -328,7 +328,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
                   agentsList.slice(0, 6).map((agent: any) => {
                     const isActive = agent.status === 'active';
                     const balance = parseFloat(agent.wallet_balance || '0');
-                    const isLow = balance <= (parseFloat(agent.low_balance_threshold) || 1000);
+                    const isLow = balance <= (parseFloat(agent.low_balance_threshold) || 5000);
 
                     return (
                       <tr key={agent.id}>

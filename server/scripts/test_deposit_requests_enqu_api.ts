@@ -21,7 +21,7 @@ async function testPhase1DepositRequests() {
   const agent = agentRes.rows[0];
   const agentId = agent.id;
   console.log(`✅ [1/4] Found Active Agent: ${agent.full_name} (${agent.agent_code})`);
-  console.log(`       Wallet: ETB ${parseFloat(agent.wallet_balance || 0).toLocaleString()} | Low Threshold: ETB ${parseFloat(agent.low_balance_threshold || 1000).toLocaleString()}`);
+  console.log(`       Wallet: ETB ${parseFloat(agent.wallet_balance || 0).toLocaleString()} | Low Threshold: ETB ${parseFloat(agent.low_balance_threshold || 5000).toLocaleString()}`);
 
   // 2. Authoritative Summary Statistics Query
   const summaryRes = await query(`
@@ -39,7 +39,7 @@ async function testPhase1DepositRequests() {
 
   const s = summaryRes.rows[0];
   const walletBalance = parseFloat(agent.wallet_balance || '0');
-  const lowBalanceThreshold = parseFloat(agent.low_balance_threshold || '1000');
+  const lowBalanceThreshold = parseFloat(agent.low_balance_threshold || '5000');
   const pendingSum = parseFloat(s.pending_sum || '0');
   const pendingCount = parseInt(s.pending_count || '0', 10);
   const oldestWaitingMin = parseInt(s.oldest_waiting_min || '0', 10);
