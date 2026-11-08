@@ -3,13 +3,10 @@ import React from 'react';
 export type AgentDeskTab =
   | 'overview'
   | 'deposit_requests'
-  | 'withdrawal_requests'
-  | 'cash_in'
-  | 'cash_out'
-  | 'commission'
   | 'recharge'
+  | 'commission'
+  | 'cash_out'
   | 'players'
-  | 'statements'
   | 'profile';
 
 interface AgentSidebarProps {
@@ -21,7 +18,6 @@ interface AgentSidebarProps {
   closeMobile: () => void;
   agentProfile: any;
   pendingRequestsCount?: number;
-  pendingWithdrawalsCount?: number;
   onLogout: () => void;
 }
 
@@ -33,10 +29,9 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
   isMobileOpen,
   closeMobile,
   pendingRequestsCount = 0,
-  pendingWithdrawalsCount = 0,
   onLogout
 }) => {
-  // Navigation tabs preserving full functional compatibility with Enqu light luxury styling
+  // Navigation tabs preserving full functional compatibility with Sonic luxury styling
   const navItems: Array<{
     id: AgentDeskTab;
     label: string;
@@ -46,11 +41,8 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
     { id: 'overview', label: 'Dashboard', icon: 'fa-solid fa-table-cells-large' },
     { id: 'players', label: 'Players', icon: 'fa-solid fa-user-group' },
     { id: 'deposit_requests', label: 'Deposits', icon: 'fa-solid fa-arrow-down-to-bracket', badge: pendingRequestsCount },
-    { id: 'withdrawal_requests', label: 'Withdrawals', icon: 'fa-solid fa-arrow-up-from-bracket', badge: pendingWithdrawalsCount },
-    { id: 'cash_in', label: 'Agent Wallet', icon: 'fa-solid fa-wallet' },
     { id: 'recharge', label: 'Recharge Requests', icon: 'fa-solid fa-plus' },
     { id: 'commission', label: 'Commissions', icon: 'fa-solid fa-percent' },
-    { id: 'statements', label: 'Transactions', icon: 'fa-solid fa-bars' },
     { id: 'profile', label: 'Settings', icon: 'fa-solid fa-gear' },
   ];
 
@@ -109,7 +101,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
               minWidth: 0
             }}
           >
-            {/* Rounded Gold "E" Avatar Badge */}
+            {/* Rounded Gold "S" Avatar Badge */}
             <div
               className="enqu-sidebar-brand-avatar"
               style={{
@@ -126,7 +118,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
                 boxShadow: '0 2px 8px rgba(230, 162, 31, 0.35)'
               }}
             >
-              E
+              S
             </div>
 
             {!isCollapsed && (
@@ -142,7 +134,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
                     textOverflow: 'ellipsis'
                   }}
                 >
-                  Enqu Game
+                  Sonic Game
                 </div>
                 <div
                   style={{

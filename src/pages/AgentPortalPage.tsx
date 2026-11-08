@@ -9,13 +9,9 @@ import { AgentLoginScreen } from '../components/agent/AgentLoginScreen.tsx';
 import { AgentSidebar, AgentDeskTab } from '../components/agent/AgentSidebar.tsx';
 import { AgentDashboardDesk } from '../components/agent/AgentDashboardDesk.tsx';
 import { AgentDepositRequestsDesk } from '../components/agent/AgentDepositRequestsDesk.tsx';
-import { AgentWithdrawalRequestsDesk } from '../components/agent/AgentWithdrawalRequestsDesk.tsx';
-import { AgentCashInDesk } from '../components/agent/AgentCashInDesk.tsx';
-import { AgentCashOutDesk } from '../components/agent/AgentCashOutDesk.tsx';
 import { AgentCommissionDesk } from '../components/agent/AgentCommissionDesk.tsx';
 import { AgentRechargeDesk } from '../components/agent/AgentRechargeDesk.tsx';
 import { AgentPlayersDesk } from '../components/agent/AgentPlayersDesk.tsx';
-import { AgentStatementDesk } from '../components/agent/AgentStatementDesk.tsx';
 import { AgentProfileDesk } from '../components/agent/AgentProfileDesk.tsx';
 import { socketService } from '../services/socketService.ts';
 
@@ -55,7 +51,7 @@ export const AgentPortalPage: React.FC = () => {
     if (typeof window !== 'undefined') {
       const validTabs: AgentDeskTab[] = [
         'overview', 'deposit_requests',
-        'cash_in', 'cash_out', 'recharge', 'players', 'statements', 'profile', 'commission'
+        'cash_out', 'recharge', 'players', 'profile', 'commission'
       ];
 
       // 1. Check URL query params: ?tab=commission
@@ -99,16 +95,12 @@ export const AgentPortalPage: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [pendingRequestsCount, setPendingRequestsCount] = useState<number>(0);
-  const [pendingWithdrawalsCount, setPendingWithdrawalsCount] = useState<number>(0);
 
   // Agent Session & Data
   const [profile, setProfile] = useState<AgentProfile | null>(null);
   const [metrics, setMetrics] = useState<AgentPerformance | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAgentLoggedIn, setIsAgentLoggedIn] = useState(false);
-
-  // Quick Action Jump (e.g. from Players Desk -> Cash-In Desk)
-  const [prefilledPlayer, setPrefilledPlayer] = useState<any | null>(null);
 
   // Login Form State (if not authenticated)
   const [loginPhone, setLoginPhone] = useState(user?.phone || '');
@@ -120,11 +112,10 @@ export const AgentPortalPage: React.FC = () => {
   const loadAgentData = async () => {
     try {
       setLoading(true);
-      const [profileRes, perfRes, reqsRes, withRes] = await Promise.all([
+      const [profileRes, perfRes, reqsRes] = await Promise.all([
         apiClient.agent.getProfile(),
         apiClient.agent.getPerformance(),
-        apiClient.agent.getDepositRequests('pending').catch(() => ({ success: false, pendingCount: 0 })),
-        apiClient.agent.getWithdrawalRequests('pending').catch(() => ({ success: false, pendingCount: 0 }))
+        apiClient.agent.getDepositRequests('pending').catch(() => ({ success: false, pendingCount: 0 }))
       ]);
 
       if (profileRes.success && profileRes.profile) {
@@ -137,9 +128,6 @@ export const AgentPortalPage: React.FC = () => {
       }
       if (reqsRes.success && typeof reqsRes.pendingCount === 'number') {
         setPendingRequestsCount(reqsRes.pendingCount);
-      }
-      if (withRes.success && typeof withRes.pendingCount === 'number') {
-        setPendingWithdrawalsCount(withRes.pendingCount);
       }
     } catch (err: any) {
       console.warn('Agent session not active:', err.message);
@@ -229,9 +217,8 @@ export const AgentPortalPage: React.FC = () => {
     }
   };
 
-  const handleQuickDeposit = (player: any) => {
-    setPrefilledPlayer(player);
-    setActiveTab('cash_in');
+  const handleQuickDeposit = (_player?: any) => {
+    setActiveTab('deposit_requests');
   };
 
   // 3. Render 100% Pixel-Perfect Cloned Login Screen if unauthenticated
@@ -264,7 +251,6 @@ export const AgentPortalPage: React.FC = () => {
         closeMobile={() => setIsMobileOpen(false)}
         agentProfile={profile}
         pendingRequestsCount={pendingRequestsCount}
-        pendingWithdrawalsCount={pendingWithdrawalsCount}
         onLogout={handleLogout}
       />
 
@@ -288,7 +274,7 @@ export const AgentPortalPage: React.FC = () => {
             />
           )}
 
-          {/* Desk: Player Deposit Requests Queue */}
+          {/* Desk 2: Player Deposit Requests Queue */}
           {activeTab === 'deposit_requests' && (
             <AgentDepositRequestsDesk
               agentProfile={profile}
@@ -298,31 +284,13 @@ export const AgentPortalPage: React.FC = () => {
             />
           )}
 
-          {/* Desk: Player Withdrawal Requests Queue */}
-          {activeTab === 'withdrawal_requests' && (
-            <AgentWithdrawalRequestsDesk
+          {/* Desk 3: Referred Players Roster */}
+          {activeTab === 'players' && (
+            <AgentPlayersDesk
               agentProfile={profile}
-              onActionCompleted={loadAgentData}
+              onQuickDeposit={() => setActiveTab('deposit_requests')}
               showToast={showToast}
-            />
-          )}
-
-          {/* Desk 2: Player Cash-In */}
-          {activeTab === 'cash_in' && (
-            <AgentCashInDesk
-              agentProfile={profile}
-              onDepositSuccess={loadAgentData}
-              showToast={showToast}
-              initialPlayer={prefilledPlayer}
-            />
-          )}
-
-          {/* Desk 3: Commission Wallet */}
-          {(activeTab === 'cash_out' || activeTab === 'commission') && (
-            <AgentCommissionDesk
-              agentProfile={profile}
-              onRefresh={loadAgentData}
-              showToast={showToast}
+              openMobile={() => setIsMobileOpen(true)}
             />
           )}
 
@@ -336,24 +304,16 @@ export const AgentPortalPage: React.FC = () => {
             />
           )}
 
-          {/* Desk 5: Referred Players Roster */}
-          {activeTab === 'players' && (
-            <AgentPlayersDesk
+          {/* Desk 5: Commission Desk */}
+          {(activeTab === 'cash_out' || activeTab === 'commission') && (
+            <AgentCommissionDesk
               agentProfile={profile}
-              onQuickDeposit={handleQuickDeposit}
-              showToast={showToast}
-              openMobile={() => setIsMobileOpen(true)}
-            />
-          )}
-
-          {/* Desk 6: Statement Ledger */}
-          {activeTab === 'statements' && (
-            <AgentStatementDesk
+              onRefresh={loadAgentData}
               showToast={showToast}
             />
           )}
 
-          {/* Desk 7: Agency Profile & QR Deep Link */}
+          {/* Desk 6: Agency Profile & Settings */}
           {activeTab === 'profile' && (
             <AgentProfileDesk
               profile={profile}
