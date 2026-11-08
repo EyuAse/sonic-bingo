@@ -291,11 +291,12 @@
 }
 
 .sonic-agent-page-content {
-  padding: 24px 32px;
-  background-color: #f4f6f8 !important;
-  color: #0f172a !important;
+  padding: 24px 30px 48px;
+  background-color: #f2f2f4 !important;
+  color: #1b1b1b !important;
   flex: 1;
   width: 100%;
+  min-width: 0;
   box-sizing: border-box;
 }
 

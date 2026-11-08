@@ -29,13 +29,13 @@
    ========================================================================== */
 .recharge-desk-root {
   font-family: 'Urbanist', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: var(--rch-bg);
+  background: transparent;
   color: var(--rch-ink);
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
-  padding: 26px 30px 48px;
+  padding: 0;
+  width: 100%;
   min-width: 0;
-  max-width: 1240px;
   box-sizing: border-box;
 }
 
@@ -749,9 +749,6 @@
 }
 
 @media (max-width: 860px) {
-  .recharge-desk-root {
-    padding: 18px 16px 40px;
-  }
   .recharge-desk-root .big {
     font-size: 38px;
   }

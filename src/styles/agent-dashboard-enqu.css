@@ -24,11 +24,12 @@
 /* Base Wrapper */
 .enqu-agent-dashboard-root {
   font-family: 'Urbanist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: var(--ag-bg);
+  background-color: transparent;
   color: var(--ag-ink);
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
-  padding: 24px 28px 48px;
+  padding: 0;
+  width: 100%;
   min-width: 0;
   box-sizing: border-box;
 }
@@ -1041,9 +1042,6 @@
 @media (max-width: 900px) {
   .enqu-menu-btn {
     display: flex !important;
-  }
-  .enqu-agent-dashboard-root {
-    padding: 16px 14px 40px;
   }
   .enqu-hero {
     grid-template-columns: 1fr;
