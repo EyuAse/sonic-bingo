@@ -1,0 +1,764 @@
+/* ==========================================================================
+   RECHARGE REQUESTS LUXURY ENQU STYLESHEET
+   100% Pixel-Perfect Clone of Reference HTML & UI Design System
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  --rch-bg: #f2f2f4;
+  --rch-card: #ffffff;
+  --rch-ink: #1b1b1b;
+  --rch-mute: #6f6f73;
+  --rch-line: #e6e6e9;
+  --rch-chip: #efeff1;
+  --rch-dark: #1f2220;
+  --rch-gold: #e6a21f;
+  --rch-gold2: #f6d453;
+  --rch-g: #2e9e4f;
+  --rch-r: #b0302f;
+  --rch-am: #8a5a00;
+  --rch-amb: #fbf0d9;
+  --rch-okb: #e4f1e8;
+  --rch-okt: #1f6a37;
+  --rch-bdb: #f6dedd;
+}
+
+/* ==========================================================================
+   BASE WRAPPER & RESET
+   ========================================================================== */
+.recharge-desk-root {
+  font-family: 'Urbanist', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--rch-bg);
+  color: var(--rch-ink);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  padding: 26px 30px 48px;
+  min-width: 0;
+  max-width: 1240px;
+  box-sizing: border-box;
+}
+
+.recharge-desk-root * {
+  box-sizing: border-box;
+}
+
+/* Universal Button Styles */
+.recharge-desk-root button {
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 13.5px;
+  border: 0;
+  border-radius: 14px;
+  padding: 10px 16px;
+  background: var(--rch-chip);
+  color: var(--rch-ink);
+  cursor: pointer;
+  transition: filter 0.12s ease, transform 0.12s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.recharge-desk-root button:hover {
+  filter: brightness(0.96);
+}
+
+.recharge-desk-root button:active {
+  transform: scale(0.98);
+}
+
+.recharge-desk-root button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.recharge-desk-root button.gold {
+  background: linear-gradient(135deg, var(--rch-gold2), var(--rch-gold));
+  color: #2a1c00;
+  box-shadow: 0 4px 14px rgba(230, 162, 31, 0.35);
+}
+
+.recharge-desk-root button.k {
+  background: var(--rch-dark);
+  color: #ffffff;
+}
+
+.recharge-desk-root :focus-visible {
+  outline: 2px solid var(--rch-gold);
+  outline-offset: 2px;
+}
+
+/* Form Inputs */
+.recharge-desk-root input,
+.recharge-desk-root select,
+.recharge-desk-root textarea {
+  font-family: inherit;
+  font-weight: 600;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--rch-line);
+  background: var(--rch-card);
+  color: var(--rch-ink);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.recharge-desk-root input:focus,
+.recharge-desk-root select:focus {
+  border-color: var(--rch-gold);
+}
+
+.recharge-desk-root label {
+  display: block;
+  font-size: 12.5px;
+  color: var(--rch-mute);
+  font-weight: 600;
+  margin: 16px 0 6px;
+}
+
+/* ==========================================================================
+   1. TOPBAR & TITLE
+   ========================================================================== */
+.recharge-desk-root .top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.recharge-desk-root .top h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--rch-ink);
+  margin: 0;
+}
+
+.recharge-desk-root .top p {
+  color: var(--rch-mute);
+  font-weight: 600;
+  margin-top: 2px;
+  font-size: 13.5px;
+}
+
+.recharge-desk-root .sp {
+  flex: 1;
+}
+
+/* ==========================================================================
+   2. HERO WALLET BALANCE CARD (OBSIDIAN & GOLD RADIAL SPECULAR GRADIENT)
+   ========================================================================== */
+.recharge-desk-root .hero {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 24px;
+  border-radius: 26px;
+  padding: 26px 28px;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 16px;
+  background: radial-gradient(circle at 92% 6%, rgba(246, 212, 83, 0.34), transparent 42%),
+              radial-gradient(circle at 4% 120%, rgba(224, 138, 30, 0.26), transparent 50%),
+              linear-gradient(135deg, #1c1e1d, #2a2d2b 55%, #1a1c1b);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+}
+
+.recharge-desk-root .hero::after {
+  content: "";
+  position: absolute;
+  right: -80px;
+  top: -80px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  border: 1px solid rgba(246, 212, 83, 0.22);
+  box-shadow: 0 0 0 30px rgba(246, 212, 83, 0.045), 0 0 0 60px rgba(246, 212, 83, 0.03);
+  pointer-events: none;
+}
+
+.recharge-desk-root .hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.recharge-desk-root .kl {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #d6d6d9;
+}
+
+.recharge-desk-root .big {
+  font-size: 46px;
+  font-weight: 800;
+  letter-spacing: -1.6px;
+  line-height: 1.05;
+  margin: 8px 0 16px;
+  color: #ffffff;
+}
+
+.recharge-desk-root .big small {
+  font-size: 18px;
+  color: var(--rch-gold2);
+  margin-right: 8px;
+  letter-spacing: 0;
+  font-weight: 700;
+}
+
+.recharge-desk-root .meter {
+  height: 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.14);
+  position: relative;
+  margin: 6px 0 8px;
+  overflow: visible;
+}
+
+.recharge-desk-root .meter i {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--rch-gold), var(--rch-gold2));
+  transition: width 0.4s ease;
+}
+
+.recharge-desk-root .meter b {
+  position: absolute;
+  top: -5px;
+  width: 2px;
+  height: 20px;
+  background: #ffffff;
+  border-radius: 2px;
+  opacity: 0.9;
+}
+
+.recharge-desk-root .mrow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: #c9c9cd;
+}
+
+.recharge-desk-root .stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-content: center;
+}
+
+.recharge-desk-root .stat {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 13px 15px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.recharge-desk-root .stat b {
+  display: block;
+  font-size: 20px;
+  font-weight: 800;
+  margin-top: 3px;
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   3. WARNING ALERT BANNER
+   ========================================================================== */
+.recharge-desk-root .alert {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: var(--rch-amb);
+  color: var(--rch-am);
+  border-radius: 18px;
+  padding: 13px 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  box-shadow: inset 4px 0 0 var(--rch-gold);
+}
+
+.recharge-desk-root .alert[hidden] {
+  display: none;
+}
+
+.recharge-desk-root .alert i {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--rch-gold);
+  color: #2a1c00;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  font-weight: 800;
+  flex: none;
+}
+
+/* ==========================================================================
+   4. LIVE OFFICIAL RECEIVING ACCOUNTS (CONNECTED TO ADMIN PORTAL)
+   ========================================================================== */
+.recharge-desk-root .official-accounts-section {
+  background: var(--rch-card);
+  border: 1px solid var(--rch-line);
+  border-radius: 22px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
+}
+
+.recharge-desk-root .official-accounts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.recharge-desk-root .official-accounts-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--rch-ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recharge-desk-root .official-accounts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.recharge-desk-root .official-acc-card {
+  border: 1.5px solid var(--rch-line);
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: var(--rch-chip);
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.recharge-desk-root .official-acc-card.primary {
+  border-color: var(--rch-gold);
+  background: #fffdf5;
+  box-shadow: 0 2px 8px rgba(230, 162, 31, 0.12);
+}
+
+.recharge-desk-root .official-acc-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.recharge-desk-root .official-badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: var(--rch-amb);
+  color: var(--rch-am);
+}
+
+.recharge-desk-root .official-num-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 6px 0;
+}
+
+.recharge-desk-root .official-num {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--rch-ink);
+}
+
+.recharge-desk-root .official-holder {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--rch-mute);
+}
+
+/* ==========================================================================
+   5. TWO-COLUMN LAYOUT (FORM 1.35fr : PREVIEW 1.0fr)
+   ========================================================================== */
+.recharge-desk-root .grid {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+  align-items: start;
+}
+
+.recharge-desk-root .card {
+  background: var(--rch-card);
+  border: 1px solid var(--rch-line);
+  border-radius: 22px;
+  padding: 20px 22px;
+  min-width: 0;
+}
+
+.recharge-desk-root .card h3 {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  letter-spacing: -0.2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--rch-ink);
+}
+
+.recharge-desk-root .card .sub {
+  color: var(--rch-mute);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* Quick Amount Pills */
+.recharge-desk-root .quick {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.recharge-desk-root .quick button {
+  padding: 8px 13px;
+  border-radius: 12px;
+  font-weight: 700;
+  background: var(--rch-chip);
+  color: var(--rch-ink);
+}
+
+.recharge-desk-root .quick button.on {
+  background: var(--rch-dark);
+  color: #ffffff;
+}
+
+/* Segmented Payment Buttons */
+.recharge-desk-root .seg {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.recharge-desk-root .seg button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 14px;
+  border-radius: 16px;
+  background: var(--rch-card);
+  box-shadow: inset 0 0 0 1.5px var(--rch-line);
+  text-align: left;
+  color: var(--rch-ink);
+  font-weight: 700;
+}
+
+.recharge-desk-root .seg button.on {
+  box-shadow: inset 0 0 0 2px var(--rch-gold);
+  background: var(--rch-amb);
+}
+
+.recharge-desk-root .seg em {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 12px;
+  color: #ffffff;
+  flex: none;
+}
+
+.recharge-desk-root .err {
+  color: var(--rch-r);
+  font-weight: 700;
+  font-size: 12.5px;
+  min-height: 18px;
+  margin-top: 8px;
+}
+
+/* Sticky Right Column Summary */
+.recharge-desk-root .sum {
+  position: sticky;
+  top: 20px;
+}
+
+.recharge-desk-root .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px dashed var(--rch-line);
+  font-weight: 600;
+}
+
+.recharge-desk-root .row span {
+  color: var(--rch-mute);
+}
+
+.recharge-desk-root .row.t {
+  border: 0;
+  padding-top: 16px;
+  font-size: 16px;
+}
+
+.recharge-desk-root .row.t b {
+  font-size: 26px;
+  letter-spacing: -0.8px;
+  color: var(--rch-ink);
+}
+
+.recharge-desk-root .pos {
+  color: var(--rch-g);
+}
+
+.recharge-desk-root .tag {
+  display: inline-block;
+  background: var(--rch-amb);
+  color: var(--rch-am);
+  border-radius: 10px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  font-style: normal;
+}
+
+/* 5-Step Process Visualizer */
+.recharge-desk-root .steps {
+  list-style: none;
+  margin: 14px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+}
+
+.recharge-desk-root .steps li {
+  display: flex;
+  gap: 12px;
+  position: relative;
+  padding-bottom: 14px;
+  font-weight: 600;
+  color: var(--rch-ink);
+}
+
+.recharge-desk-root .steps li:last-child {
+  padding-bottom: 0;
+}
+
+.recharge-desk-root .steps li::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 24px;
+  bottom: 0;
+  width: 2px;
+  background: var(--rch-line);
+}
+
+.recharge-desk-root .steps li:last-child::before {
+  display: none;
+}
+
+.recharge-desk-root .steps i {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--rch-chip);
+  color: var(--rch-mute);
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 800;
+  flex: none;
+}
+
+.recharge-desk-root .steps li.d i {
+  background: var(--rch-dark);
+  color: #ffffff;
+}
+
+.recharge-desk-root .steps small {
+  display: block;
+  color: var(--rch-mute);
+  font-weight: 500;
+  font-size: 12px;
+}
+
+/* ==========================================================================
+   6. REQUEST HISTORY TABLE
+   ========================================================================== */
+.recharge-desk-root .tabs {
+  display: flex;
+  gap: 6px;
+  margin: 14px 0;
+  flex-wrap: wrap;
+}
+
+.recharge-desk-root .tabs button {
+  padding: 7px 14px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  background: var(--rch-chip);
+  color: var(--rch-ink);
+}
+
+.recharge-desk-root .tabs button.on {
+  background: var(--rch-dark);
+  color: #ffffff;
+}
+
+.recharge-desk-root .tw {
+  overflow-x: auto;
+}
+
+.recharge-desk-root table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+.recharge-desk-root th {
+  text-align: left;
+  font-size: 11.5px;
+  color: var(--rch-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  padding: 8px 10px;
+}
+
+.recharge-desk-root td {
+  padding: 13px 10px;
+  border-top: 1px solid var(--rch-line);
+  font-weight: 600;
+  white-space: nowrap;
+  vertical-align: middle;
+  color: var(--rch-ink);
+}
+
+.recharge-desk-root td small {
+  display: block;
+  color: var(--rch-mute);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.recharge-desk-root .pill {
+  display: inline-flex;
+  border-radius: 12px;
+  padding: 4px 11px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.recharge-desk-root .pill.ok {
+  background: var(--rch-okb);
+  color: var(--rch-okt);
+}
+
+.recharge-desk-root .pill.wn {
+  background: var(--rch-amb);
+  color: var(--rch-am);
+}
+
+.recharge-desk-root .pill.bd {
+  background: var(--rch-bdb);
+  color: var(--rch-r);
+}
+
+.recharge-desk-root .empty {
+  text-align: center;
+  color: var(--rch-mute);
+  padding: 28px;
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   7. RECEIPT SCREENSHOT ATTACHMENT BOX
+   ========================================================================== */
+.recharge-desk-root .receipt-dropzone {
+  border: 1.5px dashed var(--rch-line);
+  border-radius: 14px;
+  padding: 12px;
+  text-align: center;
+  background: var(--rch-chip);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: 6px;
+}
+
+.recharge-desk-root .receipt-dropzone:hover {
+  border-color: var(--rch-gold);
+  background: #fdfbf5;
+}
+
+.recharge-desk-root .receipt-preview-wrap {
+  position: relative;
+  display: inline-block;
+  margin-top: 8px;
+}
+
+.recharge-desk-root .receipt-preview-img {
+  max-height: 120px;
+  border-radius: 10px;
+  border: 1px solid var(--rch-line);
+  display: block;
+}
+
+.recharge-desk-root .receipt-remove-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--rch-r);
+  color: #ffffff;
+  padding: 0;
+  font-size: 12px;
+  display: grid;
+  place-items: center;
+}
+
+/* ==========================================================================
+   8. RESPONSIVE BREAKPOINTS
+   ========================================================================== */
+@media (max-width: 1000px) {
+  .recharge-desk-root .grid,
+  .recharge-desk-root .hero {
+    grid-template-columns: 1fr;
+  }
+  .recharge-desk-root .sum {
+    position: static;
+  }
+}
+
+@media (max-width: 860px) {
+  .recharge-desk-root {
+    padding: 18px 16px 40px;
+  }
+  .recharge-desk-root .big {
+    font-size: 38px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recharge-desk-root * {
+    transition: none !important;
+  }
+}
