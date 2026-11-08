@@ -96,7 +96,7 @@ export const StatsStrip: React.FC = () => {
             <span className="status-strip-lbl jackpot-lbl">{lang === 'am' ? 'ጃክፖት' : 'JACKPOT'}</span>
           </div>
           <span className="status-strip-val jackpot-val">
-            {jackpotPool >= 1000 ? `${(jackpotPool / 1000).toFixed(1)}K` : `${jackpotPool || 526}`}
+            {jackpotPool >= 1000 ? `${(jackpotPool / 1000).toFixed(1)}K` : `${Math.floor(jackpotPool ?? 0)}`}
           </span>
         </div>
 

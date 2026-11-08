@@ -2987,7 +2987,7 @@ class BingoGameEngine {
       // When cumulative pool reaches >= 500 ETB, the winner of this round wins Bingo Net Prize + Jackpot together!
       const ballsDrawn = room.drawnNumbers.length;
       const currentJackpotPool = room.jackpotPoolBalance || 0;
-      const isJackpotHit = realWinners.length > 0 && currentJackpotPool >= 500;
+      const isJackpotHit = effectiveWinningCards.length > 0 && currentJackpotPool >= 500;
       const totalJackpotAwarded = isJackpotHit ? 500 : 0;
       const excessJackpotCarryover = isJackpotHit ? Math.max(0, currentJackpotPool - 500) : currentJackpotPool;
 
@@ -3219,6 +3219,45 @@ class BingoGameEngine {
         try {
           if (isRoom10) {
             displayWinnerPayout = netPayout; // Exactly 424 ETB on 530 ETB pot
+          }
+
+          // If jackpot was hit in this bot-won round, reset the pool to excess carryover
+          if (isJackpotHit) {
+            const firstBotWinner = botWinners[0];
+            const matchingBot = room.opponentCards.find(o => o.cartelaId === firstBotWinner.cartelaId);
+            const resetRes = await query(
+              `UPDATE jackpot_pool 
+               SET balance = $1, 
+                   last_won_amount = $2, 
+                   last_winner_user_id = $3, 
+                   last_won_at = NOW(), 
+                   updated_at = NOW() 
+               WHERE room_id = $4 
+               RETURNING balance`,
+              [excessJackpotCarryover, totalJackpotAwarded, matchingBot?.botUserId || null, dbRoomId]
+            );
+            if (resetRes.rows.length > 0) {
+              const seedBal = parseFloat(resetRes.rows[0].balance || '0');
+              room.jackpotPoolBalance = seedBal;
+              if (isRoom10) {
+                const r10 = this.rooms.get('room-10');
+                if (r10) r10.jackpotPoolBalance = seedBal;
+                const arena = this.rooms.get(ARENA_ROOM_ID);
+                if (arena) arena.jackpotPoolBalance = seedBal;
+                const def = this.rooms.get('default');
+                if (def) def.jackpotPoolBalance = seedBal;
+              }
+            }
+            io.emit('jackpot_won', {
+              roomId: room.id,
+              roomName: room.name,
+              winnerNames: Array.from(new Set(botWinners.map(w => w.userName))),
+              amount: totalJackpotAwarded,
+              excessCarryover: excessJackpotCarryover,
+              ballsCount: ballsDrawn,
+              newPoolBalance: room.jackpotPoolBalance
+            });
+            console.log(`🏆 [Jackpot Reset] Bot winner won round in ${room.id}. Progressive jackpot of ${totalJackpotAwarded} ETB reset to carryover: ${room.jackpotPoolBalance} ETB`);
           }
           for (const bw of botWinners) {
             const matchingOpp = room.opponentCards.find(o => o.cartelaId === bw.cartelaId);
