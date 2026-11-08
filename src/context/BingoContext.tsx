@@ -1201,15 +1201,17 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     // 9. Progressive Jackpot Live Updates & Hits
     const unsubJackpotUpdate = socketService.onJackpotUpdate((data: any) => {
-      if (data && (data.roomId === roomId || !data.roomId)) {
-        if (typeof data.pool === 'number') setJackpotPool(data.pool);
+      if (data && (data.roomId === roomId || !data.roomId || (roomId === 'room-10' && (data.roomId === 'arena' || data.roomId === 'default')))) {
+        const poolVal = typeof data.balance === 'number' ? data.balance : (typeof data.pool === 'number' ? data.pool : null);
+        if (poolVal !== null) setJackpotPool(poolVal);
       }
     });
 
     const unsubJackpotWon = socketService.onJackpotWon((data: any) => {
-      if (data && (data.roomId === roomId || !data.roomId)) {
-        if (typeof data.resetPool === 'number') setJackpotPool(data.resetPool);
-        showToast(`🎰 💥 JACKPOT WON! ${data.winnerName || 'Player'} won ${data.jackpotAmount} ETB in ${data.calledCount} balls!`);
+      if (data && (data.roomId === roomId || !data.roomId || (roomId === 'room-10' && (data.roomId === 'arena' || data.roomId === 'default')))) {
+        const resetVal = typeof data.newPoolBalance === 'number' ? data.newPoolBalance : (typeof data.resetPool === 'number' ? data.resetPool : 0);
+        setJackpotPool(resetVal);
+        showToast(`🎰 💥 JACKPOT WON! ${data.winnerNames?.join(', ') || data.winnerName || 'Player'} won ${data.amount || data.jackpotAmount} ETB in ${data.ballsCount || data.calledCount} balls!`);
       }
     });
 
@@ -1217,11 +1219,10 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     fetch('/api/jackpots')
       .then(r => r.json())
       .then(d => {
-        if (d && d.success && Array.isArray(d.data)) {
-          const p = d.data.find((item: any) => item.room_id === roomId);
-          if (p && typeof p.balance === 'number') {
-            setJackpotPool(p.balance);
-          }
+        const list = Array.isArray(d?.jackpots) ? d.jackpots : (Array.isArray(d?.data) ? d.data : []);
+        const p = list.find((item: any) => item.roomId === roomId || item.room_id === roomId || (roomId === 'room-10' && (item.roomId === 'arena' || item.room_id === 'default')));
+        if (p && typeof p.balance === 'number') {
+          setJackpotPool(p.balance);
         }
       })
       .catch(() => {});

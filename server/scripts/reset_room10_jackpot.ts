@@ -6,7 +6,7 @@ async function resetRoom10Jackpot() {
   const updateRes = await query(`
     UPDATE jackpot_pool 
     SET balance = 0.00, 
-        seed_amount = 0.00, 
+        seed_amount = 500.00, 
         updated_at = NOW() 
     WHERE room_id = 'room-10'
     RETURNING *;
@@ -28,3 +28,4 @@ resetRoom10Jackpot().catch(err => {
   console.error('❌ Failed to reset jackpot:', err);
   process.exit(1);
 });
+

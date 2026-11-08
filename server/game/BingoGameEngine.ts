@@ -3172,8 +3172,8 @@ class BingoGameEngine {
         }
       }
 
-      // Progressive Jackpot Rollover: If jackpot not hit and pot has jackpot fee, roll over into pool
-      if (!isJackpotHit && room.jackpotFee > 0 && (room.tickets.size > 0 || realWinners.length > 0)) {
+      // Progressive Jackpot Rollover: If jackpot not hit and pot has jackpot fee, roll over into pool every round
+      if (!isJackpotHit && room.jackpotFee > 0) {
         try {
           const rolloverRes = await query(
             `UPDATE jackpot_pool 
@@ -3197,13 +3197,24 @@ class BingoGameEngine {
           io.emit('jackpot_update', {
             roomId: room.id,
             balance: room.jackpotPoolBalance,
+            pool: room.jackpotPoolBalance,
             added: room.jackpotFee,
             isJackpotActive: room.jackpotPoolBalance >= 500
           });
+          if (isRoom10) {
+            io.emit('jackpot_update', {
+              roomId: 'room-10',
+              balance: room.jackpotPoolBalance,
+              pool: room.jackpotPoolBalance,
+              added: room.jackpotFee,
+              isJackpotActive: room.jackpotPoolBalance >= 500
+            });
+          }
           if (room.jackpotPoolBalance >= 500) {
             io.emit('jackpot_hit_active', {
               roomId: room.id,
               balance: room.jackpotPoolBalance,
+              pool: room.jackpotPoolBalance,
               threshold: 500
             });
             console.log(`🚨 [HIT JACKPOT ACTIVE] Room ${room.id} jackpot reached ${room.jackpotPoolBalance} ETB! The winner of the round will win this jackpot together with the Bingo Net Prize!`);

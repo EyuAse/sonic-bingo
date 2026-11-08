@@ -186,9 +186,9 @@ async function handleOverview(_req: AuthenticatedRequest, res: Response) {
       const liveRoom = gameEngine.getRoom(s.id);
       const liveBal = liveRoom?.jackpotPoolBalance !== undefined ? liveRoom.jackpotPoolBalance : parseFloat(dbRow?.balance || '0');
       const seedBal = parseFloat(dbRow?.seed_amount || String(s.defaultTarget));
-      const target = parseFloat(dbRow?.seed_amount || String(s.defaultTarget));
+      const target = s.defaultTarget || (parseFloat(dbRow?.seed_amount || '0') > 0 ? parseFloat(dbRow?.seed_amount) : 500);
       const addedToday = roomTodayMap.get(s.id) || 0;
-      const isLive = liveBal >= target;
+      const isLive = target > 0 && liveBal >= target;
 
       totalVaultBalance += liveBal;
 
