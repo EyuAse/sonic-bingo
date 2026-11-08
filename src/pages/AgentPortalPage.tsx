@@ -323,8 +323,10 @@ export const AgentPortalPage: React.FC = () => {
           {/* Desk 5: Referred Players Roster */}
           {activeTab === 'players' && (
             <AgentPlayersDesk
+              agentProfile={profile}
               onQuickDeposit={handleQuickDeposit}
               showToast={showToast}
+              openMobile={() => setIsMobileOpen(true)}
             />
           )}
 
