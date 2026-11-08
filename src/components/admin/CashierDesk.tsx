@@ -4,7 +4,34 @@ import { apiClient } from '../../services/apiClient.ts';
 import { TelebirrLogo, CBELogo, MpesaLogo } from '../wallet/PaymentLogos.tsx';
 import { socketService } from '../../services/socketService.ts';
 
-interface CashierAuditItem {
+// Helper to format currency numbers
+const fmt = (n: number | string) => Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// Helper to format integers
+const fmtInt = (n: number | string) => Number(n || 0).toLocaleString('en-US');
+
+// Helper to get 2-letter initials from name
+const ini = (name: string) => {
+  if (!name) return 'PL';
+  const clean = name.replace(/[^\w\s]/gi, '').trim();
+  if (!clean) return name.slice(0, 2).toUpperCase();
+  return clean
+    .split(' ')
+    .filter(Boolean)
+    .map(w => w[0] || '')
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+};
+
+// Minimalist trend arrow SVG from Enqu Game Admin
+const TRD = (
+  <svg width="13" height="9" viewBox="0 0 14 10" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '3px' }}>
+    <path d="M1 8l4-4 3 3 5-5M9 2h4v4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export interface CashierAuditItem {
   id: string;
   type: 'deposit' | 'withdrawal';
   amount: number;
@@ -47,6 +74,8 @@ export const CashierDesk: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<'all' | 'deposit' | 'withdrawal'>('all');
   const [railFilter, setRailFilter] = useState<'all' | 'Telebirr' | 'CBE' | 'M-Pesa'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [page, setPage] = useState<number>(1);
+  const limit = 25;
 
   // Data & Loading State
   const [transactions, setTransactions] = useState<CashierAuditItem[]>([]);
@@ -63,7 +92,7 @@ export const CashierDesk: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
-  // Lightbox Modal for Full Slip Inspection
+  // Selected Transaction for Slide-over Slip Dossier
   const [inspectTx, setInspectTx] = useState<CashierAuditItem | null>(null);
 
   // Fetch Authoritative Cashier Ledger from Neon DB
@@ -124,294 +153,164 @@ export const CashierDesk: React.FC = () => {
   const settledCount = transactions.filter(t => t.status === 'approved').length;
   const rejectedCount = transactions.filter(t => t.status === 'rejected' || t.status === 'cancelled').length;
 
+  // Pagination
+  const totalCount = transactions.length;
+  const totalPages = Math.ceil(totalCount / limit) || 1;
+  const paginatedTransactions = transactions.slice((page - 1) * limit, page * limit);
+
   return (
-    <div className="fresh-cashier-desk-container">
-      {/* 1. Hero Desk Banner: P2P Cashier Surveillance */}
-      <div className="cashier-hero-desk-banner">
-        <div className="hero-banner-left">
-          <div className="hero-bank-icon-box" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', border: '1px solid rgba(234, 179, 8, 0.4)' }}>
-            <span style={{ fontSize: '28px', lineHeight: 1 }}>🛡️</span>
-          </div>
-          <div className="hero-banner-titles">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <h3 className="hero-main-title" style={{ margin: 0 }}>P2P CASHIER SURVEILLANCE & NETWORK AUDIT</h3>
-              <span style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)', color: '#10b981', fontSize: '11px', fontWeight: 800, padding: '2px 8px', borderRadius: '12px' }}>
-                🟢 100% P2P Agent Model
-              </span>
-            </div>
-            <p className="hero-sub-title" style={{ marginTop: '4px' }}>
-              Real-time multi-rail P2P settlement surveillance, cashier commission distribution, and agent float solvency tracking.
-            </p>
-          </div>
+    <div className="enqu-dashboard-main">
+      {/* 1. Header Bar matching Enqu Game Admin */}
+      <div className="top" style={{ marginBottom: '16px' }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 800, color: 'var(--ink)' }}>
+            🛡️ P2P Cashier Surveillance Desk
+          </h1>
+          <p style={{ margin: '4px 0 0', fontSize: '13.5px', color: 'var(--mute)' }}>
+            Real-time multi-rail P2P settlement surveillance, cashier commission distribution, and agent float solvency tracking.
+          </p>
         </div>
 
-        <div className="hero-banner-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div className="row" style={{ gap: '10px' }}>
+          <span className="pillbox">
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block', marginRight: '6px' }} />
+            Live P2P Stream
+          </span>
           <button
             type="button"
-            onClick={() => fetchLedger(true)}
-            disabled={isRefreshing}
-            style={{
-              background: '#ffffff',
-              border: '1px solid #cbd5e1',
-              borderRadius: '10px',
-              padding: '8px 14px',
-              fontSize: '12px',
-              fontWeight: 700,
-              color: '#334155',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+            className="enqu-btn-secondary"
+            onClick={() => {
+              fetchLedger(true);
+              showToast('🔄 P2P cashier network ledger refreshed');
             }}
+            disabled={isRefreshing}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
-            <i className={`fa-solid fa-arrows-rotate ${isRefreshing ? 'fa-spin' : ''}`}></i>
-            <span>{isRefreshing ? 'Syncing...' : 'Sync Live Stream'}</span>
+            <svg
+              viewBox="0 0 24 24"
+              width="15"
+              height="15"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }}
+            >
+              <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>{isRefreshing ? 'Syncing...' : 'Sync Stream'}</span>
           </button>
         </div>
       </div>
 
-      {/* 2. Top Authoritative KPI Ribbon */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: '12px',
-          marginBottom: '18px'
-        }}
-      >
-        {/* KPI 1: Today's P2P Deposits */}
-        <div
-          style={{
-            background: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: '14px',
-            padding: '16px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px'
-          }}
-        >
-          <div
-            style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '12px',
-              background: 'rgba(16, 185, 129, 0.12)',
-              color: '#059669',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px'
-            }}
-          >
-            💳
-          </div>
-          <div>
-            <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Today's P2P Deposits
-            </div>
-            <div style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a' }}>
-              {stats.todayDepositsAmount.toFixed(2)} <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 700 }}>ETB</span>
-            </div>
-            <div style={{ fontSize: '11px', color: '#059669', fontWeight: 700, marginTop: '2px' }}>
-              {stats.todayDepositsCount} txns · +5% ({stats.todayDepositsCommission.toFixed(2)} ETB) Comm
-            </div>
+      {/* 2. Top 4 Stat Cards Grid (.g4) Matching Dashboard Overview */}
+      <div className="grid g4" style={{ marginBottom: '16px' }}>
+        {/* Card 1: Today's P2P Deposits (Dark Charcoal Gradient Card) */}
+        <div className="card d">
+          <div className="lab">Today's P2P Deposits</div>
+          <div className="val">ETB {fmt(stats.todayDepositsAmount)}</div>
+          <div className="tr">
+            <span className="up">{TRD} Live</span> {stats.todayDepositsCount} txns · +5% ({fmt(stats.todayDepositsCommission)} ETB) Comm
           </div>
         </div>
 
-        {/* KPI 2: Today's P2P Payouts */}
-        <div
-          style={{
-            background: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: '14px',
-            padding: '16px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px'
-          }}
-        >
-          <div
-            style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '12px',
-              background: 'rgba(59, 130, 246, 0.12)',
-              color: '#2563eb',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px'
-            }}
-          >
-            💸
-          </div>
-          <div>
-            <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Today's P2P Payouts
-            </div>
-            <div style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a' }}>
-              {stats.todayWithdrawalsAmount.toFixed(2)} <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 700 }}>ETB</span>
-            </div>
-            <div style={{ fontSize: '11px', color: '#2563eb', fontWeight: 700, marginTop: '2px' }}>
-              {stats.todayWithdrawalsCount} txns · +2% ({stats.todayWithdrawalsFee.toFixed(2)} ETB) Fee
-            </div>
+        {/* Card 2: Today's P2P Payouts */}
+        <div className="card">
+          <div className="lab">Today's P2P Payouts</div>
+          <div className="val">ETB {fmt(stats.todayWithdrawalsAmount)}</div>
+          <div className="tr">
+            <span className="up">{TRD} Settled</span> {stats.todayWithdrawalsCount} txns · +2% ({fmt(stats.todayWithdrawalsFee)} ETB) Fee
           </div>
         </div>
 
-        {/* KPI 3: Agent Float in Circulation */}
-        <div
-          style={{
-            background: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: '14px',
-            padding: '16px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px'
-          }}
-        >
-          <div
-            style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '12px',
-              background: 'rgba(234, 179, 8, 0.12)',
-              color: '#b45309',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px'
-            }}
-          >
-            💼
-          </div>
-          <div>
-            <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Agent Float In Circulation
-            </div>
-            <div style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a' }}>
-              {stats.agentFloatCirculation.toFixed(2)} <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 700 }}>ETB</span>
-            </div>
-            <div style={{ fontSize: '11px', color: '#b45309', fontWeight: 700, marginTop: '2px' }}>
-              Active Cashier Working Liquidity
-            </div>
+        {/* Card 3: Agent Float in Circulation */}
+        <div className="card">
+          <div className="lab">Agent Float in Circulation</div>
+          <div className="val">ETB {fmt(stats.agentFloatCirculation)}</div>
+          <div className="tr">
+            <span className="up">{TRD} Float</span> Active working liquidity
           </div>
         </div>
 
-        {/* KPI 4: Total Commission Distributed */}
-        <div
-          style={{
-            background: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: '14px',
-            padding: '16px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px'
-          }}
-        >
-          <div
-            style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '12px',
-              background: 'rgba(168, 85, 247, 0.12)',
-              color: '#7e22ce',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px'
-            }}
-          >
-            🪙
-          </div>
-          <div>
-            <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Agent Commissions Paid
-            </div>
-            <div style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a' }}>
-              {stats.totalCommissionDistributed.toFixed(2)} <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 700 }}>ETB</span>
-            </div>
-            <div style={{ fontSize: '11px', color: '#7e22ce', fontWeight: 700, marginTop: '2px' }}>
-              All-Time Distributed Network Rewards
-            </div>
+        {/* Card 4: Agent Commissions Distributed */}
+        <div className="card">
+          <div className="lab">Agent Commissions Paid</div>
+          <div className="val">ETB {fmt(stats.totalCommissionDistributed)}</div>
+          <div className="tr">
+            <span className="up">{TRD} Rewards</span> Network distributed
           </div>
         </div>
       </div>
 
-      {/* 3. Multi-Dimensional Filter & Search Bar */}
-      <div
-        style={{
-          background: '#ffffff',
-          border: '1px solid #e2e8f0',
-          borderRadius: '14px',
-          padding: '14px',
-          marginBottom: '16px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px'
-        }}
-      >
-        {/* Row A: Status & Timeframe Pills */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-          {/* Status Filter */}
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              className={`btn-cashier-filter-pill ${statusFilter === 'all' ? 'active-yellow' : ''}`}
-              onClick={() => setStatusFilter('all')}
-            >
-              <span>All Status ({transactions.length})</span>
-            </button>
-            <button
-              type="button"
-              className={`btn-cashier-filter-pill ${statusFilter === 'approved' ? 'active-yellow' : ''}`}
-              onClick={() => setStatusFilter('approved')}
-            >
-              <i className="fa-solid fa-check green-check"></i>
-              <span>Settled ({settledCount})</span>
-            </button>
-            <button
-              type="button"
-              className={`btn-cashier-filter-pill ${statusFilter === 'pending' ? 'active-yellow' : ''}`}
-              onClick={() => setStatusFilter('pending')}
-            >
-              <span className="dot-green"></span>
-              <span>Pending Agent Action ({pendingCount})</span>
-            </button>
-            <button
-              type="button"
-              className={`btn-cashier-filter-pill ${statusFilter === 'rejected' ? 'active-yellow' : ''}`}
-              onClick={() => setStatusFilter('rejected')}
-            >
-              <i className="fa-solid fa-xmark red-x"></i>
-              <span>Rejected ({rejectedCount})</span>
-            </button>
+      {/* 3. Multi-Dimensional Filter Ribbon Card (Search + Segment Tabs + Rail + Timeframe) */}
+      <div className="card filter-ribbon-card" style={{ marginBottom: '16px', padding: '14px 16px' }}>
+        {/* Row 1: Search & Status Tabs */}
+        <div className="row" style={{ justifyContent: 'space-between', width: '100%', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
+          <div className="row" style={{ gap: '10px', flex: '1 1 300px' }}>
+            {/* Live Search Input */}
+            <input
+              type="text"
+              placeholder="Search reference, player phone, or agent code..."
+              value={searchQuery}
+              onChange={e => {
+                setSearchQuery(e.target.value);
+                setPage(1);
+              }}
+              className="enqu-panel-input"
+              style={{ minWidth: '260px', flex: 1 }}
+            />
+
+            {/* Status Segment Tabs */}
+            <span className="tabs" style={{ margin: 0, display: 'inline-flex', flexWrap: 'wrap' }}>
+              {[
+                { id: 'all', label: `All Orders (${transactions.length})` },
+                { id: 'pending', label: `Pending (${pendingCount})`, isUrgent: pendingCount > 0 },
+                { id: 'approved', label: `Settled (${settledCount})` },
+                { id: 'rejected', label: `Rejected (${rejectedCount})` }
+              ].map(tab => (
+                <a
+                  key={tab.id}
+                  className={statusFilter === tab.id ? 'on' : ''}
+                  onClick={() => {
+                    setStatusFilter(tab.id as any);
+                    setPage(1);
+                  }}
+                  style={{
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}
+                >
+                  {tab.isUrgent && (
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444' }} />
+                  )}
+                  {tab.label}
+                </a>
+              ))}
+            </span>
           </div>
 
-          {/* Timeframe Filter */}
-          <div style={{ display: 'flex', gap: '4px', background: '#f1f5f9', padding: '3px', borderRadius: '10px' }}>
+          {/* Timeframe Selector */}
+          <div className="row" style={{ gap: '4px', background: 'var(--panel)', padding: '3px', borderRadius: '10px' }}>
             {(['today', 'week', 'month', 'all'] as const).map(tf => (
               <button
                 key={tf}
                 type="button"
-                onClick={() => setTimeframe(tf)}
+                onClick={() => {
+                  setTimeframe(tf);
+                  setPage(1);
+                }}
                 style={{
-                  padding: '5px 10px',
+                  padding: '5px 12px',
                   borderRadius: '8px',
                   border: 'none',
-                  fontSize: '11px',
-                  fontWeight: 800,
+                  fontSize: '11.5px',
+                  fontWeight: 700,
                   cursor: 'pointer',
                   background: timeframe === tf ? '#ffffff' : 'transparent',
-                  color: timeframe === tf ? '#0f172a' : '#64748b',
-                  boxShadow: timeframe === tf ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  color: timeframe === tf ? 'var(--ink)' : 'var(--mute)',
+                  boxShadow: timeframe === tf ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
                   textTransform: 'capitalize'
                 }}
               >
@@ -421,366 +320,461 @@ export const CashierDesk: React.FC = () => {
           </div>
         </div>
 
-        {/* Row B: Method Chips, Type Filter & Search Box */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
+        {/* Row 2: Order Type Chips & Payment Rail Chips */}
+        <div className="row" style={{ justifyContent: 'space-between', width: '100%', gap: '10px', flexWrap: 'wrap', paddingTop: '10px', borderTop: '1px solid var(--line)' }}>
           {/* Order Type Chips */}
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <button
-              type="button"
-              className={`btn-method-chip ${typeFilter === 'all' ? 'selected' : ''}`}
-              onClick={() => setTypeFilter('all')}
-            >
-              <span>All Types</span>
-            </button>
-            <button
-              type="button"
-              className={`btn-method-chip ${typeFilter === 'deposit' ? 'selected' : ''}`}
-              onClick={() => setTypeFilter(typeFilter === 'deposit' ? 'all' : 'deposit')}
-            >
-              <i className="fa-solid fa-arrow-down-long" style={{ color: '#10b981' }}></i>
-              <span>Deposits (+5%)</span>
-            </button>
-            <button
-              type="button"
-              className={`btn-method-chip ${typeFilter === 'withdrawal' ? 'selected' : ''}`}
-              onClick={() => setTypeFilter(typeFilter === 'withdrawal' ? 'all' : 'withdrawal')}
-            >
-              <i className="fa-solid fa-arrow-up-long" style={{ color: '#2563eb' }}></i>
-              <span>Withdrawals (+2%)</span>
-            </button>
+          <div className="row" style={{ gap: '6px' }}>
+            <span style={{ fontSize: '12px', color: 'var(--mute)', fontWeight: 700, marginRight: '4px' }}>TYPE:</span>
+            {[
+              { id: 'all', label: 'All' },
+              { id: 'deposit', label: 'Deposits (+5%)', icon: '↓', color: '#10b981' },
+              { id: 'withdrawal', label: 'Withdrawals (+2%)', icon: '↑', color: '#2563eb' }
+            ].map(tc => (
+              <button
+                key={tc.id}
+                type="button"
+                onClick={() => {
+                  setTypeFilter(tc.id as any);
+                  setPage(1);
+                }}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '8px',
+                  border: typeFilter === tc.id ? '1.5px solid var(--ink)' : '1px solid var(--line)',
+                  background: typeFilter === tc.id ? 'var(--ink)' : '#ffffff',
+                  color: typeFilter === tc.id ? '#ffffff' : 'var(--ink)',
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                {tc.icon && <span style={{ color: typeFilter === tc.id ? '#ffffff' : tc.color, fontWeight: 900 }}>{tc.icon}</span>}
+                <span>{tc.label}</span>
+              </button>
+            ))}
           </div>
 
           {/* Rail Filter Chips */}
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <button
-              type="button"
-              className={`btn-method-chip ${railFilter === 'all' ? 'selected' : ''}`}
-              onClick={() => setRailFilter('all')}
-            >
-              <span>All Rails</span>
-            </button>
-            <button
-              type="button"
-              className={`btn-method-chip ${railFilter === 'Telebirr' ? 'selected' : ''}`}
-              onClick={() => setRailFilter(railFilter === 'Telebirr' ? 'all' : 'Telebirr')}
-            >
-              <TelebirrLogo size={14} />
-              <span>Telebirr</span>
-            </button>
-            <button
-              type="button"
-              className={`btn-method-chip ${railFilter === 'CBE' ? 'selected' : ''}`}
-              onClick={() => setRailFilter(railFilter === 'CBE' ? 'all' : 'CBE')}
-            >
-              <CBELogo size={14} />
-              <span>CBE</span>
-            </button>
-            <button
-              type="button"
-              className={`btn-method-chip ${railFilter === 'M-Pesa' ? 'selected' : ''}`}
-              onClick={() => setRailFilter(railFilter === 'M-Pesa' ? 'all' : 'M-Pesa')}
-            >
-              <MpesaLogo size={14} />
-              <span>M-Pesa</span>
-            </button>
-          </div>
-
-          {/* Search Box */}
-          <div className="cashier-search-box-wrap" style={{ minWidth: '260px' }}>
-            <i className="fa-solid fa-magnifying-glass search-icon"></i>
-            <input
-              type="text"
-              placeholder="Search reference, player, or agent code..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="cashier-search-input-field"
-            />
+          <div className="row" style={{ gap: '6px' }}>
+            <span style={{ fontSize: '12px', color: 'var(--mute)', fontWeight: 700, marginRight: '4px' }}>RAIL:</span>
+            {[
+              { id: 'all', label: 'All Rails' },
+              { id: 'Telebirr', label: 'Telebirr', logo: <TelebirrLogo size={13} /> },
+              { id: 'CBE', label: 'CBE Bank', logo: <CBELogo size={13} /> },
+              { id: 'M-Pesa', label: 'M-Pesa', logo: <MpesaLogo size={13} /> }
+            ].map(rc => (
+              <button
+                key={rc.id}
+                type="button"
+                onClick={() => {
+                  setRailFilter(rc.id as any);
+                  setPage(1);
+                }}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '8px',
+                  border: railFilter === rc.id ? '1.5px solid var(--ink)' : '1px solid var(--line)',
+                  background: railFilter === rc.id ? 'var(--ink)' : '#ffffff',
+                  color: railFilter === rc.id ? '#ffffff' : 'var(--ink)',
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}
+              >
+                {rc.logo}
+                <span>{rc.label}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* 4. Surveillance Ledger Cards Grid */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px', background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
-          <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '28px', color: '#f59e0b', marginBottom: '10px' }}></i>
-          <p style={{ margin: 0, fontWeight: 700, color: '#64748b' }}>Streaming live P2P cashier network ledger from Neon PostgreSQL...</p>
-        </div>
-      ) : transactions.length === 0 ? (
-        <div className="cashier-empty-queue-card">
-          <div className="empty-lemon-icon">🛡️</div>
-          <h4>No Transactions in Selected Filter</h4>
-          <p>No P2P cashier records found matching the active timeframe and filter criteria.</p>
-        </div>
-      ) : (
-        <div className="cashier-cards-three-grid">
-          {transactions.map(tx => {
-            const isDeposit = tx.type === 'deposit';
-            const isPending = tx.status === 'pending';
-            const isApproved = tx.status === 'approved';
-            const isRejected = tx.status === 'rejected' || tx.status === 'cancelled';
-            const formattedTime = new Date(tx.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
+      {/* 4. High-Density Master Surveillance Table (.card > .wrap > .enqu-table) */}
+      <div className="card" style={{ padding: '0', overflow: 'hidden', marginBottom: '20px' }}>
+        <div className="wrap" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <table className="enqu-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left', padding: '12px 14px' }}>Date / Time</th>
+                <th style={{ textAlign: 'center', padding: '12px 14px' }}>Type</th>
+                <th style={{ textAlign: 'left', padding: '12px 14px' }}>Rail</th>
+                <th style={{ textAlign: 'left', padding: '12px 14px' }}>SMS Reference</th>
+                <th style={{ textAlign: 'left', padding: '12px 14px' }}>Player Details</th>
+                <th style={{ textAlign: 'left', padding: '12px 14px' }}>Assigned Agent</th>
+                <th style={{ textAlign: 'right', padding: '12px 14px' }}>Order Amount</th>
+                <th style={{ textAlign: 'right', padding: '12px 14px' }}>Commission</th>
+                <th style={{ textAlign: 'center', padding: '12px 14px' }}>Status</th>
+                <th style={{ textAlign: 'center', padding: '12px 14px' }}>Audit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={10} style={{ textAlign: 'center', padding: '36px', color: 'var(--mute)' }}>
+                    🔄 Streaming live P2P cashier network ledger from Neon PostgreSQL...
+                  </td>
+                </tr>
+              ) : paginatedTransactions.length === 0 ? (
+                <tr>
+                  <td colSpan={10} style={{ textAlign: 'center', padding: '36px', color: 'var(--mute)' }}>
+                    No P2P cashier records found matching the active filters.
+                  </td>
+                </tr>
+              ) : (
+                paginatedTransactions.map(tx => {
+                  const isDeposit = tx.type === 'deposit';
+                  const isPending = tx.status === 'pending';
+                  const isApproved = tx.status === 'approved';
+                  const isRejected = tx.status === 'rejected' || tx.status === 'cancelled';
+                  const formattedTime = new Date(tx.createdAt).toLocaleDateString('en-US', {
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  });
 
-            return (
-              <div key={tx.id} className="cashier-tx-white-card" style={{ border: isPending ? '2px solid rgba(59, 130, 246, 0.5)' : '1px solid #e2e8f0' }}>
-                {/* Header Row */}
-                <div className="tx-card-header-row">
-                  <div className="tx-provider-brand" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    {tx.paymentMethod === 'Telebirr' ? (
-                      <TelebirrLogo size={18} />
-                    ) : tx.paymentMethod === 'CBE' ? (
-                      <CBELogo size={18} />
-                    ) : (
-                      <MpesaLogo size={18} />
-                    )}
-                    <span className="tx-provider-name" style={{ fontWeight: 800, fontSize: '13px' }}>
-                      {tx.paymentMethod === 'CBE' ? 'CBE Bank' : tx.paymentMethod}
-                    </span>
-                  </div>
-
-                  <div className="tx-type-center-badge">
-                    <i className={`fa-solid ${isDeposit ? 'fa-arrow-down-long deposit-blue' : 'fa-arrow-up-long withdraw-red'}`}></i>
-                    <strong className="tx-type-text">{isDeposit ? 'DEPOSIT' : 'WITHDRAWAL'}</strong>
-                  </div>
-
-                  <span className={`tx-status-pill-top ${isPending ? 'pending' : isApproved ? 'approved' : 'rejected'}`}>
-                    {isPending ? 'PENDING AGENT' : isApproved ? 'SETTLED' : isRejected ? 'REJECTED' : tx.status.toUpperCase()}
-                  </span>
-                </div>
-
-                {/* Key-Value Details */}
-                <div className="tx-card-details-list">
-                  {/* SMS Reference ID */}
-                  <div className="tx-detail-row">
-                    <span className="tx-detail-label">SMS Tx Ref:</span>
-                    <button
-                      type="button"
-                      className="tx-detail-val-btn purple"
-                      onClick={() => handleCopy(tx.referenceNumber, 'SMS Reference')}
-                      title="Click to copy Transaction ID"
-                    >
-                      <span>{tx.referenceNumber}</span>
-                      <i className="fa-regular fa-copy copy-icon"></i>
-                    </button>
-                  </div>
-
-                  {/* Player Info */}
-                  <div className="tx-detail-row">
-                    <span className="tx-detail-label">Player:</span>
-                    <strong className="tx-detail-val-dark">
-                      {tx.userName} ({tx.playerPhone || tx.userPhone})
-                    </strong>
-                  </div>
-
-                  {/* Assigned Certified Agent */}
-                  <div className="tx-detail-row">
-                    <span className="tx-detail-label">Assigned Agent:</span>
-                    <span style={{ fontWeight: 800, color: '#b45309', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      👑 {tx.agentName || 'Certified Agent'} (#{tx.agentCode || 'DIRECT'})
-                    </span>
-                  </div>
-
-                  {/* Request Time */}
-                  <div className="tx-detail-row">
-                    <span className="tx-detail-label">Created Time:</span>
-                    <span className="tx-detail-val-muted">{formattedTime}</span>
-                  </div>
-                </div>
-
-                {/* SMS & Slip Verification Bar */}
-                <div className="tx-sms-verification-box">
-                  <div className="sms-shield-icon">
-                    <i className="fa-solid fa-shield-halved"></i>
-                  </div>
-                  <div className="sms-verify-text-group" style={{ flex: 1 }}>
-                    <strong className="sms-verify-title">
-                      {isDeposit ? '+5.0% Cashier Comm' : '+2.0% Cashier Fee'}
-                    </strong>
-                    <span className="sms-verify-sub" style={{ color: '#059669', fontWeight: 700 }}>
-                      +{tx.agentCommission.toFixed(2)} ETB credited to Agent #{tx.agentCode}
-                    </span>
-                  </div>
-                  {tx.receiptImage && (
-                    <button
-                      type="button"
+                  return (
+                    <tr
+                      key={tx.id}
                       onClick={() => setInspectTx(tx)}
                       style={{
-                        background: 'rgba(234, 179, 8, 0.15)',
-                        border: '1px solid rgba(234, 179, 8, 0.4)',
-                        borderRadius: '6px',
-                        padding: '4px 8px',
                         cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        color: '#b45309',
-                        fontSize: '11px',
-                        fontWeight: 700
+                        transition: 'background 0.12s ease'
                       }}
-                      title="Inspect attached receipt image"
                     >
-                      <i className="fa-solid fa-image"></i>
-                      <span>View Slip</span>
-                    </button>
-                  )}
-                </div>
+                      {/* Date & Time */}
+                      <td style={{ padding: '12px 14px', fontSize: '12.5px', color: 'var(--mute)', whiteSpace: 'nowrap' }}>
+                        {formattedTime}
+                      </td>
 
-                {/* Footer Meta: Amount Display */}
-                <div className="tx-card-footer-meta-row" style={{ marginTop: '10px' }}>
-                  <div className="tx-lifetime-verified">
-                    <span className="verified-text">P2P LEDGER</span>
-                    <i className="fa-solid fa-circle-check verified-green-icon"></i>
-                    <span className="lifetime-in-text">Agent #{tx.agentCode}</span>
-                  </div>
+                      {/* Type Badge */}
+                      <td style={{ textAlign: 'center', padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            padding: '3px 8px',
+                            borderRadius: '10px',
+                            background: isDeposit ? '#ecfdf5' : '#eff6ff',
+                            color: isDeposit ? '#065f46' : '#1e40af',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <span>{isDeposit ? '↓' : '↑'}</span>
+                          <span>{isDeposit ? 'Deposit' : 'Withdrawal'}</span>
+                        </span>
+                      </td>
 
-                  <div className="tx-amount-display-box">
-                    <span className="amount-tiny-lbl">AMOUNT</span>
-                    <strong className={`amount-huge-val ${isDeposit ? 'deposit-green' : 'withdraw-gold'}`}>
-                      {isDeposit ? `+${tx.amount.toFixed(2)}` : `${tx.amount.toFixed(2)}`} ETB
-                    </strong>
-                  </div>
-                </div>
+                      {/* Rail Logo & Name */}
+                      <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                        <div className="row" style={{ flexWrap: 'nowrap', gap: '6px', alignItems: 'center' }}>
+                          {tx.paymentMethod === 'Telebirr' ? (
+                            <TelebirrLogo size={16} />
+                          ) : tx.paymentMethod === 'CBE' ? (
+                            <CBELogo size={16} />
+                          ) : (
+                            <MpesaLogo size={16} />
+                          )}
+                          <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--ink)' }}>
+                            {tx.paymentMethod === 'CBE' ? 'CBE Bank' : tx.paymentMethod}
+                          </span>
+                        </div>
+                      </td>
 
-                {/* Audit Settlement Banner */}
-                {isPending ? (
-                  <div
-                    style={{
-                      marginTop: '10px',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      background: 'rgba(59, 130, 246, 0.08)',
-                      border: '1px solid rgba(59, 130, 246, 0.3)',
-                      color: '#1d4ed8',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}
-                  >
-                    <i className="fa-solid fa-spinner fa-spin"></i>
-                    <span>Awaiting Agent #{tx.agentCode} mobile transfer & confirmation.</span>
-                  </div>
-                ) : isApproved ? (
-                  <div className="tx-card-resolved-banner" style={{ marginTop: '10px' }}>
-                    <i className="fa-solid fa-circle-check green"></i>
-                    <span>Settled via Agent #{tx.agentCode} · Balance Credited</span>
-                  </div>
-                ) : (
-                  <div
-                    style={{
-                      marginTop: '10px',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      background: 'rgba(239, 68, 68, 0.08)',
-                      border: '1px solid rgba(239, 68, 68, 0.3)',
-                      color: '#b91c1c',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}
-                  >
-                    <i className="fa-solid fa-circle-xmark"></i>
-                    <span>Rejected: {tx.rejectionReason || 'Declined by agent'}</span>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                      {/* SMS Reference Code with Copy Button */}
+                      <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                        <button
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleCopy(tx.referenceNumber, 'SMS Reference');
+                          }}
+                          style={{
+                            background: 'var(--panel)',
+                            border: '1px solid var(--line)',
+                            borderRadius: '6px',
+                            padding: '2px 8px',
+                            fontFamily: 'monospace',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            color: 'var(--ink)',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px'
+                          }}
+                          title="Click to copy Transaction ID"
+                        >
+                          <span>{tx.referenceNumber}</span>
+                          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                          </svg>
+                        </button>
+                      </td>
+
+                      {/* Player Info */}
+                      <td style={{ padding: '12px 14px' }}>
+                        <div className="row" style={{ flexWrap: 'nowrap', gap: '8px', alignItems: 'center' }}>
+                          <span
+                            className="av2"
+                            style={{
+                              width: '30px',
+                              height: '30px',
+                              borderRadius: '50%',
+                              background: '#f1f5f9',
+                              color: 'var(--ink)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 700,
+                              fontSize: '11px',
+                              flexShrink: 0
+                            }}
+                          >
+                            {ini(tx.userName)}
+                          </span>
+                          <div>
+                            <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: '13.5px' }}>
+                              {tx.userName || 'Player'}
+                            </div>
+                            <div className="tr" style={{ fontSize: '11.5px', color: 'var(--mute)' }}>
+                              {tx.playerPhone || tx.userPhone}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Assigned Certified Agent */}
+                      <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontWeight: 700, color: '#b45309', fontSize: '13px' }}>
+                          👑 {tx.agentName || 'Certified Agent'}
+                        </div>
+                        <div className="tr" style={{ fontSize: '11.5px', color: 'var(--mute)' }}>
+                          #{tx.agentCode || 'DIRECT'}
+                        </div>
+                      </td>
+
+                      {/* Order Amount */}
+                      <td style={{ textAlign: 'right', padding: '12px 14px', fontWeight: 800, fontSize: '14px', whiteSpace: 'nowrap', color: isDeposit ? '#059669' : '#2563eb' }}>
+                        {isDeposit ? `+${fmt(tx.amount)}` : `-${fmt(tx.amount)}`} <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--mute)' }}>ETB</span>
+                      </td>
+
+                      {/* Agent Commission */}
+                      <td style={{ textAlign: 'right', padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontWeight: 700, fontSize: '13px', color: '#16a34a' }}>
+                          +{fmt(tx.agentCommission)}
+                        </span>
+                        <span style={{ fontSize: '10.5px', color: 'var(--mute)', display: 'block' }}>
+                          {isDeposit ? '5.0%' : '2.0%'}
+                        </span>
+                      </td>
+
+                      {/* Status Badge */}
+                      <td style={{ textAlign: 'center', padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            padding: '3px 9px',
+                            borderRadius: '12px',
+                            background: isApproved ? '#ecfdf5' : isPending ? '#fef3c7' : '#fee2e2',
+                            color: isApproved ? '#065f46' : isPending ? '#b45309' : '#991b1b',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px'
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: '6px',
+                              height: '6px',
+                              borderRadius: '50%',
+                              background: isApproved ? '#10b981' : isPending ? '#f59e0b' : '#ef4444'
+                            }}
+                          />
+                          {isApproved ? 'Settled' : isPending ? 'Pending' : 'Rejected'}
+                        </span>
+                      </td>
+
+                      {/* Actions */}
+                      <td style={{ textAlign: 'center', padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                        <button
+                          type="button"
+                          className="enqu-btn-secondary"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setInspectTx(tx);
+                          }}
+                          style={{ padding: '3px 10px', fontSize: '12px' }}
+                        >
+                          {tx.receiptImage ? 'Slip' : 'Audit'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
 
-      {/* 5. Inspection Modal: Full Audit Slip */}
+        {/* Pagination Controls */}
+        <div className="row" style={{ justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid var(--line)' }}>
+          <span className="tr" style={{ fontSize: '13px', color: 'var(--mute)' }}>
+            Showing {Math.min((page - 1) * limit + 1, totalCount)} to {Math.min(page * limit, totalCount)} of {totalCount} transactions
+          </span>
+
+          <div className="row" style={{ gap: '6px' }}>
+            <button
+              type="button"
+              className="enqu-btn-secondary"
+              disabled={page <= 1}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              style={{ padding: '4px 10px', fontSize: '12px', opacity: page <= 1 ? 0.5 : 1 }}
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              className="enqu-btn-secondary"
+              disabled={page >= totalPages}
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              style={{ padding: '4px 10px', fontSize: '12px', opacity: page >= totalPages ? 0.5 : 1 }}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. Slip Inspection & Audit Lightbox Drawer (When inspectTx is selected) */}
       {inspectTx && (
-        <div className="cashier-modal-backdrop" onClick={() => setInspectTx(null)}>
-          <div className="cashier-slip-modal-card" onClick={e => e.stopPropagation()}>
-            <div className="slip-modal-header">
-              <div className="slip-header-titles">
-                <h3>
-                  <i className="fa-solid fa-receipt gold" style={{ marginRight: 8 }}></i>
-                  Audit Slip #{inspectTx.referenceNumber}
+        <div className="modalbg" onClick={() => setInspectTx(null)}>
+          <div
+            className="modal"
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: '580px', maxHeight: '90vh', overflowY: 'auto' }}
+          >
+            {/* Header */}
+            <div className="row" style={{ justifyContent: 'space-between', marginBottom: '16px', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--ink)' }}>
+                  P2P Transaction Audit Dossier
                 </h3>
-                <p>Official P2P Network Verification Record</p>
+                <div className="tr" style={{ fontSize: '12.5px', color: 'var(--mute)' }}>
+                  SMS Ref: <strong style={{ color: 'var(--ink)', fontFamily: 'monospace' }}>{inspectTx.referenceNumber}</strong>
+                </div>
               </div>
+
               <button
                 type="button"
-                className="btn-modal-close-round"
+                className="enqu-btn-secondary"
                 onClick={() => setInspectTx(null)}
+                style={{ padding: '4px 10px', fontSize: '14px', fontWeight: 700 }}
               >
-                <i className="fa-solid fa-xmark"></i>
+                ✕
               </button>
             </div>
 
-            <div className="slip-modal-body">
-              <div className="slip-details-grid">
-                <div className="slip-grid-cell">
-                  <span className="cell-lbl">Order Type</span>
-                  <strong className="cell-val uppercase">{inspectTx.type}</strong>
+            {/* Receipt Image Display if Attached */}
+            {inspectTx.receiptImage && (
+              <div style={{ marginBottom: '16px', textAlign: 'center', background: '#000000', borderRadius: '12px', padding: '10px' }}>
+                <img
+                  src={inspectTx.receiptImage}
+                  alt="Receipt slip"
+                  style={{ maxHeight: '320px', maxWidth: '100%', objectFit: 'contain', borderRadius: '8px' }}
+                />
+              </div>
+            )}
+
+            {/* Quick Metrics Grid */}
+            <div className="two" style={{ gap: '10px', marginBottom: '16px' }}>
+              <div className="card" style={{ background: 'var(--panel)', padding: '12px 14px' }}>
+                <div className="lab" style={{ fontSize: '11.5px', color: 'var(--mute)' }}>Order Amount</div>
+                <div className="val" style={{ margin: '4px 0', fontSize: '20px', fontWeight: 800, color: inspectTx.type === 'deposit' ? '#059669' : '#2563eb' }}>
+                  ETB {fmt(inspectTx.amount)}
                 </div>
-                <div className="slip-grid-cell">
-                  <span className="cell-lbl">Payment Rail</span>
-                  <strong className="cell-val">{inspectTx.paymentMethod}</strong>
-                </div>
-                <div className="slip-grid-cell">
-                  <span className="cell-lbl">Player Name</span>
-                  <strong className="cell-val">{inspectTx.userName}</strong>
-                </div>
-                <div className="slip-grid-cell">
-                  <span className="cell-lbl">Player Account / Phone</span>
-                  <strong className="cell-val">{inspectTx.playerPhone || inspectTx.userPhone}</strong>
-                </div>
-                <div className="slip-grid-cell">
-                  <span className="cell-lbl">Assigned Cashier Agent</span>
-                  <strong className="cell-val gold-amt">👑 {inspectTx.agentName} (#{inspectTx.agentCode})</strong>
-                </div>
-                <div className="slip-grid-cell">
-                  <span className="cell-lbl">Order Amount</span>
-                  <strong className="cell-val gold-amt">{inspectTx.amount.toFixed(2)} ETB</strong>
+                <div className="tr" style={{ fontSize: '11px', color: 'var(--mute)' }}>
+                  {inspectTx.type === 'deposit' ? 'Player Deposit' : 'Player Payout'}
                 </div>
               </div>
 
-              {/* SMS Reference Box */}
-              <div className="slip-sms-box" style={{ marginTop: '12px' }}>
-                <span className="sms-box-lbl">Provider SMS Reference (Tx ID):</span>
-                <strong className="sms-code-big">{inspectTx.referenceNumber}</strong>
+              <div className="card" style={{ background: 'var(--panel)', padding: '12px 14px' }}>
+                <div className="lab" style={{ fontSize: '11.5px', color: 'var(--mute)' }}>Agent Commission</div>
+                <div className="val" style={{ margin: '4px 0', fontSize: '20px', fontWeight: 800, color: '#16a34a' }}>
+                  ETB {fmt(inspectTx.agentCommission)}
+                </div>
+                <div className="tr" style={{ fontSize: '11px', color: 'var(--mute)' }}>
+                  +{inspectTx.type === 'deposit' ? '5.0%' : '2.0%'} Credited
+                </div>
+              </div>
+            </div>
+
+            {/* Audit Checklist Key-Value Pairs */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
+              <div className="row" style={{ justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--line)' }}>
+                <span style={{ color: 'var(--mute)' }}>Payment Rail</span>
+                <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{inspectTx.paymentMethod}</span>
               </div>
 
-              {/* Attached Screenshot Image */}
-              {inspectTx.receiptImage && (
-                <div style={{ marginTop: '16px', background: '#0b1120', padding: '14px', borderRadius: '12px', border: '1px solid rgba(234, 179, 8, 0.35)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 800, color: '#facc15', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <i className="fa-solid fa-camera"></i> Attached Payment Receipt Screenshot
-                    </span>
-                    <a
-                      href={inspectTx.receiptImage}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{ fontSize: '12px', color: '#60a5fa', fontWeight: 600, textDecoration: 'underline' }}
-                    >
-                      Open Full Res ↗
-                    </a>
-                  </div>
-                  <div style={{ maxHeight: '280px', overflowY: 'auto', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center', background: '#000000', padding: '8px' }}>
-                    <img
-                      src={inspectTx.receiptImage}
-                      alt="Payment Receipt Slip"
-                      style={{ maxWidth: '100%', maxHeight: '260px', objectFit: 'contain', display: 'inline-block', borderRadius: '6px' }}
-                    />
-                  </div>
+              <div className="row" style={{ justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--line)' }}>
+                <span style={{ color: 'var(--mute)' }}>Player Name & Phone</span>
+                <span style={{ fontWeight: 700, color: 'var(--ink)' }}>
+                  {inspectTx.userName} ({inspectTx.playerPhone || inspectTx.userPhone})
+                </span>
+              </div>
+
+              <div className="row" style={{ justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--line)' }}>
+                <span style={{ color: 'var(--mute)' }}>Assigned Certified Agent</span>
+                <span style={{ fontWeight: 700, color: '#b45309' }}>
+                  👑 {inspectTx.agentName || 'Agent'} (#{inspectTx.agentCode || 'DIRECT'})
+                </span>
+              </div>
+
+              <div className="row" style={{ justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--line)' }}>
+                <span style={{ color: 'var(--mute)' }}>Created Timestamp</span>
+                <span style={{ fontWeight: 600, color: 'var(--ink)' }}>{new Date(inspectTx.createdAt).toLocaleString()}</span>
+              </div>
+
+              {inspectTx.resolvedAt && (
+                <div className="row" style={{ justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--line)' }}>
+                  <span style={{ color: 'var(--mute)' }}>Resolved Timestamp</span>
+                  <span style={{ fontWeight: 600, color: '#059669' }}>{new Date(inspectTx.resolvedAt).toLocaleString()}</span>
+                </div>
+              )}
+
+              {inspectTx.rejectionReason && (
+                <div className="row" style={{ justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--line)' }}>
+                  <span style={{ color: 'var(--mute)' }}>Rejection Reason</span>
+                  <span style={{ fontWeight: 700, color: '#dc2626' }}>{inspectTx.rejectionReason}</span>
                 </div>
               )}
             </div>
 
-            <div className="slip-modal-footer">
+            {/* Actions Footer */}
+            <div className="row" style={{ justifyContent: 'flex-end', marginTop: '20px', gap: '10px' }}>
               <button
                 type="button"
-                className="btn-slip-close-gray"
-                onClick={() => setInspectTx(null)}
-                style={{ width: '100%' }}
+                className="enqu-btn-secondary"
+                onClick={() => handleCopy(inspectTx.referenceNumber, 'SMS Reference')}
               >
-                Close Audit Record
+                Copy SMS Ref
+              </button>
+              <button
+                type="button"
+                className="enqu-btn-secondary"
+                onClick={() => setInspectTx(null)}
+              >
+                Close Dossier
               </button>
             </div>
           </div>
@@ -789,5 +783,3 @@ export const CashierDesk: React.FC = () => {
     </div>
   );
 };
-
-export default CashierDesk;

@@ -52,6 +52,7 @@ export const AdminPage: React.FC = () => {
   const isEnquTab =
     activeTab === 'overview' ||
     activeTab === 'cashflow' ||
+    activeTab === 'cashier' ||
     activeTab === 'telegram-bot' ||
     activeTab === 'agents' ||
     activeTab === 'users' ||
