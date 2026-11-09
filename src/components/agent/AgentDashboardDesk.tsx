@@ -30,24 +30,11 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
   // Timeframe Tab for Deposit Activity Chart ('daily' | 'weekly' | 'monthly')
   const [activeChartTab, setActiveChartTab] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
 
-  // Modals state: null | 'dep' (Record deposit) | 'rch' (Request recharge)
-  const [activeModal, setActiveModal] = useState<'dep' | 'rch' | null>(null);
+  // Modals state: null | 'rch' (Request recharge)
+  const [activeModal, setActiveModal] = useState<'rch' | null>(null);
 
   // Clipboard copy feedback
   const [copiedLink, setCopiedLink] = useState(false);
-
-  // Real Agent Players for Deposit Modal
-  const [agentPlayers, setAgentPlayers] = useState<any[]>([]);
-  const [loadingPlayers, setLoadingPlayers] = useState(false);
-
-  // Deposit Modal Form State
-  const [depPlayerId, setDepPlayerId] = useState('');
-  const [depPlayerSearch, setDepPlayerSearch] = useState('');
-  const [depMethod, setDepMethod] = useState<'Telebirr' | 'M-Pesa' | 'In person'>('Telebirr');
-  const [depAmount, setDepAmount] = useState<number | string>(200);
-  const [depReference, setDepReference] = useState('');
-  const [depSubmitting, setDepSubmitting] = useState(false);
-  const [depError, setDepError] = useState<string | null>(null);
 
   // Recharge Modal Form State
   const [rchAmount, setRchAmount] = useState<number | string>(5000);
@@ -77,33 +64,9 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
     }
   };
 
-  const fetchPlayersForModal = async () => {
-    try {
-      setLoadingPlayers(true);
-      const res = await apiClient.agent.getPlayers();
-      if (res && res.success && Array.isArray(res.players)) {
-        setAgentPlayers(res.players);
-      }
-    } catch (err) {
-      console.warn('Could not load agent players:', err);
-    } finally {
-      setLoadingPlayers(false);
-    }
-  };
-
   useEffect(() => {
     fetchDashboardData();
   }, []);
-
-  // When opening deposit modal, ensure player list is fetched
-  useEffect(() => {
-    if (activeModal === 'dep' && agentPlayers.length === 0) {
-      fetchPlayersForModal();
-    }
-    if (activeModal === 'dep' && depMethod === 'In person' && !depReference) {
-      setDepReference(`CASH-${Date.now().toString().slice(-6)}`);
-    }
-  }, [activeModal, depMethod]);
 
   // =========================================================================
   // 2. FORMATTING HELPERS
@@ -152,6 +115,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
   const totalPlayers = Number(analytics?.kpis?.totalPlayers ?? 0);
   const newPlayers30d = Number(analytics?.kpis?.newPlayersLast30Days ?? 0);
   const pendingWithdrawals = Number(analytics?.kpis?.pendingWithdrawalsCount ?? 0);
+  const pendingDepositRequests = Number(analytics?.kpis?.pendingDepositRequestsCount ?? 0);
 
   // Meter scale computation
   const maxMeterScale = Math.max(15000, walletBalance * 1.35, lowThreshold * 2);
@@ -214,16 +178,6 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
   // =========================================================================
   // 4. MODAL ACTION HANDLERS
   // =========================================================================
-  const handleOpenDepositModal = () => {
-    setDepError(null);
-    setDepAmount(200);
-    setDepMethod('Telebirr');
-    setDepPlayerId('');
-    setDepPlayerSearch('');
-    setDepReference('');
-    setActiveModal('dep');
-  };
-
   const handleOpenRechargeModal = () => {
     setRchError(null);
     setRchAmount(5000);
@@ -234,64 +188,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
 
   const handleCloseModal = () => {
     setActiveModal(null);
-    setDepError(null);
     setRchError(null);
-  };
-
-  // Submit Record Deposit (Cash-in)
-  const handleSubmitDeposit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const amt = Number(depAmount);
-    if (!amt || amt <= 0) {
-      setDepError('Please enter a valid deposit amount.');
-      return;
-    }
-    if (amt > walletBalance) {
-      setDepError(`Insufficient float! Your wallet balance is ETB ${formatETB(walletBalance)}.`);
-      return;
-    }
-
-    let targetPlayerId = depPlayerId;
-    let targetPhone = '';
-    let targetUsername = '';
-
-    if (!targetPlayerId && depPlayerSearch.trim()) {
-      if (depPlayerSearch.startsWith('+') || /^\d+$/.test(depPlayerSearch.trim())) {
-        targetPhone = depPlayerSearch.trim();
-      } else {
-        targetUsername = depPlayerSearch.trim().replace(/^@/, '');
-      }
-    }
-
-    if (!targetPlayerId && !targetPhone && !targetUsername) {
-      setDepError('Please select a player or enter a player phone/username.');
-      return;
-    }
-
-    try {
-      setDepSubmitting(true);
-      setDepError(null);
-      const res = await apiClient.agent.depositForPlayer({
-        playerId: targetPlayerId || undefined,
-        playerPhone: targetPhone || undefined,
-        username: targetUsername || undefined,
-        amount: amt,
-        paymentMethod: depMethod
-      });
-
-      if (res && res.success) {
-        if (showToast) showToast(`✅ Successfully deposited ETB ${formatETB(amt)} for player!`);
-        handleCloseModal();
-        fetchDashboardData();
-        onRefresh();
-      } else {
-        setDepError((res as any)?.message || 'Failed to record deposit.');
-      }
-    } catch (err: any) {
-      setDepError(err?.message || 'Error processing player deposit.');
-    } finally {
-      setDepSubmitting(false);
-    }
   };
 
   // Submit Recharge Request
@@ -453,9 +350,9 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
             <button
               type="button"
               className="ghost"
-              onClick={handleOpenDepositModal}
+              onClick={() => onNavigateTab('deposit_requests')}
             >
-              Record deposit
+              Incoming requests {pendingDepositRequests > 0 ? `(${pendingDepositRequests})` : ''}
             </button>
           </div>
         </div>
@@ -688,7 +585,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
                     <tr>
                       <td colSpan={5}>
                         <div className="enqu-empty">
-                          No deposits recorded yet. Click "Record deposit" above to credit players.
+                          No deposit requests processed today. Incoming player requests appear in your Deposits desk for approval.
                         </div>
                       </td>
                     </tr>
@@ -880,157 +777,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
       </div>
 
       {/* -------------------------------------------------------------------
-          6. PRODUCTION MODAL: RECORD DEPOSIT (CASH-IN)
-          ------------------------------------------------------------------- */}
-      {activeModal === 'dep' && (
-        <div className="enqu-modalbg" onClick={handleCloseModal}>
-          <div className="enqu-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="enqu-mh">
-              <h3>Record player deposit</h3>
-              <button type="button" onClick={handleCloseModal}>✕</button>
-            </div>
-
-            <p style={{ color: 'var(--ag-mute)', fontSize: '13px', margin: '4px 0 16px', fontWeight: 600 }}>
-              Deduct funds from your agent float to credit a player's casino wallet instantly.
-            </p>
-
-            <form onSubmit={handleSubmitDeposit}>
-              {/* Select Registered Player or Search */}
-              <label>Select Player</label>
-              {agentPlayers.length > 0 ? (
-                <select
-                  value={depPlayerId}
-                  onChange={(e) => {
-                    setDepPlayerId(e.target.value);
-                    if (e.target.value) setDepPlayerSearch('');
-                  }}
-                >
-                  <option value="">-- Choose from your registered players --</option>
-                  {agentPlayers.map((p: any) => (
-                    <option key={p.id} value={p.id}>
-                      {p.fullName || p.username || 'Player'} ({p.phoneNumber || p.id.slice(0, 8)})
-                    </option>
-                  ))}
-                </select>
-              ) : null}
-
-              {/* Or manual Phone/Username input */}
-              <div style={{ marginTop: '8px' }}>
-                <input
-                  type="text"
-                  placeholder="Or enter player phone (09... / +251...) or @username"
-                  value={depPlayerSearch}
-                  onChange={(e) => {
-                    setDepPlayerSearch(e.target.value);
-                    if (e.target.value) setDepPlayerId('');
-                  }}
-                />
-              </div>
-
-              {/* Payment Method Segmented Toggle */}
-              <label>Payment Method (Received from player)</label>
-              <div className="enqu-seg">
-                <button
-                  type="button"
-                  className={depMethod === 'Telebirr' ? 'on' : ''}
-                  onClick={() => setDepMethod('Telebirr')}
-                >
-                  Telebirr
-                </button>
-                <button
-                  type="button"
-                  className={depMethod === 'M-Pesa' ? 'on' : ''}
-                  onClick={() => setDepMethod('M-Pesa')}
-                >
-                  M-Pesa
-                </button>
-                <button
-                  type="button"
-                  className={depMethod === 'In person' ? 'on' : ''}
-                  onClick={() => {
-                    setDepMethod('In person');
-                    if (!depReference) setDepReference(`CASH-${Date.now().toString().slice(-6)}`);
-                  }}
-                >
-                  In person (Cash)
-                </button>
-              </div>
-
-              {/* Deposit Amount */}
-              <label>Deposit Amount (ETB)</label>
-              <input
-                type="number"
-                min="50"
-                max="10000"
-                step="10"
-                value={depAmount}
-                onChange={(e) => setDepAmount(e.target.value)}
-                required
-              />
-
-              {/* Quick Chips */}
-              <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
-                {[100, 200, 500, 1000].map((chip) => (
-                  <button
-                    key={chip}
-                    type="button"
-                    style={{ padding: '6px 12px', fontSize: '12px' }}
-                    onClick={() => setDepAmount(chip)}
-                  >
-                    +{chip}
-                  </button>
-                ))}
-              </div>
-
-              {/* Reference Code */}
-              <label>Payment Reference / Receipt ID</label>
-              <input
-                type="text"
-                placeholder="e.g. TH94JF823 or CASH-728192"
-                value={depReference}
-                onChange={(e) => setDepReference(e.target.value)}
-              />
-
-              {/* Balance Preview Note */}
-              <div className="enqu-note2">
-                <div>Current wallet float: <b>ETB {formatETB(walletBalance)}</b></div>
-                <div style={{ marginTop: '3px' }}>
-                  Wallet after deposit: <b>ETB {formatETB(walletBalance - Number(depAmount || 0))}</b>
-                </div>
-                {Number(depAmount || 0) > walletBalance && (
-                  <div style={{ color: 'var(--ag-r)', fontWeight: 700, marginTop: '4px' }}>
-                    ⚠️ Warning: Amount exceeds available float balance!
-                  </div>
-                )}
-              </div>
-
-              {depError && <div className="enqu-err">{depError}</div>}
-
-              <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
-                <button
-                  type="button"
-                  style={{ flex: 1, padding: '12px' }}
-                  onClick={handleCloseModal}
-                  disabled={depSubmitting}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="gold"
-                  style={{ flex: 2, padding: '12px' }}
-                  disabled={depSubmitting || Number(depAmount || 0) > walletBalance}
-                >
-                  {depSubmitting ? 'Processing...' : 'Confirm & Credit Player'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* -------------------------------------------------------------------
-          7. PRODUCTION MODAL: REQUEST WALLET RECHARGE
+          6. PRODUCTION MODAL: REQUEST WALLET RECHARGE
           ------------------------------------------------------------------- */}
       {activeModal === 'rch' && (
         <div className="enqu-modalbg" onClick={handleCloseModal}>
