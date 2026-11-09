@@ -3236,6 +3236,9 @@ class BingoGameEngine {
           if (isJackpotHit) {
             const firstBotWinner = botWinners[0];
             const matchingBot = room.opponentCards.find(o => o.cartelaId === firstBotWinner.cartelaId);
+            const botUserUuid = matchingBot?.botUserId && !isStandbyBotId(matchingBot.botUserId) && !matchingBot.botUserId.startsWith('bot_')
+              ? matchingBot.botUserId
+              : null;
             const resetRes = await query(
               `UPDATE jackpot_pool 
                SET balance = $1, 
@@ -3245,7 +3248,7 @@ class BingoGameEngine {
                    updated_at = NOW() 
                WHERE room_id = $4 
                RETURNING balance`,
-              [excessJackpotCarryover, totalJackpotAwarded, matchingBot?.botUserId || null, dbRoomId]
+              [excessJackpotCarryover, totalJackpotAwarded, botUserUuid, dbRoomId]
             );
             if (resetRes.rows.length > 0) {
               const seedBal = parseFloat(resetRes.rows[0].balance || '0');
