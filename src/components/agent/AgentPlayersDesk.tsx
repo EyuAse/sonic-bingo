@@ -97,9 +97,7 @@ export const AgentPlayersDesk: React.FC<AgentPlayersDeskProps> = ({
     agentProfile?.inviteLink ||
     (agentProfile?.agent_code ? `https://t.me/SonicGameOfficialBot?start=agent_${agentProfile.agent_code}` : '')
   );
-  const [commissionRate, setCommissionRate] = useState<number>(
-    parseFloat(agentProfile?.commission_rate || agentProfile?.commissionRate || '10.0')
-  );
+  const [commissionRate, setCommissionRate] = useState<number>(10.0);
 
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'All' | 'Active' | 'Inactive' | 'No deposit yet'>('All');
@@ -184,9 +182,7 @@ export const AgentPlayersDesk: React.FC<AgentPlayersDeskProps> = ({
     if (agentProfile?.agent_code && !agentProfile?.inviteLink) {
       setReferralLink(`https://t.me/SonicGameOfficialBot?start=agent_${agentProfile.agent_code}`);
     }
-    if (agentProfile?.commission_rate || agentProfile?.commissionRate) {
-      setCommissionRate(parseFloat(agentProfile.commission_rate || agentProfile.commissionRate || '10.0'));
-    }
+    setCommissionRate(10.0);
   }, [agentProfile]);
 
   // =========================================================================

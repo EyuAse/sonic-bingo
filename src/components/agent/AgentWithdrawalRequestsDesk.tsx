@@ -259,7 +259,7 @@ export const AgentWithdrawalRequestsDesk: React.FC<AgentWithdrawalRequestsDeskPr
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px' }}>
             <span style={{ color: '#059669', fontWeight: 700 }}>
-              +{analytics.today.commission.toFixed(2)} ETB (+2%)
+              {analytics.today.amount.toLocaleString()} ETB
             </span>
             <span style={{ color: '#64748b' }}>{analytics.today.count} paid</span>
           </div>
@@ -288,7 +288,7 @@ export const AgentWithdrawalRequestsDesk: React.FC<AgentWithdrawalRequestsDeskPr
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px' }}>
             <span style={{ color: '#059669', fontWeight: 700 }}>
-              +{analytics.week.commission.toFixed(2)} ETB (+2%)
+              {analytics.week.amount.toLocaleString()} ETB
             </span>
             <span style={{ color: '#64748b' }}>{analytics.week.count} paid</span>
           </div>
@@ -317,13 +317,13 @@ export const AgentWithdrawalRequestsDesk: React.FC<AgentWithdrawalRequestsDeskPr
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px' }}>
             <span style={{ color: '#059669', fontWeight: 700 }}>
-              +{analytics.month.commission.toFixed(2)} ETB (+2%)
+              {analytics.month.amount.toLocaleString()} ETB
             </span>
             <span style={{ color: '#64748b' }}>{analytics.month.count} paid</span>
           </div>
         </div>
 
-        {/* Card 4: Cashout Incentive (+2% Fee) */}
+        {/* Card 4: All-Time Settled */}
         <div
           className="sonic-white-card"
           style={{
@@ -337,15 +337,15 @@ export const AgentWithdrawalRequestsDesk: React.FC<AgentWithdrawalRequestsDeskPr
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
             <span style={{ fontSize: '11px', fontWeight: 800, color: '#166534', textTransform: 'uppercase' }}>
-              Cashout Fee Earned
+              All-Time Settled
             </span>
             <span style={{ fontSize: '15px' }}>🪙</span>
           </div>
           <div style={{ fontSize: '20px', fontWeight: 900, color: '#15803d' }}>
-            +{analytics.allTime.commission.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 700 }}>ETB</span>
+            {analytics.allTime.amount.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 700 }}>ETB</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px', color: '#166534' }}>
-            <span>All-Time 2% Payout Bonus</span>
+            <span>Cash Paid to Players</span>
             <span style={{ fontWeight: 800 }}>{analytics.allTime.count} settled</span>
           </div>
         </div>
@@ -629,10 +629,12 @@ export const AgentWithdrawalRequestsDesk: React.FC<AgentWithdrawalRequestsDeskPr
                         <span style={{ color: '#065f46', fontWeight: 600 }}>2. Float Reimbursed:</span>
                         <span style={{ fontWeight: 800, color: '#047857' }}>+{Number(req.amount).toFixed(2)} ETB</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
-                        <span style={{ color: '#065f46', fontWeight: 600 }}>3. Cashier Fee (+2%):</span>
-                        <span style={{ fontWeight: 900, color: '#059669' }}>+{commissionVal.toFixed(2)} ETB</span>
-                      </div>
+                      {commissionVal > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
+                          <span style={{ color: '#065f46', fontWeight: 600 }}>3. Cashier Fee:</span>
+                          <span style={{ fontWeight: 900, color: '#059669' }}>+{commissionVal.toFixed(2)} ETB</span>
+                        </div>
+                      )}
                       <div
                         style={{
                           display: 'flex',

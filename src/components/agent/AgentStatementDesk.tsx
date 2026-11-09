@@ -89,7 +89,7 @@ export const AgentStatementDesk: React.FC<AgentStatementDeskProps> = ({ showToas
               </h2>
             </div>
             <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0' }}>
-              Comprehensive real-time ledger of player cash-ins, voucher cash-outs, and earned commissions.
+              Comprehensive real-time ledger of player cash-ins, voucher cash-outs, and earned referral bonuses.
             </p>
           </div>
 
@@ -137,13 +137,13 @@ export const AgentStatementDesk: React.FC<AgentStatementDeskProps> = ({ showToas
 
           <div style={{ background: '#ecfdf5', padding: '12px 14px', borderRadius: '10px', border: '1px solid #a7f3d0' }}>
             <div style={{ fontSize: '11px', color: '#065f46', fontWeight: 800, textTransform: 'uppercase' }}>
-              Total Commission Earned
+              Referral Bonus Earned
             </div>
             <div style={{ fontSize: '18px', fontWeight: 900, color: '#059669', marginTop: '2px' }}>
               +{totalCommission.toFixed(2)} <span style={{ fontSize: '12px' }}>ETB</span>
             </div>
             <div style={{ fontSize: '10px', color: '#047857', marginTop: '2px', fontWeight: 600 }}>
-              5% on Deposits • 2% on Withdrawals
+              10% on Player 1st Deposits • Pure Float Transfer (0% Cut)
             </div>
           </div>
         </div>
@@ -305,7 +305,7 @@ export const AgentStatementDesk: React.FC<AgentStatementDeskProps> = ({ showToas
                               <>
                                 <span>+{Number(t.agent_commission_earned).toFixed(2)} ETB</span>
                                 <span style={{ fontSize: '9px', color: '#059669', fontWeight: 700 }}>
-                                  ({isCashIn ? '10% Ref' : '2% Cashier'})
+                                  ({isCashIn ? '10% Referral' : 'Payout Settle'})
                                 </span>
                               </>
                             ) : (

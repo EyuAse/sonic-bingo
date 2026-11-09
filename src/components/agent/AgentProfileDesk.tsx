@@ -452,7 +452,7 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
             </div>
 
             <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.5, margin: '0 0 18px 0' }}>
-              Display this official QR code at your shop counter. When players scan, they are instantly registered to your agency and receive a <strong>{registerBonus} ETB bonus</strong>! You earn lifetime commissions on all tickets.
+              Display this official QR code at your shop counter. When players scan, they are instantly registered to your agency and receive a <strong>{registerBonus} ETB bonus</strong>! You earn a 10% referral bonus on their first deposit.
             </p>
 
             {/* High-Res QR Code Frame */}
@@ -1111,7 +1111,7 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
               <i className="fa-solid fa-chart-pie"></i>
             </span>
             <h2 style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', margin: 0 }}>
-              Agency Parameters & Commission Ledger
+              Agency Parameters & Float Rewards
             </h2>
           </div>
           <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b' }}>
@@ -1120,7 +1120,7 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
-          {/* Card 1: Cashier Deposit Fee */}
+          {/* Card 1: Upfront Float Bonus */}
           <div
             style={{
               background: '#f8fafc',
@@ -1134,21 +1134,21 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 800, textTransform: 'uppercase' }}>
-                Player Cash-In Fee
+                Upfront Float Bonus
               </span>
               <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: '6px', background: '#fef3c7', color: '#b45309' }}>
-                Instant
+                Upfront
               </span>
             </div>
             <div style={{ fontSize: '22px', fontWeight: 900, color: '#d97706' }}>
               +{profile?.commissionRate || 5}.0%
             </div>
             <div style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.4 }}>
-              Credited instantly to your commission wallet for every counter deposit.
+              Added upfront to your wallet on verified recharges (e.g. 10,000 ETB + 5% = 10,500 ETB float).
             </div>
           </div>
 
-          {/* Card 2: Voucher Cashout Fee */}
+          {/* Card 2: 10% First Deposit Referral */}
           <div
             style={{
               background: '#f8fafc',
@@ -1162,17 +1162,17 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 800, textTransform: 'uppercase' }}>
-                Voucher Cash-Out Fee
+                Player Referral Bonus
               </span>
               <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: '6px', background: '#ecfdf5', color: '#059669' }}>
                 Instant
               </span>
             </div>
             <div style={{ fontSize: '22px', fontWeight: 900, color: '#059669' }}>
-              +2.0%
+              +10.0%
             </div>
             <div style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.4 }}>
-              Instant counter incentive for verifying vouchers and handing out physical cash.
+              Earned on recruited players' first deposits. Counter deposits transfer pure 1:1 float (0% fee).
             </div>
           </div>
 
@@ -1228,7 +1228,7 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
               {(profile?.targetMonthly || 50000).toLocaleString()} <span style={{ fontSize: '13px', color: '#94a3b8' }}>ETB</span>
             </div>
             <div style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.4 }}>
-              Achieving target volume unlocks VIP tier status and higher commissions.
+              Achieving target volume unlocks VIP tier status and higher rewards.
             </div>
           </div>
         </div>

@@ -55,7 +55,7 @@ export const AgentCashOutDesk: React.FC<AgentCashOutDeskProps> = ({
           date: new Date().toLocaleTimeString()
         });
 
-        showToast(`🎉 Payout confirmed! Received +${res.commissionEarned.toFixed(2)} ETB cashier fee.`);
+        showToast(`🎉 Payout confirmed! ${res.commissionEarned > 0 ? `Received +${res.commissionEarned.toFixed(2)} ETB fee.` : 'Float returned to your balance.'}`);
         setVerifiedVoucher(null);
         setVoucherCodeInput('');
         onPayoutSuccess();
@@ -256,10 +256,12 @@ export const AgentCashOutDesk: React.FC<AgentCashOutDeskProps> = ({
                 <span style={{ color: '#64748b' }}>Cash Paid Out:</span>
                 <strong style={{ color: '#047857', fontSize: '15px' }}>{receipt.amount.toFixed(2)} ETB</strong>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#64748b' }}>Cashier Fee Earned:</span>
-                <strong style={{ color: '#b45309' }}>+{receipt.commission.toFixed(2)} ETB</strong>
-              </div>
+              {receipt.commission > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>Fee Earned:</span>
+                  <strong style={{ color: '#b45309' }}>+{receipt.commission.toFixed(2)} ETB</strong>
+                </div>
+              )}
               <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #e2e8f0', paddingTop: '4px' }}>
                 <span style={{ color: '#64748b' }}>New Float Balance:</span>
                 <strong style={{ color: '#047857' }}>{receipt.newFloat.toFixed(2)} ETB</strong>

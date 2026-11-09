@@ -322,7 +322,7 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
             <b>{formatBirr(openingBalance)} Birr</b>
           </div>
           <div className="stat">
-            <span className="kl">Your commission</span>
+            <span className="kl">Upfront float bonus</span>
             <b id="rate">{commissionRate}%</b>
           </div>
           <div className="stat">
@@ -612,7 +612,7 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
         <div>
           <div className="card sum">
             <h3>Credit preview</h3>
-            <div className="sub">Commission is applied by the system when admin approves.</div>
+            <div className="sub">Upfront float bonus is applied by the system when admin approves.</div>
 
             <div style={{ marginTop: '8px' }}>
               <div className="row">
@@ -621,7 +621,7 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
               </div>
               <div className="row">
                 <span>
-                  Commission <em className="tag" id="s0">{commissionRate}%</em>
+                  Upfront bonus <em className="tag" id="s0">{commissionRate}%</em>
                 </span>
                 <b className="pos" id="s2">+{formatBirr(commissionAmount)} Birr</b>
               </div>
@@ -652,7 +652,7 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
               </li>
               <li>
                 <i>4</i>
-                <div>Commission is applied</div>
+                <div>Upfront float bonus is applied</div>
               </li>
               <li>
                 <i>5</i>
@@ -696,7 +696,7 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
                 <th>Method</th>
                 <th>Reference</th>
                 <th>Amount</th>
-                <th>Commission</th>
+                <th>Float Bonus</th>
                 <th>Total credit</th>
                 <th>Status</th>
               </tr>
