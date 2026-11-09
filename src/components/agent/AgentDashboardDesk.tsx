@@ -347,13 +347,6 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
             >
               Request recharge
             </button>
-            <button
-              type="button"
-              className="ghost"
-              onClick={() => onNavigateTab('deposit_requests')}
-            >
-              Incoming requests {pendingDepositRequests > 0 ? `(${pendingDepositRequests})` : ''}
-            </button>
           </div>
         </div>
 
