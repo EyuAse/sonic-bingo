@@ -1978,8 +1978,8 @@ router.post('/agents/create', requireAdmin, async (req: AuthenticatedRequest, re
     const initDeposit = typeof initialDeposit === 'number' && initialDeposit >= 0 ? initialDeposit : 10000.00;
     const target = typeof targetMonthly === 'number' && targetMonthly > 0 ? targetMonthly : 50000.00;
     const playersTarget = typeof targetPlayers === 'number' && targetPlayers > 0 ? targetPlayers : 50;
-    const depCommission = typeof commissionRate === 'number' && commissionRate >= 0 ? commissionRate : 3.00;
-    const withCommission = typeof cashoutCommissionRate === 'number' && cashoutCommissionRate >= 0 ? cashoutCommissionRate : 2.00;
+    const depCommission = typeof commissionRate === 'number' && commissionRate >= 0 ? commissionRate : 5.00;
+    const withCommission = typeof cashoutCommissionRate === 'number' && cashoutCommissionRate >= 0 ? cashoutCommissionRate : 0.00;
 
     // Use admin-supplied password or generate secure default
     const rawPassword = (typeof password === 'string' && password.trim().length >= 4)
@@ -2028,7 +2028,7 @@ router.post('/agents/create', requireAdmin, async (req: AuthenticatedRequest, re
         )
         VALUES ($1, $2, 'active', $3, $4, 5000.00, $5, $6, $7, $8, $9, true)
         RETURNING *`,
-        [userId, agentCode, totalInitialFloat, baseDeposit, target, playersTarget, depCommission, withCommission, cleanCity]
+        [userId, agentCode, totalInitialFloat, baseDeposit, target, playersTarget, depCommission, 0.00, cleanCity]
       );
 
       if (upfrontComm > 0) {

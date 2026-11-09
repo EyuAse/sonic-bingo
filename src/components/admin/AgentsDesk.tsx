@@ -91,16 +91,16 @@ export const AgentsDesk: React.FC = () => {
   const [regFloat, setRegFloat] = useState<number>(10000);
   const [regPassword, setRegPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [regDepositComm, setRegDepositComm] = useState<number>(3.0);
-  const [regWithdrawComm, setRegWithdrawComm] = useState<number>(2.0);
+  const [regDepositComm, setRegDepositComm] = useState<number>(5.0);
+  const [regWithdrawComm, setRegWithdrawComm] = useState<number>(0.0);
   const [regTargetPlayers, setRegTargetPlayers] = useState<number>(50);
   const [regTargetVolume, setRegTargetVolume] = useState<number>(50000);
   const [regIsSubmitting, setRegIsSubmitting] = useState<boolean>(false);
   const [createdCredentials, setCreatedCredentials] = useState<CreatedCredentials | null>(null);
 
   // Edit Commission & Targets State (Right Panel)
-  const [editDepComm, setEditDepComm] = useState<number>(3.0);
-  const [editWithComm, setEditWithComm] = useState<number>(2.0);
+  const [editDepComm, setEditDepComm] = useState<number>(5.0);
+  const [editWithComm, setEditWithComm] = useState<number>(0.0);
   const [editTargetPlayers, setEditTargetPlayers] = useState<number>(50);
   const [editTargetVolume, setEditTargetVolume] = useState<number>(50000);
   const [isSavingTargets, setIsSavingTargets] = useState<boolean>(false);
@@ -194,8 +194,8 @@ export const AgentsDesk: React.FC = () => {
       const res = await apiClient.admin.getAgentDetails(id);
       if (res && res.success) {
         setAgentDetails(res);
-        setEditDepComm(res.agent.commission_rate ?? 3.0);
-        setEditWithComm(res.agent.cashout_commission_rate ?? 2.0);
+        setEditDepComm(res.agent.commission_rate ?? 5.0);
+        setEditWithComm(0.0);
         setEditTargetPlayers(res.agent.target_players ?? 50);
         setEditTargetVolume(res.agent.target_monthly ?? 50000);
       }
@@ -278,19 +278,19 @@ export const AgentsDesk: React.FC = () => {
     try {
       const res = await apiClient.admin.updateAgent(selectedAgent.id, {
         commissionRate: editDepComm,
-        cashoutCommissionRate: editWithComm,
+        cashoutCommissionRate: 0.0,
         targetPlayers: editTargetPlayers,
         targetMonthly: editTargetVolume
       } as any);
 
       if (res && res.success) {
-        showToast('✓ Commission rates and monthly targets saved!');
+        showToast('✓ Float bonus rate and monthly targets saved!');
         fetchAgents();
       } else {
         showToast(`❌ ${res?.error || 'Failed to save settings'}`);
       }
     } catch {
-      showToast('❌ Error saving commission rates');
+      showToast('❌ Error saving float bonus rate');
     } finally {
       setIsSavingTargets(false);
     }
@@ -344,8 +344,8 @@ export const AgentsDesk: React.FC = () => {
     setRegCity('Addis Ababa');
     setRegFloat(10000);
     setRegPassword(generateRandomPassword());
-    setRegDepositComm(3.0);
-    setRegWithdrawComm(2.0);
+    setRegDepositComm(5.0);
+    setRegWithdrawComm(0.0);
     setRegTargetPlayers(50);
     setRegTargetVolume(50000);
     setCreatedCredentials(null);
@@ -368,8 +368,8 @@ export const AgentsDesk: React.FC = () => {
       }
       setModalStep(2);
     } else if (modalStep === 2) {
-      if (regDepositComm < 0 || regDepositComm > 100 || regWithdrawComm < 0 || regWithdrawComm > 100) {
-        showToast('⚠️ Commission rates must be between 0% and 100%');
+      if (regDepositComm < 0 || regDepositComm > 100) {
+        showToast('⚠️ Float bonus rate must be between 0% and 100%');
         return;
       }
       if (regTargetPlayers <= 0 || regTargetVolume <= 0) {
@@ -391,7 +391,7 @@ export const AgentsDesk: React.FC = () => {
         targetMonthly: regTargetVolume,
         targetPlayers: regTargetPlayers,
         commissionRate: regDepositComm,
-        cashoutCommissionRate: regWithdrawComm,
+        cashoutCommissionRate: 0.0,
         password: regPassword.trim()
       });
 
@@ -425,6 +425,7 @@ export const AgentsDesk: React.FC = () => {
   // Credential Handover Formatting
   const getCredentialShareText = (cred: CreatedCredentials | null) => {
     if (!cred) return '';
+    const totalCreditedFloat = regFloat * (1 + regDepositComm / 100);
     return (
       `👋 *እንኳን ወደ ሶኒክ ቢንጎ ወኪሎች መረብ በደህና መጡ!* (Welcome to Sonic Bingo Agent Portal)\n\n` +
       `👤 *Agent Name:* ${cred.fullName}\n` +
@@ -434,10 +435,9 @@ export const AgentsDesk: React.FC = () => {
       `📍 *Branch / City:* ${cred.city}\n\n` +
       `🌐 *Agent Portal:* ${cred.portalUrl}\n` +
       `🔗 *Player Referral Link:* ${cred.refLink}\n\n` +
-      `⚡ *የተመደበ ፍሎት:* ${formatNumber(regFloat)} ETB\n` +
-      `💰 *ተቀማጭ ኮሚሽን (Deposit):* ${regDepositComm}%\n` +
-      `💸 *ወጪ ኮሚሽን (Withdraw):* ${regWithdrawComm}%\n\n` +
-      `ይግቡ እና ተጫዋቾችን በማስመዝገብ የቀጥታ ኮሚሽን ያግኙ! (Login now and start earning!)`
+      `⚡ *የተመደበ የመጀመሪያ ፍሎት:* ${formatNumber(totalCreditedFloat)} ETB (${formatNumber(regFloat)} ETB + ${regDepositComm}% የፍሎት ቦነስ)\n` +
+      `🎁 *የሪፈራል ቦነስ:* 10% ከተጫዋቾች የመጀመሪያ ተቀማጭ (10% Referral Bonus)\n\n` +
+      `ይግቡ እና ተጫዋቾችን በማስመዝገብ ገቢዎን ያሳድጉ! (Login now to start onboarding players!)`
     );
   };
 
@@ -908,31 +908,21 @@ export const AgentsDesk: React.FC = () => {
               </div>
             </div>
 
-            {/* Commission Rates: ONLY Deposit & Withdraw (Custom requirement!) */}
+            {/* Upfront Float Bonus Rate */}
             <div className="sec">
-              <h4>Commission rates (%)</h4>
-              <div className="two">
-                <div>
-                  <label htmlFor="ad_cd" className="enqu-form-label">Deposit commission (%)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    id="ad_cd"
-                    value={editDepComm}
-                    onChange={(e) => setEditDepComm(parseFloat(e.target.value) || 0)}
-                    className="enqu-panel-input"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="ad_cw" className="enqu-form-label">Withdraw commission (%)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    id="ad_cw"
-                    value={editWithComm}
-                    onChange={(e) => setEditWithComm(parseFloat(e.target.value) || 0)}
-                    className="enqu-panel-input"
-                  />
+              <h4>Upfront Float Bonus Rate (%)</h4>
+              <div>
+                <label htmlFor="ad_cd" className="enqu-form-label">Float Bonus Rate (%)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  id="ad_cd"
+                  value={editDepComm}
+                  onChange={(e) => setEditDepComm(parseFloat(e.target.value) || 0)}
+                  className="enqu-panel-input"
+                />
+                <div className="enqu-form-hint" style={{ marginTop: '6px' }}>
+                  💡 <b>Upfront Float Formula:</b> When agent recharges 10,000 ETB @ {editDepComm}%, admin credits {formatNumber(10000 * (1 + editDepComm / 100))} ETB float (+{formatNumber(10000 * (editDepComm / 100))} ETB bonus).
                 </div>
               </div>
 
@@ -967,7 +957,7 @@ export const AgentsDesk: React.FC = () => {
                 disabled={isSavingTargets}
                 style={{ width: '100%', marginTop: '16px', padding: '12px' }}
               >
-                {isSavingTargets ? 'Saving...' : 'Save targets & commission'}
+                {isSavingTargets ? 'Saving...' : 'Save targets & float bonus'}
               </button>
             </div>
 
@@ -1039,16 +1029,16 @@ export const AgentsDesk: React.FC = () => {
                       </div>
                     </div>
                     <div className="card" style={{ background: 'var(--panel)', padding: '12px' }}>
-                      <div className="lab">Commission Earned</div>
+                      <div className="lab">Upfront Float Bonus</div>
                       <div className="val" style={{ margin: '4px 0', fontSize: '18px', color: 'var(--g)' }}>
                         ETB{' '}
                         {formatNumber(
                           ((agentDetails?.stats?.totalDeposits ?? selectedAgent.total_volume_deposited) *
-                            (selectedAgent.commission_rate || 3)) /
+                            (selectedAgent.commission_rate || 5)) /
                             100
                         )}
                       </div>
-                      <div className="tr">At {selectedAgent.commission_rate}% deposit rate</div>
+                      <div className="tr">At {selectedAgent.commission_rate || 5}% float bonus rate</div>
                     </div>
                   </div>
                 </div>
@@ -1083,7 +1073,7 @@ export const AgentsDesk: React.FC = () => {
             {modalStep < 4 && (
               <div className="steps">
                 <span className={modalStep >= 1 ? 'on' : ''}>1. Details</span>
-                <span className={modalStep >= 2 ? 'on' : ''}>2. Commission & Targets</span>
+                <span className={modalStep >= 2 ? 'on' : ''}>2. Float Bonus & Targets</span>
                 <span className={modalStep >= 3 ? 'on' : ''}>3. Review</span>
               </div>
             )}
@@ -1169,35 +1159,39 @@ export const AgentsDesk: React.FC = () => {
               </div>
             )}
 
-            {/* Step 2: Commission & Targets (ONLY Deposit & Withdraw!) */}
+            {/* Step 2: Float Bonus & Targets */}
             {modalStep === 2 && (
               <div>
-                <div className="two">
-                  <div>
-                    <label htmlFor="am_d" className="enqu-form-label">Deposit Commission (%)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      id="am_d"
-                      value={regDepositComm}
-                      onChange={(e) => setRegDepositComm(parseFloat(e.target.value) || 0)}
-                      className="enqu-modal-input"
-                    />
+                <div>
+                  <label htmlFor="am_d" className="enqu-form-label">Upfront Float Bonus Rate (%)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    id="am_d"
+                    value={regDepositComm}
+                    onChange={(e) => setRegDepositComm(parseFloat(e.target.value) || 0)}
+                    className="enqu-modal-input"
+                  />
+                </div>
+
+                {/* Live Float Breakdown preview */}
+                <div style={{ background: 'var(--panel)', padding: '12px 14px', borderRadius: '12px', marginTop: '10px', border: '1px solid var(--line)' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--mute)', fontWeight: 600, marginBottom: '6px' }}>⚡ Live Float Breakdown</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>
+                    <span>Base Float Payment:</span>
+                    <span>{formatNumber(regFloat)} ETB</span>
                   </div>
-                  <div>
-                    <label htmlFor="am_w" className="enqu-form-label">Withdraw Commission (%)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      id="am_w"
-                      value={regWithdrawComm}
-                      onChange={(e) => setRegWithdrawComm(parseFloat(e.target.value) || 0)}
-                      className="enqu-modal-input"
-                    />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 600, color: 'var(--g)', marginBottom: '4px' }}>
+                    <span>Upfront Bonus (+{regDepositComm}%):</span>
+                    <span>+{formatNumber(regFloat * (regDepositComm / 100))} ETB</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 800, borderTop: '1px dashed var(--line)', paddingTop: '6px' }}>
+                    <span>Total Credited Float:</span>
+                    <span style={{ color: 'var(--ink)' }}>{formatNumber(regFloat * (1 + regDepositComm / 100))} ETB</span>
                   </div>
                 </div>
 
-                <div className="two" style={{ marginTop: '8px' }}>
+                <div className="two" style={{ marginTop: '12px' }}>
                   <div>
                     <label htmlFor="am_tp" className="enqu-form-label">Monthly player target</label>
                     <input
@@ -1221,7 +1215,7 @@ export const AgentsDesk: React.FC = () => {
                 </div>
 
                 <div className="enqu-form-hint" style={{ marginTop: '12px' }}>
-                  Commissions are automatically settled to the agent's commission balance whenever players deposit or cash out through them.
+                  💡 <b>Upfront Float Model:</b> The agent receives this bonus float upfront into their wallet upon registration and every recharge. Ongoing earnings come strictly from the <b>10% referral bonus on players' first deposits</b> (0% fee on player deposits).
                 </div>
               </div>
             )}
@@ -1243,13 +1237,25 @@ export const AgentsDesk: React.FC = () => {
                     <span className="cred-val">{regCity || 'Addis Ababa'}</span>
                   </div>
                   <div className="cred-row">
-                    <span className="cred-lab">Initial Float</span>
+                    <span className="cred-lab">Base Payment</span>
                     <span className="cred-val">{formatNumber(regFloat)} ETB</span>
                   </div>
                   <div className="cred-row">
-                    <span className="cred-lab">Commission</span>
+                    <span className="cred-lab">Upfront Float Bonus</span>
                     <span className="cred-val">
-                      Deposit: {regDepositComm}% · Withdraw: {regWithdrawComm}%
+                      {regDepositComm}% (+{formatNumber(regFloat * (regDepositComm / 100))} ETB)
+                    </span>
+                  </div>
+                  <div className="cred-row">
+                    <span className="cred-lab">Total Initial Float</span>
+                    <span className="cred-val" style={{ fontWeight: 800, color: 'var(--g)' }}>
+                      {formatNumber(regFloat * (1 + regDepositComm / 100))} ETB
+                    </span>
+                  </div>
+                  <div className="cred-row">
+                    <span className="cred-lab">Ongoing Referral Earnings</span>
+                    <span className="cred-val">
+                      10% on player 1st deposits
                     </span>
                   </div>
                   <div className="cred-row">
