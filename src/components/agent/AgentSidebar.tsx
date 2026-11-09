@@ -7,6 +7,7 @@ export type AgentDeskTab =
   | 'commission'
   | 'cash_out'
   | 'players'
+  | 'payment_rails'
   | 'profile';
 
 interface AgentSidebarProps {
@@ -43,6 +44,7 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
     { id: 'deposit_requests', label: 'Deposits', icon: 'fa-solid fa-arrow-down-to-bracket', badge: pendingRequestsCount },
     { id: 'recharge', label: 'Recharge Requests', icon: 'fa-solid fa-plus' },
     { id: 'commission', label: 'Referral Bonus', icon: 'fa-solid fa-gift' },
+    { id: 'payment_rails', label: 'Payment Rails', icon: 'fa-solid fa-building-columns' },
     { id: 'profile', label: 'Settings', icon: 'fa-solid fa-gear' },
   ];
 

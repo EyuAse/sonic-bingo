@@ -12,6 +12,7 @@ import { AgentDepositRequestsDesk } from '../components/agent/AgentDepositReques
 import { AgentCommissionDesk } from '../components/agent/AgentCommissionDesk.tsx';
 import { AgentRechargeDesk } from '../components/agent/AgentRechargeDesk.tsx';
 import { AgentPlayersDesk } from '../components/agent/AgentPlayersDesk.tsx';
+import { AgentPaymentRailsDesk } from '../components/agent/AgentPaymentRailsDesk.tsx';
 import { AgentProfileDesk } from '../components/agent/AgentProfileDesk.tsx';
 import { socketService } from '../services/socketService.ts';
 
@@ -49,6 +50,7 @@ const DESK_TITLES: Record<string, string> = {
   recharge: 'Recharge Requests',
   commission: 'Referral Bonus Desk',
   cash_out: 'Referral Bonus Desk',
+  payment_rails: 'Payment Rails',
   profile: 'Agent Settings',
 };
 
@@ -61,7 +63,7 @@ export const AgentPortalPage: React.FC = () => {
     if (typeof window !== 'undefined') {
       const validTabs: AgentDeskTab[] = [
         'overview', 'deposit_requests',
-        'cash_out', 'recharge', 'players', 'profile', 'commission'
+        'cash_out', 'recharge', 'players', 'payment_rails', 'profile', 'commission'
       ];
 
       // 1. Check URL query params: ?tab=commission
@@ -356,7 +358,16 @@ export const AgentPortalPage: React.FC = () => {
             />
           )}
 
-          {/* Desk 6: Agency Profile & Settings */}
+          {/* Desk 6: Payment Rails */}
+          {activeTab === 'payment_rails' && (
+            <AgentPaymentRailsDesk
+              agentProfile={profile}
+              showToast={showToast}
+              openMobile={() => setIsMobileOpen(true)}
+            />
+          )}
+
+          {/* Desk 7: Agency Profile & Settings */}
           {activeTab === 'profile' && (
             <AgentProfileDesk
               profile={profile}
