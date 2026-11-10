@@ -885,7 +885,31 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (typeof state.realPlayerCount === 'number') setRealPlayerCount(state.realPlayerCount);
       if (typeof state.activeUsersCount === 'number') setActiveUsersCount(state.activeUsersCount);
       if (state.stakeRoomsSummary) setStakeRoomsSummary(state.stakeRoomsSummary);
-      if (Array.isArray(state.occupiedCartelaIds)) setOccupiedCartelaIds(state.occupiedCartelaIds);
+      if (Array.isArray(state.occupiedCartelaIds)) {
+        setOccupiedCartelaIds(state.occupiedCartelaIds);
+
+        // 🛡️ Real-Time Occupancy Conflict Eviction Guard (Lobby Drafts)
+        if (!hasTicketRef.current && !hasPreBoughtNextRef.current) {
+          const currentSelections = selectedCartelaIdsRef.current;
+          const conflictingIds = currentSelections.filter(id => id > 0 && state.occupiedCartelaIds.includes(id));
+          if (conflictingIds.length > 0) {
+            const remainingIds = currentSelections.filter(id => !state.occupiedCartelaIds.includes(id));
+            setSelectedCartelaIds(remainingIds);
+            selectedCartelaIdsRef.current = remainingIds;
+
+            setCartela1Data(remainingIds[0] ? generateCardFromId(remainingIds[0]) : []);
+            setCartela2Data(remainingIds[1] ? generateCardFromId(remainingIds[1]) : []);
+            setCartela3Data(remainingIds[2] ? generateCardFromId(remainingIds[2]) : []);
+            setCartela4Data(remainingIds[3] ? generateCardFromId(remainingIds[3]) : []);
+
+            showToast(
+              lang === 'am'
+                ? `🔒 ካርቴላ #${conflictingIds.join(', #')} በሌላ ተጫዋች ተወስዷል! እባክዎ ሌላ ይምረጡ።`
+                : `🔒 Cartela #${conflictingIds.join(', #')} was taken by another player! Please choose another.`
+            );
+          }
+        }
+      }
 
       if (state.currentCall) {
         setCurrentCall(state.currentCall);
@@ -1358,6 +1382,31 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (typeof data.realPlayerCount === 'number') setRealPlayerCount(data.realPlayerCount);
     if (typeof data.activeUsersCount === 'number') setActiveUsersCount(data.activeUsersCount);
     if (data.stakeRoomsSummary) setStakeRoomsSummary(data.stakeRoomsSummary);
+    if (Array.isArray(data.occupiedCartelaIds)) {
+      setOccupiedCartelaIds(data.occupiedCartelaIds);
+
+      // 🛡️ Real-Time Occupancy Conflict Eviction Guard (Lobby Drafts)
+      if (!hasTicketRef.current && !hasPreBoughtNextRef.current) {
+        const currentSelections = selectedCartelaIdsRef.current;
+        const conflictingIds = currentSelections.filter(id => id > 0 && data.occupiedCartelaIds.includes(id));
+        if (conflictingIds.length > 0) {
+          const remainingIds = currentSelections.filter(id => !data.occupiedCartelaIds.includes(id));
+          setSelectedCartelaIds(remainingIds);
+          selectedCartelaIdsRef.current = remainingIds;
+
+          setCartela1Data(remainingIds[0] ? generateCardFromId(remainingIds[0]) : []);
+          setCartela2Data(remainingIds[1] ? generateCardFromId(remainingIds[1]) : []);
+          setCartela3Data(remainingIds[2] ? generateCardFromId(remainingIds[2]) : []);
+          setCartela4Data(remainingIds[3] ? generateCardFromId(remainingIds[3]) : []);
+
+          showToast(
+            lang === 'am'
+              ? `🔒 ካርቴላ #${conflictingIds.join(', #')} በሌላ ተጫዋች ተወስዷል! እባክዎ ሌላ ይምረጡ።`
+              : `🔒 Cartela #${conflictingIds.join(', #')} was taken by another player! Please choose another.`
+          );
+        }
+      }
+    }
 
     if (Array.isArray(data.drawnNumbers) && data.drawnNumbers.length > 0) {
       fastForwardCatchUpRef.current(data.drawnNumbers);
