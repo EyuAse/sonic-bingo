@@ -1279,11 +1279,21 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (typeof data.roundNumber === 'number' && data.roundNumber !== roundNumberRef.current) {
       setRoundNumber(data.roundNumber);
       clearManualMarks();
-      const currentIds = selectedCartelaIdsRef.current;
-      setCartela1Data(generateCardFromId(currentIds[0]));
-      setCartela2Data(generateCardFromId(currentIds[1]));
-      setCartela3Data(currentIds[2] ? generateCardFromId(currentIds[2]) : []);
-      setCartela4Data(currentIds[3] ? generateCardFromId(currentIds[3]) : []);
+      const preBought = hasPreBoughtNextRef.current;
+      if (!preBought && !hasTicketRef.current) {
+        setSelectedCartelaIds([]);
+        selectedCartelaIdsRef.current = [];
+        setCartela1Data([]);
+        setCartela2Data([]);
+        setCartela3Data([]);
+        setCartela4Data([]);
+      } else {
+        const currentIds = selectedCartelaIdsRef.current;
+        if (currentIds[0]) setCartela1Data(generateCardFromId(currentIds[0]));
+        if (currentIds[1]) setCartela2Data(generateCardFromId(currentIds[1]));
+        if (currentIds[2]) setCartela3Data(generateCardFromId(currentIds[2]));
+        if (currentIds[3]) setCartela4Data(generateCardFromId(currentIds[3]));
+      }
     }
 
     if (data.phase) {
@@ -1292,7 +1302,8 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           winModalDismissedForRoundRef.current = null;
           setShowWinModal(false);
           setWinResult(null);
-          setHasTicket(hasPreBoughtNextRef.current);
+          const preBought = hasPreBoughtNextRef.current;
+          setHasTicket(preBought);
           setHasPreBoughtNext(false);
           setCalledNumbers([]);
           setCurrentCall(null);
@@ -1300,12 +1311,23 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           setClaimInProgress(false);
           clearManualMarks();
 
-          // Regenerate fresh unmarked cartelas on entering lobby so previous win-glow never persists
-          const currentIds = selectedCartelaIdsRef.current;
-          setCartela1Data(generateCardFromId(currentIds[0]));
-          setCartela2Data(generateCardFromId(currentIds[1]));
-          setCartela3Data(currentIds[2] ? generateCardFromId(currentIds[2]) : []);
-          setCartela4Data(currentIds[3] ? generateCardFromId(currentIds[3]) : []);
+          if (!preBought) {
+            // 🧹 CLEAN SLATE: Finished round ticket is released!
+            // Do NOT carry over old cartela IDs into the new round.
+            setSelectedCartelaIds([]);
+            selectedCartelaIdsRef.current = [];
+            setCartela1Data([]);
+            setCartela2Data([]);
+            setCartela3Data([]);
+            setCartela4Data([]);
+          } else {
+            // Pre-bought player: regenerate fresh unmarked cartelas for their pre-bought cards
+            const currentIds = selectedCartelaIdsRef.current;
+            if (currentIds[0]) setCartela1Data(generateCardFromId(currentIds[0]));
+            if (currentIds[1]) setCartela2Data(generateCardFromId(currentIds[1]));
+            if (currentIds[2]) setCartela3Data(generateCardFromId(currentIds[2]));
+            if (currentIds[3]) setCartela4Data(generateCardFromId(currentIds[3]));
+          }
         } else if (data.phase === 'playing') {
           setGameActive(true);
           const hasServerTicket = Array.isArray(data.userTickets) && data.userTickets.length > 0;
@@ -2077,6 +2099,14 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setShowWinModal(false);
     setWinResult(null);
     setHasTicket(false);
+    if (!hasPreBoughtNextRef.current) {
+      setSelectedCartelaIds([]);
+      selectedCartelaIdsRef.current = [];
+      setCartela1Data([]);
+      setCartela2Data([]);
+      setCartela3Data([]);
+      setCartela4Data([]);
+    }
   };
 
   const startLobbyCountdown = () => {
