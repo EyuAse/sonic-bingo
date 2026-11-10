@@ -647,6 +647,9 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const roundPhaseRef = useRef(roundPhase);
   roundPhaseRef.current = roundPhase;
 
+  const hasTicketRef = useRef<boolean>(false);
+  hasTicketRef.current = hasTicket;
+
   const hasPreBoughtNextRef = useRef<boolean>(false);
   hasPreBoughtNextRef.current = hasPreBoughtNext;
 
@@ -1037,12 +1040,26 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         });
       }
 
-      // Generate fresh cards
-      const currentIds = selectedCartelaIdsRef.current;
-      setCartela1Data(generateCardFromId(currentIds[0]));
-      setCartela2Data(generateCardFromId(currentIds[1]));
-      setCartela3Data(currentIds[2] ? generateCardFromId(currentIds[2]) : []);
-      setCartela4Data(currentIds[3] ? generateCardFromId(currentIds[3]) : []);
+      // 🛡️ UNCOMMITTED SELECTION EXPIRATION (Spectator Mode Guard):
+      // If user selected cartela(s) in lobby but did NOT buy a ticket before round began:
+      const playerHasTicket = hasTicketRef.current || hasPreBoughtNextRef.current;
+      if (!playerHasTicket) {
+        setSelectedCartelaIds([]);
+        selectedCartelaIdsRef.current = [];
+        setCartela1Data([]);
+        setCartela2Data([]);
+        setCartela3Data([]);
+        setCartela4Data([]);
+        setIsCartelaPickerOpen(false);
+        setRoomMode('spectating');
+      } else {
+        // Active player with bought ticket: generate fresh unmarked cards
+        const currentIds = selectedCartelaIdsRef.current;
+        setCartela1Data(generateCardFromId(currentIds[0]));
+        setCartela2Data(generateCardFromId(currentIds[1]));
+        setCartela3Data(currentIds[2] ? generateCardFromId(currentIds[2]) : []);
+        setCartela4Data(currentIds[3] ? generateCardFromId(currentIds[3]) : []);
+      }
     });
 
     // 4. Round Winner & Split Pot Handler
@@ -1291,6 +1308,17 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           setCartela4Data(currentIds[3] ? generateCardFromId(currentIds[3]) : []);
         } else if (data.phase === 'playing') {
           setGameActive(true);
+          const hasServerTicket = Array.isArray(data.userTickets) && data.userTickets.length > 0;
+          if (!hasTicketRef.current && !hasPreBoughtNextRef.current && !hasServerTicket) {
+            setSelectedCartelaIds([]);
+            selectedCartelaIdsRef.current = [];
+            setCartela1Data([]);
+            setCartela2Data([]);
+            setCartela3Data([]);
+            setCartela4Data([]);
+            setIsCartelaPickerOpen(false);
+            setRoomMode('spectating');
+          }
         }
         return data.phase;
       });
