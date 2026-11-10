@@ -2,7 +2,7 @@ export type EthiopianCarrier = 'ethiotelecom' | 'safaricom';
 
 export interface AttachedAccount {
   id: string;
-  type: 'Telebirr' | 'CBE';
+  type: 'Telebirr' | 'M-Pesa' | 'CBE';
   name: string;
   accountNumber: string;
   isDefault: boolean;

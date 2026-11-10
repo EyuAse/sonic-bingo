@@ -556,7 +556,7 @@ export const apiClient = {
           phone: string;
           telebirrPhone: string;
           telebirrName?: string;
-          cbeAccount: string;
+          cbeAccount?: string;
           cbeName?: string;
           mpesaPhone: string | null;
           mpesaName?: string;
@@ -564,6 +564,34 @@ export const apiClient = {
           isOnline: boolean;
           avgApprovalMinutes: number;
         }>;
+      }>(res);
+    },
+
+    async getAssignedAgent(excludeAgentId?: string, preferredAgentId?: string) {
+      const params = new URLSearchParams();
+      if (excludeAgentId) params.append('excludeAgentId', excludeAgentId);
+      if (preferredAgentId) params.append('preferredAgentId', preferredAgentId);
+      const queryStr = params.toString();
+      const url = queryStr ? `${API_BASE}/wallet/agents/assigned?${queryStr}` : `${API_BASE}/wallet/agents/assigned`;
+      const res = await fetch(url);
+      return handleResponse<{
+        success: boolean;
+        agent: {
+          id: string;
+          agentCode: string;
+          displayName: string;
+          phone: string | null;
+          telebirrPhone: string | null;
+          telebirrName?: string;
+          mpesaPhone: string | null;
+          mpesaName?: string;
+          supportedRails?: string[];
+          hasConfiguredRails?: boolean;
+          isOnline: boolean;
+          avgApprovalMinutes: number;
+        } | null;
+        totalOnlineAgents: number;
+        message?: string;
       }>(res);
     },
 

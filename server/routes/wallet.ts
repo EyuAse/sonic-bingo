@@ -1416,18 +1416,12 @@ router.get(['/agents/active', '/agents/available'], async (_req, res) => {
         supportedRails.push('Telebirr');
       }
 
-      const cleanCbe = a.cbe_account ? String(a.cbe_account).trim() : '';
-      if (activeList.includes('CBE') && cleanCbe.length >= 8) {
-        supportedRails.push('CBE');
-      }
-
       const cleanMpesa = a.mpesa_phone ? String(a.mpesa_phone).trim() : '';
       if (activeList.includes('M-Pesa') && cleanMpesa.length >= 8) {
         supportedRails.push('M-Pesa');
       }
 
       const effectiveTelebirrName = (a.telebirr_name && a.telebirr_name.trim()) || a.full_name || 'Sonic Agent';
-      const effectiveCbeName = (a.cbe_name && a.cbe_name.trim()) || a.full_name || 'Sonic Agent';
       const effectiveMpesaName = (a.mpesa_name && a.mpesa_name.trim()) || a.full_name || 'Sonic Agent';
 
       return {
@@ -1437,8 +1431,6 @@ router.get(['/agents/active', '/agents/available'], async (_req, res) => {
         phone: cleanTelebirr || cleanMpesa || a.user_phone || null,
         telebirrPhone: cleanTelebirr || null,
         telebirrName: effectiveTelebirrName,
-        cbeAccount: cleanCbe || null,
-        cbeName: effectiveCbeName,
         mpesaPhone: cleanMpesa || null,
         mpesaName: effectiveMpesaName,
         supportedRails,
@@ -1455,6 +1447,138 @@ router.get(['/agents/active', '/agents/available'], async (_req, res) => {
   } catch (error: any) {
     console.error('❌ [Wallet Active Agents Error]:', error);
     return res.status(500).json({ success: false, error: 'Failed to retrieve active agents' });
+  }
+});
+
+/**
+ * GET /api/wallet/agents/assigned
+ * Returns EXACTLY ONE assigned agent for the player's deposit session.
+ * Uses Damped Square-Root Weighted Lottery:
+ *   weight_i = 100 + floor(sqrt(wallet_balance_i))
+ * Gives agents with more float capital a fair, proportional advantage while ensuring
+ * every active agent with active rails has a solid baseline probability of selection.
+ * Supports optional `excludeAgentId` when player requests to re-roll for another agent.
+ */
+router.get('/agents/assigned', async (req, res) => {
+  try {
+    const excludeAgentId = req.query.excludeAgentId ? String(req.query.excludeAgentId).trim() : null;
+    const preferredAgentId = req.query.preferredAgentId ? String(req.query.preferredAgentId).trim() : null;
+
+    const agentsRes = await query(
+      `SELECT ap.id, ap.agent_code, ap.status, 
+              ap.telebirr_phone, 
+              ap.telebirr_name, 
+              ap.mpesa_phone, 
+              ap.mpesa_name,
+              ap.active_rails, 
+              COALESCE(ap.is_online, true) as is_online, 
+              ap.wallet_balance,
+              u.full_name, u.phone as user_phone
+       FROM agent_profiles ap
+       JOIN users u ON ap.user_id = u.id
+       WHERE ap.status = 'active'
+         AND COALESCE(ap.is_online, true) = true
+         AND ap.wallet_balance >= 50.00
+       ORDER BY ap.wallet_balance DESC, ap.created_at ASC`
+    );
+
+    // Format & filter agents who have configured active rails (Telebirr or M-Pesa)
+    const eligibleAgents = agentsRes.rows
+      .map(a => {
+        const activeList = (a.active_rails || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+        const supportedRails: string[] = [];
+
+        const cleanTelebirr = a.telebirr_phone ? String(a.telebirr_phone).trim() : '';
+        if (activeList.includes('Telebirr') && cleanTelebirr.length >= 8) {
+          supportedRails.push('Telebirr');
+        }
+
+        const cleanMpesa = a.mpesa_phone ? String(a.mpesa_phone).trim() : '';
+        if (activeList.includes('M-Pesa') && cleanMpesa.length >= 8) {
+          supportedRails.push('M-Pesa');
+        }
+
+        const effectiveTelebirrName = (a.telebirr_name && a.telebirr_name.trim()) || a.full_name || 'Sonic Agent';
+        const effectiveMpesaName = (a.mpesa_name && a.mpesa_name.trim()) || a.full_name || 'Sonic Agent';
+
+        const rawBalance = Math.max(0, parseFloat(a.wallet_balance || '0'));
+        // Damped weighted tickets: Base 100 + floor(sqrt(balance))
+        const weight = 100 + Math.floor(Math.sqrt(rawBalance));
+
+        return {
+          id: a.id,
+          agentCode: a.agent_code,
+          displayName: `Sonic Agent #${a.agent_code}`,
+          phone: cleanTelebirr || cleanMpesa || a.user_phone || null,
+          telebirrPhone: cleanTelebirr || null,
+          telebirrName: effectiveTelebirrName,
+          mpesaPhone: cleanMpesa || null,
+          mpesaName: effectiveMpesaName,
+          supportedRails,
+          hasConfiguredRails: supportedRails.length > 0,
+          isOnline: a.is_online !== false,
+          avgApprovalMinutes: 2,
+          walletBalance: rawBalance,
+          weight
+        };
+      })
+      .filter(a => a.hasConfiguredRails);
+
+    if (eligibleAgents.length === 0) {
+      return res.json({
+        success: true,
+        agent: null,
+        totalOnlineAgents: 0,
+        message: 'No certified agents currently online with active payment rails'
+      });
+    }
+
+    // If player has a preferred active agent (session persistence) and did not ask to exclude it, serve it directly
+    if (preferredAgentId && !excludeAgentId) {
+      const preferred = eligibleAgents.find(a => a.id === preferredAgentId || a.agentCode === preferredAgentId);
+      if (preferred) {
+        const { weight, walletBalance, ...sanitizedAgent } = preferred;
+        return res.json({
+          success: true,
+          agent: sanitizedAgent,
+          totalOnlineAgents: eligibleAgents.length
+        });
+      }
+    }
+
+    // Filter out excludeAgentId if multiple candidates exist
+    let pool = eligibleAgents;
+    if (excludeAgentId && eligibleAgents.length > 1) {
+      const filtered = eligibleAgents.filter(a => a.id !== excludeAgentId && a.agentCode !== excludeAgentId);
+      if (filtered.length > 0) {
+        pool = filtered;
+      }
+    }
+
+    // Run Roulette-Wheel Weighted Selection
+    const totalWeight = pool.reduce((sum, a) => sum + a.weight, 0);
+    let randomVal = Math.random() * totalWeight;
+    let selectedAgent = pool[0];
+
+    for (const candidate of pool) {
+      if (randomVal < candidate.weight) {
+        selectedAgent = candidate;
+        break;
+      }
+      randomVal -= candidate.weight;
+    }
+
+    // Strip internal weight & balance before sending to client for privacy
+    const { weight, walletBalance, ...sanitizedAgent } = selectedAgent;
+
+    return res.json({
+      success: true,
+      agent: sanitizedAgent,
+      totalOnlineAgents: eligibleAgents.length
+    });
+  } catch (error: any) {
+    console.error('❌ [Wallet Assigned Agent Error]:', error);
+    return res.status(500).json({ success: false, error: 'Failed to assign certified agent' });
   }
 });
 

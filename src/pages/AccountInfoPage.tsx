@@ -7,7 +7,7 @@ import { TelebirrLogo, CBELogo } from '../components/wallet/PaymentLogos';
 
 interface AttachedAccount {
   id: string;
-  type: 'Telebirr' | 'CBE';
+  type: 'Telebirr' | 'M-Pesa' | 'CBE';
   name: string;
   accountNumber: string;
   isDefault: boolean;
