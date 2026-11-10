@@ -203,6 +203,41 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
     }
   };
 
+  // Lightweight check for pending deposit & withdrawal status updates during heartbeat
+  const refreshPendingRequests = async () => {
+    try {
+      const [myReqsRes, myWithRes] = await Promise.allSettled([
+        apiClient.wallet.getMyAgentDeposits(),
+        apiClient.wallet.getMyWithdrawals().catch(() => apiClient.wallet.getMyAgentWithdrawals())
+      ]);
+
+      if (myReqsRes.status === 'fulfilled' && myReqsRes.value?.success && myReqsRes.value?.requests) {
+        const matchingReq = myReqsRes.value.requests.find((r: any) => 
+          (activeAgentRequest && r.id === activeAgentRequest.id) || r.status === 'pending'
+        );
+        if (matchingReq) {
+          if (matchingReq.status !== activeAgentRequest?.status) {
+            setActiveAgentRequest(matchingReq);
+            if (matchingReq.status === 'approved' || matchingReq.status === 'rejected') {
+              sessionStorage.removeItem('sonic_assigned_agent_id');
+            }
+          }
+        }
+      }
+
+      if (myWithRes.status === 'fulfilled' && myWithRes.value?.success && myWithRes.value?.requests) {
+        const matchingWith = myWithRes.value.requests.find((r: any) => 
+          (activeWithdrawalRequest && r.id === activeWithdrawalRequest.id) || r.status === 'pending'
+        );
+        if (matchingWith) {
+          setActiveWithdrawalRequest(matchingWith);
+        }
+      }
+    } catch (err) {
+      console.warn('Pending requests refresh error:', err);
+    }
+  };
+
   // 🔄 Handle Re-roll / Request Another Certified Agent
   const handleReRollAgent = async () => {
     if (isReRollingAgent || isLoadingAgents) return;
@@ -229,6 +264,35 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
     }
   };
 
+  // 🔄 Handle Dismissal of Approved Deposit -> Reset & Rotate to Fresh Cashier
+  const handleDismissApprovedDeposit = async () => {
+    const previousAgentId = activeAgentRequest?.agentCode || selectedAgent?.id || selectedAgent?.agentCode;
+    setActiveAgentRequest(null);
+    setAgentTxRef('');
+    setAgentReceiptImage(null);
+    sessionStorage.removeItem('sonic_assigned_agent_id');
+    showToast(lang === 'am' ? '🔄 አዲስ ተረኛ ካሺየር እየተመደበ ነው...' : '🔄 Assigning next certified cashier...');
+    await loadAgentData(previousAgentId);
+  };
+
+  // 🔄 Handle Dismissal of Rejected Deposit -> Reset & Rotate to Different Cashier
+  const handleDismissRejectedDeposit = async () => {
+    const rejectedAgentId = activeAgentRequest?.agentCode || selectedAgent?.id || selectedAgent?.agentCode;
+    setActiveAgentRequest(null);
+    setAgentTxRef('');
+    setAgentReceiptImage(null);
+    sessionStorage.removeItem('sonic_assigned_agent_id');
+    showToast(lang === 'am' ? '🔄 ወደ ሌላ ተረኛ ካሺየር እየተቀየረ ነው...' : '🔄 Switching to another certified cashier...');
+    await loadAgentData(rejectedAgentId);
+  };
+
+  // 🔄 Handle Dismissal of Pending Deposit
+  const handleDismissPendingDeposit = async () => {
+    setActiveAgentRequest(null);
+    setAgentTxRef('');
+    setAgentReceiptImage(null);
+  };
+
   useEffect(() => {
     loadAgentData();
   }, []);
@@ -240,7 +304,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
     if (!isPending) return;
 
     const interval = setInterval(() => {
-      loadAgentData();
+      refreshPendingRequests();
       apiClient.wallet.getBalance().then(res => {
         if (res && res.success && typeof res.balance === 'number') {
           window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: res }));
@@ -257,6 +321,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
 
     const unsubApproved = socketService.on(`user_${user.id}_deposit_approved`, (data: any) => {
       showToast(`🎉 ${lang === 'am' ? 'ተቀማጭዎ በኤጀንቱ ጸድቋል!' : 'Deposit Approved by Agent!'} +${data.amount} ETB`);
+      sessionStorage.removeItem('sonic_assigned_agent_id');
       setActiveAgentRequest({
         id: data.requestId,
         amount: data.amount,
@@ -281,6 +346,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
 
     const unsubRejected = socketService.on(`user_${user.id}_deposit_rejected`, (data: any) => {
       showToast(`❌ ${lang === 'am' ? 'ተቀማጭዎ አልተሳካም' : 'Deposit Rejected'}: ${data.reason}`);
+      sessionStorage.removeItem('sonic_assigned_agent_id');
       setActiveAgentRequest((prev: any) => prev ? {
         ...prev,
         status: 'rejected',
@@ -440,6 +506,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
 
       if (res.success) {
         showToast(`✅ ${res.message}`);
+        sessionStorage.removeItem('sonic_assigned_agent_id');
         setActiveAgentRequest({
           id: res.requestId,
           amount: agentDepositAmount,
@@ -731,7 +798,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                   {activeAgentRequest.status === 'approved' ? (
                     <button
                       type="button"
-                      onClick={() => setActiveAgentRequest(null)}
+                      onClick={handleDismissApprovedDeposit}
                       style={{
                         background: '#10b981',
                         color: '#ffffff',
@@ -743,12 +810,12 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                         cursor: 'pointer'
                       }}
                     >
-                      {lang === 'am' ? 'ጨርሻለሁ (ወደ መነሻ)' : 'Done / Return to Cashier'}
+                      {lang === 'am' ? 'ጨርሻለሁ (ወደ አዲስ ካሺየር)' : 'Done / Return to Cashier'}
                     </button>
                   ) : activeAgentRequest.status === 'rejected' ? (
                     <button
                       type="button"
-                      onClick={() => setActiveAgentRequest(null)}
+                      onClick={handleDismissRejectedDeposit}
                       style={{
                         background: '#ef4444',
                         color: '#ffffff',
@@ -760,13 +827,13 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                         cursor: 'pointer'
                       }}
                     >
-                      🔄 {lang === 'am' ? 'እንደገና ይሞክሩ' : 'Try Again / Submit New Request'}
+                      🔄 {lang === 'am' ? 'በሌላ ኤጀንት እንደገና ይሞክሩ' : 'Try Again with Another Agent'}
                     </button>
                   ) : (
                     <>
                       <button
                         type="button"
-                        onClick={() => loadAgentData()}
+                        onClick={() => refreshPendingRequests()}
                         style={{
                           background: '#334155',
                           border: '1px solid #475569',
@@ -787,7 +854,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                       </button>
                       <button
                         type="button"
-                        onClick={() => setActiveAgentRequest(null)}
+                        onClick={handleDismissPendingDeposit}
                         style={{
                           background: 'transparent',
                           border: 'none',
@@ -1355,7 +1422,11 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                     <button
                       type="button"
                       className="sonic-primary-gold-submit-btn"
-                      onClick={() => setActiveWithdrawalRequest(null)}
+                      onClick={() => {
+                        setActiveWithdrawalRequest(null);
+                        sessionStorage.removeItem('sonic_assigned_agent_id');
+                        loadAgentData();
+                      }}
                     >
                       <i className="fa-solid fa-circle-check"></i>
                       <span>{lang === 'am' ? 'ጨርሻለሁ (ወደ መነሻ)' : 'Done / Return to Cashier'}</span>
@@ -1364,7 +1435,11 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                     <button
                       type="button"
                       className="sonic-primary-gold-submit-btn"
-                      onClick={() => setActiveWithdrawalRequest(null)}
+                      onClick={() => {
+                        setActiveWithdrawalRequest(null);
+                        sessionStorage.removeItem('sonic_assigned_agent_id');
+                        loadAgentData();
+                      }}
                       style={{ background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', color: '#ffffff' }}
                     >
                       <span>{lang === 'am' ? 'ይቅር / አዲስ ጥያቄ አቅርብ' : 'Dismiss / Submit New Request'}</span>
@@ -1373,7 +1448,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <button
                         type="button"
-                        onClick={() => loadAgentData()}
+                        onClick={() => refreshPendingRequests()}
                         style={{
                           width: '100%',
                           padding: '13px',
