@@ -139,8 +139,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   margin-top: 4px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .sonic-step-badge-pill {
@@ -150,8 +152,37 @@
   background: #fffbeb;
   border: 1px solid rgba(245, 158, 11, 0.35);
   border-radius: 9999px;
-  padding: 6px 14px;
+  padding: 5px 12px;
   box-shadow: 0 1px 4px rgba(245, 158, 11, 0.06);
+  min-width: 0;
+  flex: 1;
+}
+
+.sonic-re-roll-btn {
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #b45309;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.sonic-re-roll-btn:hover {
+  background: rgba(251, 191, 36, 0.2);
+  border-color: rgba(251, 191, 36, 0.6);
+  transform: translateY(-1px);
+}
+
+.sonic-re-roll-btn:active {
+  transform: scale(0.97);
 }
 
 .sonic-step-number-circle {
@@ -339,6 +370,190 @@
   justify-content: center;
   font-size: 14px;
   font-weight: 900;
+}
+
+/* =========================================================================
+   ⭐️ Dedicated Single Assigned Certified Cashier Card (Mobile Responsive)
+   ========================================================================= */
+.sonic-assigned-cashier-card {
+  background: linear-gradient(135deg, #0b0f19 0%, #030712 100%);
+  border: 1.5px solid rgba(245, 158, 11, 0.65);
+  border-radius: 18px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 16px rgba(245, 158, 11, 0.18);
+  transition: all 0.2s ease;
+}
+
+/* Card Top: Crown + Identity Info + Online Pill */
+.sonic-assigned-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  z-index: 2;
+}
+
+.sonic-assigned-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.sonic-assigned-crown-wrap {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sonic-assigned-crown-dot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 2px solid #030712;
+  box-shadow: 0 0 6px #10b981;
+}
+
+.sonic-assigned-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.sonic-assigned-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.sonic-assigned-name {
+  font-size: 15px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sonic-assigned-badge-assigned {
+  font-size: 9.5px;
+  font-weight: 800;
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 6px;
+  padding: 1px 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.sonic-assigned-trust-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sonic-assigned-trust-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sonic-assigned-dot-sep {
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 10px;
+}
+
+/* Card Middle: Active Rail Chips */
+.sonic-assigned-rails-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  width: 100%;
+  z-index: 2;
+}
+
+.sonic-assigned-rail-chip-telebirr {
+  font-size: 10.5px;
+  font-weight: 700;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 6px;
+  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.sonic-assigned-rail-chip-mpesa {
+  font-size: 10.5px;
+  font-weight: 700;
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  border-radius: 6px;
+  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+/* Card Bottom: Micro Divider & Session Note */
+.sonic-assigned-footer {
+  width: 100%;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #94a3b8;
+  z-index: 2;
+  box-sizing: border-box;
+}
+
+.sonic-assigned-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.sonic-assigned-footer-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* 5. Deposit Amount Card */

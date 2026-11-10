@@ -823,7 +823,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                   <div className="sonic-step-badge-pill">
                     <span className="sonic-step-number-circle">1</span>
                     <span className="sonic-step-label-text">
-                      {lang === 'am' ? 'የተመደበ ህጋዊ ካሺየር' : 'Assigned Certified Cashier'}
+                      {lang === 'am' ? 'የተመደበ ካሺየር' : 'Assigned Cashier'}
                     </span>
                   </div>
                   {totalOnlineAgents > 1 && (
@@ -831,29 +831,16 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                       type="button"
                       onClick={handleReRollAgent}
                       disabled={isReRollingAgent}
-                      style={{
-                        background: 'rgba(251, 191, 36, 0.12)',
-                        border: '1px solid rgba(251, 191, 36, 0.35)',
-                        borderRadius: '20px',
-                        padding: '5px 12px',
-                        fontSize: '11.5px',
-                        fontWeight: 700,
-                        color: '#fbbf24',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        transition: 'all 0.2s ease'
-                      }}
+                      className="sonic-re-roll-btn"
                       title={lang === 'am' ? 'ሌላ የተረጋገጠ ኤጀንት ይጠይቁ' : 'Request another certified agent'}
                     >
                       <i className={`fa-solid fa-arrows-rotate ${isReRollingAgent ? 'fa-spin' : ''}`} style={{ fontSize: '11px' }}></i>
-                      <span>{lang === 'am' ? 'ሌላ ኤጀንት ቀይር' : 'Change Agent'}</span>
+                      <span>{lang === 'am' ? 'ሌላ ኤጀንት' : 'Change Agent'}</span>
                     </button>
                   )}
                 </div>
 
-                {/* 4. Single Assigned Certified Cashier Card */}
+                {/* 4. Single Assigned Certified Cashier Card (Pure Responsive Column Layout) */}
                 <div className="sonic-agents-stack">
                   {isLoadingAgents ? (
                     <div className="sonic-agent-light-card" style={{ justifyContent: 'center', textAlign: 'center', color: '#64748b', padding: '24px 16px' }}>
@@ -877,102 +864,69 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                       </button>
                     </div>
                   ) : (
-                    <div className="sonic-agent-obsidian-card" style={{ cursor: 'default', position: 'relative', overflow: 'hidden' }}>
-                      <div className="sonic-agent-card-left" style={{ gap: '14px' }}>
-                        <div style={{ position: 'relative' }}>
-                          <SonicCrownLogo size={42} />
-                          <span style={{
-                            position: 'absolute',
-                            bottom: -2,
-                            right: -2,
-                            width: '12px',
-                            height: '12px',
-                            borderRadius: '50%',
-                            background: '#10b981',
-                            border: '2px solid #0f1216',
-                            boxShadow: '0 0 6px #10b981'
-                          }}></span>
-                        </div>
-                        <div className="sonic-agent-card-details">
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span className="sonic-agent-name-obsidian" style={{ fontSize: '15.5px' }}>
-                              Sonic Agent #{selectedAgent.agentCode}
-                            </span>
-                            <span style={{
-                              fontSize: '10px',
-                              fontWeight: 800,
-                              background: 'rgba(16, 185, 129, 0.2)',
-                              color: '#34d399',
-                              border: '1px solid rgba(16, 185, 129, 0.4)',
-                              borderRadius: '6px',
-                              padding: '1px 6px',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.4px'
-                            }}>
-                              {lang === 'am' ? 'የተመደበ' : 'ASSIGNED'}
-                            </span>
+                    <div className="sonic-assigned-cashier-card">
+                      {/* Top Row: Crown + Agent Title + Badges + Online Status */}
+                      <div className="sonic-assigned-card-top">
+                        <div className="sonic-assigned-identity">
+                          <div className="sonic-assigned-crown-wrap">
+                            <SonicCrownLogo size={36} />
+                            <span className="sonic-assigned-crown-dot"></span>
                           </div>
-
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                            <span style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <i className="fa-solid fa-bolt" style={{ color: '#fbbf24', fontSize: '10px' }}></i>
-                              <span>{lang === 'am' ? '~2 ደቂቃ ፈጣን ማረጋገጫ' : '~2 Min Approval'}</span>
-                            </span>
-                            <span style={{ color: 'rgba(255,255,255,0.2)' }}>•</span>
-                            <span style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <i className="fa-solid fa-shield-halved" style={{ color: '#10b981', fontSize: '10px' }}></i>
-                              <span>100% Escrow</span>
-                            </span>
-                          </div>
-
-                          {/* Rails Tags (Telebirr & M-Pesa only) */}
-                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '6px' }}>
-                            {(selectedAgent.supportedRails || ['Telebirr']).filter(r => r !== 'CBE').map((r: string) => (
-                              <span key={r} style={{
-                                fontSize: '10.5px',
-                                background: r === 'Telebirr' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(34, 197, 94, 0.15)',
-                                color: r === 'Telebirr' ? '#38bdf8' : '#4ade80',
-                                border: `1px solid ${r === 'Telebirr' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(34, 197, 94, 0.3)'}`,
-                                padding: '2px 8px',
-                                borderRadius: '6px',
-                                fontWeight: 700
-                              }}>
-                                {r}
+                          <div className="sonic-assigned-titles">
+                            <div className="sonic-assigned-name-row">
+                              <span className="sonic-assigned-name">
+                                Sonic Agent #{selectedAgent.agentCode}
                               </span>
-                            ))}
+                              <span className="sonic-assigned-badge-assigned">
+                                {lang === 'am' ? 'የተመደበ' : 'ASSIGNED'}
+                              </span>
+                            </div>
+                            <div className="sonic-assigned-trust-row">
+                              <span className="sonic-assigned-trust-item">
+                                <i className="fa-solid fa-bolt" style={{ color: '#fbbf24', fontSize: '10px' }}></i>
+                                <span>{lang === 'am' ? '~2 ደቂቃ ማረጋገጫ' : '~2 Min Approval'}</span>
+                              </span>
+                              <span className="sonic-assigned-dot-sep">•</span>
+                              <span className="sonic-assigned-trust-item">
+                                <i className="fa-solid fa-shield-halved" style={{ color: '#10b981', fontSize: '10px' }}></i>
+                                <span>100% Escrow</span>
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="sonic-agent-card-right">
-                        <span className="sonic-status-pill-emerald">
+                        <span className="sonic-status-pill-emerald" style={{ flexShrink: 0 }}>
                           <span className="sonic-pulse-dot" style={{ width: 6, height: 6 }}></span>
                           Online
                         </span>
                       </div>
 
-                      {/* Bottom Micro Banner */}
-                      <div style={{
-                        gridColumn: '1 / -1',
-                        width: '100%',
-                        marginTop: '10px',
-                        paddingTop: '8px',
-                        borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        fontSize: '11px',
-                        color: '#94a3b8'
-                      }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span className="sonic-pulse-dot" style={{ width: 5, height: 5, background: '#10b981' }}></span>
-                          {lang === 'am'
-                            ? `ከ ${totalOnlineAgents} የተረጋገጡ ኤጀንቶች ውስጥ ለእርስዎ የተመደበ`
-                            : `1 of ${totalOnlineAgents} verified agents assigned to your session`}
-                        </span>
+                      {/* Middle Row: Active Rails Chips */}
+                      <div className="sonic-assigned-rails-row">
+                        {(selectedAgent.supportedRails || ['Telebirr']).filter(r => r !== 'CBE').map((r: string) => (
+                          <span
+                            key={r}
+                            className={r === 'Telebirr' ? 'sonic-assigned-rail-chip-telebirr' : 'sonic-assigned-rail-chip-mpesa'}
+                          >
+                            <i className="fa-solid fa-bolt"></i>
+                            <span>{r === 'Telebirr' ? 'Telebirr Instant' : 'Safaricom M-Pesa'}</span>
+                          </span>
+                        ))}
                       </div>
 
-                      <LiquidGoldCornerSwoosh opacity={0.95} />
+                      {/* Bottom Footer: Session Note */}
+                      <div className="sonic-assigned-footer">
+                        <div className="sonic-assigned-footer-left">
+                          <span className="sonic-pulse-dot" style={{ width: 5, height: 5, background: '#10b981' }}></span>
+                          <span className="sonic-assigned-footer-text">
+                            {lang === 'am'
+                              ? `ከ ${totalOnlineAgents} የተረጋገጡ ኤጀንቶች ውስጥ ለእርስዎ የተመደበ`
+                              : `1 of ${totalOnlineAgents} verified agents assigned to your session`}
+                          </span>
+                        </div>
+                      </div>
+
+                      <LiquidGoldCornerSwoosh opacity={0.7} />
                     </div>
                   )}
                 </div>
