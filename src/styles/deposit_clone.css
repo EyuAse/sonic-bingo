@@ -440,28 +440,43 @@
 .sonic-assigned-name-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .sonic-assigned-name {
-  font-size: 15px;
-  font-weight: 900;
+  font-size: 14.5px;
+  font-weight: 800;
   color: #ffffff;
   letter-spacing: -0.2px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sonic-assigned-code-pill {
+  color: #fbbf24;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 13px;
+  display: inline-block;
+  white-space: nowrap;
 }
 
 .sonic-assigned-badge-assigned {
-  font-size: 9.5px;
+  font-size: 8.5px;
   font-weight: 800;
-  background: rgba(16, 185, 129, 0.2);
+  background: rgba(16, 185, 129, 0.18);
   color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  border-radius: 6px;
-  padding: 1px 6px;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 4px;
+  padding: 1px 5px;
   text-transform: uppercase;
   letter-spacing: 0.4px;
   flex-shrink: 0;
@@ -471,8 +486,8 @@
 .sonic-assigned-trust-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
+  gap: 5px;
+  font-size: 10.5px;
   color: #94a3b8;
   white-space: nowrap;
   overflow: hidden;
@@ -483,6 +498,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap;
 }
 
 .sonic-assigned-dot-sep {

@@ -936,33 +936,34 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                       <div className="sonic-assigned-card-top">
                         <div className="sonic-assigned-identity">
                           <div className="sonic-assigned-crown-wrap">
-                            <SonicCrownLogo size={36} />
+                            <SonicCrownLogo size={34} />
                             <span className="sonic-assigned-crown-dot"></span>
                           </div>
                           <div className="sonic-assigned-titles">
                             <div className="sonic-assigned-name-row">
                               <span className="sonic-assigned-name">
-                                Sonic Agent #{selectedAgent.agentCode}
-                              </span>
-                              <span className="sonic-assigned-badge-assigned">
-                                {lang === 'am' ? 'የተመደበ' : 'ASSIGNED'}
+                                Sonic Agent <span className="sonic-assigned-code-pill">#{selectedAgent.agentCode}</span>
                               </span>
                             </div>
                             <div className="sonic-assigned-trust-row">
-                              <span className="sonic-assigned-trust-item">
-                                <i className="fa-solid fa-bolt" style={{ color: '#fbbf24', fontSize: '10px' }}></i>
-                                <span>{lang === 'am' ? '~2 ደቂቃ ማረጋገጫ' : '~2 Min Approval'}</span>
+                              <span className="sonic-assigned-badge-assigned">
+                                {lang === 'am' ? 'የተመደበ' : 'ASSIGNED'}
                               </span>
                               <span className="sonic-assigned-dot-sep">•</span>
                               <span className="sonic-assigned-trust-item">
-                                <i className="fa-solid fa-shield-halved" style={{ color: '#10b981', fontSize: '10px' }}></i>
+                                <i className="fa-solid fa-bolt" style={{ color: '#fbbf24', fontSize: '9px' }}></i>
+                                <span>{lang === 'am' ? '~2 ደቂቃ' : '~2 Min'}</span>
+                              </span>
+                              <span className="sonic-assigned-dot-sep">•</span>
+                              <span className="sonic-assigned-trust-item">
+                                <i className="fa-solid fa-shield-halved" style={{ color: '#10b981', fontSize: '9px' }}></i>
                                 <span>100% Escrow</span>
                               </span>
                             </div>
                           </div>
                         </div>
 
-                        <span className="sonic-status-pill-emerald" style={{ flexShrink: 0 }}>
+                        <span className="sonic-status-pill-emerald" style={{ flexShrink: 0, padding: '3px 8px', fontSize: '10.5px' }}>
                           <span className="sonic-pulse-dot" style={{ width: 6, height: 6 }}></span>
                           Online
                         </span>
