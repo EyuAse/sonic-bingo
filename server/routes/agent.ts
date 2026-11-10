@@ -73,7 +73,7 @@ router.post('/login', async (req, res) => {
         walletBalance: parseFloat(user.wallet_balance || '0'),
         lowBalanceThreshold: parseFloat(user.low_balance_threshold || '5000'),
         targetMonthly: parseFloat(user.target_monthly || '50000'),
-        commissionRate: parseFloat(user.commission_rate || '5'),
+        commissionRate: parseFloat(user.commission_rate || '10.0'),
         refLink: `https://t.me/SonicGameOfficialBot?start=agent_${user.agent_code}`
       }
     });
@@ -119,7 +119,7 @@ router.get('/profile', requireAgent, async (req: AuthenticatedRequest, res: Resp
         lowBalanceThreshold: threshold,
         isLowBalance,
         targetMonthly: parseFloat(ap.target_monthly || '50000'),
-        commissionRate: parseFloat(ap.commission_rate || '5'),
+        commissionRate: parseFloat(ap.commission_rate || '10.0'),
         status: ap.status,
         inviteLink: `https://t.me/${process.env.TELEGRAM_BOT_USERNAME || 'SonicGameOfficialBot'}?start=agent_${ap.agent_code}`
       }
@@ -156,7 +156,7 @@ router.get('/dashboard-analytics', requireAgent, async (req: AuthenticatedReques
     const walletBalance = parseFloat(agent.wallet_balance || '0');
     const lowThreshold = parseFloat(agent.low_balance_threshold || '5000');
     const isLowBalance = walletBalance <= lowThreshold;
-    const commissionRate = parseFloat(agent.commission_rate || '4');
+    const commissionRate = parseFloat(agent.commission_rate || '10.0');
     const targetMonthly = parseFloat(agent.target_monthly || '35000');
     const botUser = process.env.TELEGRAM_BOT_USERNAME || 'SonicGameOfficialBot';
     const referralLink = `https://t.me/${botUser}?start=agent_${agent.agent_code}`;
@@ -673,21 +673,38 @@ router.post('/deposit-for-player', requireAgent, async (req: AuthenticatedReques
 
       // 3b. Check first deposit referral bonus (Customer Rule: Referrers receive 10% of first deposit)
       const isFirstDeposit = !player.has_deposited;
+      const playerAgentRecruiterId = player.agent_id;
+      const playerReferrerId = player.referred_by;
+
       let referralBonusEarned = 0;
       if (isFirstDeposit) {
         referralBonusEarned = Math.round(numAmount * 0.10 * 100) / 100;
-        await client.query(
-          `UPDATE agent_profiles 
-           SET commission_balance = COALESCE(commission_balance, 0.00) + $1, updated_at = NOW() 
-           WHERE id = $2`,
-          [referralBonusEarned, agent.id]
-        );
-        await client.query(
-          `INSERT INTO agent_commissions 
-            (agent_id, source_type, source_id, amount, commission_rate, commission_earned)
-           VALUES ($1, 'referral_bonus', $2, $3, 10.0, $4)`,
-          [agent.id, refCode, numAmount, referralBonusEarned]
-        );
+
+        if (playerAgentRecruiterId) {
+          await client.query(
+            `UPDATE agent_profiles 
+             SET commission_balance = COALESCE(commission_balance, 0.00) + $1, updated_at = NOW() 
+             WHERE id = $2`,
+            [referralBonusEarned, playerAgentRecruiterId]
+          );
+          await client.query(
+            `INSERT INTO agent_commissions 
+              (agent_id, source_type, source_id, amount, commission_rate, commission_earned)
+             VALUES ($1, 'referral_bonus', $2, $3, 10.0, $4)`,
+            [playerAgentRecruiterId, refCode, numAmount, referralBonusEarned]
+          );
+        } else if (playerReferrerId) {
+          await client.query(
+            `UPDATE wallets SET balance = balance + $1, updated_at = NOW() WHERE user_id = $2`,
+            [referralBonusEarned, playerReferrerId]
+          );
+          await client.query(
+            `INSERT INTO wallet_transactions 
+              (user_id, type, amount, balance_after, reference_code, status, payment_method, description)
+             VALUES ($1, 'referral_bonus', $2, (SELECT balance FROM wallets WHERE user_id = $1), $3, 'completed', 'bonus', '10% Referral Bonus on friend first deposit')`,
+            [playerReferrerId, referralBonusEarned, `REF-${Date.now().toString().slice(-6)}`]
+          );
+        }
       }
 
       // 4. Atomically upsert player wallet
@@ -699,13 +716,12 @@ router.post('/deposit-for-player', requireAgent, async (req: AuthenticatedReques
         [player.id, numAmount, numAmount]
       );
 
-      // 5. Flag player has_deposited and link agent if not linked
+      // 5. Flag player has_deposited (DO NOT set or overwrite agent_id!)
       await client.query(
         `UPDATE users 
-         SET has_deposited = TRUE,
-             agent_id = COALESCE(agent_id, $1)
-         WHERE id = $2`,
-        [agent.id, player.id]
+         SET has_deposited = TRUE
+         WHERE id = $1`,
+        [player.id]
       );
 
       // 6. Record in agent_player_deposits
@@ -849,7 +865,7 @@ router.get('/recharges', requireAgent, async (req: AuthenticatedRequest, res: Re
     const agentId = agent.id;
     const walletBalance = parseFloat(agent.wallet_balance || '0');
     const lowThreshold = parseFloat(agent.low_balance_threshold || '5000');
-    const commissionRate = parseFloat(agent.commission_rate || '4');
+    const commissionRate = parseFloat(agent.commission_rate || '10.0');
 
     const timeframe = (req.query.timeframe as string) || 'all';
     const status = (req.query.status as string) || 'all';
@@ -1387,16 +1403,15 @@ router.get('/players', requireAgent, async (req: AuthenticatedRequest, res: Resp
          FROM users u
          LEFT JOIN wallets w ON u.id = w.user_id
          WHERE u.agent_id = $1
-            OR u.id IN (SELECT player_user_id FROM agent_player_deposits WHERE agent_id = $1)
-            OR u.id IN (SELECT player_id FROM agent_deposit_requests WHERE agent_id = $1)
          ORDER BY u.created_at DESC`,
         [agentId]
       ),
       query(
-        `SELECT id, player_user_id, amount, payment_method, reference_code, created_at
-         FROM agent_player_deposits
-         WHERE agent_id = $1
-         ORDER BY created_at ASC`,
+        `SELECT wt.id, wt.user_id as player_user_id, wt.amount, wt.payment_method, wt.reference_code, wt.created_at
+         FROM wallet_transactions wt
+         JOIN users u ON wt.user_id = u.id
+         WHERE u.agent_id = $1 AND wt.type = 'deposit' AND wt.status = 'completed'
+         ORDER BY wt.created_at ASC`,
         [agentId]
       )
     ]);
@@ -2306,28 +2321,31 @@ router.post('/deposit-requests/:id/approve', requireAgent, async (req: Authentic
         [depReq.player_id]
       );
       const isFirstDeposit = !playerUserRes.rows[0]?.has_deposited;
+      const playerAgentRecruiterId = playerUserRes.rows[0]?.agent_id;
       const playerReferrerId = playerUserRes.rows[0]?.referred_by;
 
       let referralBonusEarned = 0;
       if (isFirstDeposit) {
-        // Customer Rule: Referrers receive 10% of the referred user's first deposit
+        // Customer Rule: 10% Referral Bonus on first deposit is strictly for the recruiter who referred the player
         referralBonusEarned = Math.round(depositAmount * 0.10 * 100) / 100;
 
-        if (agentId) {
+        if (playerAgentRecruiterId) {
+          // Credit recruiting agent who shared their invite link
           await client.query(
             `UPDATE agent_profiles 
              SET commission_balance = COALESCE(commission_balance, 0.00) + $1, 
                  updated_at = NOW() 
              WHERE id = $2`,
-            [referralBonusEarned, agentId]
+            [referralBonusEarned, playerAgentRecruiterId]
           );
           await client.query(
             `INSERT INTO agent_commissions 
               (agent_id, source_type, source_id, amount, commission_rate, commission_earned)
              VALUES ($1, 'referral_bonus', $2, $3, 10.0, $4)`,
-            [agentId, requestId, depositAmount, referralBonusEarned]
+            [playerAgentRecruiterId, requestId, depositAmount, referralBonusEarned]
           );
         } else if (playerReferrerId) {
+          // Credit peer player wallet
           await client.query(
             `UPDATE wallets SET balance = balance + $1, updated_at = NOW() WHERE user_id = $2`,
             [referralBonusEarned, playerReferrerId]
@@ -2341,10 +2359,10 @@ router.post('/deposit-requests/:id/approve', requireAgent, async (req: Authentic
         }
       }
 
-      // H. Mark Player as has_deposited & link to agent if not yet linked
+      // H. Mark Player as has_deposited (DO NOT set or overwrite agent_id!)
       await client.query(
-        `UPDATE users SET has_deposited = true, agent_id = COALESCE(agent_id, $1) WHERE id = $2`,
-        [agentId, depReq.player_id]
+        `UPDATE users SET has_deposited = true WHERE id = $1`,
+        [depReq.player_id]
       );
 
       // I. Record in agent_player_deposits
@@ -2990,7 +3008,7 @@ router.get('/commission/overview', requireAgent, async (req: AuthenticatedReques
     const agent = agentRes.rows[0];
     const agentId = agent.id;
     const commissionBalance = parseFloat(agent.commission_balance || '0');
-    const commissionRate = parseFloat(agent.commission_rate || '4.0');
+    const commissionRate = parseFloat(agent.commission_rate || '10.0');
 
     // 2. Parallel aggregation of earnings, payouts, ledger, and weekly buckets
     const [commStatsRes, comm30dRes, payoutsRes, ledgerRes, weeklyRes] = await Promise.all([

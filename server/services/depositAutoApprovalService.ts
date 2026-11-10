@@ -126,8 +126,6 @@ export async function executeAgentDepositApproval(
         };
       }
 
-      const commissionRate = parseFloat(agentProfile?.commission_rate || '5.0');
-      const commissionEarned = depositAmount * (commissionRate / 100);
       const agentBalAfter = Math.max(0, agentBalance - depositAmount);
 
       // 4. Lock player wallet
@@ -153,15 +151,14 @@ export async function executeAgentDepositApproval(
       const playerOldBalance = parseFloat(playerWallet.balance || '0');
       const playerBalAfter = playerOldBalance + depositAmount;
 
-      // 4. Update agent profile
+      // 4. Update cashier agent profile (pure float deduction, 0 commission on approvals)
       if (agentProfile) {
         await client.query(
           `UPDATE agent_profiles 
            SET wallet_balance = $1, 
-               commission_balance = COALESCE(commission_balance, 0.00) + $2, 
                updated_at = NOW() 
-           WHERE id = $3`,
-          [agentBalAfter, commissionEarned, agentId]
+           WHERE id = $2`,
+          [agentBalAfter, agentId]
         );
       }
 
@@ -178,21 +175,56 @@ export async function executeAgentDepositApproval(
         console.warn('⚠️ Coin award notice:', cErr);
       }
 
-      // 7. Mark player verified
+      // 7. Check if this is the player's first deposit (Referral bonus: 10% of first deposit strictly for recruiter)
+      const playerUserRes = await client.query(
+        `SELECT has_deposited, referred_by, agent_id FROM users WHERE id = $1 FOR UPDATE`,
+        [playerId]
+      );
+      const isFirstDeposit = !playerUserRes.rows[0]?.has_deposited;
+      const playerAgentRecruiterId = playerUserRes.rows[0]?.agent_id;
+      const playerReferrerId = playerUserRes.rows[0]?.referred_by;
+
+      if (isFirstDeposit) {
+        const referralBonusEarned = Math.round(depositAmount * 0.10 * 100) / 100;
+
+        if (playerAgentRecruiterId) {
+          // Credit recruiting agent who referred the player via invite link
+          await client.query(
+            `UPDATE agent_profiles 
+             SET commission_balance = COALESCE(commission_balance, 0.00) + $1, 
+                 updated_at = NOW() 
+             WHERE id = $2`,
+            [referralBonusEarned, playerAgentRecruiterId]
+          );
+          await client.query(
+            `INSERT INTO agent_commissions 
+              (agent_id, source_type, source_id, amount, commission_rate, commission_earned)
+             VALUES ($1, 'referral_bonus', $2, $3, 10.0, $4)`,
+            [playerAgentRecruiterId, depReq.id, depositAmount, referralBonusEarned]
+          );
+        } else if (playerReferrerId) {
+          // Credit peer player wallet
+          await client.query(
+            `UPDATE wallets SET balance = balance + $1, updated_at = NOW() WHERE user_id = $2`,
+            [referralBonusEarned, playerReferrerId]
+          );
+          await client.query(
+            `INSERT INTO wallet_transactions 
+              (user_id, type, amount, balance_after, reference_code, status, payment_method, description)
+             VALUES ($1, 'referral_bonus', $2, (SELECT balance FROM wallets WHERE user_id = $1), $3, 'completed', 'bonus', '10% Referral Bonus on friend first deposit')`,
+            [playerReferrerId, referralBonusEarned, `REF-${Date.now().toString().slice(-6)}`]
+          );
+        }
+      }
+
+      // 8. Mark player verified (DO NOT set or overwrite agent_id!)
       await client.query(
-        `UPDATE users SET has_deposited = true, agent_id = COALESCE(agent_id, $1) WHERE id = $2`,
-        [agentId, playerId]
+        `UPDATE users SET has_deposited = true WHERE id = $1`,
+        [playerId]
       );
 
-      // 8. Audit logs
+      // 9. Audit logs
       if (agentProfile) {
-        await client.query(
-          `INSERT INTO agent_commissions 
-            (agent_id, source_type, source_id, amount, commission_rate, commission_earned)
-           VALUES ($1, 'deposit', $2, $3, $4, $5)`,
-          [agentId, depReq.id, depositAmount, commissionRate, commissionEarned]
-        );
-
         await client.query(
           `INSERT INTO agent_player_deposits 
             (agent_id, player_user_id, amount, agent_balance_after, player_balance_after, payment_method, reference_code)
