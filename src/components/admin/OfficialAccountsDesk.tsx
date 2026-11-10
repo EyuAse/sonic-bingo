@@ -182,10 +182,12 @@ export const OfficialAccountsDesk: React.FC<OfficialAccountsDeskProps> = ({ show
     return accounts.find(a => a.id === selectedAccountId) || accounts[0];
   }, [accounts, selectedAccountId]);
 
-  // Providers list
+  // Providers list (Telebirr & M-Pesa Only)
   const availableProviders = useMemo(() => {
-    const set = new Set<string>(['Telebirr', 'M-Pesa', 'CBE']);
-    accounts.forEach(a => set.add(a.provider));
+    const set = new Set<string>(['Telebirr', 'M-Pesa']);
+    accounts.forEach(a => {
+      if (a.provider !== 'CBE') set.add(a.provider);
+    });
     return Array.from(set);
   }, [accounts]);
 
@@ -434,10 +436,6 @@ export const OfficialAccountsDesk: React.FC<OfficialAccountsDeskProps> = ({ show
     }
     if (formProvider === 'M-Pesa' && !/^07\d{8}$/.test(cleanNum)) {
       setFormError('M-Pesa numbers must be 10 digits starting with 07.');
-      return;
-    }
-    if (formProvider === 'CBE' && !/^1000\d{9}$/.test(cleanNum)) {
-      setFormError('Enter a 13-digit CBE account number starting with 1000.');
       return;
     }
 
@@ -1226,7 +1224,7 @@ export const OfficialAccountsDesk: React.FC<OfficialAccountsDeskProps> = ({ show
               {/* Provider Segment Selector */}
               <label>Provider</label>
               <div className="seg">
-                {['Telebirr', 'M-Pesa', 'CBE'].map(p => (
+                {['Telebirr', 'M-Pesa'].map(p => (
                   <button
                     key={p}
                     type="button"
@@ -1247,9 +1245,7 @@ export const OfficialAccountsDesk: React.FC<OfficialAccountsDeskProps> = ({ show
                     value={formNumber}
                     onChange={e => setFormNumber(e.target.value)}
                     placeholder={
-                      formProvider === 'CBE'
-                        ? '1000 0000 00000'
-                        : formProvider === 'M-Pesa'
+                      formProvider === 'M-Pesa'
                         ? '0700 000 000'
                         : '0911 000 000'
                     }

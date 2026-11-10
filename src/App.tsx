@@ -134,8 +134,8 @@ export const App: React.FC = () => {
       {/* Top Header for all main game & user views */}
       {!isStandalonePage && !isSubpage && !isDedicatedGamePage && <TopHeader />}
 
-      {/* Balance Bar for all main game & user views */}
-      {!isStandalonePage && !isSubpage && !isDedicatedGamePage && <BalanceBar />}
+      {/* Balance Bar for all main game & user views (Hidden on Wallet page to avoid duplicate balance card) */}
+      {!isStandalonePage && !isSubpage && !isDedicatedGamePage && currentPage !== 'wallet' && <BalanceBar />}
 
       {/* Active Page View */}
       {currentPage === 'landing' && <LandingPage />}

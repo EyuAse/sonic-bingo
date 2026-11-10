@@ -631,7 +631,7 @@ export const AgentPayoutsDesk: React.FC = () => {
 
       {/* 2. INFORMATIONAL NOTE CALLOUT */}
       <div className="note">
-        Review and disburse agent commission cashout requests directly to their Telebirr phone or CBE bank account. Rejecting a request automatically refunds the commission to the agent.
+        Review and disburse agent commission cashout requests directly to their Telebirr phone or M-Pesa account. Rejecting a request automatically refunds the commission to the agent.
       </div>
 
       {/* 3. 4 TOP KPI CARDS */}
@@ -681,7 +681,7 @@ export const AgentPayoutsDesk: React.FC = () => {
             <span className="fn">3</span>
             <div>
               <b>Disburse</b>
-              <div className="tr">Pay by Telebirr or CBE</div>
+              <div className="tr">Pay by Telebirr or M-Pesa</div>
             </div>
             <span className="fc">{flow.step3}</span>
           </div>

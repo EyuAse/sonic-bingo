@@ -361,7 +361,7 @@ export const WinModal: React.FC = () => {
             )}
           </p>
 
-          {/* Prize Box with Financial Transparency Breakdown */}
+          {/* Prize Box Display (Net Winner Prize Only) */}
           <div className="victory-prize-display-card">
             <span className="victory-prize-label">
               {isOpponentWin ? 'PRIZE WON BY WINNER' : isTrueMultiplayerSplit ? 'YOUR SPLIT POT SHARE' : 'YOUR NET WINNINGS'}
@@ -371,49 +371,6 @@ export const WinModal: React.FC = () => {
                 ? `${safeLocale(effectiveOpponentPayout)} ETB`
                 : `+${safeLocale(userShare > 0 ? userShare : netPrizePool)} ETB`}
             </strong>
-
-            {/* Pot & Commission Transparency Breakdown */}
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '4px',
-              marginTop: '8px',
-              padding: '8px 12px',
-              backgroundColor: 'rgba(0, 0, 0, 0.04)',
-              borderRadius: '8px',
-              fontSize: '0.75rem',
-              color: '#475569',
-              width: '100%'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Total Room Pot:</span>
-                <strong style={{ color: '#0f172a' }}>{safeLocale(grossPot)} ETB</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Platform Commission:</span>
-                <span style={{ color: isFeeCharged ? '#b91c1c' : '#16a34a', fontWeight: 600 }}>
-                  {isFeeCharged
-                    ? `20% (-${safeLocale(houseFee)} ETB)`
-                    : '0% (0.00 ETB • ≤5 Players)'}
-                </span>
-              </div>
-              {isTrueMultiplayerSplit && (
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Total Net Prize Pot:</span>
-                  <strong style={{ color: '#0f172a' }}>{safeLocale(netPrizePool)} ETB</strong>
-                </div>
-              )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #cbd5e1', paddingTop: '4px' }}>
-                <span>{isTrueMultiplayerSplit ? `Your Split Share (1 of ${otherCoWinners.length + 1}):` : 'Net Winner Payout:'}</span>
-                <strong style={{ color: '#16a34a' }}>
-                  {isOpponentWin
-                    ? `${safeLocale(effectiveOpponentPayout)} ETB`
-                    : isTrueMultiplayerSplit
-                    ? `${safeLocale(userShare)} ETB`
-                    : `${safeLocale(userShare > 0 ? userShare : netPrizePool)} ETB`}
-                </strong>
-              </div>
-            </div>
 
             <span className="victory-credited-tag" style={{ marginTop: '8px' }}>
               {isOpponentWin

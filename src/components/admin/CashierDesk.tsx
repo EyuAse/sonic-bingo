@@ -363,7 +363,6 @@ export const CashierDesk: React.FC = () => {
             {[
               { id: 'all', label: 'All Rails' },
               { id: 'Telebirr', label: 'Telebirr', logo: <TelebirrLogo size={13} /> },
-              { id: 'CBE', label: 'CBE Bank', logo: <CBELogo size={13} /> },
               { id: 'M-Pesa', label: 'M-Pesa', logo: <MpesaLogo size={13} /> }
             ].map(rc => (
               <button

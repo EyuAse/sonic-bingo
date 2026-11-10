@@ -1658,7 +1658,7 @@ router.get('/payment-accounts', requireAgent, async (req: AuthenticatedRequest, 
     }
 
     const ap = resProfile.rows[0];
-    const activeRailsList = (ap.active_rails || 'Telebirr,CBE').split(',').map((s: string) => s.trim());
+    const activeRailsList = (ap.active_rails || 'Telebirr,M-Pesa').split(',').map((s: string) => s.trim());
 
     return res.json({
       success: true,

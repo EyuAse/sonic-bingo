@@ -439,17 +439,6 @@ export const GameInstructionsModal: React.FC<GameInstructionsModalProps> = ({ is
 
               <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                 <strong style={{ color: '#0f172a', display: 'block', marginBottom: '4px' }}>
-                  🏦 {lang === 'am' ? 'የኢትዮጵያ ንግድ ባንክ (CBE & CBE Birr)' : 'Commercial Bank of Ethiopia'}
-                </strong>
-                <p style={{ margin: 0, color: '#64748b', fontSize: '12px' }}>
-                  {lang === 'am'
-                    ? 'ወደ ኦፊሴላዊ የCBE አካውንታችን ገንዘብ በማስተላለፍ የደረሰኝ ፎቶ በማያያዝ በካሺየሮቻችን በፍጥነት ይረጋገጣል።'
-                    : 'Transfer to our official CBE account and attach your receipt. Our cashier verifies and credits your wallet swiftly.'}
-                </p>
-              </div>
-
-              <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <strong style={{ color: '#0f172a', display: 'block', marginBottom: '4px' }}>
                   🏪 {lang === 'am' ? 'የተመሰከረላቸው ኤጀንቶች (Certified Agents)' : 'Certified Cashier Agents'}
                 </strong>
                 <p style={{ margin: 0, color: '#64748b', fontSize: '12px' }}>
@@ -528,8 +517,8 @@ export const GameInstructionsModal: React.FC<GameInstructionsModalProps> = ({ is
                 </strong>
                 <p style={{ margin: 0, color: '#64748b', fontSize: '12px' }}>
                   {lang === 'am'
-                    ? 'የወጪ ጥያቄዎ እንደተረጋገጠ ገንዘቡ በቀጥታ ወደ ቴሌብር ቁጥርዎ ወይም የንግድ ባንክ ሂሳብዎ ይተላለፋል። በቴሌግራም ፈጣን ማሳወቂያ ይደርስዎታል።'
-                    : 'Once verified, funds are transferred directly to your registered Telebirr number or CBE bank account with instant Telegram confirmation.'}
+                    ? 'የወጪ ጥያቄዎ እንደተረጋገጠ ገንዘቡ በቀጥታ ወደ ቴሌብር ቁጥርዎ ይተላለፋል። በቴሌግራም ፈጣን ማሳወቂያ ይደርስዎታል።'
+                    : 'Once verified, funds are transferred directly to your registered Telebirr number with instant Telegram confirmation.'}
                 </p>
               </div>
             </div>

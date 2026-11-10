@@ -20,12 +20,12 @@ export const HelpCenterPage: React.FC = () => {
     {
       id: 'faq-1',
       category: 'deposit',
-      qEn: 'How do I deposit funds via Telebirr or CBE?',
-      qAm: 'በቴሌብር ወይም በንግድ ባንክ እንዴት ገንዘብ ማስገባት እችላለሁ?',
+      qEn: 'How do I deposit funds via Telebirr?',
+      qAm: 'በቴሌብር እንዴት ገንዘብ ማስገባት እችላለሁ?',
       aEn:
-        'Tap "+ Deposit" in the top bar or Wallet page. Choose Telebirr or CBE Bank, copy our official cashier account number, transfer the exact amount from your banking app, and paste the SMS confirmation reference ID. Deposits are verified and credited within ~30 seconds.',
+        'Tap "+ Deposit" in the top bar or Wallet page. Transfer via Telebirr, and submit your SMS transaction reference ID. Deposits are verified and credited within ~30 seconds. You can also deposit via certified cashier agents.',
       aAm:
-        'ከላይ "+ አስገባ" የሚለውን ይጫኑ። ቴሌብር ወይም የኢትዮጵያ ንግድ ባንክ ይምረጡ፣ ይፋዊ የሂሳብ ቁጥራችንን ገልብጠው (ኮፒ አድርገው) የሚፈልጉትን መጠን ይላኩ፤ በመቀጠል የግብይት ማረጋገጫ ቁጥሩን ያስገቡ። በ30 ሰከንዶች ውስጥ ገቢ ይደረጋል።'
+        'ከላይ "+ አስገባ" የሚለውን ይጫኑ። በቴሌብር ገንዘብ ያስተላልፉ፤ በመቀጠል የግብይት ማረጋገጫ ቁጥሩን (SMS Code) ያስገቡ። በ30 ሰከንዶች ውስጥ ገቢ ይደረጋል። እንዲሁም በተፈቀደላቸው ኤጀንቶች በኩል ማስገባት ይችላሉ።'
     },
     {
       id: 'faq-2',
@@ -33,9 +33,9 @@ export const HelpCenterPage: React.FC = () => {
       qEn: 'How long do withdrawals take to settle?',
       qAm: 'የገንዘብ ማውጣት ሂደት ምን ያህል ጊዜ ይወስዳል?',
       aEn:
-        'Withdrawals are processed 24/7 by our automated settlement desk. Telebirr cashouts typically arrive in 1–3 minutes, while CBE Bank transfers arrive within 5–15 minutes. There are zero withdrawal fees.',
+        'Withdrawals are processed 24/7 by our automated settlement desk. Telebirr cashouts typically arrive in 1–3 minutes directly to your mobile wallet. There are zero withdrawal fees.',
       aAm:
-        'የማውጣት ጥያቄዎች በቀን 24 ሰዓት በራስ ሰር ይከናወናሉ። የቴሌብር ክፍያዎች ከ1-3 ደቂቃዎች፣ የንግድ ባንክ ክፍያዎች ደግሞ ከ5-15 ደቂቃዎች ውስጥ ያለ ምንም ተጨማሪ ክፍያ ይደርሳሉ።'
+        'የማውጣት ጥያቄዎች በቀን 24 ሰዓት በራስ ሰር ይከናወናሉ። የቴሌብር ክፍያዎች ከ1-3 ደቂቃዎች ውስጥ ያለ ምንም ተጨማሪ ክፍያ በቀጥታ ወደ ሞባይል ዋሌትዎ ይደርሳሉ።'
     },
     {
       id: 'faq-3',

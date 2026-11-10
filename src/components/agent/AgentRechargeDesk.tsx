@@ -19,7 +19,7 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
 }) => {
   // Form State
   const [amount, setAmount] = useState<number | string>(10000);
-  const [paymentMethod, setPaymentMethod] = useState<'Telebirr' | 'CBE' | 'M-Pesa'>('Telebirr');
+  const [paymentMethod, setPaymentMethod] = useState<'Telebirr' | 'M-Pesa'>('Telebirr');
   const [transactionCode, setTransactionCode] = useState('');
   const [noteToAdmin, setNoteToAdmin] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
@@ -477,15 +477,6 @@ export const AgentRechargeDesk: React.FC<AgentRechargeDeskProps> = ({
               >
                 <em style={{ background: '#1b8fd6' }}>T</em>
                 Telebirr
-              </button>
-
-              <button
-                type="button"
-                className={paymentMethod === 'CBE' ? 'on' : ''}
-                onClick={() => setPaymentMethod('CBE')}
-              >
-                <em style={{ background: '#9a268e' }}>C</em>
-                CBE Bank
               </button>
 
               <button

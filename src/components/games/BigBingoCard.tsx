@@ -87,10 +87,10 @@ export const BigBingoCard: React.FC = () => {
         type="button"
         className="btn-obsidian-fast-bingo-cta"
         onClick={handlePlayNow}
-        aria-label="Play 75-Ball Bingo Now"
+        aria-label={lang === 'am' ? 'ቢንጎ ይጫወቱ' : 'Play Bingo'}
       >
         <span>
-          {lang === 'am' ? 'አሁን 75-ኳስ ቢንጎ ይጫወቱ' : 'PLAY 75-BALL BINGO NOW'}
+          {lang === 'am' ? 'ቢንጎ ይጫወቱ' : 'Play Bingo'}
         </span>
         <i className="fa-solid fa-arrow-right" aria-hidden="true"></i>
       </button>

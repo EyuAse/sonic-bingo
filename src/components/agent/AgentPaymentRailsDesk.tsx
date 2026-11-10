@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../services/apiClient.ts';
-import { TelebirrLogo, CBELogo, MpesaLogo } from '../wallet/PaymentLogos.tsx';
+import { TelebirrLogo, MpesaLogo } from '../wallet/PaymentLogos.tsx';
 
 interface AgentPaymentRailsDeskProps {
   agentProfile: any;
@@ -16,7 +16,6 @@ interface PaymentRailAccount {
 
 interface PaymentAccountsState {
   telebirr: PaymentRailAccount;
-  cbe: PaymentRailAccount;
   mpesa: PaymentRailAccount;
 }
 
@@ -25,10 +24,9 @@ export const AgentPaymentRailsDesk: React.FC<AgentPaymentRailsDeskProps> = ({
   showToast,
   openMobile
 }) => {
-  // Configured Payment Rails State
+  // Configured Payment Rails State (Telebirr & M-Pesa Only)
   const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccountsState>({
     telebirr: { accountNumber: '', accountName: '', isActive: true },
-    cbe: { accountNumber: '', accountName: '', isActive: true },
     mpesa: { accountNumber: '', accountName: '', isActive: false }
   });
 
@@ -48,18 +46,13 @@ export const AgentPaymentRailsDesk: React.FC<AgentPaymentRailsDeskProps> = ({
             accountName: res.accounts.telebirr?.accountName || '',
             isActive: Boolean(res.accounts.telebirr?.isActive)
           },
-          cbe: {
-            accountNumber: res.accounts.cbe?.accountNumber || '',
-            accountName: res.accounts.cbe?.accountName || '',
-            isActive: Boolean(res.accounts.cbe?.isActive)
-          },
           mpesa: {
             accountNumber: res.accounts.mpesa?.accountNumber || '',
             accountName: res.accounts.mpesa?.accountName || '',
             isActive: Boolean(res.accounts.mpesa?.isActive)
           }
         });
-        setSupportedRails(res.supportedRails || []);
+        setSupportedRails((res.supportedRails || []).filter((r: string) => r !== 'CBE'));
       }
     } catch (err: any) {
       console.warn('Failed to load payment accounts:', err);
@@ -79,17 +72,21 @@ export const AgentPaymentRailsDesk: React.FC<AgentPaymentRailsDeskProps> = ({
 
     const hasActive =
       (paymentAccounts.telebirr.isActive && paymentAccounts.telebirr.accountNumber.trim()) ||
-      (paymentAccounts.cbe.isActive && paymentAccounts.cbe.accountNumber.trim()) ||
       (paymentAccounts.mpesa.isActive && paymentAccounts.mpesa.accountNumber.trim());
 
     if (!hasActive) {
-      showToast('⚠️ You must have at least one active payment rail (Telebirr, CBE, or M-Pesa) configured.');
+      showToast('⚠️ You must have at least one active payment rail (Telebirr or M-Pesa) configured.');
       return;
     }
 
     try {
       setIsSavingAccounts(true);
-      const res = await apiClient.agent.updatePaymentAccounts(paymentAccounts);
+      // Cleanly deactivate CBE in database payload
+      const payload = {
+        ...paymentAccounts,
+        cbe: { accountNumber: '', accountName: '', isActive: false }
+      };
+      const res = await apiClient.agent.updatePaymentAccounts(payload);
       if (res.success) {
         showToast('✅ Official payment accounts saved and live!');
         if (res.accounts) {
@@ -99,11 +96,6 @@ export const AgentPaymentRailsDesk: React.FC<AgentPaymentRailsDeskProps> = ({
               accountName: res.accounts.telebirr?.accountName || '',
               isActive: Boolean(res.accounts.telebirr?.isActive)
             },
-            cbe: {
-              accountNumber: res.accounts.cbe?.accountNumber || '',
-              accountName: res.accounts.cbe?.accountName || '',
-              isActive: Boolean(res.accounts.cbe?.isActive)
-            },
             mpesa: {
               accountNumber: res.accounts.mpesa?.accountNumber || '',
               accountName: res.accounts.mpesa?.accountName || '',
@@ -112,7 +104,7 @@ export const AgentPaymentRailsDesk: React.FC<AgentPaymentRailsDeskProps> = ({
           });
         }
         if (res.supportedRails) {
-          setSupportedRails(res.supportedRails);
+          setSupportedRails(res.supportedRails.filter((r: string) => r !== 'CBE'));
         }
       } else {
         showToast(`❌ ${res.error || 'Failed to update accounts'}`);
@@ -128,7 +120,6 @@ export const AgentPaymentRailsDesk: React.FC<AgentPaymentRailsDeskProps> = ({
   // Compute active count
   const activeRailsCount = [
     paymentAccounts.telebirr.isActive && paymentAccounts.telebirr.accountNumber.trim(),
-    paymentAccounts.cbe.isActive && paymentAccounts.cbe.accountNumber.trim(),
     paymentAccounts.mpesa.isActive && paymentAccounts.mpesa.accountNumber.trim()
   ].filter(Boolean).length;
 
@@ -224,26 +215,6 @@ export const AgentPaymentRailsDesk: React.FC<AgentPaymentRailsDeskProps> = ({
             >
               <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981' }} />
               Telebirr
-            </span>
-          )}
-
-          {paymentAccounts.cbe.isActive && paymentAccounts.cbe.accountNumber.trim() && (
-            <span
-              style={{
-                fontSize: '12px',
-                fontWeight: 800,
-                padding: '5px 12px',
-                borderRadius: '10px',
-                background: '#ecfdf5',
-                color: '#059669',
-                border: '1px solid #a7f3d0',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px'
-              }}
-            >
-              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981' }} />
-              CBE
             </span>
           )}
 
@@ -430,122 +401,7 @@ export const AgentPaymentRailsDesk: React.FC<AgentPaymentRailsDeskProps> = ({
                   </div>
                 </div>
 
-                {/* 2. CBE Bank Account Card */}
-                <div
-                  style={{
-                    background: paymentAccounts.cbe.isActive ? '#ffffff' : '#f8fafc',
-                    border: paymentAccounts.cbe.isActive ? '1.5px solid #8b5cf6' : '1px solid #e2e8f0',
-                    borderRadius: '16px',
-                    padding: '20px',
-                    boxShadow: paymentAccounts.cbe.isActive ? '0 4px 14px rgba(139, 92, 246, 0.08)' : 'none',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      marginBottom: '16px'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <CBELogo size={26} />
-                      <div>
-                        <strong style={{ fontSize: '15px', color: '#0f172a', display: 'block' }}>
-                          Commercial Bank of Ethiopia
-                        </strong>
-                        <div style={{ fontSize: '11px', color: '#64748b' }}>Direct CBE bank transfer</div>
-                      </div>
-                    </div>
-
-                    <label
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        fontWeight: 800
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={paymentAccounts.cbe.isActive}
-                        onChange={e =>
-                          setPaymentAccounts(prev => ({
-                            ...prev,
-                            cbe: { ...prev.cbe, isActive: e.target.checked }
-                          }))
-                        }
-                        style={{ width: '16px', height: '16px', accentColor: '#8b5cf6', cursor: 'pointer' }}
-                      />
-                      <span style={{ color: paymentAccounts.cbe.isActive ? '#8b5cf6' : '#94a3b8' }}>
-                        {paymentAccounts.cbe.isActive ? 'Active' : 'Off'}
-                      </span>
-                    </label>
-                  </div>
-
-                  <div style={{ opacity: paymentAccounts.cbe.isActive ? 1 : 0.6 }}>
-                    <div style={{ marginBottom: '12px' }}>
-                      <label
-                        style={{
-                          display: 'block',
-                          fontSize: '11px',
-                          fontWeight: 800,
-                          color: '#475569',
-                          marginBottom: '6px'
-                        }}
-                      >
-                        13-Digit CBE Account Number
-                      </label>
-                      <input
-                        type="text"
-                        className="sonic-input-field"
-                        placeholder="e.g. 1000 0000 0000"
-                        value={paymentAccounts.cbe.accountNumber}
-                        disabled={!paymentAccounts.cbe.isActive}
-                        onChange={e =>
-                          setPaymentAccounts(prev => ({
-                            ...prev,
-                            cbe: { ...prev.cbe, accountNumber: e.target.value }
-                          }))
-                        }
-                        style={{ padding: '10px 14px', fontSize: '13px' }}
-                      />
-                    </div>
-
-                    <div>
-                      <label
-                        style={{
-                          display: 'block',
-                          fontSize: '11px',
-                          fontWeight: 800,
-                          color: '#475569',
-                          marginBottom: '6px'
-                        }}
-                      >
-                        Bank Account Holder Full Name
-                      </label>
-                      <input
-                        type="text"
-                        className="sonic-input-field"
-                        placeholder="e.g. Remedan"
-                        value={paymentAccounts.cbe.accountName}
-                        disabled={!paymentAccounts.cbe.isActive}
-                        onChange={e =>
-                          setPaymentAccounts(prev => ({
-                            ...prev,
-                            cbe: { ...prev.cbe, accountName: e.target.value }
-                          }))
-                        }
-                        style={{ padding: '10px 14px', fontSize: '13px' }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3. Safaricom M-Pesa Card */}
+                {/* 2. Safaricom M-Pesa Card */}
                 <div
                   style={{
                     background: paymentAccounts.mpesa.isActive ? '#ffffff' : '#f8fafc',

@@ -53,8 +53,8 @@ export const WalletMenu: React.FC<WalletMenuProps> = ({ onOpenHistory, gamesCoun
           </strong>
           <span className="menu-card-subtitle">
             {lang === 'am'
-              ? 'የቴሌብር እና ንግድ ባንክ ተቀማጭዎን ይከታተሉ'
-              : 'Track your Telstair & CBE deposits'}
+              ? 'የተቀማጭ ሂሳብ ታሪክዎን ይመልከቱ'
+              : 'Track your deposit history'}
           </span>
         </div>
 
