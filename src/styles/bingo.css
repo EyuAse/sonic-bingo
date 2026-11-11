@@ -5171,11 +5171,11 @@
 }
 
 .compact-current-ball-pill.lobby-timer {
-  background: #0f172a !important;
+  background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%) !important;
   color: #ffffff !important;
-  border: 1px solid #1e293b !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
   border-radius: 9999px !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 2px 8px rgba(185, 28, 28, 0.35) !important;
   height: 30px !important;
   padding: 3px 12px !important;
   display: inline-flex !important;
@@ -6266,10 +6266,10 @@
   text-align: center !important;
 }
 
-/* Pick cards button (Pitch-black pill matching Reference Image 3) */
+/* Pick cards button (Vibrant Red Pill) */
 .btn-compact-pick-cards {
-  background: #0f172a !important;
-  border: 1px solid #1e293b !important;
+  background: linear-gradient(135deg, #e50914 0%, #dc2626 50%, #b91c1c 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
   border-radius: 9999px !important;
   padding: 4px 12px !important;
   font-size: 0.72rem !important;
@@ -6281,14 +6281,15 @@
   cursor: pointer !important;
   height: 28px !important;
   white-space: nowrap !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.35) !important;
   transition: all 0.15s ease !important;
   box-sizing: border-box !important;
 }
 
 .btn-compact-pick-cards:hover {
-  background: #1e293b !important;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
   transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.45) !important;
 }
 
 .btn-compact-pick-cards i {
@@ -6348,14 +6349,14 @@
   color: #ca8a04 !important;
 }
 
-/* Buy Ticket CTA (Pitch-Black Obsidian with 24k Gold Luminous Border) */
+/* Buy Ticket CTA (Vibrant Red Casino Theme with Glowing Drop Shadow) */
 .compact-lobby-buy-bar .btn-compact-buy-cta {
   width: 100% !important;
   flex: none !important;
   height: 36px !important;
-  background: #0f172a !important;
+  background: linear-gradient(135deg, #e50914 0%, #dc2626 50%, #b91c1c 100%) !important;
   color: #ffffff !important;
-  border: 1.5px solid #eab308 !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.35) !important;
   border-radius: 9999px !important;
   font-weight: 950 !important;
   font-size: 0.82rem !important;
@@ -6365,7 +6366,7 @@
   justify-content: center !important;
   gap: 8px !important;
   cursor: pointer !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 10px rgba(234, 179, 8, 0.35) !important;
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.45), 0 0 12px rgba(239, 68, 68, 0.35) !important;
   transition: all 0.15s ease !important;
   white-space: nowrap !important;
   padding: 0 12px !important;
@@ -6378,8 +6379,9 @@
 }
 
 .btn-compact-buy-cta:hover {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%) !important;
   transform: translateY(-1px) !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 14px rgba(234, 179, 8, 0.5) !important;
+  box-shadow: 0 4px 20px rgba(220, 38, 38, 0.55), 0 0 14px rgba(239, 68, 68, 0.45) !important;
 }
 
 .btn-compact-buy-cta:active {

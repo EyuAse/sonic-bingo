@@ -200,13 +200,13 @@ export const NewPlayerWelcomeModal: React.FC<NewPlayerWelcomeModalProps> = ({
           </div>
         </div>
 
-        {/* Big CTA Action Button (Pitch-Black Obsidian) */}
+        {/* Big CTA Action Button (Vibrant Red Casino Theme) */}
         <button
           type="button"
           onClick={handleStartPlaying}
           style={{
             width: '100%',
-            background: '#0f172a',
+            background: 'linear-gradient(135deg, #e50914 0%, #dc2626 50%, #b91c1c 100%)',
             color: '#ffffff',
             fontSize: '15px',
             fontWeight: 900,
@@ -218,7 +218,7 @@ export const NewPlayerWelcomeModal: React.FC<NewPlayerWelcomeModalProps> = ({
             alignItems: 'center',
             justifyContent: 'center',
             gap: '8px',
-            boxShadow: '0 6px 20px rgba(15, 23, 42, 0.35)',
+            boxShadow: '0 6px 20px rgba(220, 38, 38, 0.40)',
             textTransform: 'uppercase',
             letterSpacing: '0.5px',
             transition: 'all 0.15s ease'
