@@ -85,3 +85,4 @@ main().catch(err => {
   console.error('❌ Failed to sync bot SEO profile:', err);
   process.exit(1);
 });
+
