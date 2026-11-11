@@ -1687,38 +1687,35 @@ class BingoGameEngine {
         if (isRoom10) {
           const botCount = room.opponentCards.length;
 
-          // 1. Partition real tickets into Deposited vs Bonus-Only
-          let depositedTicketCount = 0;
-          let firstDepositedUserId: string | null = null;
-          let distinctDepositedPlayers = 0;
+          // 1. Count all real active tickets (cash and 50 ETB signup bonus tickets alike)
+          let realTicketCount = 0;
+          let firstRealUserId: string | null = null;
+          let distinctRealPlayers = 0;
 
           for (const [uid, tList] of room.tickets.entries()) {
-            if (this.isDepositedUser(uid)) {
-              depositedTicketCount += tList.length;
-              distinctDepositedPlayers++;
-              if (!firstDepositedUserId) firstDepositedUserId = uid;
-            }
+            realTicketCount += tList.length;
+            distinctRealPlayers++;
+            if (!firstRealUserId) firstRealUserId = uid;
           }
 
-          // 2. If ZERO deposited tickets exist (all real players are playing on bonus 10 ETB)
-          // -> Real win probability is strictly 0.00%, bot wins 100%
-          if (depositedTicketCount === 0 && botCount > 0) {
+          // 2. Natural mathematical probability:
+          // If no real tickets exist (running an autonomous scheduled bot round), bot wins 100%
+          if (realTicketCount === 0 && botCount > 0) {
             room.targetWinnerType = 'bot';
           } else {
-            // 3. Deposited players exist: Calculate probability using strictly deposited tickets
-            // This guarantees the deposited player's odds are NEVER diluted by bonus players
-            const totalEligibleCards = depositedTicketCount + botCount;
-            const baseRealWinProb = totalEligibleCards > 0 ? (depositedTicketCount / totalEligibleCards) : 0;
+            // Real players exist: Calculate exact natural probability based on real tickets vs bot cards
+            const totalEligibleCards = realTicketCount + botCount;
+            const baseRealWinProb = totalEligibleCards > 0 ? (realTicketCount / totalEligibleCards) : 0;
             let effectiveRealWinProb = baseRealWinProb;
 
-            // Loss-streak anti-churn applies ONLY to verified deposited players
-            if (distinctDepositedPlayers === 1 && botCount > 0 && firstDepositedUserId) {
-              const streak = this.playerSessionStreaks.get(firstDepositedUserId);
+            // Loss-streak anti-churn applies fairly to any solo real player
+            if (distinctRealPlayers === 1 && botCount > 0 && firstRealUserId) {
+              const streak = this.playerSessionStreaks.get(firstRealUserId);
               const dynamicLossThreshold = Math.min(60, Math.max(6, Math.ceil(totalEligibleCards * 1.25)));
               if (streak && streak.consecutiveLosses >= dynamicLossThreshold) {
                 effectiveRealWinProb = Math.min(0.50, baseRealWinProb * 1.10);
               }
-            } else if (botCount === 0 && depositedTicketCount > 0) {
+            } else if (botCount === 0 && realTicketCount > 0) {
               effectiveRealWinProb = 1.0;
             }
 
