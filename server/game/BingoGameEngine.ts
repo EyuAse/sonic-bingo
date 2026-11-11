@@ -1917,10 +1917,7 @@ class BingoGameEngine {
     const allRealTickets: PlayerTicket[] = [];
     room.tickets.forEach(list => allRealTickets.push(...list));
 
-    const isRoom10 = room.id === 'room-10' || room.id === ARENA_ROOM_ID;
-    const eligibleRealTickets = isRoom10
-      ? allRealTickets.filter(t => this.isDepositedUser(t.userId))
-      : allRealTickets;
+    const eligibleRealTickets = allRealTickets;
 
     if (room.targetWinnerType === 'real' && eligibleRealTickets.length > 0) {
       chosenRealTicket = eligibleRealTickets[Math.floor(Math.random() * eligibleRealTickets.length)];
@@ -2182,10 +2179,7 @@ class BingoGameEngine {
       const allRealTickets: PlayerTicket[] = [];
       room.tickets.forEach(list => allRealTickets.push(...list));
 
-      const isRoom10 = room.id === 'room-10' || room.id === ARENA_ROOM_ID;
-      const eligibleRealTickets = isRoom10
-        ? allRealTickets.filter(t => this.isDepositedUser(t.userId))
-        : allRealTickets;
+      const eligibleRealTickets = allRealTickets;
 
       let targetCardMatrix: BingoCell[] | null = null;
       if (room.targetWinnerType === 'real' && eligibleRealTickets.length > 0) {
