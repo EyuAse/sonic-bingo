@@ -30,10 +30,10 @@ export const TopHeader: React.FC = () => {
           role="button"
           tabIndex={0}
         >
-          <span className="sonic-crown-emblem" aria-hidden="true">👑</span>
-          <span className="brand-sonic-txt">SONIC</span>
-          <span className="brand-pill-pipe" aria-hidden="true">|</span>
-          <span className="brand-bingo-gold">BINGO</span>
+          <span className="brand-sonic-txt">
+            <span className="brand-txt-red">Sonic</span>
+            <span className="brand-txt-dark">Bingo</span>
+          </span>
         </div>
 
         <div className="brand-pill-divider" aria-hidden="true"></div>
