@@ -1209,6 +1209,11 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                         required
                       />
                     </div>
+                    <p style={{ fontSize: '11px', color: '#f59e0b', marginTop: '4px', lineHeight: '1.4' }}>
+                      {lang === 'am' 
+                        ? '💡 ገንዘቡን የላኩት ከሌላ ሰው ስልክ ከሆነ፣ እባክዎ የላኪውን ስልክ ቁጥር እዚህ ያስገቡ።' 
+                        : '💡 If you transferred from someone else\'s phone, enter their phone number here.'}
+                    </p>
                   </div>
 
                   {/* SMS Reference ID */}

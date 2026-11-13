@@ -122,18 +122,12 @@ router.post('/deposit', requireAuth, async (req: AuthenticatedRequest, res) => {
 
         if (smsLast4 && phoneLast4 && smsLast4 !== phoneLast4) {
           console.warn(`⚠️ [SECURITY PHONE MISMATCH Cashier] Tx ${cleanRef} sender is ***${smsLast4}, player phone is ***${phoneLast4}`);
-          return res.json({
-            success: true,
-            message: 'Deposit submitted. Cashier will verify shortly.',
-            deposit: {
-              id: deposit.id,
-              amount: numAmount,
-              paymentMethod,
-              transactionRef: cleanRef,
-              status: 'pending',
-              note: 'Phone mismatch detected. Awaiting cashier review.',
-              createdAt: deposit.created_at
-            }
+          await query('DELETE FROM deposit_requests WHERE id = $1', [deposit.id]);
+          return res.status(400).json({
+            success: false,
+            requiresSenderPhone: true,
+            senderLast4: smsLast4,
+            error: `⚠️ የስልክ ቁጥር ልዩነት፦ ይህ ክፍያ የተላከው በ ***${smsLast4} ከሚያልቀው ስልክ ቁጥር ነው። እባክዎ "የላኩበት ስልክ ቁጥር" በሚለው ሳጥን ውስጥ ገንዘቡ የተላከበትን ስልክ ቁጥር ያስገቡ። / Phone mismatch: This transfer was sent from a phone ending in ***${smsLast4}. Please enter that sending phone number in the form to auto-approve instantly.`
           });
         }
 
@@ -1719,12 +1713,12 @@ router.post('/deposit-via-agent', requireAuth, async (req: AuthenticatedRequest,
 
         if (smsLast4 && phoneLast4 && smsLast4 !== phoneLast4) {
           console.warn(`⚠️ [SECURITY PHONE MISMATCH] Tx ${cleanTxCode} sender is ***${smsLast4}, player phone is ***${phoneLast4}`);
-          return res.json({
-            success: true,
-            message: `Deposit request for ${numAmount} ETB submitted to Agent #${agent.agent_code}. Verification in progress.`,
-            requestId: newRequest.id,
-            status: 'pending',
-            note: 'Phone mismatch detected. Awaiting manual cashier review.'
+          await query('DELETE FROM agent_deposit_requests WHERE id = $1', [newRequest.id]);
+          return res.status(400).json({
+            success: false,
+            requiresSenderPhone: true,
+            senderLast4: smsLast4,
+            error: `⚠️ የስልክ ቁጥር ልዩነት፦ ይህ ክፍያ የተላከው በ ***${smsLast4} ከሚያልቀው ስልክ ቁጥር ነው። እባክዎ "የላኩበት ስልክ ቁጥር" በሚለው ሳጥን ውስጥ ገንዘቡ የተላከበትን ስልክ ቁጥር ያስገቡ። / Phone mismatch: This transfer was sent from a phone ending in ***${smsLast4}. Please enter that sending phone number in the "Sending Phone Number" field to auto-approve instantly.`
           });
         }
 
