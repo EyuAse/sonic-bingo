@@ -90,9 +90,8 @@ export function toggleTelebirrReceiver(): PaymentReceiver {
  * Official Support Telegram Configuration
  */
 export const SUPPORT_CONFIG = {
-  telegramUsername: 'SonicGameBot',
-  telegramHandle: '@SonicGameBot',
-  telegramUrl: 'https://t.me/SonicGameBot',
-  email: 'support@sonicbingo.com',
-  phoneHotline: '+251 911 00 00 00'
+  telegramUsername: 'Sonicbingo_support',
+  telegramHandle: '@Sonicbingo_support',
+  telegramUrl: 'https://t.me/Sonicbingo_support',
+  email: 'support@sonicbingo.com'
 };

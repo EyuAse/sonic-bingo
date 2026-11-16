@@ -305,9 +305,10 @@ export class TelegramBotService {
   public async setMyCommands(customCommands?: Array<{ command: string; description: string }>): Promise<{ success: boolean; message: string }> {
     const commands = customCommands || [
       { command: 'play', description: '🎮 Launch Sonic Bingo Mini App' },
-      { command: 'start', description: '🍋 Welcome & 10 ETB Bonus Gift' },
+      { command: 'start', description: '🍋 Welcome & 50 ETB Bonus Gift' },
+      { command: 'link_phone', description: '📱 Link Verified Phone Number' },
+      { command: 'bonus', description: '🎁 Claim 50 ETB Welcome Bonus' },
       { command: 'promo', description: '📢 View Active Promotions & Offers' },
-      { command: 'bonus', description: '🎁 Claim 10 ETB Welcome Bonus' },
       { command: 'help', description: '📖 How to Play & Win' }
     ];
 
@@ -330,10 +331,11 @@ export class TelegramBotService {
   }
 
   /**
-   * Send text message with HTML parsing and optional inline buttons
+   * Send text message with HTML parsing and optional inline buttons / reply markup
    */
   public async sendMessage(chatId: string | number, text: string, options: {
     inlineKeyboard?: any[][];
+    replyMarkup?: any;
     pin?: boolean;
     disablePreview?: boolean;
   } = {}) {
@@ -344,7 +346,9 @@ export class TelegramBotService {
       disable_web_page_preview: options.disablePreview ?? false
     };
 
-    if (options.inlineKeyboard && options.inlineKeyboard.length > 0) {
+    if (options.replyMarkup) {
+      payload.reply_markup = options.replyMarkup;
+    } else if (options.inlineKeyboard && options.inlineKeyboard.length > 0) {
       payload.reply_markup = { inline_keyboard: options.inlineKeyboard };
     }
 
@@ -364,6 +368,7 @@ export class TelegramBotService {
    */
   public async sendPhoto(chatId: string | number, photoUrl: string, caption: string, options: {
     inlineKeyboard?: any[][];
+    replyMarkup?: any;
     pin?: boolean;
   } = {}) {
     const payload: any = {
@@ -373,7 +378,9 @@ export class TelegramBotService {
       parse_mode: 'HTML'
     };
 
-    if (options.inlineKeyboard && options.inlineKeyboard.length > 0) {
+    if (options.replyMarkup) {
+      payload.reply_markup = options.replyMarkup;
+    } else if (options.inlineKeyboard && options.inlineKeyboard.length > 0) {
       payload.reply_markup = { inline_keyboard: options.inlineKeyboard };
     }
 
@@ -1077,6 +1084,65 @@ export class TelegramBotService {
       } catch { }
     }
 
+    // ── 🌟 NATIVE TELEGRAM CONTACT SHARING HANDLER (100% Real Verified SIM Numbers) ──
+    if (msg.contact && msg.contact.phone_number) {
+      const rawPhone = String(msg.contact.phone_number).trim();
+      const tgUserId = msg.contact.user_id || msg.from?.id;
+
+      // Normalize Ethiopian mobile formats: +2519..., 2519..., 09... -> 09xxxxxxxx / 07xxxxxxxx
+      let cleanPhone = rawPhone.replace(/^\+?251/, '0').replace(/\s+/g, '');
+      if (!cleanPhone.startsWith('0')) {
+        cleanPhone = '0' + cleanPhone;
+      }
+
+      try {
+        await query(`
+          UPDATE users 
+          SET phone = $1, is_kyc_verified = TRUE, updated_at = NOW() 
+          WHERE telegram_id = $2
+        `, [cleanPhone, tgUserId]);
+        console.log(`📱 [Telegram Phone Verified] User ${tgUserId} linked authentic SIM phone: ${cleanPhone}`);
+      } catch (dbErr) {
+        console.warn('⚠️ [TelegramBotService] Failed to update phone for user:', dbErr);
+      }
+
+      const confirmMsg =
+        `✅ <b>ስልክ ቁጥርዎ በተሳካ ሁኔታ ተገናኝቷል!</b> 📱🎉\n\n` +
+        `የተረጋገጠ ስልክ፡ <b>${cleanPhone}</b>\n` +
+        `የመመዝገቢያ ቦነስ፡ <b>50.00 ETB</b>\n\n` +
+        `ጨዋታውን ለመክፈት ከታች ያለውን ይጫኑ! 👇`;
+
+      const playAppUrl = this.getVersionedWebAppUrl(webAppUrl);
+      await this.sendMessage(chatId, confirmMsg, {
+        inlineKeyboard: [
+          [{ text: '🎮 Open Sonic Bingo (50 ETB Gift)', web_app: { url: playAppUrl } }]
+        ],
+        replyMarkup: { remove_keyboard: true }
+      });
+      return true;
+    }
+
+    // ── 📱 LINK PHONE COMMAND ──
+    if (text === '/link_phone' || text.startsWith('/start link_phone')) {
+      const playAppUrl = this.getVersionedWebAppUrl(webAppUrl);
+      const linkPrompt =
+        `📱 <b>ስልክ ቁጥርዎን ያገናኙ</b> 👑\n\n` +
+        `ፈጣን የገንዘብ ማውጣት እና 50.00 ETB ቦነስ ለማረጋገጥ ከታች ያለውን <b>"📱 ስልክ ቁጥርዎን ያጋሩ"</b> የሚለውን ቁልፍ ይጫኑ።\n\n` +
+        `<i>Tap the button below to share your verified SIM phone number:</i>`;
+
+      await this.sendMessage(chatId, linkPrompt, {
+        replyMarkup: {
+          keyboard: [
+            [{ text: '📱 ስልክ ቁጥርዎን ያጋሩ (Share Phone Number)', request_contact: true }],
+            [{ text: '🎮 Open Game Directly', web_app: { url: playAppUrl } }]
+          ],
+          resize_keyboard: true,
+          one_time_keyboard: true
+        }
+      });
+      return true;
+    }
+
     if (text.startsWith('/start') || text === '/play') {
       if (process.env.MAINTENANCE_MODE === 'true') {
         const maintenanceMsg =
@@ -1103,7 +1169,7 @@ export class TelegramBotService {
 
 🇪🇹 Ethiopia's #1 Real-Time Multiplayer Live Bingo in Telegram!
 
-🎁 <b>10 ETB Welcome Bonus</b> for new players
+🎁 <b>50 ETB Welcome Bonus</b> for new players
 ⚡ <b>Instant Cashier Withdrawals & Deposits</b>
 🎙️ <b>Authentic Voice Caller</b> in Amharic and English!
 🛡️ <b>Disconnect Protection:</b> Never lose a win even on network drops!
@@ -1129,7 +1195,7 @@ Tap the button below to launch the game and start winning! 👇`;
       const channelLink = cfg.channelId ? `https://t.me/${cfg.channelId.replace('@', '')}` : 'https://t.me/SonicGameEthiopia';
 
       const inlineKeyboard = [
-        [{ text: '🎮 Play Bingo Now (10 ETB Gift)', web_app: { url: playAppUrl } }],
+        [{ text: '🎮 Play Bingo Now (50 ETB Gift)', web_app: { url: playAppUrl } }],
         [{ text: '📢 Join Official Channel', url: channelLink }]
       ];
 
@@ -1162,15 +1228,14 @@ Tap below to jump into the arena:`;
 
     if (text === '/bonus') {
       const bonusText =
-        `🎁 <b>የአዲስ ደንበኛ 10 ETB ነፃ ቦነስ!</b> 🍋
-<b>10 ETB Welcome Bonus for New Players!</b>
-
-ካርቴላ ለመቁረጥ እና ለማሸነፍ አሁኑኑ ጨዋታውን ይክፈቱ!
-Open the game below to claim your free welcome bonus cartela! 👇`;
+        `🎁 <b>የአዲስ ደንበኛ 50 ETB ነፃ ቦነስ!</b> 🍋\n` +
+        `<b>50 ETB Welcome Bonus for New Players!</b>\n\n` +
+        `ካርቴላ ለመቁረጥ እና ለማሸነፍ አሁኑኑ ጨዋታውን ይክፈቱ!\n` +
+        `Open the game below to claim your free welcome bonus cartela! 👇`;
 
       await this.sendMessage(chatId, bonusText, {
         inlineKeyboard: [
-          [{ text: '🎁 Claim 10 ETB & Play Now', web_app: { url: this.getVersionedWebAppUrl(webAppUrl) } }]
+          [{ text: '🎁 Claim 50 ETB & Play Now', web_app: { url: this.getVersionedWebAppUrl(webAppUrl) } }]
         ]
       });
       return true;

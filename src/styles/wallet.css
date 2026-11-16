@@ -3818,6 +3818,31 @@
   border: 1px solid #cbd5e1;
 }
 
+.bet-round-card .round-meta-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 4px 0 6px;
+}
+
+.bet-round-card .round-meta-grid .meta-item {
+  display: flex;
+  align-items: baseline;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.bet-round-card .round-meta-grid .meta-lbl {
+  font-weight: 700;
+  color: #1e293b;
+  margin-right: 2px;
+}
+
+.bet-round-card .round-meta-grid .meta-val {
+  font-weight: 800;
+  color: #0f172a;
+}
+
 .round-meta-row {
   display: flex;
   flex-wrap: wrap;

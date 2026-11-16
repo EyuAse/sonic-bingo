@@ -161,7 +161,7 @@ adminPlayersRouter.get('/', requireAdmin, async (req: AuthenticatedRequest, res:
       SELECT 
         u.id,
         u.full_name as name,
-        COALESCE(u.phone, CONCAT('09', RIGHT(CAST(u.telegram_id AS TEXT), 8))) as phone,
+        u.phone as phone,
         u.telegram_username,
         u.telegram_id,
         COALESCE(u.status, 'active') as status,
@@ -237,7 +237,7 @@ adminPlayersRouter.get('/:id/details', requireAdmin, async (req: AuthenticatedRe
       SELECT 
         u.id,
         u.full_name as name,
-        COALESCE(u.phone, CONCAT('09', RIGHT(CAST(u.telegram_id AS TEXT), 8))) as phone,
+        u.phone as phone,
         u.telegram_username,
         u.telegram_id,
         COALESCE(u.status, 'active') as status,
@@ -838,7 +838,7 @@ adminPlayersRouter.get('/export-csv', requireAdmin, async (req: AuthenticatedReq
       SELECT 
         u.id,
         u.full_name as name,
-        COALESCE(u.phone, CONCAT('09', RIGHT(CAST(u.telegram_id AS TEXT), 8))) as phone,
+        u.phone as phone,
         COALESCE(u.status, 'active') as status,
         COALESCE(w.balance, 0.00) as wallet,
         COALESCE(w.bonus, 0.00) as bonus,

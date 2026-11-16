@@ -110,7 +110,7 @@ router.get('/users', requireAdmin, async (req, res) => {
         SELECT 
           u.id,
           u.full_name as name,
-          COALESCE(u.phone, CONCAT('09', RIGHT(CAST(u.telegram_id AS TEXT), 8))) as phone,
+          u.phone as phone,
           u.telegram_username,
           u.telegram_id,
           COALESCE(w.balance, 0.00) as balance,
@@ -140,7 +140,7 @@ router.get('/users', requireAdmin, async (req, res) => {
         SELECT 
           u.id,
           u.full_name as name,
-          COALESCE(u.phone, CONCAT('09', RIGHT(CAST(u.telegram_id AS TEXT), 8))) as phone,
+          u.phone as phone,
           u.telegram_username,
           u.telegram_id,
           COALESCE(w.balance, 0.00) as balance,

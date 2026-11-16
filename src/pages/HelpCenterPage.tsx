@@ -70,11 +70,11 @@ export const HelpCenterPage: React.FC = () => {
   ];
 
   const handleOpenTelegramSupport = () => {
-    window.open('https://t.me/SonicGameBot', '_blank');
+    window.open('https://t.me/Sonicbingo_support', '_blank');
   };
 
   const handleOpenCommunity = () => {
-    window.open('https://t.me/SonicGameBot', '_blank');
+    window.open('https://t.me/SonicGameEthiopia', '_blank');
   };
 
   const toggleFaq = (id: string) => {
@@ -105,7 +105,7 @@ export const HelpCenterPage: React.FC = () => {
           </div>
           <div className="support-hero-text-col">
             <strong className="support-hero-title">{t('help.liveSupport')}</strong>
-            <span className="support-hero-sub">{t('help.responseEta')} • @SonicGameBot</span>
+            <span className="support-hero-sub">{t('help.responseEta')} • @Sonicbingo_support</span>
           </div>
           <button
             type="button"
@@ -126,21 +126,7 @@ export const HelpCenterPage: React.FC = () => {
             <i className="fa-brands fa-telegram channel-icon" style={{ color: '#229ED9' }}></i>
             <div className="channel-txt-col">
               <span className="channel-lbl">Telegram Support</span>
-              <strong className="channel-val">@SonicGameBot</strong>
-            </div>
-          </div>
-
-          <div
-            className="channel-contact-card"
-            onClick={() => {
-              navigator.clipboard.writeText('+251911000000');
-              showToast('📋 Copied Hotline: +251 911 000000');
-            }}
-          >
-            <i className="fa-solid fa-phone-volume channel-icon gold"></i>
-            <div className="channel-txt-col">
-              <span className="channel-lbl">{t('help.phoneHotline')}</span>
-              <strong className="channel-val">+251 911 00 00 00</strong>
+              <strong className="channel-val">@Sonicbingo_support</strong>
             </div>
           </div>
 

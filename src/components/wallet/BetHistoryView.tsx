@@ -220,6 +220,40 @@ export const BetHistoryView: React.FC<BetHistoryViewProps> = ({ onBack }) => {
     }
   };
 
+  const formatBetDate = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+
+      if (lang === 'am') {
+        const amMonths = ['ጃንዩ', 'ፌብሩ', 'ማርች', 'ኤፕሪ', 'ሜይ', 'ጁን', 'ጁላይ', 'ኦገስ', 'ሴፕቴ', 'ኦክቶ', 'ኖቬም', 'ዲሴም'];
+        const month = amMonths[d.getMonth()];
+        const day = d.getDate();
+        let hours = d.getHours();
+        const minutes = d.getMinutes().toString().padStart(2, '0');
+        const period = hours >= 12 ? 'ከሰዓት' : 'ጧት';
+        hours = hours % 12 || 12;
+        const formattedHours = hours.toString().padStart(2, '0');
+
+        // Exact requested format: ኖቬም / 8 / 05:10 ከሰዓት
+        return `${month} / ${day} / ${formattedHours}:${minutes} ${period}`;
+      } else {
+        const enMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const month = enMonths[d.getMonth()];
+        const day = d.getDate();
+        let hours = d.getHours();
+        const minutes = d.getMinutes().toString().padStart(2, '0');
+        const period = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        const formattedHours = hours.toString().padStart(2, '0');
+
+        return `${month} / ${day} / ${formattedHours}:${minutes} ${period}`;
+      }
+    } catch {
+      return dateStr;
+    }
+  };
+
   const formatTimeAgo = (dateStr: string) => {
     try {
       const diffMin = Math.max(0, Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000));
@@ -641,19 +675,19 @@ export const BetHistoryView: React.FC<BetHistoryViewProps> = ({ onBack }) => {
                     {/* Meta Row: Bet Time, Pot, Tickets */}
                     <div className="round-meta-grid">
                       <div className="meta-item">
-                        <span className="meta-lbl">{lang === 'am' ? 'ሰዓት' : 'Time'}</span>
-                        <span className="meta-val">{formatDate(round.betTime)}</span>
+                        <span className="meta-lbl">{lang === 'am' ? 'ሰዓት-' : 'Time-'}</span>
+                        <span className="meta-val">{formatBetDate(round.betTime)}</span>
                       </div>
                       <div className="meta-item">
-                        <span className="meta-lbl">{lang === 'am' ? 'ካርቴላዎች' : 'Cartelas'}</span>
+                        <span className="meta-lbl">{lang === 'am' ? 'ካርቴላ-' : 'Cartela-'}</span>
                         <span className="meta-val">{userTickets.length}</span>
                       </div>
                       <div className="meta-item">
-                        <span className="meta-lbl">{lang === 'am' ? 'ጠቅላላ ውርርድ' : 'Stake'}</span>
+                        <span className="meta-lbl">{lang === 'am' ? 'ጠቅላላ ውርርድ- ' : 'Total Bet- '}</span>
                         <span className="meta-val">{round.totalStake.toFixed(2)} ETB</span>
                       </div>
                       <div className="meta-item">
-                        <span className="meta-lbl">{lang === 'am' ? 'ጠቅላላ ፖት' : 'Pot'}</span>
+                        <span className="meta-lbl">{lang === 'am' ? 'ጠቅላላ ፖት- ' : 'Total Pot- '}</span>
                         <span className="meta-val text-gold">{round.totalPot.toFixed(2)} ETB</span>
                       </div>
                     </div>

@@ -598,7 +598,7 @@ export const PlayerAccountsDesk: React.FC = () => {
                                 {p.name}
                               </button>
                               <div className="tr" style={{ fontSize: '12px' }}>
-                                {p.playerCode} · {p.phone}
+                                {p.playerCode} · {p.phone || (p.telegramUsername ? `@${p.telegramUsername}` : 'Not linked')}
                               </div>
                             </div>
                           </div>
@@ -675,7 +675,7 @@ export const PlayerAccountsDesk: React.FC = () => {
                   {selectedDetails.name}
                 </div>
                 <div className="tr" style={{ fontSize: '12.5px' }}>
-                  {selectedDetails.id.slice(0, 8)} · {selectedDetails.phone}
+                  {selectedDetails.id.slice(0, 8)} · {selectedDetails.phone || (selectedDetails.telegramUsername ? `@${selectedDetails.telegramUsername}` : 'Not linked')}
                 </div>
               </div>
               <span className={selectedDetails.status === 'Active' ? 'b ok' : selectedDetails.status === 'Suspended' ? 'b w' : 'b o'}>
@@ -778,7 +778,18 @@ export const PlayerAccountsDesk: React.FC = () => {
               {/* TAB 1: OVERVIEW */}
               {activeTab === 'ov' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div className="lg"><span style={{ color: 'var(--mute)' }}>Phone</span><b>{selectedDetails.phone}</b></div>
+                  <div className="lg">
+                    <span style={{ color: 'var(--mute)' }}>Phone</span>
+                    <b>
+                      {selectedDetails.phone ? (
+                        selectedDetails.phone
+                      ) : (
+                        <span style={{ color: '#f59e0b', fontWeight: 600 }}>
+                          ⚠️ Not Linked (Telegram Only)
+                        </span>
+                      )}
+                    </b>
+                  </div>
                   <div className="lg"><span style={{ color: 'var(--mute)' }}>City</span><b>{selectedDetails.city}</b></div>
                   <div className="lg"><span style={{ color: 'var(--mute)' }}>Source</span><b>{selectedDetails.source}</b></div>
                   <div className="lg"><span style={{ color: 'var(--mute)' }}>Referred by</span><b>{selectedDetails.referredBy}</b></div>
