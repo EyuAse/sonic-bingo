@@ -1204,6 +1204,36 @@ Tap the button below to launch the game and start winning! 👇`;
       } else {
         await this.sendMessage(chatId, welcomeText, { inlineKeyboard });
       }
+
+      // Check if user already has an authentic phone linked; if not, prompt with Telegram Native Contact Sharing Keyboard
+      let hasPhone = false;
+      if (msg.from?.id) {
+        try {
+          const userCheck = await query('SELECT phone FROM users WHERE telegram_id = $1', [msg.from.id]);
+          if (userCheck.rows.length > 0 && userCheck.rows[0].phone) {
+            hasPhone = true;
+          }
+        } catch { }
+      }
+
+      if (!hasPhone) {
+        const linkPrompt =
+          `📱 <b>የ 50 ETB ቦነስዎን እና ፈጣን ማውጣት ለማረጋገጥ ስልክ ቁጥርዎን ያጋሩ:</b>\n` +
+          `ከታች ያለውን <b>"📱 ስልክ ቁጥርዎን ያጋሩ"</b> የሚለውን ይጫኑ 👇\n\n` +
+          `<i>Tap the button below to share your verified SIM phone number:</i>`;
+
+        await this.sendMessage(chatId, linkPrompt, {
+          replyMarkup: {
+            keyboard: [
+              [{ text: '📱 ስልክ ቁጥርዎን ያጋሩ (Share Phone Number)', request_contact: true }],
+              [{ text: '🎮 Open Game Directly', web_app: { url: playAppUrl } }]
+            ],
+            resize_keyboard: true,
+            one_time_keyboard: true
+          }
+        });
+      }
+
       return true;
     }
 
