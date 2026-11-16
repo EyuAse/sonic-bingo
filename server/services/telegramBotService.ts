@@ -1,4 +1,4 @@
-import { query } from '../db.ts';
+import { query, withTransaction } from '../db.ts';
 
 export interface BotConfig {
   token: string;
@@ -1095,36 +1095,126 @@ export class TelegramBotService {
         cleanPhone = '0' + cleanPhone;
       }
 
+      const tgUser = msg.from;
+      const firstName = tgUser?.first_name || '';
+      const lastName = tgUser?.last_name || '';
+      const username = tgUser?.username || `user_${tgUserId}`;
+      const fullName = (firstName + ' ' + lastName).trim() || username;
+
       try {
-        await query(`
-          UPDATE users 
-          SET phone = $1, is_kyc_verified = TRUE, updated_at = NOW() 
-          WHERE telegram_id = $2
-        `, [cleanPhone, tgUserId]);
-        console.log(`📱 [Telegram Phone Verified] User ${tgUserId} linked authentic SIM phone: ${cleanPhone}`);
+        await withTransaction(async (client) => {
+          const userUpsert = await client.query(`
+            INSERT INTO users (
+              telegram_id, telegram_username, first_name, last_name, full_name,
+              phone, is_kyc_verified, role, status, bot_started, created_at, updated_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, TRUE, 'player', 'active', TRUE, NOW(), NOW())
+            ON CONFLICT (telegram_id) DO UPDATE
+            SET phone = EXCLUDED.phone,
+                is_kyc_verified = TRUE,
+                first_name = COALESCE(EXCLUDED.first_name, users.first_name),
+                last_name = COALESCE(EXCLUDED.last_name, users.last_name),
+                full_name = COALESCE(EXCLUDED.full_name, users.full_name),
+                telegram_username = COALESCE(EXCLUDED.telegram_username, users.telegram_username),
+                bot_started = TRUE,
+                updated_at = NOW()
+            RETURNING id;
+          `, [tgUserId, username, firstName || null, lastName || null, fullName, cleanPhone]);
+
+          const savedUserId = userUpsert.rows[0].id;
+
+          // Ensure wallet exists with 50 ETB bonus
+          await client.query(`
+            INSERT INTO wallets (user_id, balance, bonus, locked_balance)
+            VALUES ($1, 0.00, 50.00, 0.00)
+            ON CONFLICT (user_id) DO NOTHING;
+          `, [savedUserId]);
+        });
+        console.log(`📱 [Telegram Phone Verified & Saved] User ${tgUserId} (${fullName}) linked authentic SIM: ${cleanPhone}`);
       } catch (dbErr) {
-        console.warn('⚠️ [TelegramBotService] Failed to update phone for user:', dbErr);
+        console.warn('⚠️ [TelegramBotService] Failed to upsert phone for user:', dbErr);
       }
 
       const confirmMsg =
-        `✅ <b>ስልክ ቁጥርዎ በተሳካ ሁኔታ ተገናኝቷል!</b> 📱🎉\n\n` +
+        `✅ <b>ስልክ ቁጥርዎ በተሳካ ሁኔታ ተረጋግጧል!</b> 📱🎉\n\n` +
         `የተረጋገጠ ስልክ፡ <b>${cleanPhone}</b>\n` +
-        `የመመዝገቢያ ቦነስ፡ <b>50.00 ETB</b>\n\n` +
-        `ጨዋታውን ለመክፈት ከታች ያለውን ይጫኑ! 👇`;
+        `የመመዝገቢያ ቦነስ፡ <b>50.00 ETB</b> ተሰጥቷል!\n\n` +
+        `እንኳን ደስ አለዎት! አሁን ጨዋታውን መክፈት ይችላሉ። ከታች ያለውን ይጫኑ 👇\n\n` +
+        `<i>Your phone has been verified and 50.00 ETB Bonus is active! Tap below to play:</i>`;
 
       const playAppUrl = this.getVersionedWebAppUrl(webAppUrl);
       await this.sendMessage(chatId, confirmMsg, {
         inlineKeyboard: [
-          [{ text: '🎮 Open Sonic Bingo (50 ETB Gift)', web_app: { url: playAppUrl } }]
-        ],
-        replyMarkup: { remove_keyboard: true }
+          [{ text: '🎮 አሁን ይጫወቱ / Play Sonic Bingo (50 ETB Gift)', web_app: { url: playAppUrl } }]
+        ]
       });
       return true;
     }
 
+    // ── 📱 PLAIN TEXT PHONE INPUT FALLBACK ──
+    const phoneRegex = /^(?:\+?251|0)?[97]\d{8}$/;
+    if (text && phoneRegex.test(text.replace(/\s+/g, ''))) {
+      let cleanPhone = text.replace(/\s+/g, '').replace(/^\+?251/, '0');
+      if (!cleanPhone.startsWith('0')) cleanPhone = '0' + cleanPhone;
+
+      const tgUserId = msg.from?.id;
+      const tgUser = msg.from;
+      const firstName = tgUser?.first_name || '';
+      const lastName = tgUser?.last_name || '';
+      const username = tgUser?.username || `user_${tgUserId}`;
+      const fullName = (firstName + ' ' + lastName).trim() || username;
+
+      try {
+        await withTransaction(async (client) => {
+          const userUpsert = await client.query(`
+            INSERT INTO users (
+              telegram_id, telegram_username, first_name, last_name, full_name,
+              phone, is_kyc_verified, role, status, bot_started, created_at, updated_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, TRUE, 'player', 'active', TRUE, NOW(), NOW())
+            ON CONFLICT (telegram_id) DO UPDATE
+            SET phone = EXCLUDED.phone,
+                is_kyc_verified = TRUE,
+                first_name = COALESCE(EXCLUDED.first_name, users.first_name),
+                last_name = COALESCE(EXCLUDED.last_name, users.last_name),
+                full_name = COALESCE(EXCLUDED.full_name, users.full_name),
+                telegram_username = COALESCE(EXCLUDED.telegram_username, users.telegram_username),
+                bot_started = TRUE,
+                updated_at = NOW()
+            RETURNING id;
+          `, [tgUserId, username, firstName || null, lastName || null, fullName, cleanPhone]);
+
+          const savedUserId = userUpsert.rows[0].id;
+
+          await client.query(`
+            INSERT INTO wallets (user_id, balance, bonus, locked_balance)
+            VALUES ($1, 0.00, 50.00, 0.00)
+            ON CONFLICT (user_id) DO NOTHING;
+          `, [savedUserId]);
+        });
+        console.log(`📱 [Telegram Phone Verified via Text] User ${tgUserId} linked phone: ${cleanPhone}`);
+
+        const confirmMsg =
+          `✅ <b>ስልክ ቁጥርዎ በተሳካ ሁኔታ ተረጋግጧል!</b> 📱🎉\n\n` +
+          `የተረጋገጠ ስልክ፡ <b>${cleanPhone}</b>\n` +
+          `የመመዝገቢያ ቦነስ፡ <b>50.00 ETB</b> ተሰጥቷል!\n\n` +
+          `እንኳን ደስ አለዎት! አሁን ጨዋታውን መክፈት ይችላሉ። ከታች ያለውን ይጫኑ 👇\n\n` +
+          `<i>Your phone has been verified and 50.00 ETB Bonus is active! Tap below to play:</i>`;
+
+        const playAppUrl = this.getVersionedWebAppUrl(webAppUrl);
+        await this.sendMessage(chatId, confirmMsg, {
+          inlineKeyboard: [
+            [{ text: '🎮 አሁን ይጫወቱ / Play Sonic Bingo (50 ETB Gift)', web_app: { url: playAppUrl } }]
+          ]
+        });
+        return true;
+      } catch (err) {
+        console.warn('⚠️ [TelegramBotService] Failed text phone verification:', err);
+      }
+    }
+
     // ── 📱 LINK PHONE COMMAND ──
     if (text === '/link_phone' || text.startsWith('/start link_phone')) {
-      const playAppUrl = this.getVersionedWebAppUrl(webAppUrl);
       const linkPrompt =
         `📱 <b>ስልክ ቁጥርዎን ያገናኙ</b> 👑\n\n` +
         `ፈጣን የገንዘብ ማውጣት እና 50.00 ETB ቦነስ ለማረጋገጥ ከታች ያለውን <b>"📱 ስልክ ቁጥርዎን ያጋሩ"</b> የሚለውን ቁልፍ ይጫኑ።\n\n` +
@@ -1133,8 +1223,7 @@ export class TelegramBotService {
       await this.sendMessage(chatId, linkPrompt, {
         replyMarkup: {
           keyboard: [
-            [{ text: '📱 ስልክ ቁጥርዎን ያጋሩ (Share Phone Number)', request_contact: true }],
-            [{ text: '🎮 Open Game Directly', web_app: { url: playAppUrl } }]
+            [{ text: '📱 ስልክ ቁጥርዎን ያጋሩ (Share Phone Number)', request_contact: true }]
           ],
           resize_keyboard: true,
           one_time_keyboard: true
@@ -1163,18 +1252,56 @@ export class TelegramBotService {
       const startParam = parts.length > 1 ? parts[1].trim() : '';
       const playAppUrl = this.getVersionedWebAppUrl(webAppUrl, startParam);
 
+      // ── 🛡️ MANDATORY PHONE VERIFICATION CHECK ──
+      let hasVerifiedPhone = false;
+      if (msg.from?.id) {
+        try {
+          const userCheck = await query(
+            'SELECT id, phone, is_kyc_verified FROM users WHERE telegram_id = $1',
+            [msg.from.id]
+          );
+          if (userCheck.rows.length > 0 && userCheck.rows[0].phone && String(userCheck.rows[0].phone).trim() !== '') {
+            hasVerifiedPhone = true;
+          }
+        } catch (e) {
+          console.warn('Error checking verified phone on /start:', e);
+        }
+      }
+
+      // 🛑 MANDATORY GATE: If user has NOT shared phone yet, DO NOT show the Play button. Send ONLY the contact keyboard!
+      if (!hasVerifiedPhone) {
+        const gateMsg =
+          `👋 <b>እንኳን ወደ ሶኒክ ቢንጎ በደህና መጡ!</b> 👑🎁\n` +
+          `<b>Welcome to Sonic Bingo!</b>\n\n` +
+          `🇪🇹 የኢትዮጵያ #1 ፈጣን የቴሌግራም የቀጥታ ቢንጎ ካዚኖ!\n\n` +
+          `🎁 <b>50 ETB የመመዝገቢያ ቦነስ</b> ተዘጋጅቶልዎታል!\n` +
+          `🔒 <b>ጨዋታውን ለመክፈት እና ቦነስዎን ለመጠቀም ስልክ ቁጥርዎን ያረጋግጡ።</b>\n\n` +
+          `ከታች ያለውን <b>"📱 ስልክ ቁጥርዎን ያጋሩ (Share Phone Number)"</b> የሚለውን አንድ ጊዜ ይጫኑ 👇\n\n` +
+          `────────────────\n` +
+          `<i>To unlock the game and claim your 50 ETB Welcome Bonus, tap the button below to share your verified SIM phone number:</i>`;
+
+        await this.sendMessage(chatId, gateMsg, {
+          replyMarkup: {
+            keyboard: [
+              [{ text: '📱 ስልክ ቁጥርዎን ያጋሩ (Share Phone Number)', request_contact: true }]
+            ],
+            resize_keyboard: true,
+            one_time_keyboard: true
+          }
+        });
+        return true;
+      }
+
+      // If user HAS verified phone, send standard welcome with Game Launcher
       let welcomeText =
-        `👋 <b>እንኳን ወደ ሶኒክ ቢንጎ በደህና መጡ!</b> 👑🎯
-<b>Welcome to Sonic Bingo!</b>
-
-🇪🇹 Ethiopia's #1 Real-Time Multiplayer Live Bingo in Telegram!
-
-🎁 <b>50 ETB Welcome Bonus</b> for new players
-⚡ <b>Instant Cashier Withdrawals & Deposits</b>
-🎙️ <b>Authentic Voice Caller</b> in Amharic and English!
-🛡️ <b>Disconnect Protection:</b> Never lose a win even on network drops!
-
-Tap the button below to launch the game and start winning! 👇`;
+        `👋 <b>እንኳን ወደ ሶኒክ ቢንጎ በደህና መጡ!</b> 👑🎯\n` +
+        `<b>Welcome to Sonic Bingo!</b>\n\n` +
+        `🇪🇹 Ethiopia's #1 Real-Time Multiplayer Live Bingo in Telegram!\n\n` +
+        `🎁 <b>50 ETB Welcome Bonus</b> for new players\n` +
+        `⚡ <b>Instant Cashier Withdrawals & Deposits</b>\n` +
+        `🎙️ <b>Authentic Voice Caller</b> in Amharic and English!\n` +
+        `🛡️ <b>Disconnect Protection:</b> Never lose a win even on network drops!\n\n` +
+        `Tap the button below to launch the game and start winning! 👇`;
       let welcomePhoto = '';
 
       try {
@@ -1205,48 +1332,17 @@ Tap the button below to launch the game and start winning! 👇`;
         await this.sendMessage(chatId, welcomeText, { inlineKeyboard });
       }
 
-      // Check if user already has an authentic phone linked; if not, prompt with Telegram Native Contact Sharing Keyboard
-      let hasPhone = false;
-      if (msg.from?.id) {
-        try {
-          const userCheck = await query('SELECT phone FROM users WHERE telegram_id = $1', [msg.from.id]);
-          if (userCheck.rows.length > 0 && userCheck.rows[0].phone) {
-            hasPhone = true;
-          }
-        } catch { }
-      }
-
-      if (!hasPhone) {
-        const linkPrompt =
-          `📱 <b>የ 50 ETB ቦነስዎን እና ፈጣን ማውጣት ለማረጋገጥ ስልክ ቁጥርዎን ያጋሩ:</b>\n` +
-          `ከታች ያለውን <b>"📱 ስልክ ቁጥርዎን ያጋሩ"</b> የሚለውን ይጫኑ 👇\n\n` +
-          `<i>Tap the button below to share your verified SIM phone number:</i>`;
-
-        await this.sendMessage(chatId, linkPrompt, {
-          replyMarkup: {
-            keyboard: [
-              [{ text: '📱 ስልክ ቁጥርዎን ያጋሩ (Share Phone Number)', request_contact: true }],
-              [{ text: '🎮 Open Game Directly', web_app: { url: playAppUrl } }]
-            ],
-            resize_keyboard: true,
-            one_time_keyboard: true
-          }
-        });
-      }
-
       return true;
     }
 
     if (text === '/help') {
       const helpText =
-        `📖 <b>Sonic Bingo Help & Guides</b> 👑
-
-1️⃣ <b>Select a Room:</b> Choose 10, 20, 50, or 100 ETB stake room.
-2️⃣ <b>Pick Cartelas:</b> Choose 1 or 2 cartelas from 400 serial numbers.
-3️⃣ <b>Daub & Win:</b> Watch real-time live ball calls or activate Auto-Daub!
-4️⃣ <b>Withdrawals:</b> Telebirr, CBE Birr & Cashier processed instantly.
-
-Tap below to jump into the arena:`;
+        `📖 <b>Sonic Bingo Help & Guides</b> 👑\n\n` +
+        `1️⃣ <b>Select a Room:</b> Choose 10, 20, 50, or 100 ETB stake room.\n` +
+        `2️⃣ <b>Pick Cartelas:</b> Choose 1 or 2 cartelas from 400 serial numbers.\n` +
+        `3️⃣ <b>Daub & Win:</b> Watch real-time live ball calls or activate Auto-Daub!\n` +
+        `4️⃣ <b>Withdrawals:</b> Telebirr, CBE Birr & Cashier processed instantly.\n\n` +
+        `Tap below to jump into the arena:`;
 
       await this.sendMessage(chatId, helpText, {
         inlineKeyboard: [
@@ -1257,6 +1353,33 @@ Tap below to jump into the arena:`;
     }
 
     if (text === '/bonus') {
+      let hasVerifiedPhone = false;
+      if (msg.from?.id) {
+        try {
+          const userCheck = await query('SELECT phone FROM users WHERE telegram_id = $1', [msg.from.id]);
+          if (userCheck.rows.length > 0 && userCheck.rows[0].phone) {
+            hasVerifiedPhone = true;
+          }
+        } catch { }
+      }
+
+      if (!hasVerifiedPhone) {
+        const promptText =
+          `🎁 <b>የ 50 ETB ቦነስዎን ለመቀበል ስልክ ቁጥርዎን ያረጋግጡ!</b>\n` +
+          `ከታች ያለውን <b>"📱 ስልክ ቁጥርዎን ያጋሩ"</b> የሚለውን ይጫኑ 👇`;
+
+        await this.sendMessage(chatId, promptText, {
+          replyMarkup: {
+            keyboard: [
+              [{ text: '📱 ስልክ ቁጥርዎን ያጋሩ (Share Phone Number)', request_contact: true }]
+            ],
+            resize_keyboard: true,
+            one_time_keyboard: true
+          }
+        });
+        return true;
+      }
+
       const bonusText =
         `🎁 <b>የአዲስ ደንበኛ 50 ETB ነፃ ቦነስ!</b> 🍋\n` +
         `<b>50 ETB Welcome Bonus for New Players!</b>\n\n` +

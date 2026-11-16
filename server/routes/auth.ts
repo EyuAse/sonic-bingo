@@ -668,8 +668,12 @@ router.put('/profile', requireAuth, async (req: AuthenticatedRequest, res) => {
     let idx = 1;
 
     if (phone !== undefined) {
+      const cleanPhone = phone && typeof phone === 'string' ? phone.trim() : null;
       updates.push(`phone = $${idx++}`);
-      values.push(phone && typeof phone === 'string' ? phone.trim() : null);
+      values.push(cleanPhone);
+      if (cleanPhone) {
+        updates.push(`is_kyc_verified = TRUE`);
+      }
     }
     if (fullName !== undefined && typeof fullName === 'string') {
       updates.push(`full_name = $${idx++}`);

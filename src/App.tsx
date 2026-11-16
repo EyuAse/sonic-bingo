@@ -10,6 +10,7 @@ import { Toast } from './components/common/Toast.tsx';
 import { NewPlayerWelcomeModal } from './components/auth/NewPlayerWelcomeModal.tsx';
 import { ConcurrentSessionModal } from './components/auth/ConcurrentSessionModal.tsx';
 import { AccountSuspendedModal } from './components/common/AccountSuspendedModal.tsx';
+import { MandatoryPhoneVerificationModal } from './components/auth/MandatoryPhoneVerificationModal.tsx';
 
 // Pages
 import { LandingPage } from './pages/LandingPage.tsx';
@@ -166,6 +167,9 @@ export const App: React.FC = () => {
 
       {/* Single-device enforcement notice */}
       <ConcurrentSessionModal />
+
+      {/* Phase 1: Mandatory Phone Verification Gate */}
+      <MandatoryPhoneVerificationModal />
 
       {/* Real-time Account Suspension Notice */}
       <AccountSuspendedModal />
