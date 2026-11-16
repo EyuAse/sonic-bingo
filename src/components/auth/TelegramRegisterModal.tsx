@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { telegramService } from '../../services/telegramService';
+import { validateEthiopianPhone } from '../../services/ethiopianPhoneValidator';
 
 interface TelegramRegisterModalProps {
   isOpen: boolean;
   bonusAmount: number;
   isLoading: boolean;
-  onConfirm: () => void;
+  onConfirm: (phone?: string) => void;
   onClose: () => void;
 }
 
@@ -21,6 +22,9 @@ export const TelegramRegisterModal: React.FC<TelegramRegisterModalProps> = ({
   const { lang } = useLanguage();
   const { telegramUser } = useAuth();
 
+  const [phoneInput, setPhoneInput] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+
   if (!isOpen) return null;
 
   const displayName = telegramUser
@@ -31,9 +35,36 @@ export const TelegramRegisterModal: React.FC<TelegramRegisterModalProps> = ({
     ? `@${telegramUser.username}`
     : `ID: ${telegramUser?.id || 'Telegram User'}`;
 
+  const handleOneTapContact = async () => {
+    try {
+      setPhoneError('');
+      const raw = await telegramService.requestTelegramPhone();
+      if (raw) {
+        let clean = raw.replace(/^\+?251/, '0').replace(/\s+/g, '');
+        if (!clean.startsWith('0')) clean = '0' + clean;
+        setPhoneInput(clean);
+      }
+    } catch (e) {
+      console.warn('One tap contact error:', e);
+    }
+  };
+
   const handleConfirmClick = () => {
+    // Phone is mandatory to access and register!
+    const validation = validateEthiopianPhone(phoneInput);
+    if (!validation.isValid) {
+      setPhoneError(
+        lang === 'am'
+          ? '⚠️ መለያ ለመፍጠር ትክክለኛ የኢትዮጵያ ስልክ ቁጥር ማስገባት ግዴታ ነው (09... ወይም 07...)'
+          : '⚠️ Phone number is required to create an account (09... or 07...)'
+      );
+      telegramService.triggerHaptic('error');
+      return;
+    }
+
+    setPhoneError('');
     telegramService.triggerHaptic('success');
-    onConfirm();
+    onConfirm(validation.nationalNumber);
   };
 
   return (
@@ -41,7 +72,7 @@ export const TelegramRegisterModal: React.FC<TelegramRegisterModalProps> = ({
       {/* Dark backdrop */}
       <div className="otp-modal-backdrop" onClick={onClose}></div>
 
-      {/* Main Exact White Card */}
+      {/* Main Exact Card - Sonic Red Theme */}
       <div
         className="exact-ref-modal-card"
         style={{
@@ -50,12 +81,13 @@ export const TelegramRegisterModal: React.FC<TelegramRegisterModalProps> = ({
           background: '#ffffff',
           borderRadius: '32px',
           width: '100%',
-          maxWidth: '380px',
-          padding: '24px 18px 18px 18px',
-          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.35)',
+          maxWidth: '390px',
+          padding: '24px 20px 20px',
+          boxShadow: '0 25px 60px -15px rgba(225, 29, 72, 0.35)',
           textAlign: 'center',
           boxSizing: 'border-box',
-          animation: 'modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+          animation: 'modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+          border: '1.5px solid rgba(254, 205, 211, 0.7)'
         }}
       >
         {/* Top-Right Circular Close Button */}
@@ -84,60 +116,31 @@ export const TelegramRegisterModal: React.FC<TelegramRegisterModalProps> = ({
           <i className="fa-solid fa-xmark"></i>
         </button>
 
-        {/* 1. Mascot: 3D Crowned Lemon Transparent Badge & Sparkles */}
+        {/* 1. Mascot / Crown Badge */}
         <div style={{ position: 'relative', display: 'inline-block', margin: '4px auto 10px auto' }}>
-          {/* Left Sparkle Star */}
-          <span
-            style={{
-              position: 'absolute',
-              left: '-24px',
-              top: '28px',
-              color: '#facc15',
-              fontSize: '16px',
-              fontWeight: '900'
-            }}
-          >
-            ✦
-          </span>
-
-          {/* 3D Crowned Lemon Transparent PNG */}
           <div
             style={{
-              width: '82px',
-              height: '82px',
+              width: '76px',
+              height: '76px',
+              borderRadius: '24px',
+              background: 'linear-gradient(135deg, #e11d48 0%, #dc2626 50%, #b91c1c 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              margin: '0 auto',
-              filter: 'drop-shadow(0 8px 16px rgba(234, 179, 8, 0.35))'
+              fontSize: '34px',
+              color: '#ffffff',
+              boxShadow: '0 10px 25px rgba(225, 29, 72, 0.45)',
+              border: '2px solid rgba(255, 255, 255, 0.4)'
             }}
           >
-            <img
-              src="/assets/images/wallet-vip-crown-ribbon.jpg"
-              alt="Sonic Crown VIP Badge"
-              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-            />
+            👑
           </div>
-
-          {/* Right Sparkle Star */}
-          <span
-            style={{
-              position: 'absolute',
-              right: '-24px',
-              top: '32px',
-              color: '#facc15',
-              fontSize: '14px',
-              fontWeight: '900'
-            }}
-          >
-            ✦
-          </span>
         </div>
 
         {/* 2. Dual-Tone Title: Create Your Sonic Account */}
         <h2
           style={{
-            fontSize: '23px',
+            fontSize: '22px',
             fontWeight: '900',
             color: '#0f172a',
             margin: '0 0 4px 0',
@@ -146,56 +149,52 @@ export const TelegramRegisterModal: React.FC<TelegramRegisterModalProps> = ({
           }}
         >
           {lang === 'am' ? (
-            <>የእርስዎን <span style={{ color: '#0ea5e9' }}>ሶኒክ</span> መለያ ይፍጠሩ</>
+            <>የእርስዎን <span style={{ color: '#dc2626' }}>ሶኒክ</span> መለያ ይፍጠሩ</>
           ) : (
-            <>Create Your <span style={{ color: '#0ea5e9' }}>Sonic</span> Account</>
+            <>Create Your <span style={{ color: '#dc2626' }}>Sonic</span> Account</>
           )}
         </h2>
 
         {/* Subtitle */}
         <p
           style={{
-            fontSize: '12px',
+            fontSize: '12.5px',
             color: '#64748b',
-            margin: '0 0 16px 0',
+            margin: '0 0 14px 0',
             lineHeight: 1.35
           }}
         >
           {lang === 'am'
-            ? 'በቴሌግራም በአንድ ንክኪ ይመዝገቡ • ምንም ፎርም አያስፈልግም ⚡'
-            : 'Instant 1-click registration via Telegram • No forms needed ⚡'}
+            ? 'ወደ ጨዋታው ለመግባት ስልክ ቁጥርዎን ያረጋግጡ ⚡'
+            : 'Verify phone number to access games & claim bonus ⚡'}
         </p>
 
-        {/* 3. Exact Creamy Free Sign Up Bonus Card */}
+        {/* 3. 50 ETB Bonus Card - Sonic Red Theme */}
         <div
           style={{
-            background: '#fefce8',
-            border: '1.5px solid #fef08a',
-            borderRadius: '20px',
+            background: '#fff1f2',
+            border: '1.5px solid #fecdd3',
+            borderRadius: '18px',
             padding: '12px 14px',
-            marginBottom: '12px',
+            marginBottom: '14px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            position: 'relative',
-            overflow: 'hidden',
             textAlign: 'left'
           }}
         >
-          {/* Left: Gift Icon + Texts */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', zIndex: 2 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
             <div
               style={{
                 width: '36px',
                 height: '36px',
                 borderRadius: '10px',
                 background: '#ffffff',
-                border: '1px solid #fef08a',
+                border: '1px solid #fecdd3',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: '18px',
-                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.04)',
                 flexShrink: 0
               }}
             >
@@ -205,9 +204,9 @@ export const TelegramRegisterModal: React.FC<TelegramRegisterModalProps> = ({
             <div>
               <div
                 style={{
-                  fontSize: '10.5px',
+                  fontSize: '10px',
                   fontWeight: '800',
-                  color: '#15803d',
+                  color: '#9f1239',
                   letterSpacing: '0.6px',
                   textTransform: 'uppercase'
                 }}
@@ -217,9 +216,9 @@ export const TelegramRegisterModal: React.FC<TelegramRegisterModalProps> = ({
 
               <div
                 style={{
-                  fontSize: '26px',
+                  fontSize: '24px',
                   fontWeight: '900',
-                  color: '#14532d',
+                  color: '#be123c',
                   lineHeight: '1.1',
                   margin: '1px 0'
                 }}
@@ -228,71 +227,50 @@ export const TelegramRegisterModal: React.FC<TelegramRegisterModalProps> = ({
                 <span style={{ fontSize: '13px', fontWeight: '800' }}>ETB</span>
               </div>
 
-              <div style={{ fontSize: '10.5px', color: '#64748b', fontWeight: '500' }}>
-                {lang === 'am' ? 'በራስ-ሰር ወደ ቦርሳዎ ገቢ ይሆናል' : 'Automatically credited to your wallet'}
+              <div style={{ fontSize: '10.5px', color: '#64748b', fontWeight: '600' }}>
+                {lang === 'am' ? 'በራስ-ሰር ወደ ቦርሳዎ ገቢ ይሆናል' : 'Auto credited to your wallet'}
               </div>
             </div>
           </div>
 
-          {/* Right: 3D Stack of Gold Coins Image (Transparent PNG) */}
-          <div
-            style={{
-              width: '72px',
-              height: '72px',
-              flexShrink: 0,
-              zIndex: 2,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              filter: 'drop-shadow(0 6px 12px rgba(202, 138, 4, 0.3))'
-            }}
-          >
-            <img
-              src="/assets/images/sonic-rewards-chest-coins.png"
-              alt="ETB Gold Coins Stack"
-              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-            />
-          </div>
+          <span style={{ fontSize: '32px' }}>💰</span>
         </div>
 
         {/* 4. Telegram Profile Pill */}
         <div
           style={{
-            background: '#ffffff',
+            background: '#f8fafc',
             border: '1px solid #e2e8f0',
-            borderRadius: '16px',
-            padding: '10px 14px',
-            marginBottom: '16px',
+            borderRadius: '14px',
+            padding: '8px 12px',
+            marginBottom: '12px',
             display: 'flex',
             alignItems: 'center',
-            gap: '12px',
-            textAlign: 'left',
-            boxShadow: '0 1px 4px rgba(0, 0, 0, 0.03)'
+            gap: '10px',
+            textAlign: 'left'
           }}
         >
-          {/* Telegram Circular Icon */}
           <div
             style={{
-              width: '36px',
-              height: '36px',
+              width: '32px',
+              height: '32px',
               borderRadius: '50%',
               background: '#2AABEE',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: '#ffffff',
-              fontSize: '17px',
+              fontSize: '15px',
               flexShrink: 0
             }}
           >
             <i className="fa-brands fa-telegram"></i>
           </div>
 
-          {/* Name & ID/Verified */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
-                fontSize: '13.5px',
+                fontSize: '13px',
                 fontWeight: '800',
                 color: '#0f172a',
                 overflow: 'hidden',
@@ -302,48 +280,89 @@ export const TelegramRegisterModal: React.FC<TelegramRegisterModalProps> = ({
             >
               {displayName}
             </div>
-            <div
-              style={{
-                fontSize: '11px',
-                color: '#0284c7',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                marginTop: '1px'
-              }}
-            >
-              <span style={{ fontWeight: '600' }}>{displayHandle}</span>
-              <span style={{ color: '#cbd5e1' }}>|</span>
-              <span
-                style={{
-                  background: '#dcfce7',
-                  color: '#15803d',
-                  padding: '1px 6px',
-                  borderRadius: '999px',
-                  fontSize: '9.5px',
-                  fontWeight: '800',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '3px'
-                }}
-              >
-                <i className="fa-solid fa-check" style={{ fontSize: '8px' }}></i>{' '}
-                {lang === 'am' ? 'የተረጋገጠ' : 'Verified'}
-              </span>
+            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>
+              {displayHandle}
             </div>
           </div>
         </div>
 
-        {/* 5. Lush Green Action CTA Button */}
+        {/* 5. 📱 Mandatory Phone Number Input Field */}
+        <div style={{ marginBottom: '14px', textAlign: 'left' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+            <label style={{ fontSize: '11.5px', fontWeight: 800, color: '#0f172a' }}>
+              {lang === 'am' ? 'ስልክ ቁጥር (ግዴታ) *' : 'Phone Number (Required) *'}
+            </label>
+            <button
+              type="button"
+              onClick={handleOneTapContact}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#2563eb',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <i className="fa-brands fa-telegram"></i>
+              {lang === 'am' ? 'በቴሌግራም ሙላ' : 'Auto-fill'}
+            </button>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              border: phoneError ? '1.5px solid #ef4444' : '1.5px solid #cbd5e1',
+              borderRadius: '12px',
+              padding: '8px 12px',
+              background: '#ffffff'
+            }}
+          >
+            <span style={{ fontSize: '13px', fontWeight: 700, color: '#64748b', marginRight: '6px' }}>
+              +251
+            </span>
+            <input
+              type="tel"
+              value={phoneInput.replace(/^\+?251|^0/, '')}
+              onChange={e => {
+                setPhoneError('');
+                setPhoneInput('0' + e.target.value.replace(/\D/g, ''));
+              }}
+              placeholder="9XXXXXXXX / 7XXXXXXXX"
+              style={{
+                border: 'none',
+                background: 'transparent',
+                outline: 'none',
+                fontSize: '13.5px',
+                fontWeight: 700,
+                color: '#0f172a',
+                width: '100%'
+              }}
+              required
+            />
+          </div>
+
+          {phoneError && (
+            <div style={{ fontSize: '11px', color: '#ef4444', fontWeight: 600, marginTop: '4px' }}>
+              {phoneError}
+            </div>
+          )}
+        </div>
+
+        {/* 6. Sonic Crimson Red Action CTA Button */}
         <button
           type="button"
           onClick={handleConfirmClick}
           disabled={isLoading}
           style={{
             width: '100%',
-            background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)',
+            background: 'linear-gradient(135deg, #e11d48 0%, #dc2626 50%, #b91c1c 100%)',
             color: '#ffffff',
-            fontSize: '14.5px',
+            fontSize: '14px',
             fontWeight: '900',
             border: 'none',
             borderRadius: '999px',
@@ -353,7 +372,7 @@ export const TelegramRegisterModal: React.FC<TelegramRegisterModalProps> = ({
             alignItems: 'center',
             justifyContent: 'center',
             gap: '8px',
-            boxShadow: '0 8px 24px rgba(22, 163, 74, 0.4)',
+            boxShadow: '0 8px 24px rgba(225, 29, 72, 0.45)',
             textTransform: 'uppercase',
             letterSpacing: '0.4px',
             transition: 'all 0.15s ease'
@@ -362,20 +381,20 @@ export const TelegramRegisterModal: React.FC<TelegramRegisterModalProps> = ({
           {isLoading ? (
             <span>
               <i className="fa-solid fa-spinner fa-spin"></i>{' '}
-              {lang === 'am' ? 'በመፍጠር ላይ...' : 'Creating Account...'}
+              {lang === 'am' ? 'በመመዝገብ ላይ...' : 'Registering...'}
             </span>
           ) : (
             <span>
-              ⚡ {lang === 'am' ? `መለያ ፍጠርና ${bonusAmount} ብር ተቀበል 🚀` : `CREATE ACCOUNT & CLAIM +${bonusAmount} ETB 🚀`}
+              🚀 {lang === 'am' ? `መለያ ፍጠርና ${bonusAmount} ብር ተቀበል` : `REGISTER & CLAIM ${bonusAmount} ETB`}
             </span>
           )}
         </button>
 
-        {/* 6. Exact 3-Column Trust Bar */}
+        {/* 7. Exact 3-Column Trust Bar */}
         <div
           style={{
-            marginTop: '16px',
-            paddingTop: '12px',
+            marginTop: '14px',
+            paddingTop: '10px',
             borderTop: '1px solid #f1f5f9',
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
@@ -383,47 +402,44 @@ export const TelegramRegisterModal: React.FC<TelegramRegisterModalProps> = ({
             textAlign: 'left'
           }}
         >
-          {/* Column 1 */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-            <span style={{ color: '#16a34a', fontSize: '13px', marginTop: '1px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '5px' }}>
+            <span style={{ color: '#dc2626', fontSize: '12px', marginTop: '1px' }}>
               <i className="fa-solid fa-circle-check"></i>
             </span>
             <div>
-              <div style={{ fontSize: '10.5px', fontWeight: '800', color: '#0f172a' }}>
+              <div style={{ fontSize: '10px', fontWeight: '800', color: '#0f172a' }}>
                 {lang === 'am' ? '100% ነፃ' : '100% Free'}
               </div>
-              <div style={{ fontSize: '9px', color: '#64748b' }}>
-                {lang === 'am' ? 'ምንም ድብቅ ክፍያ የለም' : 'No hidden fees'}
+              <div style={{ fontSize: '8.5px', color: '#64748b' }}>
+                {lang === 'am' ? 'ምንም ክፍያ የለም' : 'No fees'}
               </div>
             </div>
           </div>
 
-          {/* Column 2 */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', borderLeft: '1px solid #f1f5f9', paddingLeft: '6px' }}>
-            <span style={{ color: '#eab308', fontSize: '13px', marginTop: '1px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', borderLeft: '1px solid #f1f5f9', paddingLeft: '5px' }}>
+            <span style={{ color: '#f59e0b', fontSize: '12px', marginTop: '1px' }}>
               <i className="fa-solid fa-bolt"></i>
             </span>
             <div>
-              <div style={{ fontSize: '10.5px', fontWeight: '800', color: '#0f172a' }}>
-                {lang === 'am' ? 'ፈጣን ክፍያ' : 'Instant Payouts'}
+              <div style={{ fontSize: '10px', fontWeight: '800', color: '#0f172a' }}>
+                {lang === 'am' ? 'ፈጣን ክፍያ' : 'Instant Cash'}
               </div>
-              <div style={{ fontSize: '9px', color: '#64748b' }}>
-                {lang === 'am' ? 'በሰከንዶች በቴሌብር' : 'Telebirr in seconds'}
+              <div style={{ fontSize: '8.5px', color: '#64748b' }}>
+                {lang === 'am' ? 'በቴሌብር' : 'Telebirr'}
               </div>
             </div>
           </div>
 
-          {/* Column 3 */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', borderLeft: '1px solid #f1f5f9', paddingLeft: '6px' }}>
-            <span style={{ color: '#7c3aed', fontSize: '13px', marginTop: '1px' }}>
-              <i className="fa-solid fa-lock"></i>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', borderLeft: '1px solid #f1f5f9', paddingLeft: '5px' }}>
+            <span style={{ color: '#dc2626', fontSize: '12px', marginTop: '1px' }}>
+              <i className="fa-solid fa-shield-halved"></i>
             </span>
             <div>
-              <div style={{ fontSize: '10.5px', fontWeight: '800', color: '#0f172a' }}>
-                {lang === 'am' ? 'ደህንነቱ የተጠበቀ' : 'Secure & Safe'}
+              <div style={{ fontSize: '10px', fontWeight: '800', color: '#0f172a' }}>
+                {lang === 'am' ? 'የተጠበቀ' : 'Secure'}
               </div>
-              <div style={{ fontSize: '9px', color: '#64748b' }}>
-                {lang === 'am' ? 'መረጃዎ የተጠበቀ ነው' : 'Your data is protected'}
+              <div style={{ fontSize: '8.5px', color: '#64748b' }}>
+                {lang === 'am' ? '100% ህጋዊ' : 'Protected'}
               </div>
             </div>
           </div>

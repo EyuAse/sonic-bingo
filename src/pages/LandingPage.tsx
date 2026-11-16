@@ -72,11 +72,11 @@ export const LandingPage: React.FC = () => {
   };
 
   // When user confirms registration inside TelegramRegisterModal
-  const handleConfirmRegistration = async () => {
+  const handleConfirmRegistration = async (verifiedPhone?: string) => {
     setIsLoading(true);
     try {
       const activeTg = telegramUser || (typeof window !== 'undefined' ? (window as any)?.Telegram?.WebApp?.initDataUnsafe?.user : undefined);
-      const { user, isNewUser } = await loginWithTelegram(activeTg || undefined);
+      const { user, isNewUser } = await loginWithTelegram(activeTg || undefined, verifiedPhone);
 
       setShowRegisterModal(false);
 

@@ -24,8 +24,8 @@
 
 .eth-phone-input-box:focus-within {
   background: #ffffff;
-  border-color: #eab308;
-  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.2);
+  border-color: #e11d48;
+  box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.2);
 }
 
 .eth-phone-input-box.valid {
@@ -157,8 +157,8 @@
 }
 
 .btn-tg-one-click-cta.is-new-register {
-  background: linear-gradient(135deg, #0284c7 0%, #2563eb 50%, #7c3aed 100%);
-  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
+  background: linear-gradient(135deg, #e11d48 0%, #dc2626 50%, #991b1b 100%);
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.45);
 }
 
 .btn-tg-one-click-cta.is-new-register .tg-btn-free-badge {

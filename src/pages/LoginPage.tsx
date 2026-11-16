@@ -111,7 +111,7 @@ export const LoginPage: React.FC = () => {
 
           <div className="auth-fresh-card">
             <h1 className="auth-card-title">
-              {t('auth.loginTitle')} <span className="title-lemon">🍋</span>
+              {t('auth.loginTitle')} <span className="title-lemon">👑</span>
             </h1>
             <p className="auth-card-sub">{t('auth.loginSub')}</p>
 
