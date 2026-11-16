@@ -194,13 +194,7 @@ export const LandingPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Under-Bonus Free Cartela Subtext */}
-            <div className="hero-vip-cartela-sub">
-              <span className="vip-ticket-emoji">🎟️</span>
-              <span>{lang === 'am' ? '+ 1 ነፃ ካርቴላ • 0 ተቀማጭ ያስፈልጋል' : '+ 1 Free Cartela • 0 Deposit Needed'}</span>
-            </div>
-
-            {/* Glowing 24k Gold 1-Click Action Button */}
+            {/* Glowing Sonic Crimson 1-Click Action Button */}
             <button
               type="button"
               className="btn-hero-vip-cta"
