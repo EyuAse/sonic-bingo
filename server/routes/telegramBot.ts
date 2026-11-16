@@ -354,7 +354,7 @@ router.get('/active-promo', async (_req, res) => {
     return res.json({
       success: true,
       promo: {
-        title: settingsMap.get('telegram_active_promo_title') || 'Weekend 10,000 ETB Mega Pot Tournament! 🍋🏆',
+        title: settingsMap.get('telegram_active_promo_title') || 'Weekend 10,000 ETB Mega Pot Tournament! 👑🏆',
         messageText: settingsMap.get('telegram_active_promo_text') || (
           '🎉 <b>ታላቅ የሳምንቱ መጨረሻ የቢንጎ ውድድር!</b>\n\n' +
           '💰 አጠቃላይ የሽልማት ፈንድ: <b>10,000 ETB!</b>\n' +

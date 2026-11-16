@@ -305,7 +305,7 @@ export class TelegramBotService {
   public async setMyCommands(customCommands?: Array<{ command: string; description: string }>): Promise<{ success: boolean; message: string }> {
     const commands = customCommands || [
       { command: 'play', description: '🎮 Launch Sonic Bingo Mini App' },
-      { command: 'start', description: '🍋 Welcome & 50 ETB Bonus Gift' },
+      { command: 'start', description: '👑 Welcome & 50 ETB Bonus Gift' },
       { command: 'link_phone', description: '📱 Link Verified Phone Number' },
       { command: 'bonus', description: '🎁 Claim 50 ETB Welcome Bonus' },
       { command: 'promo', description: '📢 View Active Promotions & Offers' },
@@ -1429,7 +1429,7 @@ export class TelegramBotService {
       }
 
       const bonusText =
-        `🎁 <b>የአዲስ ደንበኛ 50 ETB ነፃ ቦነስ!</b> 🍋\n` +
+        `🎁 <b>የአዲስ ደንበኛ 50 ETB ነፃ ቦነስ!</b> 👑\n` +
         `<b>50 ETB Welcome Bonus for New Players!</b>\n\n` +
         `ካርቴላ ለመቁረጥ እና ለማሸነፍ አሁኑኑ ጨዋታውን ይክፈቱ!\n` +
         `Open the game below to claim your free welcome bonus cartela! 👇`;

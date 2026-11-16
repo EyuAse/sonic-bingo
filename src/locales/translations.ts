@@ -94,7 +94,7 @@ export const translations = {
       fastKeno: 'Fast Keno',
       aviator: 'Aviator',
       chickenRoad: 'Chicken Road',
-      moreFunBanner: 'More fun, More wins! 🍋'
+      moreFunBanner: 'More fun, More wins! 🔥'
     },
     bingo: {
       masterBoard: 'MASTER BOARD',
@@ -385,7 +385,7 @@ export const translations = {
       fastKeno: 'ፈጣን ኬኖ',
       aviator: 'አቪዬተር',
       chickenRoad: 'ቺከን ሮድ',
-      moreFunBanner: 'ተጨማሪ ደስታ፣ ተጨማሪ አሸናፊነት! 🍋'
+      moreFunBanner: 'ተጨማሪ ደስታ፣ ተጨማሪ አሸናፊነት! 🔥'
     },
     bingo: {
       masterBoard: 'የጨዋታ ሰሌዳ',
