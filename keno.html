@@ -197,34 +197,48 @@
 
         .ball {
             position: relative;
-            isolation: isolate;
             width: 34px;
             height: 34px;
             border-radius: 50%;
-            display: inline-grid;
-            place-items: center;
-            font-family: "Roboto Condensed", "Roboto", sans-serif;
-            font-weight: 700;
-            font-size: 16px;
-            color: #f4f8ff;
-            background: radial-gradient(circle at 50% 88%, #1f4f82 0, #0e2542 30%, #08111f 62%, #04070e 100%);
-            border: 1px solid rgba(130, 180, 220, .4);
-            box-shadow: 0 3px 8px #000b, inset 0 0 6px rgba(90, 160, 230, .4), inset 0 -4px 7px rgba(50, 120, 200, .35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-family: "Roboto Condensed", "Roboto", -apple-system, sans-serif;
+            background: radial-gradient(circle at 50% 88%, #1f4f82 0%, #0e2542 32%, #08111f 65%, #04070e 100%);
+            border: 1px solid rgba(130, 180, 220, 0.45);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.7), inset 0 0 6px rgba(90, 160, 230, 0.4), inset 0 -4px 7px rgba(50, 120, 200, 0.35);
             flex: none;
-            text-shadow: 0 1px 2px #000
+            overflow: hidden;
+        }
+
+        .ball.hidden,
+        #big.hidden {
+            display: none !important;
         }
 
         .ball::before {
             content: "";
             position: absolute;
-            z-index: -1;
             left: 17%;
             right: 17%;
             top: 5%;
-            height: 42%;
+            height: 40%;
             border-radius: 50% 50% 45% 45%/62% 62% 38% 38%;
-            background: linear-gradient(rgba(255, 255, 255, .5), rgba(255, 255, 255, .1) 65%, rgba(255, 255, 255, 0));
-            pointer-events: none
+            background: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.1) 65%, transparent);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .ball-num {
+            position: relative;
+            z-index: 5;
+            color: #ffffff !important;
+            font-weight: 900 !important;
+            font-size: 15px;
+            line-height: 1 !important;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 2px #000;
+            pointer-events: none;
         }
 
         .ball.hit {
@@ -347,21 +361,29 @@
         }
 
         .glow {
-            width: 82px;
-            height: 82px;
+            width: 90px;
+            height: 76px;
             margin: 0 auto;
             border-radius: 50%;
-            display: grid;
-            place-items: center;
-            box-shadow: 0 0 0 12px rgba(61, 220, 151, .05), 0 0 0 13px rgba(255, 255, 255, .06), 0 0 0 32px rgba(61, 220, 151, .03), 0 0 0 33px rgba(255, 255, 255, .05), 0 0 0 54px rgba(61, 220, 151, .015), 0 0 0 55px rgba(255, 255, 255, .04)
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 0 0 12px rgba(61, 220, 151, .05), 0 0 0 13px rgba(255, 255, 255, .06), 0 0 0 32px rgba(61, 220, 151, .03), 0 0 0 33px rgba(255, 255, 255, .05), 0 0 0 54px rgba(61, 220, 151, .015), 0 0 0 55px rgba(255, 255, 255, .04);
         }
 
         .ball.big {
             width: 66px;
             height: 66px;
-            font-size: 42px;
-            border: 1px solid rgba(140, 190, 230, .45);
-            box-shadow: 0 0 26px #3ddc9744, 0 5px 14px #000c, inset 0 0 10px rgba(90, 160, 230, .45), inset 0 -8px 12px rgba(50, 120, 200, .35)
+            border: 2px solid rgba(140, 190, 230, 0.5);
+            box-shadow: 0 0 26px rgba(61, 220, 151, 0.35), 0 6px 16px rgba(0, 0, 0, 0.8), inset 0 0 12px rgba(90, 160, 230, 0.5), inset 0 -8px 12px rgba(50, 120, 200, 0.35);
+        }
+
+        .ball.big .ball-num {
+            font-size: 34px !important;
+            font-weight: 900 !important;
+            color: #ffffff !important;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.8);
         }
 
         .ball.big.hit {
@@ -369,32 +391,70 @@
             box-shadow: 0 0 28px #3ddc97cc, 0 0 10px #3ddc97, 0 5px 14px #000c, inset 0 0 10px rgba(120, 230, 170, .5)
         }
 
-        .drawn {
-            display: flex;
-            flex-wrap: wrap-reverse;
-            gap: 8px 6px;
-            justify-content: flex-start;
-            margin-top: 16px;
-            padding: 0 8px
+        @keyframes ballEmergePop {
+            0% {
+                transform: translateY(36px) scale(0.3);
+                opacity: 0;
+                filter: blur(2px);
+            }
+            60% {
+                transform: translateY(-6px) scale(1.08);
+                opacity: 1;
+                filter: blur(0);
+            }
+            85% {
+                transform: translateY(2px) scale(0.98);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .ball.emerging {
+            animation: ballEmergePop 0.32s cubic-bezier(0.18, 0.89, 0.32, 1.25) forwards;
         }
 
         .drawn {
-            gap: 8px 6px
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 6px 4px;
+            justify-content: center;
+            margin-top: 14px;
+            padding: 0 6px;
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 380px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
-        .drawn .ball {
-            width: calc((100% - 54px)/10 - .5px);
-            max-width: 34px;
+        .drawn .ball,
+        .drawn .ball-slot {
+            width: 100%;
+            max-width: 31px;
             height: auto;
             aspect-ratio: 1;
-            font-size: 13px
+            margin: 0 auto;
+        }
+
+        .drawn .ball-slot {
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .drawn .ball .ball-num {
+            font-size: 13px !important;
+            font-weight: 800 !important;
+            color: #ffffff !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
         }
 
         .drawn .ball.hit {
             background: radial-gradient(circle at 50% 88%, #2f9b66 0, #155238 38%, #0a2a1d 75%, #06160f 100%);
             border-color: rgba(120, 230, 170, .3);
             box-shadow: 0 3px 8px #000b;
-            text-shadow: 0 1px 2px #000
         }
 
         .drawn .ball.hit::before {
@@ -529,6 +589,27 @@
             background: #3b6a57;
             color: #93a69e;
             cursor: not-allowed
+        }
+
+        .bet.accepted,
+        .bet.accepted:disabled {
+            background: linear-gradient(180deg, #417756 0%, #284b36 100%) !important;
+            color: #ffffff !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 22px !important;
+            font-weight: 800 !important;
+            letter-spacing: 1px !important;
+            cursor: default !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+            opacity: 1 !important;
+            border-radius: 5px !important;
+        }
+
+        .bet.accepted svg {
+            margin-right: 10px;
+            flex: none;
         }
 
         nav {
@@ -903,10 +984,49 @@
         }
 
         .tk {
-            background: #222c2b;
+            background: #1c2524;
             border-radius: 6px;
             padding: 8px;
-            margin-bottom: 8px
+            margin-bottom: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all .25s ease;
+        }
+
+        .tk.has-hit {
+            background: linear-gradient(180deg, #24523e 0%, #183b2c 100%) !important;
+            border: 1.5px solid rgba(61, 220, 151, 0.65) !important;
+            box-shadow: 0 0 18px rgba(61, 220, 151, 0.35), inset 0 0 12px rgba(61, 220, 151, 0.12) !important;
+        }
+
+        .tk.has-hit .slots span {
+            background: #132e22;
+        }
+
+        .tk.has-hit .slots span.f {
+            background: #27493a;
+            color: #ffffff;
+        }
+
+        .tk.has-hit .slots span.h {
+            background: #3fd08a !important;
+            color: #ffffff !important;
+            font-weight: 900 !important;
+            box-shadow: 0 0 10px rgba(63, 208, 138, 0.7) !important;
+        }
+
+        .tk.has-hit .bt div {
+            background: #10261c;
+            color: #e0ede8;
+        }
+
+        .tk.has-hit .bt div:last-child {
+            background: #10261c;
+        }
+
+        .tk.has-hit .bt div:last-child.win {
+            color: #3ddc97 !important;
+            font-weight: 900 !important;
+            text-shadow: 0 0 8px rgba(61, 220, 151, 0.5);
         }
 
         .tk .id {
@@ -938,8 +1058,16 @@
         }
 
         .slots span.h {
-            background: #52c280;
-            color: #fff
+            background: #3fd08a !important;
+            color: #ffffff !important;
+            font-weight: 900 !important;
+            box-shadow: 0 0 8px rgba(63, 208, 138, 0.55);
+        }
+
+        .slots span.h-other {
+            background: #23513a !important;
+            color: #bbf0d8 !important;
+            font-weight: 700 !important;
         }
 
         .tk .bt {
@@ -977,6 +1105,50 @@
 
         .lose {
             color: var(--r) !important
+        }
+
+        /* Clean In-Stage "YOU WIN" Banner (Reference: media_1794468727586_c4c1b39b.png) */
+        .win-stage-banner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            animation: winStagePop 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            z-index: 5;
+        }
+
+        @keyframes winStagePop {
+            from {
+                opacity: 0;
+                transform: scale(0.85);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .win-stage-title {
+            font-family: "Roboto Condensed", "Roboto", -apple-system, sans-serif;
+            font-size: 19px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            color: #ffffff;
+            text-transform: uppercase;
+            text-shadow: 0 2px 6px rgba(0, 0, 0, 0.95);
+            line-height: 1;
+            margin-bottom: 2px;
+        }
+
+        .win-stage-val {
+            font-family: "Roboto Condensed", "Roboto", -apple-system, sans-serif;
+            font-size: 40px;
+            font-weight: 900;
+            color: #3ddc97;
+            line-height: 1;
+            text-shadow: 0 0 22px rgba(61, 220, 151, 0.7), 0 3px 8px rgba(0, 0, 0, 0.95);
         }
 
         .empty {
@@ -1548,49 +1720,59 @@
         }
 
         .rules-fairness-wrap {
-            padding: 16px 8px;
-            text-align: center;
-        }
-
-        .fairness-content-box {
-            max-width: 520px;
-            margin: 0 auto;
-            font-size: 13px;
-            color: #cbd5e1;
-            line-height: 1.5;
+            padding: 8px 4px 20px;
             text-align: left;
         }
 
-        .fairness-spec-card {
-            background: #0b1312;
-            border: 1px solid #1b2926;
-            border-radius: 8px;
-            padding: 12px 14px;
-            margin-top: 14px;
+        .fairness-shield-icon {
             display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .fair-spec-row {
-            display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
+            margin: 4px auto 10px;
+        }
+
+        .fairness-main-title {
+            font-size: 15px;
+            font-weight: 800;
+            color: #ffffff;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0 0 16px;
+        }
+
+        .fairness-content-box {
+            max-width: 620px;
+            margin: 0 auto;
             font-size: 12.5px;
-            border-bottom: 1px solid #14201d;
-            padding-bottom: 6px;
+            color: #cfd6d3;
+            line-height: 1.55;
+            text-align: left;
         }
 
-        .fair-spec-row:last-child {
-            border-bottom: none;
-            padding-bottom: 0;
+        .fairness-p {
+            margin: 0 0 14px;
+            color: #cfd6d3;
+            line-height: 1.55;
+            font-size: 12.5px;
         }
 
-        .fair-spec-row span {
-            color: #7d8f8b;
+        .fairness-hash-code,
+        .fairness-code-val {
+            color: #ffffff;
+            font-family: inherit;
+            word-break: break-all;
         }
 
-        .fair-spec-row strong {
+        .fairness-list {
+            margin: 6px 0 10px 22px;
+            padding: 0;
+            color: #e2e8e5;
+        }
+
+        .fairness-list li {
+            margin-bottom: 2px;
+        }
             color: #3ddc97;
             font-weight: 700;
         }
@@ -1629,13 +1811,12 @@
                     </g>
                 </svg>
                 <div class="slides" id="slides">
-                    <div class="sl" id="betSl" style="display:none"></div>
                     <div class="sl" id="mainSl">
                         <div id="pickView">
-                            <div class="help">?</div>
-                            <div class="mini"><span class="ball">80</span><span class="ball">10</span></div>
+                            <div class="help" onclick="openRulesModal('rules')">?</div>
+                            <div class="mini"><span class="ball"><span class="ball-num">80</span></span><span class="ball"><span class="ball-num">10</span></span></div>
                             <div class="pick">
-                                <div class="n" id="pn">0</div>
+                                <div class="n" id="pn">1</div>
                                 <div>
                                     <h2>Choose 10 numbers</h2>
                                     <p>From 1 to 80</p>
@@ -1643,17 +1824,23 @@
                             </div>
                         </div>
                         <div id="infoView" style="display:none">
-                            <div class="help">?</div>
+                            <div class="help" onclick="openRulesModal('rules')">?</div>
                             <div class="pw"><b id="iv1">1</b> Possible win <em id="iw">0</em></div>
                             <div class="odds" id="odds"></div>
                             <div class="slotsrow" id="sr"></div>
                         </div>
                     </div>
                 </div>
-                <div class="pgd" id="pgd"><i></i><i class="on"></i></div>
+                <div class="pgd" id="pgd" style="display:none"></div>
                 <div class="drawwrap" id="drawView">
                     <div class="count"><span id="cnt">0</span><s>/</s>20</div>
-                    <div class="glow"><span class="ball big" id="big">–</span></div>
+                    <div class="glow">
+                        <span class="ball big" id="big"><span class="ball-num">–</span></span>
+                        <div class="win-stage-banner" id="winStageBanner" style="display:none">
+                            <div class="win-stage-title">YOU WIN</div>
+                            <div class="win-stage-val" id="winStageVal">0</div>
+                        </div>
+                    </div>
                     <div class="drawn" id="drawn"></div>
                 </div>
             </div>
@@ -1695,6 +1882,7 @@
         </aside>
     </div>
     <div class="toast" id="toast"></div>
+
 
     <!-- ── RULES & FAIRNESS MODAL (Reference: media_1794424834337_dccf29da.jpg) ── -->
     <div class="rules-modal-backdrop" id="rulesModal">
@@ -1874,32 +2062,45 @@
                 <!-- Tab 2: FAIRNESS PANE -->
                 <div class="rules-tab-pane" id="paneFairness" style="display: none;">
                     <div class="rules-fairness-wrap">
-                        <div class="fair-placeholder"></div>
+                        <div class="fairness-shield-icon">
+                            <svg viewBox="0 0 48 54" width="46" height="52" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M24 2L5 9.5V25C5 38 13.2 49.8 24 53C34.8 49.8 43 38 43 25V9.5L24 2Z" fill="url(#fairShieldGrad)" stroke="#4fe6a3" stroke-width="1.8" stroke-linejoin="round"/>
+                                <path d="M24 4.5L7.5 11.2V25C7.5 36.5 14.8 47 24 49.8C33.2 47 40.5 36.5 40.5 25V11.2L24 4.5Z" fill="url(#fairInnerGrad)" opacity="0.6"/>
+                                <path d="M16 26.5L21.5 32L32 19.5" stroke="#ffffff" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                <defs>
+                                    <linearGradient id="fairShieldGrad" x1="24" y1="2" x2="24" y2="53" gradientUnits="userSpaceOnUse">
+                                        <stop stop-color="#3ddc97"/>
+                                        <stop offset="0.3" stop-color="#1b7348"/>
+                                        <stop offset="0.7" stop-color="#0e4329"/>
+                                        <stop offset="1" stop-color="#072214"/>
+                                    </linearGradient>
+                                    <linearGradient id="fairInnerGrad" x1="24" y1="4.5" x2="24" y2="49.8" gradientUnits="userSpaceOnUse">
+                                        <stop stop-color="#55f2ab" stop-opacity="0.5"/>
+                                        <stop offset="0.5" stop-color="#145233" stop-opacity="0.2"/>
+                                        <stop offset="1" stop-color="#051a0f" stop-opacity="0"/>
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                        <h3 class="fairness-main-title">ABOUT FAIRNESS</h3>
                         <div class="fairness-content-box">
-                            <p style="margin: 0 0 10px;">
-                                Fast Keno operates on a certified cryptographic <strong>Random Number Generator (RNG)</strong>, ensuring 100% unbiased, mathematically authentic, and tamper-proof ball draws for every round.
-                            </p>
-                            <p style="margin: 0 0 14px;">
-                                Each round's winning numbers are generated using industrial-grade SHA-256 hash seeds. Neither players nor server administrators can predict or alter the outcome once bets are locked.
-                            </p>
-                            <div class="fairness-spec-card">
-                                <div class="fair-spec-row">
-                                    <span>RNG Certification:</span>
-                                    <strong>ATLAS-V Global Standard V2.4</strong>
-                                </div>
-                                <div class="fair-spec-row">
-                                    <span>Mathematical RTP:</span>
-                                    <strong>96.8% – 97.4%</strong>
-                                </div>
-                                <div class="fair-spec-row">
-                                    <span>Verification Algorithm:</span>
-                                    <strong>Cryptographic SHA-256 HMAC</strong>
-                                </div>
-                                <div class="fair-spec-row">
-                                    <span>Audit Status:</span>
-                                    <strong>Verified & Compliant ✓</strong>
-                                </div>
+                            <p class="fairness-p">Before the start of a round, the players are provided with a “Hash Code*” - an encrypted text combination “Key*”. Here are the round outcome numbers.</p>
+                            <p class="fairness-p">The outcome of the round is determined not at the moment of the game, but in advance for current round, and is given to the players in coded form.</p>
+                            <p class="fairness-p">For example, “Hash (Hash) code *” <span class="fairness-hash-code">3586ED7EECC3AEA4A6AC4A359D96E5CF30BBC47E24ED9E030066D7C7DE6C82B1F1376122E35B5165342F27243E1BE5B46B31F2A5D97E6DE26E0E4A6202DF3CDD</span>.</p>
+                            <p class="fairness-p">After the end of a round, the players are provided with a “Key*” and an additional input parameter for getting the “Hash Code*” - “Salt*” Using them, every player can copy and encrypt this combination to see that the encrypted “Key * ” corresponds to the “Hash code *” previously determined by the system. This ensures that the outcome of the game is determined not at the moment of the round, but previously, before playing a round.</p>
+                            <p class="fairness-p">What is “Salt*” - it is a random sequence of letters and numbers, For instance: <span class="fairness-code-val">e20d4c76c654</span>.</p>
+                            <div class="fairness-p">
+                                What is “Key*” - a text combination of four parameters
+                                <ol class="fairness-list">
+                                    <li>Round Id</li>
+                                    <li>The outcome numbers</li>
+                                    <li>Wording “Keno”</li>
+                                    <li>A random sequence of letters and numbers</li>
+                                </ol>
+                                After the end of a game, the player will see the Key in his betting history as follows: Round ID (for example, 3013185); the outcome numbers (for instance: numbers 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20); the name of the game - Keno, and a random sequence of letters and numbers - ca50e5af-9fd6- 46fc-bafa-5cfa21d2602e, followed by the “Key*”, which in this case is - <span class="fairness-code-val">3013185_numbers_1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20_Keno_ca50e5af-9fd6-46fc-bafa-5cfa21d2602e</span>.
                             </div>
+                            <p class="fairness-p">If we encrypt the “Key*” via the “Salt*” (for example, 2b4545ed5a) using the SHA512 generator, we'll get the defined Hash code. <span class="fairness-hash-code">3586ED7EECC3AEA4A6AC4A359D96E5CF30BBC47E24ED9E030066D7C7DE6C82B1F1376122E35B5165342F27243E1BE5B46B31F2A5D97E6DE26E0E4A6202DF3CDD</span>.</p>
+                            <p class="fairness-p">To get a hash code you can click on check icon in Result section and perform the check. You can get the encryption “Key*” and “Hash Code*” below or check on any online server that has a generator SHA512 With Salt.</p>
                         </div>
                     </div>
                 </div>
@@ -1907,11 +2108,102 @@
         </div>
     </div>
     <script>
-        const PAY = { 1: { 1: 3 }, 2: { 2: 9 }, 3: { 2: 2, 3: 25 }, 4: { 2: 1, 3: 5, 4: 60 }, 5: { 2: 1, 3: 3, 4: 30, 5: 150 }, 6: { 3: 1, 4: 5, 5: 40, 6: 400 }, 7: { 4: 3, 5: 12, 6: 100, 7: 900 }, 8: { 5: 6, 6: 40, 7: 300, 8: 1500 }, 9: { 5: 3, 6: 15, 7: 90, 8: 600, 9: 3000 }, 10: { 5: 2, 6: 8, 7: 40, 8: 200, 9: 1000, 10: 5000 } };
+        const PAY = {
+            1: { 1: 3.5 },
+            2: { 1: 1.0, 2: 10.0 }, // Catch 1 = 1x WIN (Stake return)
+            3: { 2: 2.0, 3: 50.0 },
+            4: { 2: 1.5, 3: 10.0, 4: 80.0 },
+            5: { 2: 1.0, 3: 3.0, 4: 30.0, 5: 150.0 }, // Catch 2 = 1x WIN (Stake return)
+            6: { 3: 2.0, 4: 15.0, 5: 60.0, 6: 500.0 },
+            7: { 0: 1.0, 3: 2.0, 4: 4.0, 5: 20.0, 6: 80.0, 7: 1000.0 }, // Catch 0 = 1x WIN (Stake return)
+            8: { 0: 1.0, 4: 5.0, 5: 15.0, 6: 50.0, 7: 200.0, 8: 2000.0 }, // Catch 0 = 1x WIN (Stake return)
+            9: { 0: 2.0, 4: 2.0, 5: 10.0, 6: 25.0, 7: 125.0, 8: 1000.0, 9: 5000.0 }, // Catch 0 = 2x WIN
+            10: { 0: 2.0, 5: 5.0, 6: 30.0, 7: 100.0, 8: 300.0, 9: 2000.0, 10: 10000.0 } // Catch 0 = 2x WIN, 10 = 10,000x JACKPOT
+        };
         const $ = s => document.querySelector(s);
-        const ROUND_SECS = 15;
+        const ROUND_SECS = 30;
         let bal = 22.30, amt = 2, sel = new Set(), phase = 'bet', left = ROUND_SECS, drawn = [], tickets = [], history = [], results = [], hot = Array.from({ length: 81 }, (_, i) => i ? 17 + Math.floor(Math.random() * 18) : 0), sortC = false, tab = 'game', round = 1000, fake = [], allCount = 9106;
         const uidN = Math.floor(1e8 + Math.random() * 9e8);
+
+        // Web Audio Synthesizer for Authentic Casino Sound Effects
+        const sndCtx = (() => {
+            let ctx = null;
+            return () => {
+                if (!ctx && (window.AudioContext || window.webkitAudioContext)) {
+                    ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (ctx && ctx.state === 'suspended') ctx.resume();
+                return ctx;
+            };
+        })();
+
+        function playTone(freq, duration, type = 'sine', gainVal = 0.15) {
+            try {
+                const ctx = sndCtx();
+                if (!ctx) return;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playHitChime() {
+            try {
+                playTone(880, 0.18, 'sine', 0.14);
+            } catch (e) {}
+        }
+
+        function playPopSound() {
+            try {
+                playTone(320, 0.08, 'triangle', 0.12);
+            } catch (e) {}
+        }
+
+        function playWinFanfare() {
+            try {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    setTimeout(() => playTone(freq, 0.35, 'triangle', 0.2), idx * 120);
+                });
+            } catch (e) {}
+        }
+
+        function renderOddsRow(k, mult, isLast) {
+            let label = 'x' + mult;
+            let extraStyle = '';
+            if (mult === 1.0) {
+                label = 'x1';
+                extraStyle = 'color:#3ddc97;font-weight:700;';
+            } else if (k === 0 && mult > 1.0) {
+                label = `x${mult}`;
+                extraStyle = 'color:#f5c542;font-weight:800;';
+            } else if (mult >= 100) {
+                extraStyle = 'color:#f5c542;font-weight:800;';
+            }
+            return `<div class="oc${isLast ? ' l' : ''}"><span>${k === 0 ? '0' : k}</span><span style="${extraStyle}">${label}</span></div>`;
+        }
+
+        function getTicketLiveStatus(x) {
+            const hits = x.n.filter(v => drawn.includes(v));
+            if (phase !== 'settlement') {
+                return { status: 'Waiting', cls: 'w', hits };
+            }
+            // Settlement phase
+            if (x.w !== undefined) {
+                if (x.w > 0) {
+                    return { status: (x.w % 1 === 0 ? x.w : x.w.toFixed(2)), cls: 'win', hits };
+                }
+                return { status: '0', cls: 'lose', hits };
+            }
+            return { status: 'Waiting', cls: 'w', hits };
+        }
         const SHD = "data:image/svg+xml;base64,PHN2ZyBpZD0iR3JvdXBfMTYwMSIgZGF0YS1uYW1lPSJHcm91cCAxNjAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMTMiIGhlaWdodD0iMTciIHZpZXdCb3g9IjAgMCAxMyAxNyI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImxpbmVhci1ncmFkaWVudCIgeDE9IjAuNSIgeDI9IjAuNSIgeTI9IjEiIGdyYWRpZW50VW5pdHM9Im9iamVjdEJvdW5kaW5nQm94Ij4KICAgICAgPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjNTFjNmE2Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzE3Njk0ZCIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHBhdGggaWQ9IlBhdGhfODMiIGRhdGEtbmFtZT0iUGF0aCA4MyIgZD0iTTEyLjQ4MywxLjgxOGgwYTEuNjIzLDEuNjIzLDAsMCwwLS4xNTgtLjE1NWwtLjAxNC0uMDE0Yy0uMDU3LS4wNDItLjEtLjA4NS0uMTU4LS4xMjdsLS4wMTQtLjAxNGMtLjA1Ny0uMDQyLS4xMjktLjA4NS0uMTg3LS4xMjdsLS4wMTQtLjAxNC0uMTcyLS4wODVjLS4wMTQtLjAxNC0uMDQzLS4wMTQtLjA1Ny0uMDI4QS43MDcuNzA3LDAsMCwwLDExLjU1LDEuMmMtLjAxNC0uMDE0LS4wNDMtLjAxNC0uMDU3LS4wMjhhMS4yMTIsMS4yMTIsMCwwLDAtLjIxNS0uMDU2TDYuNSwwLDEuNzUsMS4xYy0uMDcyLjAxNC0uMTQzLjA0Mi0uMjE1LjA1NmEuMTEuMTEsMCwwLDAtLjA1Ny4wMjgsMS43LDEuNywwLDAsMC0uMTU4LjA3Yy0uMDI5LDAtLjA0My4wMTQtLjA1Ny4wMTRhMS44MzcsMS44MzcsMCwwLDAtLjE3Mi4xbC0uMDE0LjAxNGEyLjEsMi4xLDAsMCwwLS4xODcuMTI3bC0uMDE0LjAxNGExLjUyLDEuNTIsMCwwLDAtLjE1OC4xMjdMLjcsMS42NjNhMS42MjMsMS42MjMsMCwwLDAtLjE1OC4xNTVoMEExLjg3MiwxLjg3MiwwLDAsMCwwLDMuMTQzdjcuMTE5QzAsMTMuNDksNi41LDE3LDYuNSwxN2gwUzEzLDEzLjQ5LDEzLDEwLjI2MlYzLjEyOUExLjksMS45LDAsMCwwLDEyLjQ4MywxLjgxOFoiIGZpbGw9IiNlMmUyZTIiLz4KICA8cGF0aCBpZD0iUGF0aF84NSIgZGF0YS1uYW1lPSJQYXRoIDg1IiBkPSJNNi43NTgsMTIuMDM4LDEuMjc3LDcuNDg1LDMuMjI4LDUuMjMsNi40NTcsNy45MDhsNS43MjUtNi4zNzFhMi4yOCwyLjI4LDAsMCwwLS45MTgtLjQyM0w2LjUsMCwxLjc1LDEuMUEyLjE2MSwyLjE2MSwwLDAsMCwwLDMuMTQzdjcuMWMwLDMuMjI4LDYuNSw2LjczOCw2LjUsNi43MzhoMHM2LjUtMy41MSw2LjUtNi43MzhWNS4wNzRaIiBmaWxsPSJ1cmwoI2xpbmVhci1ncmFkaWVudCkiLz4KPC9zdmc+Cg==", ATL = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjwhLS0gR2VuZXJhdG9yOiBBZG9iZSBJbGx1c3RyYXRvciAyNi41LjAsIFNWRyBFeHBvcnQgUGx1Zy1JbiAuIFNWRyBWZXJzaW9uOiA2LjAwIEJ1aWxkIDApICAtLT4NCjxzdmcgdmVyc2lvbj0iMS4xIiBpZD0iTGF5ZXJfMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgeD0iMHB4IiB5PSIwcHgiDQoJIHdpZHRoPSI0MDBweCIgaGVpZ2h0PSIxMDNweCIgdmlld0JveD0iMCAwIDQwMCAxMDMiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDQwMCAxMDM7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4NCjxzdHlsZSB0eXBlPSJ0ZXh0L2NzcyI+DQoJLnN0MHtmaWxsOiNGRkZGRkY7fQ0KPC9zdHlsZT4NCjxnPg0KCTxnPg0KCQk8Zz4NCgkJCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0wLjUsNzAuNUwzNS40LDEuNGgxOC41bDM0LjcsNjkuMkg2N0w0OC41LDM0LjRjLTAuOC0xLjYtMS41LTMtMi4xLTQuNGMtMC42LTEuMy0xLjItMi43LTEuNi0zLjkNCgkJCQljLTAuNS0xLjItMC45LTIuNS0xLjMtMy42Yy0wLjQtMS4yLTAuOC0yLjMtMS4xLTMuNGg0LjNjLTAuMywxLjItMC43LDIuNC0xLjEsMy42Yy0wLjQsMS4yLTAuOSwyLjUtMS40LDMuNw0KCQkJCWMtMC41LDEuMy0xLjEsMi41LTEuNywzLjljLTAuNiwxLjMtMS4zLDIuNy0yLDQuMUwyMS43LDcwLjVIMC41eiIvPg0KCQkJPHBhdGggY2xhc3M9InN0MCIgZD0iTTg3LjMsNzAuNXYtNTFINjguNUw1OC45LDEuNGg2OC43djE4LjJoLTE4Ljl2NTFMODcuMyw3MC41TDg3LjMsNzAuNXoiLz4NCgkJCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0xNjYsNDguN2wyNC44LTQ3LjNoMTguNWwzNC44LDY5LjJoLTIxLjZsLTE4LjYtMzYuMmMtMC44LTEuNi0xLjUtMy0yLjEtNC40Yy0wLjYtMS4zLTEuMi0yLjctMS42LTMuOQ0KCQkJCWMtMC41LTEuMi0wLjktMi41LTEuMy0zLjZjLTAuNC0xLjItMC44LTIuMy0xLjEtMy40aDQuM2MtMC4zLDEuMi0wLjcsMi40LTEuMSwzLjZjLTAuNCwxLjItMC45LDIuNS0xLjQsMy43DQoJCQkJYy0wLjUsMS4zLTEuMSwyLjUtMS43LDMuOWMtMC42LDEuMy0xLjMsMi43LTIsNC4xbC04LjQsMTQuM0gxNjZ6Ii8+DQoJCQk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMzUwLDcwLjVMMzE4LDEuNGgyMS4zbDEzLjEsMjkuNGMwLjQsMC45LDEsMi4yLDEuNywzLjhjMC44LDEuNiwxLjYsMy40LDIuNSw1LjVzMS44LDQuMywyLjYsNi43DQoJCQkJYzAuOSwyLjQsMS42LDQuOCwyLjMsNy40aC00YzEtMy4yLDItNi4xLDMuMS04LjhzMi4yLTUuMywzLjMtNy43YzEuMS0yLjQsMi00LjYsMi44LTYuNmwxMy0yOS43aDIwLjhsLTMxLjIsNjkuMkwzNTAsNzAuNQ0KCQkJCUwzNTAsNzAuNXoiLz4NCgkJCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0zMDYuMiwzMy4yYzAuMiwwLjMsMC40LDAuNiwwLjYsMC44YzIuNCwzLjUsMy43LDgsMy43LDEzLjZjMCwwLjktMC4xLDEuOS0wLjIsMi44aDI0LjJsLTguNi0xNy4yDQoJCQkJQzMyNS45LDMzLjIsMzA2LjIsMzMuMiwzMDYuMiwzMy4yeiIvPg0KCQkJPHBhdGggY2xhc3M9InN0MCIgZD0iTTMwMS45LDM2LjVjLTEuOS0yLjctNC41LTQuOC03LjctNi4yYy0zLjItMS40LTYuOC0yLjQtMTAuNy0yLjljLTMuOS0wLjYtNy45LTEtMTEuOS0xLjMNCgkJCQljLTEuMy0wLjEtMy0wLjItNC45LTAuM2MtMi0wLjEtMy45LTAuMy01LjgtMC41Yy0xLjktMC4zLTMuNS0wLjctNC43LTEuM2MtMS4zLTAuNi0xLjktMS40LTEuOS0yLjVjMC0xLjIsMC42LTIuMSwxLjctMi43DQoJCQkJYzEuMi0wLjYsMi43LTEuMSw0LjctMS4zYzItMC4yLDQuMi0wLjMsNi44LTAuM2MyLjYsMCw1LjUsMC4yLDguNCwwLjZjMywwLjQsNS45LDEsOC44LDEuN3M1LjQsMS42LDcuNiwyLjdsOC44LTE0LjUNCgkJCQljLTIuMS0xLjItNC43LTIuNC03LjgtMy43Yy0zLjEtMS4zLTYuOC0yLjQtMTAuOS0zLjJjLTQuMS0wLjktOC44LTEuMy0xNC0xLjNjLTUsMC05LjgsMC41LTE0LjIsMS41cy04LjQsMi41LTExLjgsNC41DQoJCQkJcy02LjEsNC40LTgsNy40Yy0xLjksMi45LTIuOSw2LjMtMi45LDEwLjFjMCwzLjIsMC44LDYuMSwyLjMsOC42czMuNyw0LjcsNi41LDYuNXM2LjEsMy4yLDEwLDQuM3M4LjIsMS44LDEzLDIuMQ0KCQkJCWMyLjYsMC4yLDUsMC40LDcsMC41YzIuMSwwLjIsMy44LDAuNCw1LjMsMC42YzEuNSwwLjIsMi43LDAuNSwzLjcsMC44czEuNywwLjcsMi4yLDEuMnMwLjcsMS4xLDAuNywxLjhjMCwxLjUtMC43LDIuNi0yLDMuMg0KCQkJCWMtMS4zLDAuNi0yLjksMS00LjYsMS4xYy0xLjgsMC4xLTMuMywwLjItNC42LDAuMmMtNC43LDAtMTAuMi0wLjgtMTYuNC0yLjNjLTUuOS0xLjQtMTEuOC0zLjctMTcuOC02LjlsMTIuMywyNC41DQoJCQkJYzEsMC4yLDIsMC41LDMuMSwwLjdjNS4xLDEsMTAuNiwxLjUsMTYuNywxLjVjNi43LDAsMTIuNy0wLjksMTguMi0yLjhjNS40LTEuOCw5LjctNC41LDEyLjktOC4xYzMuMi0zLjYsNC44LTcuOSw0LjgtMTMNCgkJCQlDMzA0LjgsNDIuOSwzMDMuOCwzOS4yLDMwMS45LDM2LjV6Ii8+DQoJCQk8cG9seWdvbiBjbGFzcz0ic3QwIiBwb2ludHM9IjE1My42LDUyLjMgMTUzLjUsMS40IDEzMi4xLDEuNCAxMzIuMSw3MC41IDE3NS43LDcwLjUgMTg2LDUyLjMgCQkJIi8+DQoJCTwvZz4NCgk8L2c+DQoJPGc+DQoJCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0xMC43LDEwMy41Yy0xLjcsMC0zLjItMC4yLTQuNi0wLjZjLTEuNC0wLjQtMi41LTEtMy41LTEuOGMtMS0wLjgtMS43LTEuOC0yLjMtM2MtMC41LTEuMi0wLjgtMi42LTAuOC00LjINCgkJCWMwLTEuNCwwLjMtMi43LDAuOS0zLjhzMS40LTIuMiwyLjUtM2MxLjEtMC45LDIuMy0xLjUsMy44LTJjMS41LTAuNSwzLjEtMC43LDQuOS0wLjdjMS40LDAsMi44LDAuMSwzLjksMC40DQoJCQljMS4yLDAuMywyLjIsMC43LDMuMSwxLjFjMC45LDAuNCwxLjYsMC45LDIuMiwxLjRsLTMuMywzLjdjLTAuNS0wLjMtMS0wLjYtMS41LTAuOWMtMC42LTAuMy0xLjItMC41LTEuOS0wLjcNCgkJCWMtMC43LTAuMi0xLjUtMC4zLTIuNC0wLjNjLTAuOSwwLTEuNiwwLjEtMi40LDAuNGMtMC43LDAuMi0xLjQsMC42LTEuOSwxYy0wLjUsMC40LTEsMC45LTEuMywxLjVzLTAuNSwxLjItMC41LDEuOQ0KCQkJYzAsMC45LDAuMiwxLjcsMC41LDIuM2MwLjMsMC42LDAuOCwxLjEsMS4zLDEuNGMwLjYsMC4zLDEuMiwwLjYsMS45LDAuN3MxLjUsMC4yLDIuMywwLjJjMC44LDAsMS42LTAuMSwyLjMtMC4yczEuMy0wLjQsMS44LTAuNg0KCQkJYzAuNS0wLjMsMC45LTAuNiwxLjItMWMwLjMtMC40LDAuNC0wLjgsMC40LTEuM1Y5NWwwLjgsMS41aC02Ljl2LTMuOWgxMS40YzAsMC4zLDAsMC42LDAuMSwxYzAsMC40LDAsMC44LDAsMS4xDQoJCQljMCwwLjMsMCwwLjUsMCwwLjZjMCwxLjQtMC4zLDIuNi0wLjgsMy42Yy0wLjUsMS0xLjMsMS45LTIuNCwyLjZjLTEsMC43LTIuMiwxLjItMy43LDEuNUMxNC4xLDEwMy4zLDEyLjUsMTAzLjUsMTAuNywxMDMuNXoiLz4NCgkJPHBhdGggY2xhc3M9InN0MCIgZD0iTTY4LjIsMTAzLjJsOS4yLTE4LjNoNC45bDkuMiwxOC4zaC01LjdsLTQuOS05LjZjLTAuMi0wLjQtMC40LTAuOC0wLjYtMS4yYy0wLjItMC40LTAuMy0wLjctMC40LTENCgkJCWMtMC4xLTAuMy0wLjItMC42LTAuMy0xYy0wLjEtMC4zLTAuMi0wLjYtMC4zLTAuOWgxLjFjLTAuMSwwLjMtMC4yLDAuNi0wLjMsMWMtMC4xLDAuMy0wLjIsMC42LTAuNCwxYy0wLjEsMC4zLTAuMywwLjctMC41LDENCgkJCWMtMC4yLDAuMy0wLjMsMC43LTAuNSwxLjFsLTQuOSw5LjZINjguMnogTTcyLjcsMTAwLjhsMS43LTMuOGgxMWwwLjcsMy44SDcyLjd6Ii8+DQoJCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0xMzguOSwxMDMuMlY4NC45aDQuOWw4LjMsMTAuM2gtMy42bDguMy0xMC4zaDQuOXYxOC4zaC01LjR2LTQuNmMwLTEuNCwwLTIuOCwwLjEtNC4xDQoJCQljMC4xLTEuMywwLjItMi42LDAuNC0zLjlsMC41LDEuOGwtNi4yLDdoLTEuN2wtNi4zLTcuMWwwLjctMS42YzAuMiwxLjMsMC4zLDIuNiwwLjQsMy45YzAuMSwxLjMsMC4xLDIuNiwwLjEsNC4xdjQuNkgxMzguOXoiLz4NCgkJPHBhdGggY2xhc3M9InN0MCIgZD0iTTIxMi45LDEwMy4ydi00LjhoNXYtOC44aC01di00LjhoMTUuOHY0LjhoLTUuMXY4LjhoNS4xdjQuOEgyMTIuOXoiLz4NCgkJPHBhdGggY2xhc3M9InN0MCIgZD0iTTI3OS45LDEwMy4yVjg0LjloNS4zbDEyLjEsMTEuNmwtMC45LTAuNGMtMC4xLTAuOC0wLjItMS41LTAuMi0yLjFjLTAuMS0wLjYtMC4xLTEuMi0wLjEtMS43DQoJCQljMC0wLjUtMC4xLTEtMC4xLTEuNGMwLTAuNCwwLTAuOSwwLTEuM3MwLTAuOSwwLTEuNHYtMy40aDUuNHYxOC4zaC01LjRsLTEzLTEyLjhsMS45LDAuNmMwLjEsMC4yLDAuMSwwLjQsMC4yLDAuNw0KCQkJYzAuMSwwLjMsMC4xLDAuNiwwLjEsMC45YzAsMC4zLDAuMSwwLjgsMC4xLDEuM2MwLDAuNSwwLjEsMS4xLDAuMSwxLjhzMCwxLjUsMCwyLjV2NUgyNzkuOXoiLz4NCgkJPHBhdGggY2xhc3M9InN0MCIgZD0iTTM2MS43LDEwMy41Yy0xLjcsMC0zLjItMC4yLTQuNi0wLjZjLTEuNC0wLjQtMi41LTEtMy41LTEuOGMtMS0wLjgtMS43LTEuOC0yLjMtM2MtMC41LTEuMi0wLjgtMi42LTAuOC00LjINCgkJCWMwLTEuNCwwLjMtMi43LDAuOS0zLjhjMC42LTEuMiwxLjQtMi4yLDIuNS0zYzEuMS0wLjksMi4zLTEuNSwzLjgtMmMxLjUtMC41LDMuMS0wLjcsNC45LTAuN2MxLjQsMCwyLjgsMC4xLDMuOSwwLjQNCgkJCWMxLjIsMC4zLDIuMiwwLjcsMy4xLDEuMXMxLjYsMC45LDIuMiwxLjRsLTMuMywzLjdjLTAuNS0wLjMtMS0wLjYtMS41LTAuOWMtMC42LTAuMy0xLjItMC41LTEuOS0wLjdjLTAuNy0wLjItMS41LTAuMy0yLjQtMC4zDQoJCQljLTAuOSwwLTEuNiwwLjEtMi40LDAuNGMtMC43LDAuMi0xLjQsMC42LTEuOSwxYy0wLjUsMC40LTEsMC45LTEuMywxLjVjLTAuMywwLjYtMC41LDEuMi0wLjUsMS45YzAsMC45LDAuMiwxLjcsMC41LDIuMw0KCQkJYzAuMywwLjYsMC44LDEuMSwxLjMsMS40YzAuNiwwLjMsMS4yLDAuNiwxLjksMC43YzAuNywwLjEsMS41LDAuMiwyLjMsMC4yYzAuOCwwLDEuNi0wLjEsMi4yLTAuMnMxLjMtMC40LDEuOC0wLjZzMC45LTAuNiwxLjItMQ0KCQkJYzAuMy0wLjQsMC40LTAuOCwwLjQtMS4zVjk1bDAuOCwxLjVoLTYuOXYtMy45aDExLjRjMCwwLjMsMCwwLjYsMC4xLDFjMCwwLjQsMCwwLjgsMCwxLjFjMCwwLjMsMCwwLjUsMCwwLjYNCgkJCWMwLDEuNC0wLjMsMi42LTAuOCwzLjZjLTAuNSwxLTEuMywxLjktMi40LDIuNmMtMSwwLjctMi4yLDEuMi0zLjcsMS41QzM2NS4xLDEwMy4zLDM2My41LDEwMy41LDM2MS43LDEwMy41eiIvPg0KCTwvZz4NCjwvZz4NCjwvc3ZnPg0K";
         const FAIR = `<div class="fair"><img src="${SHD}" width="40" height="52" alt=""><h3>FAIRNESS</h3><img class="atlas" src="${ATL}" alt="ATLAS-V Gaming"></div>`;
         let showH = false, ltab = 'game', rtab = 'results', lastBet = null; const leaders = Array.from({ length: 10 }, (_, i) => ({ id: (1 + Math.floor(Math.random() * 9)) + '***' + Math.floor(Math.random() * 10), b: [125, 250, 255, 270, 320, 550][Math.floor(Math.random() * 6)], w: 10000 - i * 350 }));
@@ -1934,34 +2226,112 @@
         function toggle(i) { if (phase !== 'bet') return; if (sel.has(i)) sel.delete(i); else { if (sel.size >= 10) return toast('Maximum 10 numbers'); sel.add(i) } paint() }
         function paint() {
             for (let i = 1; i <= 80; i++) { const c = $('#c' + i), d = drawn.includes(i), s = sel.has(i); c.classList.toggle('sel', s && !d); c.classList.toggle('hit', s && d); c.classList.toggle('drw', d && !s) }
-            $('#pn').textContent = sel.size; {
+            $('#pn').textContent = sel.size || 1; {
                 const n = sel.size, b = phase === 'bet'; $('#pickView').style.display = b && !n ? 'block' : 'none'; $('#infoView').style.display = b && n ? 'block' : 'none';
                 if (b && n) {
-                    const p = PAY[n] || {}, ks = Object.keys(p).map(Number), mx = Math.max(...ks.map(k => p[k]));
-                    $('#iv1').textContent = Math.max(1, tickets.filter(x => x.r === round).length); $('#iw').textContent = mx * amt;
-                    $('#odds').innerHTML = '<div class="oc"><span>Match</span><span>Odds</span></div>' + ks.map((k, i) => `<div class="oc${i === ks.length - 1 ? ' l' : ''}"><span>${k}</span><span>x${p[k]}</span></div>`).join('');
+                    const p = PAY[n] || {}, ks = Object.keys(p).map(Number).sort((x, y) => x - y), mx = Math.max(...ks.map(k => p[k]));
+                    $('#iv1').textContent = Math.max(1, tickets.filter(x => x.r === round).length); $('#iw').textContent = fmt(mx * amt);
+                    $('#odds').innerHTML = '<div class="oc"><span>Match</span><span>Odds</span></div>' + ks.map((k, i) => renderOddsRow(k, p[k], i === ks.length - 1)).join('');
                     const a = [...sel]; $('#sr').innerHTML = Array.from({ length: 10 }, (_, i) => a[i] ? `<span class="f">${a[i]}</span>` : '<span></span>').join('')
                 }
             }
-            betPanel(); $('#a').textContent = amt; $('#bal').textContent = bal.toFixed(2); $('#bal2').textContent = bal.toFixed(2);
-            $('#bet').disabled = phase !== 'bet' || sel.size < 1
+            renderBetSlides(); $('#a').textContent = amt; $('#bal').textContent = bal.toFixed(2); $('#bal2').textContent = bal.toFixed(2);
+            const betBtn = $('#bet');
+            if (isBetAcceptedFlash) {
+                betBtn.classList.add('accepted');
+                betBtn.disabled = true;
+                betBtn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>BET ACCEPTED';
+            } else {
+                betBtn.classList.remove('accepted');
+                betBtn.disabled = phase !== 'bet' || sel.size < 1;
+                betBtn.textContent = 'BET';
+            }
+        }
+        let isBetAcceptedFlash = false, betFlashTimer = null;
+        function flashBetAccepted() {
+            isBetAcceptedFlash = true;
+            paint();
+            clearTimeout(betFlashTimer);
+            betFlashTimer = setTimeout(() => {
+                isBetAcceptedFlash = false;
+                paint();
+            }, 1000);
         }
         $('#m').onclick = () => { amt = Math.max(1, amt - 1); paint() }; $('#p').onclick = () => { amt = Math.min(Math.max(1, Math.floor(bal)), amt + 1); paint() };
         $('#x2').onclick = () => { amt = Math.max(1, Math.min(Math.floor(bal), amt * 2)); paint() }; $('#mx').onclick = () => { amt = Math.max(1, Math.min(500, Math.floor(bal))); paint() };
         $('#bet').onclick = () => {
-            if (phase !== 'bet') return; if (amt > bal) return toast('Not enough credits');
-            const was = !!lastBet; bal -= amt; tickets.push({ n: [...sel], b: amt, r: round }); lastBet = { n: [...sel], b: amt }; toast('Bet placed: ' + amt + ' on ' + sel.size + ' numbers'); sel = new Set(); paint(); render(); if (!was) { const s = $('#slides'); s.scrollLeft = s.clientWidth }
+            if (phase !== 'bet' || isBetAcceptedFlash) return;
+            if (amt > bal) return toast('Not enough credits');
+            bal -= amt;
+            tickets.push({ n: [...sel], b: amt, r: round });
+            lastBet = { n: [...sel], b: amt };
+            toast('Bet placed: ' + amt + ' ETB on ' + sel.size + ' numbers');
+            sel = new Set();
+            flashBetAccepted();
+            render();
+            renderBetSlides();
+            const s = $('#slides');
+            if (s) {
+                s.scrollTo({ left: 0, behavior: 'smooth' });
+            }
+            updateSlideDots();
         };
         document.querySelectorAll('nav button').forEach(b => b.onclick = () => { document.querySelectorAll('nav button').forEach(x => x.classList.remove('on')); b.classList.add('on'); tab = b.dataset.t; b.scrollIntoView({ inline: 'center', block: 'nearest' }); render() });
-        function tk(id, nums, b, status, cls, hits) {
-            const h = hits || []; let s = ''; for (let i = 0; i < 10; i++) { const v = nums[i]; s += v ? `<span class="f${h.includes(v) ? ' h' : ''}">${v}</span>` : '<span></span>' }
-            return `<div class="tk"><div class="id">${id}</div><div class="slots">${s}</div><div class="bt"><div>Bet ${fmt(b)}</div><div class="${cls}">${status}</div></div></div>`
+        function tk(id, nums, b, status, cls, hits, isMine = false) {
+            const h = hits || [];
+            const hasHit = isMine && h.length > 0;
+            let s = '';
+            for (let i = 0; i < 10; i++) {
+                const v = nums[i];
+                s += v ? `<span class="f${h.includes(v) ? (isMine ? ' h' : ' h-other') : ''}">${v}</span>` : '<span></span>';
+            }
+            return `<div class="tk${hasHit ? ' has-hit' : ''}"><div class="id">${id}</div><div class="slots">${s}</div><div class="bt"><div>Bet ${fmt(b)}</div><div class="${cls}">${status}</div></div></div>`;
         }
         const desk = () => matchMedia('(min-width:900px)').matches;
-        function betPanel() {
-            const s = $('#betSl'), on = phase === 'bet' && lastBet; s.style.display = on ? 'block' : 'none'; $('#pgd').style.display = on ? 'flex' : 'none'; if (!on) return;
-            const n = lastBet.n, p = PAY[n.length] || {}, ks = Object.keys(p).map(Number), mx = Math.max(...ks.map(k => p[k]));
-            s.innerHTML = `<div class="help">?</div><div class="pw"><b>${tickets.filter(x => x.r === round).length}</b> Possible win <em>${mx * lastBet.b}</em></div><div class="odds"><div class="oc"><span>Match</span><span>Odds</span></div>${ks.map((k, i) => `<div class="oc${i === ks.length - 1 ? ' l' : ''}"><span>${k}</span><span>x${p[k]}</span></div>`).join('')}</div><div class="slotsrow">${Array.from({ length: 10 }, (_, i) => n[i] ? `<span class="f">${n[i]}</span>` : '<span></span>').join('')}</div>`
+        function renderBetSlides() {
+            const s = $('#slides'), pgd = $('#pgd');
+            if (!s || !pgd) return;
+            const mine = tickets.filter(x => x.r === round);
+            s.querySelectorAll('.bet-slide').forEach(el => el.remove());
+            if (mine.length === 0 || phase !== 'bet') {
+                pgd.style.display = 'none';
+                if (mine.length === 0) {
+                    pgd.innerHTML = '';
+                    s.scrollLeft = 0;
+                }
+                return;
+            }
+            mine.forEach((t, idx) => {
+                const p = PAY[t.n.length] || {};
+                const ks = Object.keys(p).map(Number).sort((a, b) => a - b);
+                const mx = Math.max(...ks.map(k => p[k]));
+                const sl = document.createElement('div');
+                sl.className = 'sl bet-slide';
+                sl.innerHTML = `
+                    <div class="help" onclick="openRulesModal('rules')">?</div>
+                    <div class="pw"><b>${idx + 1}</b> Possible win <em>${fmt(mx * t.b)}</em></div>
+                    <div class="odds"><div class="oc"><span>Match</span><span>Odds</span></div>${ks.map((k, i) => renderOddsRow(k, p[k], i === ks.length - 1)).join('')}</div>
+                    <div class="slotsrow">${Array.from({ length: 10 }, (_, i) => t.n[i] ? `<span class="f">${t.n[i]}</span>` : '<span></span>').join('')}</div>
+                `;
+                s.appendChild(sl);
+            });
+            const totalSlides = mine.length + 1;
+            pgd.style.display = 'flex';
+            pgd.innerHTML = Array.from({ length: totalSlides }, () => `<i></i>`).join('');
+            Array.from(pgd.children).forEach((dot, i) => {
+                dot.onclick = () => s.scrollTo({ left: i * s.clientWidth, behavior: 'smooth' });
+            });
+            updateSlideDots();
+        }
+
+        function updateSlideDots() {
+            const s = $('#slides'), pgd = $('#pgd');
+            if (!s || !pgd || pgd.style.display === 'none') return;
+            const w = s.clientWidth || 1;
+            const idx = Math.min(pgd.children.length - 1, Math.max(0, Math.round(s.scrollLeft / w)));
+            Array.from(pgd.children).forEach((dot, i) => {
+                dot.classList.toggle('on', i === idx);
+            });
         }
         function put(el, tb) { const st = el.scrollTop; draw(el, tb); el.scrollTop = st }
         function renderG() { desk() ? put($('#lbody'), ltab) : put($('#tab'), tab) }
@@ -1969,10 +2339,55 @@
         function draw(t, tab) {
             if (tab === 'game') {
                 const mine = tickets.filter(x => x.r === round);
+                const revMine = mine.slice().reverse();
                 t.innerHTML = `<div class="sub"><span>All<b>${allCount + mine.length}</b></span><span>My Tickets<b>${mine.length}</b></span><span>My Bets<b>${mine.reduce((a, x) => a + x.b, 0)}</b></span></div>` +
-                    mine.map(x => tk('You', x.n, x.b, 'Waiting', 'w', drawn)).join('') + fake.map(x => tk(x.id, x.n, x.b, 'Waiting', 'w', drawn.filter(d => x.n.includes(d)))).join('')
+                    revMine.map((x, idx) => {
+                        const hits = x.n.filter(v => drawn.includes(v));
+                        const p = PAY[x.n.length] || {};
+                        const mult = p[hits.length] !== undefined ? p[hits.length] : (hits.length === 0 && p[0] !== undefined ? p[0] : 0);
+                        const won = mult * x.b;
+                        const ticketNum = mine.length - idx;
+                        const title = `${ticketNum} My Ticket`;
+                        let statusText = 'Waiting', statusCls = 'w';
+                        if (phase === 'settlement') {
+                            if (x.w > 0) {
+                                statusText = (x.w % 1 === 0 ? x.w : x.w.toFixed(2));
+                                statusCls = 'win';
+                            } else {
+                                statusText = '0';
+                                statusCls = 'lose';
+                            }
+                        }
+                        return tk(title, x.n, x.b, statusText, statusCls, hits, true);
+                    }).join('') +
+                    fake.map(x => {
+                        const hits = x.n.filter(d => drawn.includes(d));
+                        let statusText = 'Waiting', statusCls = 'w';
+                        if (phase === 'settlement') {
+                            const p = PAY[x.n.length] || {};
+                            const mult = p[hits.length] !== undefined ? p[hits.length] : 0;
+                            const won = mult * x.b;
+                            if (won > 0) {
+                                statusText = (won % 1 === 0 ? won : won.toFixed(2));
+                                statusCls = 'win';
+                            } else {
+                                statusText = '0';
+                                statusCls = 'lose';
+                            }
+                        }
+                        return tk(x.id, x.n, x.b, statusText, statusCls, hits, false);
+                    }).join('');
             }
-            else if (tab === 'history') { t.innerHTML = '<button class="showb" id="shb">SHOW THE RESULTS</button>' + (showH ? (history.length ? history.slice().reverse().map(x => tk('Round #' + x.r, x.n, x.b, x.w > 0 ? '+' + x.w.toFixed(2) : 'Lost', x.w > 0 ? 'win' : 'lose', x.hits)).join('') : '<div class="empty">No bets yet</div>') : '') + FAIR; $('#shb').onclick = () => { showH = !showH; render() } }
+            else if (tab === 'history') {
+                t.innerHTML = '<button class="showb" id="shb">SHOW THE RESULTS</button>' + (showH ? (history.length ? history.slice().reverse().map(x => {
+                    let st = 'Lost', cl = 'lose';
+                    if (x.w > 0) {
+                        st = 'WON +' + x.w.toFixed(2); cl = 'win';
+                    }
+                    return tk('Round #' + x.r, x.n, x.b, st, cl, x.hits, x.w > 0);
+                }).join('') : '<div class="empty">No bets yet</div>') : '') + FAIR;
+                $('#shb').onclick = () => { showH = !showH; render() }
+            }
             else if (tab === 'leaders') t.innerHTML = '<div class="lh"><span>#</span><span>ID</span><span>Bet</span><span>Win</span></div>' + leaders.map((x, i) => `<div class="lr${i < 3 ? ' top' : ''}"><b>${i + 1}</b><span>${x.id}</span><span>${x.b}</span><em>${fmt(x.w)} ETB</em></div>`).join('') + FAIR;
             else if (tab === 'results') {
                 const sh = '<img src="' + SHD + '" width="15" height="20" alt="">';
@@ -1985,39 +2400,205 @@
         }
         function tick() { if (phase !== 'bet') return; left--; $('#timer').textContent = '00 : ' + String(Math.max(left, 0)).padStart(2, '0'); if (left <= 0) startDraw() }
         function boardShow(on) { [$('#grid'), $('.amt').parentNode, $('#bet')].forEach(e => e.style.display = on ? '' : 'none') }
-        function flyBall(n, isHit) {
+        function flyBall(n, isHit, callIndex = 0) {
             return new Promise(res => {
                 const big = $('#big'), row = $('#drawn');
-                const ph = document.createElement('span'); ph.className = 'ball'; ph.textContent = n; ph.style.visibility = 'hidden'; row.appendChild(ph);
-                const from = big.getBoundingClientRect(), to = ph.getBoundingClientRect();
-                const fl = document.createElement('span'); fl.className = 'ball big' + (isHit ? ' hit' : ''); fl.textContent = n;
-                Object.assign(fl.style, { position: 'fixed', left: from.left + 'px', top: from.top + 'px', width: from.width + 'px', height: from.height + 'px', margin: 0, zIndex: 50, pointerEvents: 'none', transition: 'transform .38s cubic-bezier(.5,0,.2,1),width .38s,height .38s,font-size .38s' });
-                document.body.appendChild(fl); big.style.visibility = 'hidden';
-                const dx = to.left + to.width / 2 - (from.left + from.width / 2), dy = to.top + to.height / 2 - (from.top + from.height / 2);
-                requestAnimationFrame(() => requestAnimationFrame(() => { fl.style.width = to.width + 'px'; fl.style.height = to.height + 'px'; fl.style.fontSize = '13px'; fl.style.left = (from.left + (from.width - to.width) / 2) + 'px'; fl.style.top = (from.top + (from.height - to.height) / 2) + 'px'; fl.style.transform = 'translate(' + dx + 'px,' + dy + 'px)' }));
-                let done = false; const land = () => { if (done) return; done = true; fl.remove(); ph.style.visibility = ''; if (isHit) ph.classList.add('hit'); drawn.push(n); res() };
-                fl.addEventListener('transitionend', e => { if (e.propertyName === 'transform') land() }); setTimeout(land, 520)
-            })
+                // First 10 called numbers go to 2nd row (slots 10..19); last 10 go to 1st row (slots 0..9)
+                const slotIdx = callIndex < 10 ? (10 + callIndex) : (callIndex - 10);
+                let targetSlot = row.children[slotIdx];
+                if (!targetSlot) {
+                    targetSlot = document.createElement('span');
+                    targetSlot.className = 'ball-slot';
+                    row.appendChild(targetSlot);
+                }
+                const from = big.getBoundingClientRect(), to = targetSlot.getBoundingClientRect();
+                const fl = document.createElement('span');
+                fl.className = 'ball big' + (isHit ? ' hit' : '');
+                fl.innerHTML = `<span class="ball-num">${n}</span>`;
+                Object.assign(fl.style, {
+                    position: 'fixed',
+                    left: from.left + 'px',
+                    top: from.top + 'px',
+                    width: from.width + 'px',
+                    height: from.height + 'px',
+                    margin: 0,
+                    zIndex: 50,
+                    pointerEvents: 'none',
+                    transition: 'transform .45s cubic-bezier(.22,.8,.36,1), width .45s, height .45s, opacity .45s'
+                });
+                document.body.appendChild(fl);
+                // Immediately hide #big so the central tube is visibly empty as the ball leaves!
+                big.style.setProperty('display', 'none', 'important');
+                big.classList.add('hidden');
+
+                const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+                const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    fl.style.width = to.width + 'px';
+                    fl.style.height = to.height + 'px';
+                    const flNum = fl.querySelector('.ball-num');
+                    if (flNum) flNum.style.fontSize = '13px';
+                    fl.style.left = (from.left + (from.width - to.width) / 2) + 'px';
+                    fl.style.top = (from.top + (from.height - to.height) / 2) + 'px';
+                    fl.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+                }));
+                let done = false;
+                const land = () => {
+                    if (done) return;
+                    done = true;
+                    fl.remove();
+                    targetSlot.className = 'ball' + (isHit ? ' hit' : '');
+                    targetSlot.innerHTML = `<span class="ball-num">${n}</span>`;
+                    targetSlot.style.visibility = 'visible';
+                    drawn.push(n);
+                    $('#cnt').textContent = String(drawn.length).padStart(2, '0');
+                    try { playTone(560, 0.05, 'sine', 0.08); } catch(e) {}
+                    res();
+                };
+                fl.addEventListener('transitionend', e => { if (e.propertyName === 'transform') land(); });
+                setTimeout(land, 450);
+            });
         }
         async function startDraw() {
-            phase = 'draw'; { const st = $('#stage'), ap = $('.app'); st.style.setProperty('--up', Math.max(0, st.getBoundingClientRect().top - ap.getBoundingClientRect().top) + 'px') } boardShow(false); document.querySelectorAll('.cell .dot').forEach(d => d.className = 'dot'); paint(); $('#timer').style.visibility = 'hidden'; $('#stage').classList.add('drawing'); $('#pickView').style.display = 'none'; $('#slides').style.display = 'none'; $('#pgd').style.display = 'none'; $('#drawView').style.display = 'block'; $('#drawn').innerHTML = ''; $('#big').textContent = '–';
-            const all = rnd(80, 20).sort(() => Math.random() - .5); drawn = [];
-            const picked = new Set([...sel]); tickets.filter(x => x.r === round).forEach(x => x.n.forEach(v => picked.add(v)));
-            for (const n of all) {
-                await new Promise(r => setTimeout(r, 350)); hot[n]++; const big = $('#big'); big.textContent = n; big.classList.toggle('hit', picked.has(n)); big.style.visibility = 'visible'; $('#cnt').textContent = String(drawn.length + 1).padStart(2, '0');
-                await new Promise(r => setTimeout(r, 550));
-                await flyBall(n, picked.has(n));
-                paint(); if (tab === 'game' || (desk() && ltab === 'game')) renderG()
+            clearTimeout(betFlashTimer);
+            isBetAcceptedFlash = false;
+            phase = 'draw';
+            { const st = $('#stage'), ap = $('.app'); st.style.setProperty('--up', Math.max(0, st.getBoundingClientRect().top - ap.getBoundingClientRect().top) + 'px'); }
+            boardShow(false);
+            document.querySelectorAll('.cell .dot').forEach(d => d.className = 'dot');
+            paint();
+            $('#timer').style.visibility = 'hidden';
+            $('#stage').classList.add('drawing');
+            $('#pickView').style.display = 'none';
+            $('#slides').style.display = 'none';
+            $('#pgd').style.display = 'none';
+            $('#drawView').style.display = 'block';
+            $('#drawn').innerHTML = Array.from({ length: 20 }, () => '<span class="ball-slot"></span>').join('');
+            $('#cnt').textContent = '00';
+            const bigInit = $('#big');
+            if (bigInit) {
+                bigInit.classList.add('hidden');
+                bigInit.style.setProperty('display', 'none', 'important');
+                bigInit.innerHTML = '';
             }
-            $('#big').textContent = '–'; $('#big').style.visibility = 'visible'; $('#big').parentNode.style.visibility = 'visible';
-            const mine = tickets.filter(x => x.r === round); let tot = 0;
-            mine.forEach(x => { const hits = x.n.filter(v => drawn.includes(v)); const m = (PAY[x.n.length] || {})[hits.length] || 0; const w = m * x.b; tot += w; bal += w; history.push({ r: round, n: x.n, b: x.b, w, hits }) });
-            results.push({ id: BASE + round - 1000, t: clock(new Date()), d: [...drawn] }); if (mine.length) toast(tot > 0 ? 'You won ' + tot.toFixed(2) + '!' : 'No win this round');
-            await new Promise(r => setTimeout(r, 2800));
-            round++; drawn = []; left = ROUND_SECS; phase = 'bet'; boardShow(true); sel = new Set(); $('#timer').textContent = '00 : ' + ROUND_SECS; $('#timer').style.visibility = 'visible'; $('#stage').classList.remove('drawing'); lastBet = null; $('#slides').style.display = ''; $('#pickView').style.display = 'block'; $('#drawView').style.display = 'none'; mkFake(); dots(); paint(); render()
+            const bannerInit = $('#winStageBanner');
+            if (bannerInit) bannerInit.style.display = 'none';
+            const all = rnd(80, 20).sort(() => Math.random() - .5);
+            drawn = [];
+            const picked = new Set([...sel]);
+            tickets.filter(x => x.r === round).forEach(x => x.n.forEach(v => picked.add(v)));
+            for (let i = 0; i < all.length; i++) {
+                const n = all[i];
+                hot[n]++;
+                const big = $('#big');
+                big.className = 'ball big emerging' + (picked.has(n) ? ' hit' : '');
+                big.innerHTML = `<span class="ball-num">${n}</span>`;
+                big.style.removeProperty('display');
+                big.classList.remove('hidden');
+                playPopSound();
+                if (picked.has(n)) {
+                    playHitChime();
+                } else {
+                    playTone(280, 0.08, 'sine', 0.05);
+                }
+                // Center stage showcase pause (authentic Keno tempo: 1,000ms)
+                await new Promise(r => setTimeout(r, 1000));
+                // Fly to row slot and dock (450ms flight) - i is 0..19 callIndex
+                await flyBall(n, picked.has(n), i);
+                paint();
+                renderG();
+                // Empty tube anticipation pause before next ball emerges (250ms)
+                await new Promise(r => setTimeout(r, 250));
+            }
+            const bigDone = $('#big');
+            if (bigDone) {
+                bigDone.classList.add('hidden');
+                bigDone.style.setProperty('display', 'none', 'important');
+            }
+            phase = 'settlement';
+            const mine = tickets.filter(x => x.r === round);
+            let tot = 0;
+            let totalBets = 0;
+            const winningTickets = [];
+            mine.forEach(x => {
+                totalBets += x.b;
+                const hits = x.n.filter(v => drawn.includes(v));
+                const p = PAY[x.n.length] || {};
+                const m = p[hits.length] !== undefined ? p[hits.length] : (hits.length === 0 && p[0] !== undefined ? p[0] : 0);
+                const w = m * x.b;
+                x.w = w;
+                x.hits = hits;
+                tot += w;
+                bal += w;
+                history.push({ r: round, n: x.n, b: x.b, w, hits, m });
+                if (w > 0) {
+                    winningTickets.push({ ...x, m, hits });
+                }
+            });
+            results.push({ id: BASE + round - 1000, t: clock(new Date()), d: [...drawn] });
+            paint();
+            render();
+
+            if (tot > 0) {
+                const big = $('#big'), banner = $('#winStageBanner'), val = $('#winStageVal');
+                if (big) {
+                    big.classList.add('hidden');
+                    big.style.setProperty('display', 'none', 'important');
+                }
+                if (banner && val) {
+                    banner.querySelector('.win-stage-title').textContent = 'YOU WIN';
+                    val.textContent = tot % 1 === 0 ? tot : tot.toFixed(2);
+                    val.style.display = 'block';
+                    banner.style.display = 'flex';
+                }
+                playWinFanfare();
+            } else if (mine.length > 0) {
+                const big = $('#big'), banner = $('#winStageBanner'), val = $('#winStageVal');
+                if (big) {
+                    big.classList.add('hidden');
+                    big.style.setProperty('display', 'none', 'important');
+                }
+                if (banner && val) {
+                    banner.querySelector('.win-stage-title').textContent = 'TRY AGAIN';
+                    val.textContent = '';
+                    val.style.display = 'none';
+                    banner.style.display = 'flex';
+                }
+            } else {
+                const banner = $('#winStageBanner');
+                if (banner) banner.style.display = 'none';
+            }
+            await new Promise(r => setTimeout(r, 6000));
+            const banner = $('#winStageBanner'), big = $('#big');
+            if (banner) {
+                banner.style.display = 'none';
+                banner.querySelector('.win-stage-title').textContent = 'YOU WIN';
+            }
+            if (big) {
+                big.classList.remove('hidden');
+                big.style.display = '';
+            }
+            round++;
+            drawn = [];
+            left = ROUND_SECS;
+            phase = 'bet';
+            boardShow(true);
+            sel = new Set();
+            $('#timer').textContent = '00 : ' + String(ROUND_SECS).padStart(2, '0');
+            $('#timer').style.visibility = 'visible';
+            $('#stage').classList.remove('drawing');
+            lastBet = null;
+            renderBetSlides();
+            $('#slides').style.display = '';
+            $('#pickView').style.display = 'block';
+            $('#drawView').style.display = 'none';
+            mkFake();
+            dots();
+            paint();
+            render();
         }
         $('#s2').src = SHD;
-        { const s = $('#slides'), g = $('#pgd').children; s.addEventListener('scroll', () => { const l = s.scrollLeft < s.clientWidth / 2; g[0].classList.toggle('on', l); g[1].classList.toggle('on', !l) }); g[0].onclick = () => s.scrollTo({ left: 0, behavior: 'smooth' }); g[1].onclick = () => s.scrollTo({ left: s.clientWidth, behavior: 'smooth' }) }
+        $('#slides').addEventListener('scroll', updateSlideDots, { passive: true });
         [['l', 'ltab'], ['r', 'rtab']].forEach(([k, v]) => document.querySelectorAll('[data-' + k + ']').forEach(b => b.onclick = () => { if (k === 'l') ltab = b.dataset.l; else rtab = b.dataset.r; document.querySelectorAll('[data-' + k + ']').forEach(x => x.classList.toggle('on', x === b)); render() }));
         addEventListener('resize', render);
         buildGrid(); mkFake(); dots(); paint(); render(); setInterval(tick, 1000);
@@ -2045,14 +2626,7 @@
             if (rBtn) rBtn.classList.toggle('active', isRules);
             if (fBtn) fBtn.classList.toggle('active', !isRules);
             if (rPane) rPane.style.display = isRules ? 'block' : 'none';
-            if (fPane) {
-                fPane.style.display = isRules ? 'none' : 'block';
-                if (!isRules && !fPane.dataset.rendered) {
-                    fPane.dataset.rendered = '1';
-                    const ph = fPane.querySelector('.fair-placeholder');
-                    if (ph) ph.innerHTML = FAIR;
-                }
-            }
+            if (fPane) fPane.style.display = isRules ? 'none' : 'block';
         }
 
         document.querySelectorAll('.menu').forEach(el => {

@@ -1,0 +1,12 @@
+{
+  "name": "atlas-v-fast-keno-standalone",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Standalone Atlas-V Fast Keno Casino Engine (Isolated from Sonic Bingo)",
+  "scripts": {
+    "dev": "tsx server/standaloneServer.ts",
+    "test:math": "tsx scripts/test_keno_math.ts"
+  }
+}
+
