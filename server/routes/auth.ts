@@ -120,6 +120,47 @@ router.post('/telegram', async (req, res) => {
         userRow.referral_code = genCode;
       }
 
+      // Attribute agent or referrer if existing user does not have one yet
+      if (!userRow.agent_id && referralCode && typeof referralCode === 'string') {
+        const rawCode = referralCode.trim();
+        let agentCandidate = rawCode.replace(/^ref_/, '');
+        if (agentCandidate.toLowerCase().startsWith('agent_')) {
+          agentCandidate = agentCandidate.substring(6);
+        }
+
+        try {
+          const agentLookup = await query(
+            `SELECT id, user_id FROM agent_profiles 
+             WHERE UPPER(agent_code) = UPPER($1) 
+                OR id::text = $1 
+             LIMIT 1`,
+            [agentCandidate]
+          );
+
+          if (agentLookup.rows.length > 0) {
+            const matchedAgentId = agentLookup.rows[0].id;
+            const matchedReferrerId = agentLookup.rows[0].user_id;
+            await query(
+              `UPDATE users 
+               SET agent_id = $1, referred_by = COALESCE(referred_by, $2) 
+               WHERE id = $3`,
+              [matchedAgentId, matchedReferrerId, userRow.id]
+            );
+            userRow.agent_id = matchedAgentId;
+            if (!userRow.referred_by) userRow.referred_by = matchedReferrerId;
+            console.log(`💼 [Agent Referral] Existing player ${userRow.id} linked to Agent ${agentCandidate} (${matchedAgentId})`);
+          }
+        } catch (e) {
+          console.warn('Could not attribute agent to existing user:', e);
+        }
+      }
+
+      let cleanPhone = userRow.phone;
+      if (phone && typeof phone === 'string' && phone.trim()) {
+        cleanPhone = phone.trim().replace(/^\+?251/, '0').replace(/\s+/g, '');
+        if (!cleanPhone.startsWith('0')) cleanPhone = '0' + cleanPhone;
+      }
+
       await query(
         `UPDATE users 
          SET last_login_at = NOW(),
@@ -128,10 +169,15 @@ router.post('/telegram', async (req, res) => {
              last_name = COALESCE($3, last_name),
              photo_url = COALESCE($4, photo_url),
              phone = COALESCE($5, phone),
+             is_kyc_verified = CASE WHEN $5 IS NOT NULL THEN TRUE ELSE is_kyc_verified END,
              bot_started = TRUE
          WHERE id = $6`,
-        [cleanUsername, firstName || null, lastName || null, photoUrl || null, phone || null, userRow.id]
+        [cleanUsername, firstName || null, lastName || null, photoUrl || null, cleanPhone || null, userRow.id]
       );
+      if (cleanPhone) {
+        userRow.phone = cleanPhone;
+        userRow.is_kyc_verified = true;
+      }
 
       walletRow = {
         balance: parseFloat(userRow.balance || '0'),
@@ -189,11 +235,17 @@ router.post('/telegram', async (req, res) => {
           }
         }
 
+        let cleanPhone = null;
+        if (phone && typeof phone === 'string' && phone.trim()) {
+          cleanPhone = phone.trim().replace(/^\+?251/, '0').replace(/\s+/g, '');
+          if (!cleanPhone.startsWith('0')) cleanPhone = '0' + cleanPhone;
+        }
+
         const newUserRes = await client.query(
-          `INSERT INTO users (telegram_id, telegram_username, first_name, last_name, full_name, photo_url, phone, role, status, referral_code, referred_by, agent_id, bot_started, bot_blocked)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, 'player', 'active', $8, $9, $10, TRUE, FALSE)
+          `INSERT INTO users (telegram_id, telegram_username, first_name, last_name, full_name, photo_url, phone, is_kyc_verified, role, status, referral_code, referred_by, agent_id, bot_started, bot_blocked)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'player', 'active', $9, $10, $11, TRUE, FALSE)
            RETURNING *`,
-          [tgIdNum, cleanUsername, firstName || null, lastName || null, fullName, photoUrl || null, phone || null, myReferralCode, referrerId, agentId]
+          [tgIdNum, cleanUsername, firstName || null, lastName || null, fullName, photoUrl || null, cleanPhone, !!cleanPhone, myReferralCode, referrerId, agentId]
         );
         const newUser = newUserRes.rows[0];
 

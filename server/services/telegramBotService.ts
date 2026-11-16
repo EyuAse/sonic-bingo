@@ -1252,6 +1252,54 @@ export class TelegramBotService {
       const startParam = parts.length > 1 ? parts[1].trim() : '';
       const playAppUrl = this.getVersionedWebAppUrl(webAppUrl, startParam);
 
+      // ── 💼 AGENT REFERRAL ATTRIBUTION ON /START ──
+      if (msg.from?.id && startParam) {
+        let agentCandidate = startParam.replace(/^ref_/, '');
+        if (agentCandidate.toLowerCase().startsWith('agent_')) {
+          agentCandidate = agentCandidate.substring(6);
+        }
+
+        try {
+          const agentLookup = await query(
+            `SELECT id, user_id FROM agent_profiles 
+             WHERE UPPER(agent_code) = UPPER($1) OR id::text = $1 
+             LIMIT 1`,
+            [agentCandidate]
+          );
+
+          if (agentLookup.rows.length > 0) {
+            const matchedAgentId = agentLookup.rows[0].id;
+            const matchedReferrerId = agentLookup.rows[0].user_id;
+
+            // Atomically link agent attribution in users table
+            await query(
+              `INSERT INTO users (
+                telegram_id, telegram_username, first_name, last_name, full_name,
+                role, status, bot_started, agent_id, referred_by, created_at, updated_at
+              )
+              VALUES ($1, $2, $3, $4, $5, 'player', 'active', TRUE, $6, $7, NOW(), NOW())
+              ON CONFLICT (telegram_id) DO UPDATE 
+              SET agent_id = COALESCE(users.agent_id, EXCLUDED.agent_id),
+                  referred_by = COALESCE(users.referred_by, EXCLUDED.referred_by),
+                  bot_started = TRUE,
+                  updated_at = NOW()`,
+              [
+                msg.from.id,
+                msg.from.username || `user_${msg.from.id}`,
+                msg.from.first_name || null,
+                msg.from.last_name || null,
+                ((msg.from.first_name || '') + ' ' + (msg.from.last_name || '')).trim() || `user_${msg.from.id}`,
+                matchedAgentId,
+                matchedReferrerId
+              ]
+            );
+            console.log(`💼 [TelegramBotService] Attributed /start agent ${agentCandidate} to user ${msg.from.id}`);
+          }
+        } catch (e) {
+          console.warn('Could not attribute agent on /start:', e);
+        }
+      }
+
       // ── 🛡️ MANDATORY PHONE VERIFICATION CHECK ──
       let hasVerifiedPhone = false;
       if (msg.from?.id) {

@@ -400,7 +400,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           // Auto-authenticate: loginWithTelegram handles both login + registration
           try {
             if (!isExplicitlyLoggedOut) {
-              const apiResult = await apiClient.auth.loginWithTelegram(tgUser);
+              const pendingRef = (typeof window !== 'undefined' ? sessionStorage.getItem('sonic_pending_referral') : null) || startParam || undefined;
+              const apiResult = await apiClient.auth.loginWithTelegram(tgUser, undefined, pendingRef);
               const rawPhone = apiResult.user.phone;
               const tgIdStr = String(tgUser.id);
               const isRealServerPhone =
