@@ -769,6 +769,16 @@
   box-shadow: 0 5px 14px rgba(234, 179, 8, 0.4);
 }
 
+.btn-spectator-buy-gold:disabled,
+.btn-spectator-buy-gold.disabled-waiting {
+  background: #334155 !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+  opacity: 0.75 !important;
+}
+
 /* ── Active Cartela Box ──────────────────────────────────── */
 .active-playing-cartela-box {
   width: 100%;

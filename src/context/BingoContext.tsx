@@ -786,8 +786,8 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (savedRaw) {
         const saved = JSON.parse(savedRaw);
         const ageMs = Date.now() - (saved.timestamp || 0);
-        // Valid within 15 minutes (active lobby or game in progress)
-        if (ageMs < 15 * 60 * 1000) {
+        // Valid within 3 minutes (active lobby or live game in progress)
+        if (ageMs < 3 * 60 * 1000) {
           if (typeof saved.betAmount === 'number') setBetAmountState(saved.betAmount);
           if (typeof saved.cardQuantity === 'number') setCardQuantityState(Math.max(1, Math.min(5, saved.cardQuantity)));
           if (typeof saved.isAutoPlay === 'boolean') {
@@ -861,12 +861,32 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             winModalDismissedForRoundRef.current = null;
             activeWinModalRoundRef.current = null;
             setShowWinModal(false);
-            setHasTicket(hasPreBoughtNextRef.current);
+            setHasTicket(false);
+            hasTicketRef.current = false;
             setHasPreBoughtNext(false);
             setCalledNumbers([]);
             setCurrentCall(null);
+            // 🧹 CLEAN SLATE: Finished round ticket is released!
+            setSelectedCartelaIds([]);
+            selectedCartelaIdsRef.current = [];
+            setCartela1Data([]);
+            setCartela2Data([]);
+            setCartela3Data([]);
+            setCartela4Data([]);
+            try { localStorage.removeItem(ACTIVE_TICKET_STORAGE_KEY); } catch {}
           } else if (state.phase === 'playing') {
             setGameActive(true);
+            const hasServerTicket = Array.isArray(state.userTickets) && state.userTickets.length > 0;
+            if (!hasTicketRef.current && !hasServerTicket) {
+              setSelectedCartelaIds([]);
+              selectedCartelaIdsRef.current = [];
+              setCartela1Data([]);
+              setCartela2Data([]);
+              setCartela3Data([]);
+              setCartela4Data([]);
+              setIsCartelaPickerOpen(false);
+              setRoomMode('spectating');
+            }
           }
           return state.phase;
         });
@@ -1045,29 +1065,9 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setShowWinModal(false);
       if (data.winnerPayout) setPrizePool(data.winnerPayout);
 
-      // If house is spectating (< 2 players), lone-player ticket is safely rolled over to next round
-      if (data.mode === 'spectating') {
-        setHasTicket(prevTicket => {
-          if (prevTicket) {
-            setHasPreBoughtNext(true);
-          }
-          return false;
-        });
-      } else {
-        // Active house: If player had pre-bought ticket, transition to active playing
-        setHasPreBoughtNext(prev => {
-          if (prev) {
-            setHasTicket(true);
-            return false;
-          }
-          return false;
-        });
-      }
-
       // 🛡️ UNCOMMITTED SELECTION EXPIRATION (Spectator Mode Guard):
       // If user selected cartela(s) in lobby but did NOT buy a ticket before round began:
-      const playerHasTicket = hasTicketRef.current || hasPreBoughtNextRef.current;
-      if (!playerHasTicket) {
+      if (!hasTicketRef.current) {
         setSelectedCartelaIds([]);
         selectedCartelaIdsRef.current = [];
         setCartela1Data([]);
@@ -1303,21 +1303,16 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (typeof data.roundNumber === 'number' && data.roundNumber !== roundNumberRef.current) {
       setRoundNumber(data.roundNumber);
       clearManualMarks();
-      const preBought = hasPreBoughtNextRef.current;
-      if (!preBought && !hasTicketRef.current) {
-        setSelectedCartelaIds([]);
-        selectedCartelaIdsRef.current = [];
-        setCartela1Data([]);
-        setCartela2Data([]);
-        setCartela3Data([]);
-        setCartela4Data([]);
-      } else {
-        const currentIds = selectedCartelaIdsRef.current;
-        if (currentIds[0]) setCartela1Data(generateCardFromId(currentIds[0]));
-        if (currentIds[1]) setCartela2Data(generateCardFromId(currentIds[1]));
-        if (currentIds[2]) setCartela3Data(generateCardFromId(currentIds[2]));
-        if (currentIds[3]) setCartela4Data(generateCardFromId(currentIds[3]));
-      }
+      // 🧹 CLEAN SLATE ON EVERY NEW ROUND: Empty all cartelas across all users
+      setSelectedCartelaIds([]);
+      selectedCartelaIdsRef.current = [];
+      setCartela1Data([]);
+      setCartela2Data([]);
+      setCartela3Data([]);
+      setCartela4Data([]);
+      setHasTicket(false);
+      hasTicketRef.current = false;
+      try { localStorage.removeItem(ACTIVE_TICKET_STORAGE_KEY); } catch {}
     }
 
     if (data.phase) {
@@ -1326,8 +1321,8 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           winModalDismissedForRoundRef.current = null;
           setShowWinModal(false);
           setWinResult(null);
-          const preBought = hasPreBoughtNextRef.current;
-          setHasTicket(preBought);
+          setHasTicket(false);
+          hasTicketRef.current = false;
           setHasPreBoughtNext(false);
           setCalledNumbers([]);
           setCurrentCall(null);
@@ -1335,27 +1330,20 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           setClaimInProgress(false);
           clearManualMarks();
 
-          if (!preBought) {
-            // 🧹 CLEAN SLATE: Finished round ticket is released!
-            // Do NOT carry over old cartela IDs into the new round.
-            setSelectedCartelaIds([]);
-            selectedCartelaIdsRef.current = [];
-            setCartela1Data([]);
-            setCartela2Data([]);
-            setCartela3Data([]);
-            setCartela4Data([]);
-          } else {
-            // Pre-bought player: regenerate fresh unmarked cartelas for their pre-bought cards
-            const currentIds = selectedCartelaIdsRef.current;
-            if (currentIds[0]) setCartela1Data(generateCardFromId(currentIds[0]));
-            if (currentIds[1]) setCartela2Data(generateCardFromId(currentIds[1]));
-            if (currentIds[2]) setCartela3Data(generateCardFromId(currentIds[2]));
-            if (currentIds[3]) setCartela4Data(generateCardFromId(currentIds[3]));
-          }
+          // 🧹 CLEAN SLATE: Finished round ticket is released!
+          // Every user's cartelas are empty; players select fairly in the lobby.
+          setSelectedCartelaIds([]);
+          selectedCartelaIdsRef.current = [];
+          setCartela1Data([]);
+          setCartela2Data([]);
+          setCartela3Data([]);
+          setCartela4Data([]);
+          try { localStorage.removeItem(ACTIVE_TICKET_STORAGE_KEY); } catch {}
         } else if (data.phase === 'playing') {
           setGameActive(true);
           const hasServerTicket = Array.isArray(data.userTickets) && data.userTickets.length > 0;
-          if (!hasTicketRef.current && !hasPreBoughtNextRef.current && !hasServerTicket) {
+          if (!hasTicketRef.current && !hasServerTicket) {
+            // Unbought cartelas selected in lobby are immediately discarded when game begins!
             setSelectedCartelaIds([]);
             selectedCartelaIdsRef.current = [];
             setCartela1Data([]);
@@ -1618,11 +1606,21 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const toggleVerticalBoard = () => setIsVerticalBoard(prev => !prev);
   const toggleMasterBoard = () => setShowMasterBoard(prev => !prev);
-  const openCartelaPicker = () => setIsCartelaPickerOpen(true);
+  const openCartelaPicker = () => {
+    if (roundPhase !== 'lobby') {
+      showToast(
+        lang === 'am'
+          ? '⚠️ ጨዋታው ሲያልቅ ካርቴላ መምረጥ ይችላሉ'
+          : '⚠️ Please wait until the game ends to select cartelas'
+      );
+      return;
+    }
+    setIsCartelaPickerOpen(true);
+  };
   const closeCartelaPicker = () => setIsCartelaPickerOpen(false);
 
   const chooseCartelaId = (slotIdx: number, newId: number) => {
-    if (hasTicket && roundPhase === 'playing') return;
+    if (roundPhase !== 'lobby') return;
     const clamped = Math.max(1, Math.min(600, newId));
     setSelectedCartelaIds(prev => {
       const updated = [...prev];
@@ -1638,7 +1636,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const toggleCartelaSelection = (cartelaId: number) => {
-    if (hasTicket && roundPhase === 'playing') return;
+    if (roundPhase !== 'lobby') return;
     if (occupiedCartelaIds.includes(cartelaId)) {
       showToast(`🔒 Cartela #${cartelaId} is already taken in this arena!`);
       return;
@@ -1674,7 +1672,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const shuffleCartela = (cardIdx: number = 0) => {
-    if (hasTicket && roundPhase === 'playing') return;
+    if (roundPhase !== 'lobby') return;
     setSelectedCartelaIds(prev => {
       const next = [...prev];
       let newId = Math.floor(1 + Math.random() * 600);
@@ -1694,7 +1692,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const shuffleAllCartelas = (count: number = cardQuantity) => {
-    if (hasTicket && roundPhase === 'playing') return;
+    if (roundPhase !== 'lobby') return;
     const used = new Set<number>();
     const getRandomUnique = () => {
       let id = Math.floor(1 + Math.random() * 600);
@@ -1722,7 +1720,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const selectSpecificCartela = (cardIdx: number, cartelaId: number) => {
-    if (hasTicket && roundPhase === 'playing') return;
+    if (roundPhase !== 'lobby') return;
     const clamped = Math.max(1, Math.min(600, cartelaId));
     setSelectedCartelaIds(prev => {
       const next = [...prev];
@@ -1774,8 +1772,16 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  // Buy Ticket via Live Socket Engine & Neon DB with Anytime Pre-Betting
+  // Buy Ticket via Live Socket Engine & Neon DB (Lobby-Only Purchasing)
   const buyTicket = async () => {
+    if (roundPhase !== 'lobby') {
+      showToast(
+        lang === 'am'
+          ? '⚠️ ጨዋታው ተጀምሯል! እባክዎ ይህ ጨዋታ እስኪያልቅ ይጠብቁ።'
+          : '⚠️ Game in progress! Please wait until this game ends to buy cartelas.'
+      );
+      return;
+    }
     if (selectedCartelaIds.filter(id => id > 0).length < cardQuantity) {
       showToast('🎟️ Please select your cartela board(s) first!');
       openCartelaPicker();
@@ -1818,14 +1824,6 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         if (res.tickets[2]) setCartela3Data(res.tickets[2].cardMatrix);
         if (res.tickets[3]) setCartela4Data(res.tickets[3].cardMatrix);
       }
-
-      if (res.preBoughtForNextRound) {
-        setHasPreBoughtNext(true);
-        soundEngine.playLuckyPick();
-        refreshBalance();
-        showToast(`🎟️ Ticket Pre-Bought for Upcoming Round ✓`);
-        return;
-      }
     } else {
       // Local fallback
       const success = deductBalance(totalCost);
@@ -1838,17 +1836,12 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setShowInsufficientBalanceModal(true);
         return;
       }
-      if (roundPhase !== 'lobby') {
-        setHasPreBoughtNext(true);
-        showToast('🎟️ Pre-Bought for next round!');
-        return;
-      }
     }
 
     setHasTicket(true);
     setGameActive(true);
-    setPrizePool(prev => Math.max(prev, betAmount * cardQuantity, prev + (roundPhase === 'lobby' ? betAmount * cardQuantity : 0)));
-    setRealPlayerCount(prev => Math.max(cardQuantity, prev + (roundPhase === 'lobby' ? cardQuantity : 0)));
+    setPrizePool(prev => Math.max(prev, betAmount * cardQuantity, prev + betAmount * cardQuantity));
+    setRealPlayerCount(prev => Math.max(cardQuantity, prev + cardQuantity));
     refreshBalance();
 
     // Persist active ticket session so app reload / close does not lose ticket or money
@@ -1877,57 +1870,11 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const preBuyNextRound = async () => {
-    const totalCost = betAmount * cardQuantity;
-    const totalFunds = balance + bonus;
-    if (totalFunds < totalCost) {
-      setInsufficientBalanceDetails({
-        required: totalCost,
-        balance: totalFunds,
-        shortfall: totalCost - totalFunds
-      });
-      setShowInsufficientBalanceModal(true);
-      return;
-    }
-
-    if (user?.id) {
-      const roomId = getActiveRoomId();
-      const activeIds = selectedCartelaIds.slice(0, totalPlayableCards);
-      const res = await socketService.buyTicket(roomId, user.id, user.fullName, activeIds, betAmount, autoPlayRef.current);
-      if (!res.success) {
-        showToast(`❌ ${res.error || 'Pre-buy failed'}`);
-        return;
-      }
-      if (res.tickets && res.tickets.length > 0) {
-        const newIds = res.tickets.map((t: any) => t.cartelaId);
-        const updatedIds: number[] = [
-          newIds[0] || selectedCartelaIds[0],
-          newIds[1] || selectedCartelaIds[1],
-          newIds[2] || selectedCartelaIds[2],
-          newIds[3] || selectedCartelaIds[3]
-        ].filter(Boolean);
-        setSelectedCartelaIds(updatedIds);
-        if (res.tickets[0]) setCartela1Data(res.tickets[0].cardMatrix);
-        if (res.tickets[1]) setCartela2Data(res.tickets[1].cardMatrix);
-        if (res.tickets[2]) setCartela3Data(res.tickets[2].cardMatrix);
-        if (res.tickets[3]) setCartela4Data(res.tickets[3].cardMatrix);
-      }
-    } else {
-      const success = deductBalance(totalCost);
-      if (!success) {
-        setInsufficientBalanceDetails({
-          required: totalCost,
-          balance: totalFunds,
-          shortfall: totalCost - totalFunds
-        });
-        setShowInsufficientBalanceModal(true);
-        return;
-      }
-    }
-
-    setHasPreBoughtNext(true);
-    soundEngine.playLuckyPick();
-    refreshBalance();
-    showToast(`🎟️ Pre-Bought ${totalPlayableCards} Cartelas for next round! ✓`);
+    showToast(
+      lang === 'am'
+        ? '⚠️ ውርርድ የሚቻለው ጨዋታው ሲያልቅ በሎቢው ውስጥ ብቻ ነው።'
+        : '⚠️ Tickets can only be purchased in the lobby before the game begins.'
+    );
   };
 
   // Safe Voluntary Lobby Exit / Disconnect Refund
@@ -2148,14 +2095,16 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setShowWinModal(false);
     setWinResult(null);
     setHasTicket(false);
-    if (!hasPreBoughtNextRef.current) {
-      setSelectedCartelaIds([]);
-      selectedCartelaIdsRef.current = [];
-      setCartela1Data([]);
-      setCartela2Data([]);
-      setCartela3Data([]);
-      setCartela4Data([]);
-    }
+    hasTicketRef.current = false;
+    setSelectedCartelaIds([]);
+    selectedCartelaIdsRef.current = [];
+    setCartela1Data([]);
+    setCartela2Data([]);
+    setCartela3Data([]);
+    setCartela4Data([]);
+    try {
+      localStorage.removeItem(ACTIVE_TICKET_STORAGE_KEY);
+    } catch {}
   };
 
   const startLobbyCountdown = () => {

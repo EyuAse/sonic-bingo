@@ -46,3 +46,4 @@ assert(kenoPageContent.includes('userNumbers.has(ballNum)'), 'Docked balls must 
 console.log('✅ 5. KenoPage player hit recognition on docked slots verified.');
 
 console.log('🎉 [PASS] Phase 3: All ball sizing and 2-row layout tests passed 100%!');
+

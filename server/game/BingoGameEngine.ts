@@ -867,6 +867,15 @@ class BingoGameEngine {
     else if (customStake === 10) targetRoomId = 'room-10';
 
     const room = this.getRoom(targetRoomId);
+
+    // Mandate: Tickets can ONLY be purchased in the lobby before the game begins!
+    if (room.phase !== 'lobby') {
+      return {
+        success: false,
+        error: 'ውርርድ የሚቻለው ጨዋታው ሲያልቅ በሎቢው ውስጥ ብቻ ነው። (Tickets can only be purchased in the lobby before the game begins).'
+      };
+    }
+
     const stakePerCard = room.stakeAmount;
 
     // Determine quantity requested (1 or 2 cards)
@@ -877,16 +886,15 @@ class BingoGameEngine {
       quantity = Math.max(1, Math.min(MAX_TICKETS_PER_PLAYER, requestedCartelaIds));
     }
 
-    // Multi-Device / Double-Click Protection: If user already has active or pre-bought tickets, return existing tickets without deducting balance again
+    // Multi-Device / Double-Click Protection: If user already has active tickets in this lobby, return existing tickets without deducting balance again
     const hasActiveLobbyTickets = room.phase === 'lobby' && room.tickets.has(userId) && (room.tickets.get(userId)?.length || 0) > 0;
-    const hasPreBoughtTickets = room.phase !== 'lobby' && room.nextRoundTickets && room.nextRoundTickets.has(userId) && (room.nextRoundTickets.get(userId)?.length || 0) > 0;
 
-    if (hasActiveLobbyTickets || hasPreBoughtTickets) {
-      const existing = hasActiveLobbyTickets ? room.tickets.get(userId)! : room.nextRoundTickets.get(userId)!;
-      console.log(`🎟️ [Multi-Device/Double-Click] User ${userName} (${userId}) already has ${existing.length} tickets (PreBuy: ${Boolean(hasPreBoughtTickets)}). Returning active cards.`);
+    if (hasActiveLobbyTickets) {
+      const existing = room.tickets.get(userId)!;
+      console.log(`🎟️ [Multi-Device/Double-Click] User ${userName} (${userId}) already has ${existing.length} tickets in ${room.id} lobby. Returning active cards.`);
       return {
         success: true,
-        preBoughtForNextRound: Boolean(hasPreBoughtTickets),
+        preBoughtForNextRound: false,
         tickets: existing
       };
     }
@@ -1066,51 +1074,42 @@ class BingoGameEngine {
         isAutoPlay: resolvedAutoPlay
       }));
 
-      const isPreBuy = room.phase !== 'lobby';
-
-      if (isPreBuy) {
-        // Queue for next round (Anytime Pre-Betting)
-        const existingQueued = room.nextRoundTickets.get(userId) || [];
-        room.nextRoundTickets.set(userId, [...existingQueued, ...playerTickets]);
-        console.log(`🎟️ [Pre-Betting] User ${userName} (${userId}) queued ${playerTickets.length} cartelas for Round #${room.roundNumber + 1}`);
+      // Active in current lobby (purchased before game begins)
+      room.tickets.set(userId, playerTickets);
+      room.realPlayerCount = this.getRealCartelaCount(room);
+      const isRoom10 = room.id === 'room-10' || room.id === ARENA_ROOM_ID;
+      room.waitingForPlayers = isRoom10 ? room.tickets.size < 1 : room.tickets.size < 2;
+      if (isRoom10) {
+        this.syncRoom10StandbyBots(room);
       } else {
-        // Immediately active in current lobby
-        room.tickets.set(userId, playerTickets);
-        room.realPlayerCount = this.getRealCartelaCount(room);
-        const isRoom10 = room.id === 'room-10' || room.id === ARENA_ROOM_ID;
-        room.waitingForPlayers = isRoom10 ? room.tickets.size < 1 : room.tickets.size < 2;
-        if (isRoom10) {
-          this.syncRoom10StandbyBots(room);
-        } else {
-          this.recalculatePot(room);
-        }
-        this.broadcastRoomState(room);
+        this.recalculatePot(room);
+      }
+      this.broadcastRoomState(room);
 
-        // Notify room clients a new real player joined (for lobby join feed UI)
-        const playerJoinedPayload = {
-          userName,
-          realPlayerCount: room.realPlayerCount,
-          waitingForPlayers: room.waitingForPlayers,
-          countdownStarted: isRoom10 ? room.tickets.size >= 1 : room.tickets.size >= 2,
-          totalPot: room.totalPot,
-          winnerPayout: room.winnerPayout,
-          stakeAmount: room.stakeAmount,
-          roomId: room.id
-        };
-        io.to(room.id).emit('player_joined', playerJoinedPayload);
-        if (room.id === 'room-10') {
-          io.to(ARENA_ROOM_ID).emit('player_joined', {
-            ...playerJoinedPayload,
-            roomId: ARENA_ROOM_ID
-          });
-        }
+      // Notify room clients a new real player joined (for lobby join feed UI)
+      const playerJoinedPayload = {
+        userName,
+        realPlayerCount: room.realPlayerCount,
+        waitingForPlayers: room.waitingForPlayers,
+        countdownStarted: isRoom10 ? room.tickets.size >= 1 : room.tickets.size >= 2,
+        totalPot: room.totalPot,
+        winnerPayout: room.winnerPayout,
+        stakeAmount: room.stakeAmount,
+        roomId: room.id
+      };
+      io.to(room.id).emit('player_joined', playerJoinedPayload);
+      if (room.id === 'room-10') {
+        io.to(ARENA_ROOM_ID).emit('player_joined', {
+          ...playerJoinedPayload,
+          roomId: ARENA_ROOM_ID
+        });
       }
 
       io.emit('stake_rooms_summary', this.getStakeRoomsSummary());
 
       return {
         success: true,
-        preBoughtForNextRound: isPreBuy,
+        preBoughtForNextRound: false,
         tickets: playerTickets,
         remainingBalance: result.newReal + result.newBonus
       };
@@ -1372,6 +1371,7 @@ class BingoGameEngine {
       room.drawnNumbers = [];
       room.currentCall = null;
       room.winResult = null;
+      room.tickets.clear(); // 🧹 Clean slate: users must select & buy cartelas in the lobby for each new game
       const isRoom10 = room.id === 'room-10' || room.id === ARENA_ROOM_ID;
       if (isRoom10) {
         // Determine target bot count for the upcoming round

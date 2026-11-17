@@ -254,6 +254,17 @@ export function setupGameSockets(io: Server) {
           socket.disconnect(true);
           return;
         }
+        const room = gameEngine.getRoom(roomId);
+        if (room && room.phase !== 'lobby') {
+          const errRes = {
+            success: false,
+            error: 'ውርርድ የሚቻለው ጨዋታው ሲያልቅ በሎቢው ውስጥ ብቻ ነው። (Tickets can only be purchased in the lobby before the game begins).'
+          };
+          if (callback) callback(errRes);
+          else socket.emit('buy_ticket_response', errRes);
+          return;
+        }
+
         const result = await gameEngine.handleBuyTicket(
           userId,
           userName || authUserName,

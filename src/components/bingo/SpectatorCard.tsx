@@ -46,10 +46,10 @@ export const SpectatorCard: React.FC = () => {
       <p className="spectator-card-sub">
         {isSpectatingHouse
           ? (lang === 'am'
-              ? `ይህ ${betAmount} ብር ክፍል ቢያንስ 2 ተጫዋቾች እስኪገቡ በመመልከት ላይ ነው። ለቀጣይ ዙር ካርቴላ ቀድመው ይግዙ!`
-              : `This ${betAmount} ETB house is currently spectating. Pre-buy your ticket now to activate the pot for the next round!`)
+              ? `ይህ ${betAmount} ብር ክፍል ቢያንስ 2 ተጫዋቾች እስኪገቡ በመመልከት ላይ ነው።`
+              : `This ${betAmount} ETB house is currently waiting for players.`)
           : (isPlaying
-              ? (lang === 'am' ? 'የቀጥታ ጨዋታ በመካሄድ ላይ ነው። ለቀጣይ ዙር ካርቴላ ቀድመው ይግዙ!' : 'A live round is currently in progress. Pre-buy now for the next round!')
+              ? (lang === 'am' ? 'የቀጥታ ጨዋታ በመካሄድ ላይ ነው። ጨዋታው ሲያልቅ ካርቴላ መግዛት ይችላሉ!' : 'A live round is currently in progress. You can buy cartelas as soon as this game completes!')
               : t('bingo.spectatorSub'))}
       </p>
 
@@ -70,17 +70,19 @@ export const SpectatorCard: React.FC = () => {
         )}
       </div>
 
-      {/* Golden Action Button */}
+      {/* Action Button: Disabled during active gameplay */}
       <button
         type="button"
-        className="btn-spectator-buy-gold"
-        onClick={buyTicket}
+        className={`btn-spectator-buy-gold ${isPlaying ? 'disabled-waiting' : ''}`}
+        onClick={isPlaying ? undefined : buyTicket}
+        disabled={isPlaying}
+        style={isPlaying ? { opacity: 0.65, cursor: 'not-allowed', filter: 'grayscale(0.3)' } : undefined}
       >
-        <i className="fa-solid fa-ticket"></i>
+        <i className={isPlaying ? "fa-solid fa-hourglass-half" : "fa-solid fa-ticket"}></i>
         <span>
-          {hasPreBoughtNext
-            ? (lang === 'am' ? 'ካርቴላ ቀድመው ገዝተዋል ✓' : 'TICKET PRE-BOUGHT ✓')
-            : (isPlaying ? (lang === 'am' ? 'ለቀጣይ ዙር ይግዙ' : 'PRE-BUY FOR NEXT ROUND') : t('bingo.buyTicket'))}
+          {isPlaying
+            ? (lang === 'am' ? 'ጨዋታው እስኪያልቅ ይጠብቁ...' : 'WAIT FOR GAME TO COMPLETE...')
+            : t('bingo.buyTicket')}
         </span>
       </button>
     </div>
