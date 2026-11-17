@@ -106,53 +106,11 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
     };
   }, []);
 
-  // Web Audio Synthesizer for Authentic Casino Sound Effects
-  const sndCtxRef = useRef<AudioContext | null>(null);
-  const getSndCtx = useCallback(() => {
-    if (!sndCtxRef.current && typeof window !== 'undefined') {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioCtx) sndCtxRef.current = new AudioCtx();
-    }
-    if (sndCtxRef.current && sndCtxRef.current.state === 'suspended') {
-      sndCtxRef.current.resume();
-    }
-    return sndCtxRef.current;
-  }, []);
-
-  const playTone = useCallback(
-    (freq: number, duration: number, type: OscillatorType = 'sine', gainVal = 0.15) => {
-      try {
-        const ctx = getSndCtx();
-        if (!ctx) return;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, ctx.currentTime);
-        gain.gain.setValueAtTime(gainVal, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + duration);
-      } catch (e) {}
-    },
-    [getSndCtx]
-  );
-
-  const playHitChime = useCallback(() => {
-    playTone(880, 0.18, 'sine', 0.14);
-  }, [playTone]);
-
-  const playPopSound = useCallback(() => {
-    playTone(320, 0.08, 'triangle', 0.12);
-  }, [playTone]);
-
-  const playWinFanfare = useCallback(() => {
-    const notes = [523.25, 659.25, 783.99, 1046.5];
-    notes.forEach((freq, idx) => {
-      setTimeout(() => playTone(freq, 0.35, 'triangle', 0.2), idx * 120);
-    });
-  }, [playTone]);
+  // Keno Audio Engine: Completely Muted per User Mandate (Bingo Sound 100% Preserved)
+  const playTone = useCallback((_freq?: number, _duration?: number, _type?: OscillatorType, _gainVal?: number) => {}, []);
+  const playHitChime = useCallback(() => {}, []);
+  const playPopSound = useCallback(() => {}, []);
+  const playWinFanfare = useCallback(() => {}, []);
 
   // Round phase lifecycle reset for landed balls and tube state
   useEffect(() => {
