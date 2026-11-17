@@ -9,6 +9,10 @@ import { AdminProvider } from './context/AdminContext.tsx';
 import { AuthProvider } from './context/AuthContext.tsx';
 import { ErrorBoundary } from './components/common/ErrorBoundary.tsx';
 import './services/versionService.ts';
+import { registerPwaServiceWorker } from './services/pwaRegistration.ts';
+
+// Initialize PWA Service Worker for Agent Portal (suppressed inside Telegram)
+registerPwaServiceWorker();
 
 // FontAwesome Local Bundle
 import '@fortawesome/fontawesome-free/css/all.min.css';

@@ -33,6 +33,11 @@
   Cache-Control: no-cache, no-store, must-revalidate
   Access-Control-Allow-Origin: *
 
+/sw.js
+  Content-Type: text/javascript; charset=utf-8
+  Cache-Control: no-cache, no-store, must-revalidate
+  Service-Worker-Allowed: /
+
 /icons/*
   Cache-Control: public, max-age=604800, immutable
 

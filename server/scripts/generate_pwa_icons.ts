@@ -186,3 +186,4 @@ generateIcons().catch(err => {
   console.error('❌ Failed to generate icons:', err);
   process.exit(1);
 });
+
