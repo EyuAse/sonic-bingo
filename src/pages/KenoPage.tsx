@@ -81,6 +81,168 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
   const [slideIndex, setSlideIndex] = useState<number>(0);
 
   const slidesRef = useRef<HTMLDivElement>(null);
+  const drawnRef = useRef<HTMLDivElement>(null);
+  const bigRef = useRef<HTMLSpanElement>(null);
+
+  // Authenticated User ID formatting matching Image 2 (ID: 886122631)
+  const formattedUid = useMemo(() => {
+    if (!userDisplayId) return 'ID: 886122631';
+    return userDisplayId.startsWith('ID:') ? userDisplayId : `ID: ${userDisplayId}`;
+  }, [userDisplayId]);
+
+  // Stream of other players' tickets matching keno.html / Image 2
+  const [fakeTickets] = useState<Array<{ id: string; n: number[]; b: number }>>([
+    { id: '1***1', n: [76, 52, 1, 36, 39], b: 500 },
+    { id: '4***8', n: [12, 24, 68, 77], b: 250 },
+    { id: '9***2', n: [3, 17, 33, 44, 59, 71], b: 1000 },
+    { id: '0***7', n: [5, 19, 42, 60], b: 100 },
+    { id: '6***3', n: [8, 14, 28, 51, 65], b: 350 },
+    { id: '2***5', n: [22, 38, 47, 63, 79], b: 200 }
+  ]);
+
+  // Web Audio Synthesizer for Authentic Casino Sound Effects
+  const sndCtxRef = useRef<AudioContext | null>(null);
+  const getSndCtx = useCallback(() => {
+    if (!sndCtxRef.current && typeof window !== 'undefined') {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) sndCtxRef.current = new AudioCtx();
+    }
+    if (sndCtxRef.current && sndCtxRef.current.state === 'suspended') {
+      sndCtxRef.current.resume();
+    }
+    return sndCtxRef.current;
+  }, []);
+
+  const playTone = useCallback(
+    (freq: number, duration: number, type: OscillatorType = 'sine', gainVal = 0.15) => {
+      try {
+        const ctx = getSndCtx();
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {}
+    },
+    [getSndCtx]
+  );
+
+  const playHitChime = useCallback(() => {
+    playTone(880, 0.18, 'sine', 0.14);
+  }, [playTone]);
+
+  const playPopSound = useCallback(() => {
+    playTone(320, 0.08, 'triangle', 0.12);
+  }, [playTone]);
+
+  const playWinFanfare = useCallback(() => {
+    const notes = [523.25, 659.25, 783.99, 1046.5];
+    notes.forEach((freq, idx) => {
+      setTimeout(() => playTone(freq, 0.35, 'triangle', 0.2), idx * 120);
+    });
+  }, [playTone]);
+
+  // Trigger flight animation on currentDrawnBall
+  useEffect(() => {
+    if (!currentDrawnBall || phase !== 'drawing') return;
+
+    playPopSound();
+    const isHit = selectedNumbers.has(currentDrawnBall);
+    if (isHit) {
+      playHitChime();
+    } else {
+      playTone(280, 0.08, 'sine', 0.05);
+    }
+
+    const callIndex = drawnBalls.length - 1;
+    if (callIndex < 0 || callIndex >= 20) return;
+
+    // First 10 called numbers go to 2nd row (slots 10..19); last 10 go to 1st row (slots 0..9)
+    const slotIdx = callIndex < 10 ? 10 + callIndex : callIndex - 10;
+    const big = bigRef.current;
+    const drawnContainer = drawnRef.current;
+
+    if (!big || !drawnContainer) return;
+    const targetSlot = drawnContainer.children[slotIdx] as HTMLElement;
+    if (!targetSlot) return;
+
+    const from = big.getBoundingClientRect();
+    const to = targetSlot.getBoundingClientRect();
+
+    const fl = document.createElement('span');
+    fl.className = 'ball big' + (isHit ? ' hit' : '');
+    fl.innerHTML = `<span class="ball-num">${currentDrawnBall}</span>`;
+    Object.assign(fl.style, {
+      position: 'fixed',
+      left: from.left + 'px',
+      top: from.top + 'px',
+      width: from.width + 'px',
+      height: from.height + 'px',
+      margin: '0',
+      zIndex: '50',
+      pointerEvents: 'none',
+      transition: 'transform .45s cubic-bezier(.22,.8,.36,1), width .45s, height .45s, opacity .45s'
+    });
+    document.body.appendChild(fl);
+
+    // Hide #big temporarily while flying so central tube is empty
+    big.style.setProperty('display', 'none', 'important');
+    big.classList.add('hidden');
+
+    const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+    const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        fl.style.width = to.width + 'px';
+        fl.style.height = to.height + 'px';
+        const flNum = fl.querySelector('.ball-num') as HTMLElement;
+        if (flNum) flNum.style.fontSize = '13px';
+        fl.style.left = from.left + (from.width - to.width) / 2 + 'px';
+        fl.style.top = from.top + (from.height - to.height) / 2 + 'px';
+        fl.style.transform = `translate(${dx}px, ${dy}px)`;
+      });
+    });
+
+    const timer = setTimeout(() => {
+      fl.remove();
+      playTone(560, 0.05, 'sine', 0.08);
+    }, 450);
+
+    return () => {
+      clearTimeout(timer);
+      fl.remove();
+    };
+  }, [currentDrawnBall, phase, selectedNumbers, playPopSound, playHitChime, playTone, drawnBalls.length]);
+
+  // Win fanfare on settlement
+  useEffect(() => {
+    if (phase === 'settlement' && lastWinAmount > 0) {
+      playWinFanfare();
+    }
+  }, [phase, lastWinAmount, playWinFanfare]);
+
+  // Telegram WebApp Native BackButton Integration
+  useEffect(() => {
+    const tg = (window as any).Telegram?.WebApp;
+    if (tg?.BackButton) {
+      tg.BackButton.show();
+      const handleBack = () => {
+        if (onBackToLobby) onBackToLobby();
+      };
+      tg.BackButton.onClick(handleBack);
+      return () => {
+        tg.BackButton.offClick(handleBack);
+        tg.BackButton.hide();
+      };
+    }
+  }, [onBackToLobby]);
 
   // Toast Helper
   const showToast = useCallback((msg: string) => {
@@ -224,7 +386,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
         <div>
           <div className="sub">
             <span>
-              All<b>{9106 + mine.length}</b>
+              All<b>{9278 + mine.length}</b>
             </span>
             <span>
               My Tickets<b>{mine.length}</b>
@@ -233,11 +395,50 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
               My Bets<b>{totalBets}</b>
             </span>
           </div>
-          {mine.length > 0 ? (
-            mine.map((t, idx) => renderTicketCard(t, idx, true))
-          ) : (
-            <div className="empty">No active tickets placed for Round #{roundNumber}</div>
-          )}
+          {/* Player's active tickets at top */}
+          {mine.map((t, idx) => renderTicketCard(t, idx, true))}
+
+          {/* Followed by live active tickets from other players (Image 2 exact match) */}
+          {fakeTickets.map((ft, idx) => {
+            const hits = ft.n.filter(n => drawnBalls.includes(n));
+            const isSettlement = phase === 'settlement';
+            let statusText = 'Waiting';
+            let statusCls = 'w';
+
+            if (isSettlement) {
+              const p = PAY[ft.n.length] || {};
+              const mult = p[hits.length] !== undefined ? p[hits.length] : 0;
+              const won = mult * ft.b;
+              if (won > 0) {
+                statusText = won % 1 === 0 ? String(won) : won.toFixed(2);
+                statusCls = 'win';
+              } else {
+                statusText = '0';
+                statusCls = 'lose';
+              }
+            }
+
+            return (
+              <div key={idx} className="tk">
+                <div className="id">{ft.id}</div>
+                <div className="slots">
+                  {Array.from({ length: 10 }, (_, i) => {
+                    const v = ft.n[i];
+                    const isHit = v && hits.includes(v);
+                    return (
+                      <span key={i} className={v ? `f${isHit ? ' h-other' : ''}` : ''}>
+                        {v || ''}
+                      </span>
+                    );
+                  })}
+                </div>
+                <div className="bt">
+                  <div>Bet {fmt(ft.b)}</div>
+                  <div className={statusCls}>{statusText}</div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       );
     }
@@ -358,7 +559,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
               <span id="bal2">{balance.toFixed(2)}</span> ETB
             </span>
             <span className="lid">
-              <span id="uid2">{userDisplayId}</span>
+              <span id="uid2">{formattedUid}</span>
               <img src={SHD} width="14" height="18" alt="Shield" />
             </span>
           </div>
@@ -392,19 +593,6 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
         {/* ── Main Mobile Container (.app) ── */}
         <div className="app">
           <header>
-            {/* Discreet Return to Lobby Button */}
-            {onBackToLobby && (
-              <button
-                type="button"
-                className="keno-lobby-btn"
-                onClick={onBackToLobby}
-                title="Return to Bingo Lobby"
-              >
-                <span className="arrow">←</span>
-                <span>Lobby</span>
-              </button>
-            )}
-
             <div className="logo" onClick={() => openRulesModal('rules')} style={{ cursor: 'pointer' }}>
               <span className="t1">FAST</span>
               <span className="t2">
@@ -419,7 +607,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
                 <sup>ETB</sup>
               </span>
               <span className="id">
-                <span id="uid">{userDisplayId}</span>
+                <span id="uid">{formattedUid}</span>
                 <img src={SHD} width="14" height="18" alt="Verified Shield" />
               </span>
             </div>
@@ -596,16 +784,18 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
 
                 <div className="glow">
                   {/* Central Emerging Ball Tube */}
-                  {currentDrawnBall && (
-                    <span
-                      className={`ball big emerging${
-                        selectedNumbers.has(currentDrawnBall) ? ' hit' : ''
-                      }`}
-                      id="big"
-                    >
-                      <span className="ball-num">{currentDrawnBall}</span>
-                    </span>
-                  )}
+                  <span
+                    className={`ball big${
+                      currentDrawnBall
+                        ? ` emerging${selectedNumbers.has(currentDrawnBall) ? ' hit' : ''}`
+                        : ' hidden'
+                    }`}
+                    id="big"
+                    ref={bigRef}
+                    style={currentDrawnBall ? undefined : { display: 'none' }}
+                  >
+                    <span className="ball-num">{currentDrawnBall || '–'}</span>
+                  </span>
 
                   {/* Settlement In-Stage Banner */}
                   {phase === 'settlement' && (
@@ -627,7 +817,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
                 </div>
 
                 {/* Docked 20 Ball Slots (first 10 row 2, last 10 row 1) */}
-                <div className="drawn" id="drawn">
+                <div className="drawn" id="drawn" ref={drawnRef}>
                   {dockedSlots.map((ballNum, idx) => (
                     <span
                       key={idx}
@@ -844,6 +1034,31 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
                 </g>
               </svg>
             </div>
+            {onBackToLobby && (
+              <button
+                type="button"
+                className="rules-exit-lobby-btn"
+                onClick={() => {
+                  closeRulesModal();
+                  onBackToLobby();
+                }}
+                style={{
+                  background: 'rgba(61, 220, 151, 0.12)',
+                  border: '1px solid rgba(61, 220, 151, 0.4)',
+                  color: '#3ddc97',
+                  borderRadius: '16px',
+                  padding: '4px 12px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                ← Exit to Lobby
+              </button>
+            )}
             <button
               type="button"
               className="rules-modal-close"

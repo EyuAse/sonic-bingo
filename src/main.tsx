@@ -5,6 +5,7 @@ import { AppProvider } from './context/AppContext.tsx';
 import { LanguageProvider } from './context/LanguageContext.tsx';
 import { WalletProvider } from './context/WalletContext.tsx';
 import { BingoProvider } from './context/BingoContext.tsx';
+import { KenoProvider } from './context/KenoContext.tsx';
 import { AdminProvider } from './context/AdminContext.tsx';
 import { AuthProvider } from './context/AuthContext.tsx';
 import { ErrorBoundary } from './components/common/ErrorBoundary.tsx';
@@ -46,7 +47,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <AppProvider>
               <WalletProvider>
                 <BingoProvider>
-                  <App />
+                  <KenoProvider>
+                    <App />
+                  </KenoProvider>
                 </BingoProvider>
               </WalletProvider>
             </AppProvider>
