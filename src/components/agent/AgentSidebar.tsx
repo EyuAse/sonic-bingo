@@ -71,11 +71,11 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
         style={{
           position: 'sticky',
           top: 0,
-          height: '100vh',
-          maxHeight: '100vh',
-          overflowY: 'auto',
+          height: isMobileOpen ? '100dvh' : '100vh',
+          maxHeight: isMobileOpen ? '100dvh' : '100vh',
+          overflow: 'hidden',
           flexShrink: 0,
-          zIndex: 40,
+          zIndex: isMobileOpen ? 9999 : 40,
           width: isCollapsed ? '72px' : '260px',
           minWidth: isCollapsed ? '72px' : '260px',
           background: '#ffffff',
@@ -96,7 +96,8 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
             alignItems: 'center',
             justifyContent: isCollapsed ? 'center' : 'space-between',
             position: 'relative',
-            borderBottom: '1px solid #f2f2f4'
+            borderBottom: '1px solid #f2f2f4',
+            flexShrink: 0
           }}
         >
           <div
@@ -340,7 +341,11 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
             display: 'flex',
             flexDirection: 'column',
             gap: '8px',
-            alignItems: isCollapsed ? 'center' : 'stretch'
+            alignItems: isCollapsed ? 'center' : 'stretch',
+            flexShrink: 0,
+            marginTop: 'auto',
+            background: '#ffffff',
+            paddingBottom: 'max(20px, env(safe-area-inset-bottom))'
           }}
         >
           {canInstall && onInstallClick && (

@@ -747,16 +747,36 @@
     top: 0 !important;
     left: 0 !important;
     bottom: 0 !important;
+    height: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
     transform: translateX(-100%);
-    width: 260px !important;
+    width: 275px !important;
     background: #ffffff !important;
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.15) !important;
+    box-shadow: 0 0 35px rgba(0, 0, 0, 0.3) !important;
+    z-index: 9999 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
   .sonic-agent-sidebar.mobile-open {
-    transform: translateX(0);
+    transform: translateX(0) !important;
+  }
+  .sonic-mobile-overlay {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: rgba(15, 23, 42, 0.65) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+    z-index: 9998 !important;
   }
   .sonic-mobile-overlay.mobile-open {
-    display: block;
+    display: block !important;
   }
   .sonic-agent-main-viewport,
   .sonic-agent-main-viewport.sidebar-collapsed {
@@ -1666,15 +1686,36 @@
   }
 
   /* On mobile (< 992px), global topbar provides the primary navigation drawer toggle and float chip.
-     Suppress duplicate in-content hamburger buttons and redundant wallet balance chips */
+     Eliminate duplicate headers: convert enqu-topbar into an inline greeting section */
   .enqu-menu-btn {
     display: none !important;
   }
   .sonic-agent-page-content .enqu-menu-btn {
     display: none !important;
   }
-  .sonic-agent-page-content .enqu-topbar .enqu-chip {
+  .sonic-agent-page-content .enqu-topbar {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+    padding: 10px 4px 6px !important;
+    margin-bottom: 6px !important;
+  }
+  .sonic-agent-page-content .enqu-topbar .enqu-chip,
+  .sonic-agent-page-content .enqu-topbar .enqu-av,
+  .sonic-agent-page-content .enqu-topbar .enqu-bell-btn {
     display: none !important;
+  }
+  .sonic-agent-page-content .enqu-topbar h1 {
+    font-size: 20px !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+  }
+  .sonic-agent-page-content .enqu-topbar .sub {
+    font-size: 12.5px !important;
+    color: #64748b !important;
+    margin-top: 2px !important;
   }
 }
 

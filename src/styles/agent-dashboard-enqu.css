@@ -1043,7 +1043,16 @@
   .enqu-menu-btn {
     display: none !important;
   }
-  .enqu-topbar .enqu-chip {
+  .enqu-topbar {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 10px 4px 6px !important;
+    margin-bottom: 6px !important;
+  }
+  .enqu-topbar .enqu-chip,
+  .enqu-topbar .enqu-av,
+  .enqu-topbar .enqu-bell-btn {
     display: none !important;
   }
   .enqu-hero {
