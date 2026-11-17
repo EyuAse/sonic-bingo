@@ -3,10 +3,23 @@ import React from 'react';
 interface IOSPWAInstallModalProps {
   isOpen: boolean;
   onClose: () => void;
+  platform?: 'ios' | 'android' | 'auto';
 }
 
-export const IOSPWAInstallModal: React.FC<IOSPWAInstallModalProps> = ({ isOpen, onClose }) => {
+export const IOSPWAInstallModal: React.FC<IOSPWAInstallModalProps> = ({
+  isOpen,
+  onClose,
+  platform = 'auto',
+}) => {
   if (!isOpen) return null;
+
+  // Determine target platform
+  const isTargetIOS =
+    platform === 'ios' ||
+    (platform === 'auto' &&
+      typeof window !== 'undefined' &&
+      (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)));
 
   return (
     <div
@@ -101,13 +114,9 @@ export const IOSPWAInstallModal: React.FC<IOSPWAInstallModalProps> = ({ isOpen, 
               }}
             >
               <img
-                src="/icons/apple-touch-icon.png"
+                src="/icons/icon-192.png"
                 alt="Sonic Agent"
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                onError={(e) => {
-                  // Fallback crown if image fails
-                  (e.target as any).style.display = 'none';
-                }}
               />
             </div>
             <div>
@@ -120,7 +129,7 @@ export const IOSPWAInstallModal: React.FC<IOSPWAInstallModalProps> = ({ isOpen, 
                   lineHeight: 1.25,
                 }}
               >
-                Sonic Agent ን በስልክዎ ይጫኑ
+                {isTargetIOS ? 'Sonic Agent ን በ iPhone ይጫኑ' : 'Sonic Agent ን በስልክዎ ይጫኑ'}
               </h3>
               <p
                 style={{
@@ -131,7 +140,7 @@ export const IOSPWAInstallModal: React.FC<IOSPWAInstallModalProps> = ({ isOpen, 
                   letterSpacing: '0.3px',
                 }}
               >
-                Install Sonic Agent (iPhone / Safari)
+                {isTargetIOS ? 'Install on iPhone (Safari)' : 'Install on Android (Chrome)'}
               </p>
             </div>
           </div>
@@ -144,137 +153,263 @@ export const IOSPWAInstallModal: React.FC<IOSPWAInstallModalProps> = ({ isOpen, 
               lineHeight: 1.45,
             }}
           >
-            አፕሊኬሽኑን በቀጥታ በስልክዎ መነሻ ስክሪን ላይ በመጫን ያለ ብሮውዘር ባር ልክ እንደ ኔቲቭ አፕ ይጠቀሙ።
+            አፕሊኬሽኑን በቀጥታ በስልክዎ መነሻ ስክሪን ላይ በመጫን ያለ ብሮውዘር ባር ልክ እንደ ኔቲቭ አፕ በቀጥታ ይጠቀሙ።
           </p>
 
-          {/* 3 Step Visual Guide Cards */}
+          {/* Step-by-Step Visual Cards */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
-            {/* Step 1 */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px',
-                backgroundColor: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '14px',
-                padding: '12px 14px',
-              }}
-            >
-              <div
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  backgroundColor: '#e0f2fe',
-                  color: '#0284c7',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                {/* Safari Share Icon */}
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                  <polyline points="16 6 12 2 8 6" />
-                  <line x1="12" y1="2" x2="12" y2="15" />
-                </svg>
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>
-                  1. የ Safari <strong>Share</strong> ምልክትን ይጫኑ
+            {isTargetIOS ? (
+              // iOS Safari 3-Steps
+              <>
+                {/* Step 1 */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '12px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '14px',
+                    padding: '12px 14px',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '10px',
+                      backgroundColor: '#e0f2fe',
+                      color: '#0284c7',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                      <polyline points="16 6 12 2 8 6" />
+                      <line x1="12" y1="2" x2="12" y2="15" />
+                    </svg>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>
+                      1. የ Safari <strong>Share</strong> (⎋) ምልክትን ይጫኑ
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
+                      Tap the <strong>Share</strong> button at the bottom of Safari.
+                    </div>
+                  </div>
                 </div>
-                <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
-                  Tap the <strong>Share</strong> button at the bottom of Safari.
-                </div>
-              </div>
-            </div>
 
-            {/* Step 2 */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px',
-                backgroundColor: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '14px',
-                padding: '12px 14px',
-              }}
-            >
-              <div
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  backgroundColor: '#fef3c7',
-                  color: '#d97706',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                {/* Add to Home Screen Icon */}
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="4" />
-                  <line x1="12" y1="8" x2="12" y2="16" />
-                  <line x1="8" y1="12" x2="16" y2="12" />
-                </svg>
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>
-                  2. <strong>'Add to Home Screen'</strong> የሚለውን ይምረጡ
+                {/* Step 2 */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '12px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '14px',
+                    padding: '12px 14px',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '10px',
+                      backgroundColor: '#fef3c7',
+                      color: '#d97706',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="4" />
+                      <line x1="12" y1="8" x2="12" y2="16" />
+                      <line x1="8" y1="12" x2="16" y2="12" />
+                    </svg>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>
+                      2. <strong>'Add to Home Screen'</strong> የሚለውን ይምረጡ
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
+                      Scroll down and tap <strong>'Add to Home Screen'</strong> (ወደ መነሻ ስክሪን ጨምር).
+                    </div>
+                  </div>
                 </div>
-                <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
-                  Scroll down and tap <strong>'Add to Home Screen'</strong> (ወደ መነሻ ስክሪን ጨምር).
-                </div>
-              </div>
-            </div>
 
-            {/* Step 3 */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px',
-                backgroundColor: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '14px',
-                padding: '12px 14px',
-              }}
-            >
-              <div
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  backgroundColor: '#fee2e2',
-                  color: '#dc2626',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                {/* Check / Finish Icon */}
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>
-                  3. ከላይ በቀኝ <strong>'Add'</strong> (አክል) የሚለውን ይጫኑ
+                {/* Step 3 */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '12px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '14px',
+                    padding: '12px 14px',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '10px',
+                      backgroundColor: '#fee2e2',
+                      color: '#dc2626',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>
+                      3. ከላይ በቀኝ <strong>'Add'</strong> (አክል) የሚለውን ይጫኑ
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
+                      Tap <strong>'Add'</strong> in the top right corner. Done!
+                    </div>
+                  </div>
                 </div>
-                <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
-                  Tap <strong>'Add'</strong> in the top right corner. Done!
+              </>
+            ) : (
+              // Android Chrome 3-Steps
+              <>
+                {/* Step 1 */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '12px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '14px',
+                    padding: '12px 14px',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '10px',
+                      backgroundColor: '#e0f2fe',
+                      color: '#0284c7',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                      <circle cx="12" cy="5" r="2" />
+                      <circle cx="12" cy="12" r="2" />
+                      <circle cx="12" cy="19" r="2" />
+                    </svg>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>
+                      1. የ Chrome ሜኑ <strong>(⋮)</strong> ምልክትን ይጫኑ
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
+                      Tap the three dots <strong>(⋮)</strong> at the top right of Chrome.
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+
+                {/* Step 2 */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '12px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '14px',
+                    padding: '12px 14px',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '10px',
+                      backgroundColor: '#fef3c7',
+                      color: '#d97706',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>
+                      2. <strong>'Install app'</strong> ወይም <strong>'Add to Home screen'</strong> ይምረጡ
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
+                      Select <strong>'Install app'</strong> (ወደ መነሻ ስክሪን ጨምር).
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '12px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '14px',
+                    padding: '12px 14px',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '10px',
+                      backgroundColor: '#fee2e2',
+                      color: '#dc2626',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>
+                      3. <strong>'Install'</strong> (ጫን) የሚለውን ያረጋግጡ
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
+                      Tap <strong>'Install'</strong> to complete setup.
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
-          {/* Bottom Pointer Cue */}
+          {/* Pointer Cue */}
           <div
             style={{
               display: 'flex',
@@ -291,8 +426,12 @@ export const IOSPWAInstallModal: React.FC<IOSPWAInstallModalProps> = ({ isOpen, 
               fontWeight: '600',
             }}
           >
-            <span style={{ fontSize: '15px' }}>👇</span>
-            <span>የ Safari ታችኛው ባር ላይ የሚገኘውን ምልክት ይጫኑ</span>
+            <span style={{ fontSize: '15px' }}>{isTargetIOS ? '👇' : '👆'}</span>
+            <span>
+              {isTargetIOS
+                ? 'የ Safari ታችኛው ባር ላይ የሚገኘውን ምልክት ይጫኑ'
+                : 'የ Chrome የላይኛው ቀኝ ሜኑ (⋮) ላይ የሚገኘውን ይጫኑ'}
+            </span>
           </div>
 
           {/* Got it Dismiss Button */}
@@ -331,4 +470,3 @@ export const IOSPWAInstallModal: React.FC<IOSPWAInstallModalProps> = ({ isOpen, 
     </div>
   );
 };
-

@@ -1,6 +1,7 @@
 import React from 'react';
 import { usePWAInstall } from '../../hooks/usePWAInstall.ts';
 import { IOSPWAInstallModal } from './IOSPWAInstallModal.tsx';
+import { PWASuccessModal } from './PWASuccessModal.tsx';
 
 interface AgentLoginScreenProps {
   loginPhone: string;
@@ -25,7 +26,16 @@ export const AgentLoginScreen: React.FC<AgentLoginScreenProps> = ({
   onSubmit,
   onReturnToBingo
 }) => {
-  const { canInstall, showIOSModal, setShowIOSModal, triggerInstall } = usePWAInstall();
+  const {
+    canInstall,
+    isInstalling,
+    showSuccessModal,
+    setShowSuccessModal,
+    showIOSModal,
+    setShowIOSModal,
+    triggerInstall,
+    openApp
+  } = usePWAInstall();
   return (
     <div
       style={{
@@ -264,8 +274,28 @@ export const AgentLoginScreen: React.FC<AgentLoginScreenProps> = ({
           </span>
         </div>
 
-        {/* PWA 1-Tap Install Button */}
-        {canInstall && (
+        {/* PWA 1-Tap Install Button & Active Installing Feedback */}
+        {isInstalling ? (
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '10px',
+              background: '#fffbeb',
+              border: '1px solid #f59e0b',
+              padding: '8px 20px',
+              borderRadius: '24px',
+              marginBottom: '16px',
+              fontSize: '13px',
+              fontWeight: 800,
+              color: '#b45309',
+              boxShadow: '0 4px 14px rgba(245, 158, 11, 0.2)'
+            }}
+          >
+            <i className="fa-solid fa-spinner fa-spin" style={{ color: '#d97706', fontSize: '15px' }}></i>
+            <span>⏳ መተግበሪያው በመጫን ላይ ነው... / Installing...</span>
+          </div>
+        ) : canInstall ? (
           <button
             type="button"
             onClick={triggerInstall}
@@ -289,7 +319,7 @@ export const AgentLoginScreen: React.FC<AgentLoginScreenProps> = ({
             <i className="fa-solid fa-mobile-screen-button" style={{ color: '#fef08a' }}></i>
             <span>📱 መተግበሪያውን ጫን / Install App</span>
           </button>
-        )}
+        ) : null}
 
         {/* 6. Subtitle with Horizontal Dividing Lines */}
         <div
@@ -628,8 +658,15 @@ export const AgentLoginScreen: React.FC<AgentLoginScreenProps> = ({
         </div>
       </div>
 
-      {/* iOS Safari PWA Install Modal */}
+      {/* iOS & Android PWA Install Guide Modal */}
       <IOSPWAInstallModal isOpen={showIOSModal} onClose={() => setShowIOSModal(false)} />
+
+      {/* PWA Success Completion Modal */}
+      <PWASuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        onOpenApp={openApp}
+      />
     </div>
   );
 };
