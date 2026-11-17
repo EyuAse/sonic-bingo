@@ -23,6 +23,7 @@ import { WithdrawPage } from './pages/WithdrawPage.tsx';
 import { HistoryPage } from './pages/HistoryPage.tsx';
 import { ProfilePage } from './pages/ProfilePage.tsx';
 import { BingoPage } from './pages/BingoPage.tsx';
+import { KenoPage } from './pages/KenoPage.tsx';
 import { AffiliatePage } from './pages/AffiliatePage.tsx';
 import { telegramService } from './services/telegramService.ts';
 import { AccountInfoPage } from './pages/AccountInfoPage.tsx';
@@ -49,6 +50,11 @@ export const App: React.FC = () => {
       );
       if (isAgentHash) {
         switchPage('agent');
+        return;
+      }
+      const isKenoHash = typeof window !== 'undefined' && (window.location.hash || '').toLowerCase().includes('keno');
+      if (isKenoHash) {
+        switchPage('keno');
         return;
       }
       switchPage('games');
@@ -127,7 +133,7 @@ export const App: React.FC = () => {
     currentPage === 'deposit' ||
     currentPage === 'withdraw';
 
-  const isDedicatedGamePage = currentPage === 'bingo';
+  const isDedicatedGamePage = currentPage === 'bingo' || currentPage === 'keno';
   const isDesktop = telegramService.isDesktopPlatform();
 
   return (
@@ -149,6 +155,7 @@ export const App: React.FC = () => {
       {currentPage === 'history' && <HistoryPage />}
       {currentPage === 'profile' && <ProfilePage />}
       {currentPage === 'bingo' && <BingoPage />}
+      {currentPage === 'keno' && <KenoPage onBackToLobby={() => switchPage('games')} />}
       {currentPage === 'affiliate' && <AffiliatePage />}
       {currentPage === 'account-info' && <AccountInfoPage />}
       {currentPage === 'help' && <HelpCenterPage />}

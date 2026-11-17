@@ -25,7 +25,7 @@ const gameList: GameCardItem[] = [
     subtitle: 'Instant Win',
     img: '/assets/images/fast-keno.jpg',
     playerCount: '543',
-    tag: 'SOON'
+    tag: 'LIVE'
   },
   {
     id: 'aviator',
@@ -46,9 +46,13 @@ const gameList: GameCardItem[] = [
 ];
 
 export const MoreGamesGrid: React.FC = () => {
-  const { showToast } = useApp();
+  const { showToast, switchPage } = useApp();
 
   const handleGameClick = (game: GameCardItem) => {
+    if (game.id === 'fast-keno') {
+      switchPage('keno');
+      return;
+    }
     showToast(`🚀 ${game.title} is coming soon! Instant Play will be unlocked in the next release.`);
   };
 

@@ -17,7 +17,8 @@ export type PageId =
   | 'about'
   | 'admin'
   | 'agent'
-  | 'withdrawals';
+  | 'withdrawals'
+  | 'keno';
 
 interface AppContextType {
   currentPage: PageId;
