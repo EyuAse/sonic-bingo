@@ -275,9 +275,9 @@ export class KenoGameEngine extends EventEmitter {
       return { success: false, error: 'All numbers must be integers between 1 and 80' };
     }
 
-    // Stake validation (5.00 to 500.00 ETB)
-    if (betAmount < 5.00 || betAmount > 500.00) {
-      return { success: false, error: 'Stake must be between 5.00 and 500.00 ETB' };
+    // Stake validation (1.00 to 500.00 ETB - matching keno.html 2 ETB starting stake)
+    if (betAmount < 1.00 || betAmount > 500.00) {
+      return { success: false, error: 'Stake must be between 1.00 and 500.00 ETB' };
     }
 
     // Limit active tickets per user per round to 10

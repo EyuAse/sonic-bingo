@@ -229,9 +229,11 @@ export class PostgresWalletAdapter implements IWalletAdapter {
         [newBalance, resolvedId]
       );
 
-      // 3. Record winning transaction
+      // 3. Record winning transaction with distinct unique reference
       const roundTag = roundNumber > 0 ? `R${roundNumber}` : roundId.slice(0, 8);
-      const winRef = referenceCode || `KENO_WIN_${roundTag}_${Date.now()}`;
+      const winRef = referenceCode
+        ? (referenceCode.startsWith('KENO_WIN_') ? referenceCode : `KENO_WIN_${referenceCode}_${Date.now()}`)
+        : `KENO_WIN_${roundTag}_${Date.now()}`;
       const desc = roundNumber > 0
         ? `Fast Keno Round #${roundNumber} Winning Payout`
         : `Fast Keno Winning Payout (${roundTag})`;

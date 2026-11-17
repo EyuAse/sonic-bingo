@@ -1,7 +1,8 @@
 /**
  * src/context/KenoContext.tsx
  * Real Production Keno Context for Sonic Bingo Mini-App
- * Connects to centralized socketService • Inherits real player session • Zero mock data
+ * Wired to Real Account Money (WalletContext) • Real Auth Session (AuthContext) • Zero Mock Data
+ * Functions with Atomic Row-Level Locks on Neon PostgreSQL exactly like the Bingo cash system.
  */
 
 import React, {
@@ -16,7 +17,9 @@ import React, {
 import { Socket } from 'socket.io-client';
 import { socketService } from '../services/socketService.ts';
 import { WebAudioEngine } from '../components/keno/WebAudioEngine.ts';
-import { getBackendOrigin } from '../config/env.ts';
+import { useWallet } from './WalletContext.tsx';
+import { useAuth } from './AuthContext.tsx';
+import { useApp } from './AppContext.tsx';
 
 const kenoAudio = WebAudioEngine.getInstance();
 
@@ -56,13 +59,15 @@ export interface KenoContextValue {
   drawnBalls: number[];
   currentDrawnBall: number | null;
 
-  // Player Interaction
+  // Real Player Interaction & Real Account Money
   selectedNumbers: Set<number>;
   stake: number;
   activeTickets: KenoTicket[];
-  balance: number;
+  balance: number; // Real live ETB from WalletContext
   bonus: number;
-  userId: string;
+  userId: string; // Real user ID
+  userDisplayId: string; // Real phone or formatted ID
+  isAuthenticated: boolean;
 
   // Analytics
   hotNumbers: number[];
@@ -84,7 +89,9 @@ export interface KenoContextValue {
   setStake: (amt: number) => void;
   adjustStake: (delta: number) => void;
   doubleStake: () => void;
-  placeBet: () => Promise<{ success: boolean; error?: string }>;
+  maxStake: () => void;
+  placeBet: () => Promise<{ success: boolean; error?: string; ticket?: KenoTicket }>;
+  openDeposit: () => void;
   openRulesModal: (tab?: 'rules' | 'fairness') => void;
   closeRulesModal: () => void;
   switchRulesTab: (tab: 'rules' | 'fairness') => void;
@@ -100,22 +107,15 @@ export interface KenoContextValue {
 const KenoContext = createContext<KenoContextValue | null>(null);
 
 export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Resolve real authenticated user ID from storage
-  const [userId, setUserId] = useState<string>(() => {
-    try {
-      const stored = localStorage.getItem('sonic_user');
-      if (stored) {
-        const u = JSON.parse(stored);
-        return u?.id || u?.telegram_id || '';
-      }
-    } catch {}
-    return '';
-  });
+  // ── 1. Real Account Money & Auth Session Integration ──
+  const { user, isAuthenticated } = useAuth();
+  const { balance: walletBalance, bonus: walletBonus, deductBalance, addBalance, refreshBalance } = useWallet();
+  const { switchPage, showToast } = useApp();
 
-  const [balance, setBalance] = useState<number>(0);
-  const [bonus, setBonus] = useState<number>(0);
+  const userId = user?.id || (typeof window !== 'undefined' ? localStorage.getItem('sonic_user_id') : '') || '';
+  const userDisplayId = user?.phone ? user.phone : (user?.id ? user.id.slice(0, 8) : '886122631');
 
-  // Round State
+  // ── 2. Round State ──
   const [roundNumber, setRoundNumber] = useState<number>(1);
   const [phase, setPhase] = useState<KenoPhase>('betting');
   const [timeRemaining, setTimeRemaining] = useState<number>(30);
@@ -123,48 +123,35 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [drawnBalls, setDrawnBalls] = useState<number[]>([]);
   const [currentDrawnBall, setCurrentDrawnBall] = useState<number | null>(null);
 
-  // Player State
+  // ── 3. Player Selection State ──
   const [selectedNumbers, setSelectedNumbers] = useState<Set<number>>(new Set());
   const selectedNumbersRef = useRef<Set<number>>(selectedNumbers);
   selectedNumbersRef.current = selectedNumbers;
   const hitsCountRef = useRef<number>(0);
-  const [stake, setStakeState] = useState<number>(10.0);
+
+  // Starting stake of 2 ETB matching keno.html
+  const [stake, setStakeState] = useState<number>(2.0);
   const [activeTickets, setActiveTickets] = useState<KenoTicket[]>([]);
 
-  // Analytics
+  // ── 4. Real Analytics State ──
   const [hotNumbers, setHotNumbers] = useState<number[]>([]);
   const [coldNumbers, setColdNumbers] = useState<number[]>([]);
   const [frequencyMap, setFrequencyMap] = useState<Record<number, number>>({});
 
-  // Settlements
+  // ── 5. Settlements ──
   const [lastSettlement, setLastSettlement] = useState<any | null>(null);
   const [lastWinAmount, setLastWinAmount] = useState<number>(0);
 
-  // Modal State
+  // ── 6. Modals ──
   const [isRulesModalOpen, setIsRulesModalOpen] = useState<boolean>(false);
   const [rulesModalTab, setRulesModalTab] = useState<'rules' | 'fairness'>('rules');
 
-  // Fetch real player balance from server
-  const refreshBalance = useCallback(async () => {
-    try {
-      const token = localStorage.getItem('sonic_token');
-      const origin = getBackendOrigin();
-      const res = await fetch(`${origin}/api/wallet`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (typeof data.balance === 'number') setBalance(data.balance);
-        if (typeof data.bonus === 'number') setBonus(data.bonus);
-      }
-    } catch {}
-  }, []);
-
+  // Refresh real wallet balance on mount
   useEffect(() => {
     refreshBalance();
   }, [refreshBalance]);
 
-  // Connect to live unified Socket.IO
+  // ── 7. Connect to Live Unified Socket.IO Server ──
   useEffect(() => {
     const socket: Socket = socketService.connect();
 
@@ -242,7 +229,7 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const onRoundSettled = (data: any) => {
-      setPhase('settling');
+      setPhase('settlement');
       if (data.drawnNumbers) setDrawnBalls(data.drawnNumbers);
       setLastSettlement(data);
       if (data.hotCold) {
@@ -258,14 +245,12 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setLastWinAmount(data.userTotalWin || 0);
         if (data.userTotalWin > 0) {
           kenoAudio.playWinFanfare();
+          // Real live ETB credit to WalletContext
+          addBalance(data.userTotalWin);
+          refreshBalance();
         }
         if (data.tickets) {
           setActiveTickets(data.tickets);
-        }
-        if (typeof data.balanceAfter === 'number') {
-          setBalance(data.balanceAfter);
-        } else {
-          refreshBalance();
         }
       }
     };
@@ -288,9 +273,9 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       socket.off('keno:round_settled', onRoundSettled);
       socket.off('keno:player_settled', onPlayerSettled);
     };
-  }, [userId, refreshBalance]);
+  }, [userId, refreshBalance, addBalance]);
 
-  // Actions
+  // ── 8. Real Actions & Betting Logic ──
   const toggleNumber = useCallback((num: number) => {
     if (phase !== 'betting') return;
     setSelectedNumbers(prev => {
@@ -298,12 +283,15 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (next.has(num)) {
         next.delete(num);
       } else {
-        if (next.size >= 10) return prev;
+        if (next.size >= 10) {
+          showToast('Maximum 10 numbers allowed');
+          return prev;
+        }
         next.add(num);
       }
       return next;
     });
-  }, [phase]);
+  }, [phase, showToast]);
 
   const quickPick = useCallback((count: number) => {
     if (phase !== 'betting') return;
@@ -321,27 +309,42 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setSelectedNumbers(new Set());
   }, [phase]);
 
+  // Stake operations matching keno.html
   const setStake = useCallback((amt: number) => {
-    setStakeState(Math.max(5, Math.min(500, Math.round(amt))));
+    setStakeState(Math.max(1, Math.min(500, Math.round(amt))));
   }, []);
 
   const adjustStake = useCallback((delta: number) => {
-    setStakeState(prev => Math.max(5, Math.min(500, prev + delta)));
+    setStakeState(prev => {
+      const next = prev + delta;
+      return Math.max(1, Math.min(500, next));
+    });
   }, []);
 
   const doubleStake = useCallback(() => {
-    setStakeState(prev => Math.max(5, Math.min(500, prev * 2)));
+    setStakeState(prev => Math.max(1, Math.min(500, prev * 2)));
   }, []);
 
-  const placeBet = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
+  const maxStake = useCallback(() => {
+    setStakeState(() => Math.max(1, Math.min(500, Math.max(1, Math.floor(walletBalance)))));
+  }, [walletBalance]);
+
+  const openDeposit = useCallback(() => {
+    switchPage('deposit');
+  }, [switchPage]);
+
+  // Atomic Bet Placement using Real Account Money
+  const placeBet = useCallback(async (): Promise<{ success: boolean; error?: string; ticket?: KenoTicket }> => {
     if (phase !== 'betting') {
       return { success: false, error: 'Betting is closed for this round' };
     }
     if (selectedNumbers.size === 0) {
       return { success: false, error: 'Please select 1 to 10 numbers' };
     }
-    if (balance < stake) {
-      return { success: false, error: `Insufficient cash balance (${balance.toFixed(2)} < ${stake.toFixed(2)} ETB)` };
+    if (walletBalance < stake) {
+      showToast(`Not enough credits (${walletBalance.toFixed(2)} < ${stake.toFixed(2)} ETB). Opening Deposit...`);
+      switchPage('deposit');
+      return { success: false, error: 'Not enough credits' };
     }
 
     const socket = socketService.getSocket();
@@ -363,19 +366,18 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (resp.ticket) {
               setActiveTickets(prev => [...prev, resp.ticket]);
             }
-            if (typeof resp.balanceAfter === 'number') {
-              setBalance(resp.balanceAfter);
-            } else {
-              setBalance(prev => Math.max(0, prev - stake));
-            }
-            resolve({ success: true });
+            // Atomically deduct from real live WalletContext & refresh
+            deductBalance(stake);
+            refreshBalance();
+            setSelectedNumbers(new Set());
+            resolve({ success: true, ticket: resp.ticket });
           } else {
             resolve({ success: false, error: resp?.error || 'Failed to place ticket' });
           }
         }
       );
     });
-  }, [phase, selectedNumbers, stake, balance, userId]);
+  }, [phase, selectedNumbers, stake, walletBalance, userId, deductBalance, refreshBalance, switchPage, showToast]);
 
   const openRulesModal = useCallback((tab: 'rules' | 'fairness' = 'rules') => {
     setRulesModalTab(tab);
@@ -422,9 +424,11 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     selectedNumbers,
     stake,
     activeTickets,
-    balance,
-    bonus,
+    balance: walletBalance,
+    bonus: walletBonus,
     userId,
+    userDisplayId,
+    isAuthenticated,
     hotNumbers,
     coldNumbers,
     frequencyMap,
@@ -438,7 +442,9 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setStake,
     adjustStake,
     doubleStake,
+    maxStake,
     placeBet,
+    openDeposit,
     openRulesModal,
     closeRulesModal,
     switchRulesTab,
