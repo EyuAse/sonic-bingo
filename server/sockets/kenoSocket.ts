@@ -95,6 +95,15 @@ export function setupKenoSockets(io: SocketIOServer, engine: KenoGameEngine): vo
       });
     });
 
+    // Handle universal identify_user from socketService
+    socket.on('identify_user', (data?: { userId?: string }) => {
+      if (data?.userId && data.userId !== currentUserId) {
+        if (currentUserId) socket.leave(`user:${currentUserId}`);
+        currentUserId = data.userId;
+        socket.join(`user:${currentUserId}`);
+      }
+    });
+
     // 2. Place Ticket Bet (Atomic Neon Deduction)
     socket.on(
       'keno:place_ticket',

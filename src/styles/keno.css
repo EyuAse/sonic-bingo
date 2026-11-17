@@ -393,8 +393,9 @@
         }
 
         .keno-fullscreen-view .ball.big.hit {
-            border-color: rgba(120, 230, 170, .7);
-            box-shadow: 0 0 28px #3ddc97cc, 0 0 10px #3ddc97, 0 5px 14px #000c, inset 0 0 10px rgba(120, 230, 170, .5)
+            background: radial-gradient(circle at 50% 88%, #3fd08a 0, #13693f 30%, #07271a 68%, #04130d 100%) !important;
+            border-color: rgba(120, 230, 170, .7) !important;
+            box-shadow: 0 0 28px #3ddc97cc, 0 0 10px #3ddc97, 0 5px 14px #000c, inset 0 0 10px rgba(120, 230, 170, .5) !important;
         }
 
         @keyframes ballEmergePop {

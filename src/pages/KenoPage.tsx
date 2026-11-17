@@ -144,6 +144,22 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
     return set;
   }, [selectedNumbers, activeTickets]);
 
+  // Certified Instant Client-Side Win Calculation on Draw Completion (0ms latency fallback)
+  const roundTotalWin = useMemo(() => {
+    if (!drawnBalls || drawnBalls.length < 20 || activeTickets.length === 0) return 0;
+    let tot = 0;
+    activeTickets.forEach((t: any) => {
+      const nums = t.selectedNumbers || t.numbers || [];
+      const hits = nums.filter((n: number) => drawnBalls.includes(n)).length;
+      const p = PAY[nums.length] || {};
+      const mult = p[hits] || 0;
+      tot += mult * (t.betAmount || 0);
+    });
+    return tot;
+  }, [drawnBalls, activeTickets]);
+
+  const effectiveWin = lastWinAmount > 0 ? lastWinAmount : roundTotalWin;
+
   // Trigger flight animation and slot docking on currentDrawnBall
   useEffect(() => {
     if (!currentDrawnBall || phase !== 'drawing') return;
@@ -1054,25 +1070,25 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
                     }`}
                     id="big"
                     ref={bigRef}
-                    style={currentDrawnBall ? undefined : { display: 'none' }}
+                    style={currentDrawnBall && phase !== 'settlement' ? undefined : { display: 'none' }}
                   >
                     <span className="ball-num">{currentDrawnBall || '–'}</span>
                   </span>
 
                   {/* Settlement In-Stage Banner */}
                   {phase === 'settlement' && (
-                    (lastWinAmount > 0 || activeTickets.length > 0) ? (
+                    (effectiveWin > 0 || activeTickets.length > 0) ? (
                       <div
                         className="win-stage-banner"
                         id="winStageBanner"
                         style={{ display: 'flex' }}
                       >
                         <div className="win-stage-title">
-                          {lastWinAmount > 0 ? 'YOU WIN' : 'TRY AGAIN'}
+                          {effectiveWin > 0 ? 'YOU WIN' : 'TRY AGAIN'}
                         </div>
-                        {lastWinAmount > 0 && (
+                        {effectiveWin > 0 && (
                           <div className="win-stage-val" id="winStageVal">
-                            {lastWinAmount % 1 === 0 ? lastWinAmount : lastWinAmount.toFixed(2)}
+                            {effectiveWin % 1 === 0 ? effectiveWin : effectiveWin.toFixed(2)}
                           </div>
                         )}
                       </div>
