@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePWAInstall } from '../../hooks/usePWAInstall.ts';
 import { IOSPWAInstallModal } from './IOSPWAInstallModal.tsx';
 import { PWASuccessModal } from './PWASuccessModal.tsx';
+import { AgentLoginInstallModal } from './AgentLoginInstallModal.tsx';
 
 interface AgentLoginScreenProps {
   loginPhone: string;
@@ -28,6 +29,8 @@ export const AgentLoginScreen: React.FC<AgentLoginScreenProps> = ({
 }) => {
   const {
     canInstall,
+    isInstalled,
+    isStandalone,
     isInstalling,
     showSuccessModal,
     setShowSuccessModal,
@@ -36,6 +39,36 @@ export const AgentLoginScreen: React.FC<AgentLoginScreenProps> = ({
     triggerInstall,
     openApp
   } = usePWAInstall();
+
+  const [showLoginPrompt, setShowLoginPrompt] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (isStandalone || isInstalled || (window as any).Telegram?.WebApp?.initData) return;
+
+    // Check if dismissed in last 24 hours
+    const dismissedTime = localStorage.getItem('sonic_agent_login_pwa_dismissed');
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    if (dismissedTime && Date.now() - parseInt(dismissedTime, 10) < oneDayMs) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setShowLoginPrompt(true);
+    }, 1200);
+
+    return () => clearTimeout(timer);
+  }, [isStandalone, isInstalled]);
+
+  const handleDismissLoginPrompt = () => {
+    setShowLoginPrompt(false);
+    localStorage.setItem('sonic_agent_login_pwa_dismissed', Date.now().toString());
+  };
+
+  const handleInstallFromLoginPrompt = () => {
+    setShowLoginPrompt(false);
+    triggerInstall();
+  };
   return (
     <div
       style={{
@@ -657,6 +690,14 @@ export const AgentLoginScreen: React.FC<AgentLoginScreenProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Smart Login Page Install Prompt Modal */}
+      <AgentLoginInstallModal
+        isOpen={showLoginPrompt}
+        onClose={handleDismissLoginPrompt}
+        onInstall={handleInstallFromLoginPrompt}
+        isInstalling={isInstalling}
+      />
 
       {/* iOS & Android PWA Install Guide Modal */}
       <IOSPWAInstallModal isOpen={showIOSModal} onClose={() => setShowIOSModal(false)} />
