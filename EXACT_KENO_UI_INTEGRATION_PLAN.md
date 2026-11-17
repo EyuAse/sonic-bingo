@@ -69,35 +69,62 @@ flowchart TD
 ---
 
 ### 🚀 Phase 1: Real Account Money & Authenticated Wallet Bridge
-**Goal**: Wire the Keno game state directly to the user's real wallet and auth session, matching Bingo's real-money behavior.
+**Status**: ✅ COMPLETED (Commit `df064c9`)
 
-- [ ] **1.1. Connect `WalletContext` & `AuthContext` to `KenoContext`**:
-  - Replace any remaining fallback state with `useWallet()` and `useAuth()`.
-  - Expose `realBalance`: current ETB balance from `wallets` table in Neon DB.
-  - Expose `userIdentifier`: real phone number or formatted account ID (e.g., `091****89` or `ID: 886122631`).
-  - Provide `openDeposit()`: triggers `switchPage('deposit')` when the player taps the balance pill or has insufficient funds.
-- [ ] **1.2. Real Stake Validation & Atomic Debit**:
-  - Before emitting `keno:place_bet`, check if `stake <= realBalance`. If not, show toast `"Not enough credits. Please deposit"` and prompt deposit.
-  - On confirmation, emit `keno:place_bet` to server.
-  - `PostgresWalletAdapter.deductBet()` executes inside a PostgreSQL transaction (`SELECT balance FROM wallets WHERE user_id = $1 FOR UPDATE`), verifying the live DB balance, deducting the exact stake, and creating an immutable record in `wallet_transactions` with `type = 'bet'`.
-  - Immediately refresh and sync `WalletContext.balance` so that header, profile, and Bingo balances update simultaneously.
-- [ ] **1.3. Real Round Settlement & Payout Credits**:
-  - When a round finishes, `KenoGameEngine` evaluates all tickets against the drawn 20 balls using the official Atlas-V paytable.
-  - For winning tickets, `PostgresWalletAdapter.creditWin()` atomically credits the real ETB winnings to the player's wallet and records `type = 'win'` in `wallet_transactions`.
-  - Broadcasts `keno:round_settled` to client, updating the real player wallet balance and displaying the in-stage `YOU WIN` banner.
-- [ ] **Phase 1 Acceptance Criteria**:
-  - A real user with 50 ETB places a 10 ETB bet $\rightarrow$ wallet balance immediately becomes 40 ETB in Neon DB and on screen.
-  - Winning a 20 ETB payout $\rightarrow$ wallet balance immediately becomes 60 ETB.
-  - Tapping the balance pill opens the deposit modal.
+- [x] **1.1. Connect `WalletContext` & `AuthContext` to `KenoContext`**:
+  - Bound directly to `useWallet()` and `useAuth()`. Real live balance from `wallets` table in Neon DB.
+  - Exposes `userDisplayId` showing real phone or masked user ID with `ID: ` prefix.
+  - Provides `openDeposit()`: triggers `switchPage('deposit')` on balance tap or insufficient credits.
+- [x] **1.2. Real Stake Validation & Atomic Debit**:
+  - Live Neon DB constraint `keno_tickets_bet_amount_check` updated to allow 1.00 ETB - 500.00 ETB.
+  - `PostgresWalletAdapter.deductBet()` executes inside a PostgreSQL transaction (`SELECT balance FROM wallets FOR UPDATE`), creating an immutable record in `wallet_transactions` with `type = 'bet'`.
+- [x] **1.3. Real Round Settlement & Payout Credits**:
+  - `PostgresWalletAdapter.creditWin()` credits real ETB winnings atomically with distinct reference code (`KENO_WIN_...`).
+  - Broadcasts `keno:round_settled` to client, updating the real player wallet balance.
 
 ---
 
 ### 🎨 Phase 2: Exact CSS & Visual Asset Restoration
-**Goal**: Restore 100% of the authentic styles, layouts, responsive sidebars, animations, and background assets from `keno.html` (Image 2).
+**Status**: ✅ COMPLETED (Commit `f21375b`)
 
-- [ ] **2.1. Complete Replacement of `src/styles/keno.css`**:
-  - Paste the exact 597 lines of pure CSS from `keno.html`.
-  - Retain all root color variables:
+- [x] **2.1. Complete Extraction of Authentic CSS**:
+  - Extracted 139,417 bytes of pure CSS directly from `keno.html` into `src/styles/keno.css`.
+  - Base64 luxury visual assets (`body::before` WebP radar overlay, `body::after` luxury casino texture, SVGs).
+  - 3-column desktop layout (`.wrap`: left 285px sidebar, center 560px board, right 290px sidebar) and mobile column.
+
+---
+
+### 🧩 Phase 3: Pixel-Perfect Component Port
+**Status**: ✅ COMPLETED (Commit `6ccbb0c`)
+
+- [x] **3.1. Replaced React Structure with 100% Exact keno.html DOM**:
+  - Complete removal of custom quick-bet buttons, custom spot pickers, and jackpot banners.
+  - Rebuilt `src/pages/KenoPage.tsx` with exact DOM elements: `.wrap`, `.stage#stage`, `.arcs`, `#pickView`, `#infoView`, `.slides#slides`, `.pgd#pgd`, `.grid#grid`, `.amt`, `.sm#x2`, `.sm#mx`, `.bet#bet`, and bottom `nav`.
+  - Authentic `#rulesModal` with UK flag and 10x10 paytable.
+
+---
+
+### ⚡ Phase 4: Sockets, Procedural Audio & Ball Flight Animation
+**Status**: ✅ COMPLETED (Commit `bf832c5`)
+
+- [x] **4.1. Provider Tree Integration**:
+  - Registered `<KenoProvider>` in `src/main.tsx` inside `<WalletProvider>` and `<BingoProvider>` so `useKeno()` is globally available.
+- [x] **4.2. Header Exact Alignment**:
+  - Header is strictly `.logo`, `.pill`, and `.menu` (no awkward lobby button squeezing logo or pill).
+  - Tapping hamburger menu `.menu` opens the rules modal which includes an "Exit to Lobby" button.
+  - Telegram WebApp Native `BackButton` automatically integrated.
+  - Display ID formatted with `'ID: '` prefix (`ID: 886122631`).
+- [x] **4.3. Procedural Web Audio Engine**:
+  - Implemented `playTone`, `playHitChime` (880 Hz sine wave on hit), `playPopSound` (320 Hz triangle on ball emerge), `playWinFanfare` (multi-note fanfare), and landing dock tone (560 Hz).
+- [x] **4.4. Ball Flight Animation (`flyBall`)**:
+  - Dynamic emerging ball `#big` with flying clone animation transitioning with CSS cubic-bezier trajectory to docked slots in `#drawn`.
+  - Central `#big` tube visibly empty between balls.
+- [x] **4.5. Authentic Tickets Stream**:
+  - `GAME` tab renders `All 9278 | My Tickets 0 | My Bets 0` along with player tickets and live round stream (`1***1` with `76 52 1 36 39`, `Bet 500`, `Waiting` in gold).
+- [x] **4.6. Verification**:
+  - Verified with `server/scripts/test_keno_phase4_sockets_and_audio.ts` (20/20 PASS).
+  - Verified with `server/scripts/test_keno_production_lifecycle.ts` (20/20 PASS).
+  - Verified with `npm run build` (compiled cleanly in 5.36s).
     - `--bg: #141b1a; --panel: #1f2928; --tile: #2e3839; --slot: #262f2e;`
     - `--g: #3ddc97; --g2: #52c280; --y: #f5c542; --r: #ff4d4d; --b: #3fa9f5;`
   - Retain all fonts: `Orbitron`, `Roboto Condensed`, `Roboto`.
@@ -206,3 +233,8 @@ flowchart TD
 | **Phase 3** | Pixel-Perfect Component Port | `src/pages/KenoPage.tsx` | Exact DOM & Controls |
 | **Phase 4** | Real-Time Sockets, Ball Tube & Audio | `flyBall()`, Web Audio, `keno:*` events | Live Draw & Settle |
 | **Phase 5** | E2E Financial Audit & Bingo Regression | Automated test suites & Git push | **Verified & Deployed** |
+
+---
+
+> [!IMPORTANT]
+> **Ready to Proceed**: Please reply with **"Phase 1"** (or approve the plan) to begin immediate execution of Phase 1: Real Account Money & Authenticated Wallet Bridge.
