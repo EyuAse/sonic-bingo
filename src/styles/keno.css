@@ -423,38 +423,39 @@
         }
 
         .keno-fullscreen-view .drawn {
-            display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            gap: 6px 4px;
-            justify-content: center;
-            margin-top: 14px;
-            padding: 0 6px;
-            box-sizing: border-box;
-            width: 100%;
-            max-width: 380px;
-            margin-left: auto;
-            margin-right: auto;
+            display: grid !important;
+            grid-template-columns: repeat(10, 1fr) !important;
+            gap: 6px 4px !important;
+            justify-content: center !important;
+            margin-top: 14px !important;
+            padding: 0 6px !important;
+            box-sizing: border-box !important;
+            width: 100% !important;
+            max-width: 380px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
         }
 
         .keno-fullscreen-view .drawn .ball,
         .keno-fullscreen-view .drawn .ball-slot {
-            width: 100%;
-            max-width: 31px;
-            height: auto;
-            aspect-ratio: 1;
-            margin: 0 auto;
+            width: 100% !important;
+            max-width: 31px !important;
+            height: auto !important;
+            aspect-ratio: 1 !important;
+            margin: 0 auto !important;
         }
 
         .keno-fullscreen-view .drawn .ball-slot {
-            visibility: hidden;
-            pointer-events: none;
+            visibility: hidden !important;
+            pointer-events: none !important;
         }
 
         .keno-fullscreen-view .drawn .ball .ball-num {
             font-size: 13px !important;
             font-weight: 800 !important;
             color: #ffffff !important;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9) !important;
+            line-height: 1 !important;
         }
 
         .keno-fullscreen-view .drawn .ball.hit {

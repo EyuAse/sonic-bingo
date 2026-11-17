@@ -132,6 +132,18 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
     }
   }, [phase, drawnBalls]);
 
+  // Unified User Numbers (Picked Numbers in current hand + Placed Bet Numbers from Active Tickets)
+  const userNumbers = useMemo(() => {
+    const set = new Set<number>(selectedNumbers);
+    activeTickets.forEach((t: any) => {
+      const nums = t.selectedNumbers || t.numbers || [];
+      if (Array.isArray(nums)) {
+        nums.forEach((n: number) => set.add(n));
+      }
+    });
+    return set;
+  }, [selectedNumbers, activeTickets]);
+
   // Trigger flight animation and slot docking on currentDrawnBall
   useEffect(() => {
     if (!currentDrawnBall || phase !== 'drawing') return;
@@ -148,7 +160,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
       });
     }
 
-    const isHit = selectedNumbers.has(currentDrawnBall);
+    const isHit = userNumbers.has(currentDrawnBall);
     const big = bigRef.current;
     const drawnContainer = drawnRef.current;
 
@@ -235,7 +247,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
       if (flightTimeout) clearTimeout(flightTimeout);
       if (flyingEl) flyingEl.remove();
     };
-  }, [currentDrawnBall, phase, selectedNumbers, playPopSound, playHitChime, playTone, drawnBalls]);
+  }, [currentDrawnBall, phase, userNumbers, playPopSound, playHitChime, playTone, drawnBalls]);
 
   // Win fanfare on settlement
   useEffect(() => {
@@ -1037,7 +1049,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
                   <span
                     className={`ball big${
                       currentDrawnBall
-                        ? ` emerging${selectedNumbers.has(currentDrawnBall) ? ' hit' : ''}`
+                        ? ` emerging${userNumbers.has(currentDrawnBall) ? ' hit' : ''}`
                         : ' hidden'
                     }`}
                     id="big"
@@ -1073,7 +1085,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
                   {dockedSlots.map((ballNum, idx) => (
                     <span
                       key={idx}
-                      className={ballNum ? `ball${selectedNumbers.has(ballNum) ? ' hit' : ''}` : 'ball-slot'}
+                      className={ballNum ? `ball${userNumbers.has(ballNum) ? ' hit' : ''}` : 'ball-slot'}
                     >
                       {ballNum && <span className="ball-num">{ballNum}</span>}
                     </span>
@@ -1087,7 +1099,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
           {!isDrawing && (
             <div className="grid" id="grid">
               {cells.map(num => {
-                const isSel = selectedNumbers.has(num);
+                const isSel = userNumbers.has(num);
                 const isHit = isSel && drawnBalls.includes(num);
                 const isDrw = !isSel && drawnBalls.includes(num);
                 const isHot = hotSet.has(num);
