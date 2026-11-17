@@ -69,8 +69,10 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
       <aside
         className={`sonic-agent-sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}
         style={{
-          position: 'sticky',
+          position: isMobileOpen ? 'fixed' : 'sticky',
           top: 0,
+          left: isMobileOpen ? 0 : undefined,
+          bottom: isMobileOpen ? 0 : undefined,
           height: isMobileOpen ? '100dvh' : '100vh',
           maxHeight: isMobileOpen ? '100dvh' : '100vh',
           overflow: 'hidden',
@@ -80,10 +82,10 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
           minWidth: isCollapsed ? '72px' : '260px',
           background: '#ffffff',
           borderRight: '1px solid #e6e6e9',
-          boxShadow: '0 0 16px rgba(0, 0, 0, 0.03)',
+          boxShadow: isMobileOpen ? '0 0 35px rgba(0, 0, 0, 0.35)' : '0 0 16px rgba(0, 0, 0, 0.03)',
           display: 'flex',
           flexDirection: 'column',
-          transition: 'width 0.2s ease, min-width 0.2s ease',
+          transition: 'width 0.2s ease, min-width 0.2s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
           fontFamily: "'Urbanist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
         }}
       >
