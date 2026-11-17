@@ -137,7 +137,7 @@ export const App: React.FC = () => {
   const isDesktop = telegramService.isDesktopPlatform();
 
   return (
-    <div className={`app-container${isDedicatedGamePage ? ' dedicated-game-view' : ''}${isDesktop ? ' is-desktop-platform' : ''}`}>
+    <div className={`app-container${isDedicatedGamePage ? ' dedicated-game-view' : ''}${currentPage === 'keno' ? ' is-keno-view' : ''}${isDesktop ? ' is-desktop-platform' : ''}`}>
       {/* Top Header for all main game & user views */}
       {!isStandalonePage && !isSubpage && !isDedicatedGamePage && <TopHeader />}
 

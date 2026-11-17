@@ -63,6 +63,7 @@ export interface KenoContextValue {
   selectedNumbers: Set<number>;
   stake: number;
   activeTickets: KenoTicket[];
+  allRoomTickets: KenoTicket[];
   balance: number; // Real live ETB from WalletContext
   bonus: number;
   userId: string; // Real user ID
@@ -132,6 +133,7 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Starting stake of 2 ETB matching keno.html
   const [stake, setStakeState] = useState<number>(2.0);
   const [activeTickets, setActiveTickets] = useState<KenoTicket[]>([]);
+  const [allRoomTickets, setAllRoomTickets] = useState<KenoTicket[]>([]);
 
   // ── 4. Real Analytics State ──
   const [hotNumbers, setHotNumbers] = useState<number[]>([]);
@@ -179,6 +181,9 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (data.userTickets) {
         setActiveTickets(data.userTickets);
       }
+      if (data.allActiveTickets && Array.isArray(data.allActiveTickets)) {
+        setAllRoomTickets(data.allActiveTickets);
+      }
     };
 
     const onRoundStarted = (data: any) => {
@@ -189,6 +194,7 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setDrawnBalls([]);
       setCurrentDrawnBall(null);
       setActiveTickets([]);
+      setAllRoomTickets([]);
       setLastWinAmount(0);
       hitsCountRef.current = 0;
     };
@@ -255,11 +261,21 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     };
 
+    const onTicketPlaced = (data: any) => {
+      if (data?.ticket) {
+        setAllRoomTickets(prev => {
+          if (prev.some(t => t.ticketId === data.ticket.ticketId)) return prev;
+          return [data.ticket, ...prev];
+        });
+      }
+    };
+
     socket.on('keno:init_state', onInitState);
     socket.on('keno:round_started', onRoundStarted);
     socket.on('keno:tick', onTick);
     socket.on('keno:draw_started', onDrawStarted);
     socket.on('keno:ball_drawn', onBallDrawn);
+    socket.on('keno:ticket_placed', onTicketPlaced);
     socket.on('keno:round_settled', onRoundSettled);
     socket.on('keno:player_settled', onPlayerSettled);
 
@@ -270,6 +286,7 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       socket.off('keno:tick', onTick);
       socket.off('keno:draw_started', onDrawStarted);
       socket.off('keno:ball_drawn', onBallDrawn);
+      socket.off('keno:ticket_placed', onTicketPlaced);
       socket.off('keno:round_settled', onRoundSettled);
       socket.off('keno:player_settled', onPlayerSettled);
     };
@@ -365,6 +382,10 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           if (resp && resp.success) {
             if (resp.ticket) {
               setActiveTickets(prev => [...prev, resp.ticket]);
+              setAllRoomTickets(prev => {
+                if (prev.some(t => t.ticketId === resp.ticket.ticketId)) return prev;
+                return [resp.ticket, ...prev];
+              });
             }
             // Atomically deduct from real live WalletContext & refresh
             deductBalance(stake);
@@ -424,6 +445,7 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     selectedNumbers,
     stake,
     activeTickets,
+    allRoomTickets,
     balance: walletBalance,
     bonus: walletBonus,
     userId,

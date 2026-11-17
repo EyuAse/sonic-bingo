@@ -575,6 +575,17 @@ export class KenoGameEngine extends EventEmitter {
   public getUserTickets(userId: string): KenoTicket[] {
     return this.activeTickets.get(userId) || [];
   }
+
+  /**
+   * Returns all active tickets across all users for the current round
+   */
+  public getAllActiveTickets(): KenoTicket[] {
+    const all: KenoTicket[] = [];
+    for (const tickets of this.activeTickets.values()) {
+      all.push(...tickets);
+    }
+    return all;
+  }
 }
 
 export const kenoEngine = KenoGameEngine.getInstance();

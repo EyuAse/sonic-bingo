@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useKeno, KenoTicket } from '../context/KenoContext.tsx';
+import { socketService } from '../services/socketService.ts';
 import '../styles/keno.css';
 
 // SVG Assets from authentic keno.html
@@ -48,6 +49,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
     selectedNumbers,
     stake,
     activeTickets,
+    allRoomTickets,
     balance,
     userId,
     userDisplayId,
@@ -79,6 +81,8 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
   const [showHistory, setShowHistory] = useState<boolean>(false);
   const [sortStats, setSortStats] = useState<boolean>(false);
   const [slideIndex, setSlideIndex] = useState<number>(0);
+  const [landedBalls, setLandedBalls] = useState<number[]>([]);
+  const lastAnimatedBallRef = useRef<number | null>(null);
 
   const slidesRef = useRef<HTMLDivElement>(null);
   const drawnRef = useRef<HTMLDivElement>(null);
@@ -90,15 +94,17 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
     return userDisplayId.startsWith('ID:') ? userDisplayId : `ID: ${userDisplayId}`;
   }, [userDisplayId]);
 
-  // Stream of other players' tickets matching keno.html / Image 2
-  const [fakeTickets] = useState<Array<{ id: string; n: number[]; b: number }>>([
-    { id: '1***1', n: [76, 52, 1, 36, 39], b: 500 },
-    { id: '4***8', n: [12, 24, 68, 77], b: 250 },
-    { id: '9***2', n: [3, 17, 33, 44, 59, 71], b: 1000 },
-    { id: '0***7', n: [5, 19, 42, 60], b: 100 },
-    { id: '6***3', n: [8, 14, 28, 51, 65], b: 350 },
-    { id: '2***5', n: [22, 38, 47, 63, 79], b: 200 }
-  ]);
+  // Dynamic Document Background for Seamless Fullscreen Emerald Casino (eliminates white stripes & bounce bleed)
+  useEffect(() => {
+    const prevDocBg = document.documentElement.style.backgroundColor;
+    const prevBodyBg = document.body.style.backgroundColor;
+    document.documentElement.style.backgroundColor = '#141b1a';
+    document.body.style.backgroundColor = '#141b1a';
+    return () => {
+      document.documentElement.style.backgroundColor = prevDocBg;
+      document.body.style.backgroundColor = prevBodyBg;
+    };
+  }, []);
 
   // Web Audio Synthesizer for Authentic Casino Sound Effects
   const sndCtxRef = useRef<AudioContext | null>(null);
@@ -148,78 +154,130 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
     });
   }, [playTone]);
 
-  // Trigger flight animation on currentDrawnBall
+  // Round phase lifecycle reset for landed balls and tube state
+  useEffect(() => {
+    if (phase === 'betting') {
+      setLandedBalls([]);
+      lastAnimatedBallRef.current = null;
+      const big = bigRef.current;
+      if (big) {
+        big.classList.add('hidden');
+        big.style.setProperty('display', 'none', 'important');
+      }
+    } else if (phase === 'settlement') {
+      setLandedBalls(drawnBalls);
+      const big = bigRef.current;
+      if (big) {
+        big.classList.add('hidden');
+        big.style.setProperty('display', 'none', 'important');
+      }
+    }
+  }, [phase, drawnBalls]);
+
+  // Trigger flight animation and slot docking on currentDrawnBall
   useEffect(() => {
     if (!currentDrawnBall || phase !== 'drawing') return;
+    if (lastAnimatedBallRef.current === currentDrawnBall) return;
+    lastAnimatedBallRef.current = currentDrawnBall;
+
+    // Catch up any prior drawn balls into landedBalls
+    const callIndex = drawnBalls.indexOf(currentDrawnBall);
+    if (callIndex > 0) {
+      const prior = drawnBalls.slice(0, callIndex);
+      setLandedBalls(prev => {
+        const missing = prior.filter(p => !prev.includes(p));
+        return missing.length > 0 ? [...prev, ...missing] : prev;
+      });
+    }
+
+    const isHit = selectedNumbers.has(currentDrawnBall);
+    const big = bigRef.current;
+    const drawnContainer = drawnRef.current;
+
+    if (big) {
+      big.style.removeProperty('display');
+      big.classList.remove('hidden');
+      big.classList.remove('emerging');
+      void big.offsetWidth; // Force CSS reflow to re-trigger emerging pop animation
+      big.classList.add('emerging');
+      if (isHit) big.classList.add('hit');
+      else big.classList.remove('hit');
+    }
 
     playPopSound();
-    const isHit = selectedNumbers.has(currentDrawnBall);
     if (isHit) {
       playHitChime();
     } else {
       playTone(280, 0.08, 'sine', 0.05);
     }
 
-    const callIndex = drawnBalls.length - 1;
-    if (callIndex < 0 || callIndex >= 20) return;
+    if (callIndex < 0 || callIndex >= 20 || !big || !drawnContainer) return;
 
     // First 10 called numbers go to 2nd row (slots 10..19); last 10 go to 1st row (slots 0..9)
     const slotIdx = callIndex < 10 ? 10 + callIndex : callIndex - 10;
-    const big = bigRef.current;
-    const drawnContainer = drawnRef.current;
-
-    if (!big || !drawnContainer) return;
     const targetSlot = drawnContainer.children[slotIdx] as HTMLElement;
     if (!targetSlot) return;
 
-    const from = big.getBoundingClientRect();
-    const to = targetSlot.getBoundingClientRect();
+    let flyingEl: HTMLElement | null = null;
+    let flightTimeout: NodeJS.Timeout | null = null;
 
-    const fl = document.createElement('span');
-    fl.className = 'ball big' + (isHit ? ' hit' : '');
-    fl.innerHTML = `<span class="ball-num">${currentDrawnBall}</span>`;
-    Object.assign(fl.style, {
-      position: 'fixed',
-      left: from.left + 'px',
-      top: from.top + 'px',
-      width: from.width + 'px',
-      height: from.height + 'px',
-      margin: '0',
-      zIndex: '50',
-      pointerEvents: 'none',
-      transition: 'transform .45s cubic-bezier(.22,.8,.36,1), width .45s, height .45s, opacity .45s'
-    });
-    document.body.appendChild(fl);
+    // Center stage showcase pause (authentic Keno tempo: 350ms)
+    const showcaseTimer = setTimeout(() => {
+      const from = big.getBoundingClientRect();
+      const to = targetSlot.getBoundingClientRect();
 
-    // Hide #big temporarily while flying so central tube is empty
-    big.style.setProperty('display', 'none', 'important');
-    big.classList.add('hidden');
-
-    const dx = to.left + to.width / 2 - (from.left + from.width / 2);
-    const dy = to.top + to.height / 2 - (from.top + from.height / 2);
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        fl.style.width = to.width + 'px';
-        fl.style.height = to.height + 'px';
-        const flNum = fl.querySelector('.ball-num') as HTMLElement;
-        if (flNum) flNum.style.fontSize = '13px';
-        fl.style.left = from.left + (from.width - to.width) / 2 + 'px';
-        fl.style.top = from.top + (from.height - to.height) / 2 + 'px';
-        fl.style.transform = `translate(${dx}px, ${dy}px)`;
+      const fl = document.createElement('span');
+      fl.className = 'ball big' + (isHit ? ' hit' : '');
+      fl.innerHTML = `<span class="ball-num">${currentDrawnBall}</span>`;
+      Object.assign(fl.style, {
+        position: 'fixed',
+        left: from.left + 'px',
+        top: from.top + 'px',
+        width: from.width + 'px',
+        height: from.height + 'px',
+        margin: '0',
+        zIndex: '50',
+        pointerEvents: 'none',
+        transition: 'transform .45s cubic-bezier(.22,.8,.36,1), width .45s, height .45s, opacity .45s'
       });
-    });
+      document.body.appendChild(fl);
+      flyingEl = fl;
 
-    const timer = setTimeout(() => {
-      fl.remove();
-      playTone(560, 0.05, 'sine', 0.08);
-    }, 450);
+      // Immediately hide #big so the central tube is visibly empty as the ball leaves!
+      big.style.setProperty('display', 'none', 'important');
+      big.classList.add('hidden');
+
+      const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+      const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          fl.style.width = to.width + 'px';
+          fl.style.height = to.height + 'px';
+          const flNum = fl.querySelector('.ball-num') as HTMLElement;
+          if (flNum) flNum.style.fontSize = '13px';
+          fl.style.left = from.left + (from.width - to.width) / 2 + 'px';
+          fl.style.top = from.top + (from.height - to.height) / 2 + 'px';
+          fl.style.transform = `translate(${dx}px, ${dy}px)`;
+        });
+      });
+
+      flightTimeout = setTimeout(() => {
+        if (flyingEl) {
+          flyingEl.remove();
+          flyingEl = null;
+        }
+        playTone(560, 0.05, 'sine', 0.08); // Authentic 560Hz landing tone
+        setLandedBalls(prev => (prev.includes(currentDrawnBall) ? prev : [...prev, currentDrawnBall]));
+      }, 450);
+    }, 350);
 
     return () => {
-      clearTimeout(timer);
-      fl.remove();
+      clearTimeout(showcaseTimer);
+      if (flightTimeout) clearTimeout(flightTimeout);
+      if (flyingEl) flyingEl.remove();
     };
-  }, [currentDrawnBall, phase, selectedNumbers, playPopSound, playHitChime, playTone, drawnBalls.length]);
+  }, [currentDrawnBall, phase, selectedNumbers, playPopSound, playHitChime, playTone, drawnBalls]);
 
   // Win fanfare on settlement
   useEffect(() => {
@@ -310,32 +368,174 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
   // 20 Docked Slots calculation (First 10 go to row 2, last 10 to row 1)
   const dockedSlots = useMemo(() => {
     const slots = Array.from({ length: 20 }, () => null as number | null);
-    drawnBalls.forEach((num, callIndex) => {
+    landedBalls.forEach((num, callIndex) => {
       if (callIndex < 20) {
         const slotIdx = callIndex < 10 ? 10 + callIndex : callIndex - 10;
         slots[slotIdx] = num;
       }
     });
     return slots;
-  }, [drawnBalls]);
+  }, [landedBalls]);
 
-  // Leaders Roster
-  const leadersList = useMemo(
-    () => [
-      { id: '091****89', b: 500, w: 10000 },
-      { id: '092****12', b: 250, w: 8500 },
-      { id: '094****33', b: 320, w: 7200 },
-      { id: '097****45', b: 150, w: 5000 },
-      { id: '098****01', b: 200, w: 3500 },
-      { id: '096****78', b: 100, w: 2000 }
-    ],
-    []
-  );
+  // Real Database History, Results & Leaders States (Zero Mock Data)
+  const [playerHistory, setPlayerHistory] = useState<any[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
+  const [recentResults, setRecentResults] = useState<any[]>([]);
+  const [isLoadingResults, setIsLoadingResults] = useState<boolean>(false);
+  const [leadersList, setLeadersList] = useState<Array<{ id: string; b: number; w: number }>>([]);
+  const [isLoadingLeaders, setIsLoadingLeaders] = useState<boolean>(false);
+
+  // 1. Fetch authenticated player's history from Neon DB
+  const fetchPlayerHistory = useCallback(() => {
+    if (!userId) return;
+    setIsLoadingHistory(true);
+    const sock = socketService.getSocket();
+    let received = false;
+
+    if (sock && sock.connected) {
+      sock.emit('keno:get_player_history', { userId }, (res: any) => {
+        received = true;
+        setIsLoadingHistory(false);
+        if (res?.success && Array.isArray(res.history)) {
+          setPlayerHistory(res.history);
+        }
+      });
+    }
+
+    // HTTP REST fallback in case socket response delayed
+    fetch(`/api/keno/history?userId=${encodeURIComponent(userId)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (!received && data?.success && Array.isArray(data.history)) {
+          setPlayerHistory(data.history);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsLoadingHistory(false));
+  }, [userId]);
+
+  // 2. Fetch recent completed round results from Neon DB
+  const fetchRecentResults = useCallback(() => {
+    setIsLoadingResults(true);
+    const sock = socketService.getSocket();
+    let received = false;
+
+    if (sock && sock.connected) {
+      sock.emit('keno:get_recent_results', {}, (res: any) => {
+        received = true;
+        setIsLoadingResults(false);
+        if (res?.success && Array.isArray(res.results)) {
+          setRecentResults(res.results);
+        }
+      });
+    }
+
+    fetch('/api/keno/results')
+      .then(r => r.json())
+      .then(data => {
+        if (!received && data?.success && Array.isArray(data.results)) {
+          setRecentResults(data.results);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsLoadingResults(false));
+  }, []);
+
+  // 3. Fetch global leaderboard top payouts from Neon DB
+  const fetchLeaderboard = useCallback(() => {
+    setIsLoadingLeaders(true);
+    const sock = socketService.getSocket();
+    let received = false;
+
+    if (sock && sock.connected) {
+      sock.emit('keno:get_leaderboard', {}, (res: any) => {
+        received = true;
+        setIsLoadingLeaders(false);
+        if (res?.success && Array.isArray(res.leaders)) {
+          setLeadersList(res.leaders);
+        }
+      });
+    }
+
+    fetch('/api/keno/leaderboard')
+      .then(r => r.json())
+      .then(data => {
+        if (!received && data?.success && Array.isArray(data.leaders)) {
+          setLeadersList(data.leaders);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsLoadingLeaders(false));
+  }, []);
+
+  // Sync real database state on mount and tab switch
+  useEffect(() => {
+    fetchRecentResults();
+    fetchLeaderboard();
+    if (userId) fetchPlayerHistory();
+  }, [fetchRecentResults, fetchLeaderboard, fetchPlayerHistory, userId]);
+
+  // Dynamic tab re-fetch
+  useEffect(() => {
+    if (tab === 'history' || ltab === 'history') fetchPlayerHistory();
+    if (tab === 'results' || rtab === 'results') fetchRecentResults();
+    if (tab === 'leaders' || rtab === 'leaders') fetchLeaderboard();
+  }, [tab, ltab, rtab, fetchPlayerHistory, fetchRecentResults, fetchLeaderboard]);
+
+  // Live socket event listeners for instant settlement sync
+  useEffect(() => {
+    const sock = socketService.getSocket();
+    if (!sock) return;
+
+    const onRecentResultsUpdated = (data: any) => {
+      if (data?.recentHistory && Array.isArray(data.recentHistory)) {
+        setRecentResults(data.recentHistory);
+      }
+    };
+
+    const onRoundSettled = () => {
+      fetchRecentResults();
+      fetchLeaderboard();
+      if (userId) fetchPlayerHistory();
+    };
+
+    const onPlayerHistory = (data: any) => {
+      if (data?.success && Array.isArray(data.history)) {
+        setPlayerHistory(data.history);
+      }
+    };
+
+    const onRecentResults = (data: any) => {
+      if (data?.success && Array.isArray(data.results)) {
+        setRecentResults(data.results);
+      }
+    };
+
+    const onLeaderboard = (data: any) => {
+      if (data?.success && Array.isArray(data.leaders)) {
+        setLeadersList(data.leaders);
+      }
+    };
+
+    sock.on('keno:recent_results_updated', onRecentResultsUpdated);
+    sock.on('keno:round_settled', onRoundSettled);
+    sock.on('keno:player_history', onPlayerHistory);
+    sock.on('keno:recent_results', onRecentResults);
+    sock.on('keno:leaderboard', onLeaderboard);
+
+    return () => {
+      sock.off('keno:recent_results_updated', onRecentResultsUpdated);
+      sock.off('keno:round_settled', onRoundSettled);
+      sock.off('keno:player_history', onPlayerHistory);
+      sock.off('keno:recent_results', onRecentResults);
+      sock.off('keno:leaderboard', onLeaderboard);
+    };
+  }, [fetchRecentResults, fetchLeaderboard, fetchPlayerHistory, userId]);
 
   // Helper to render a ticket card (.tk)
   const renderTicketCard = (t: KenoTicket, idx: number, isMine = true) => {
     const hits = t.selectedNumbers.filter(n => drawnBalls.includes(n));
-    const hasHit = isMine && hits.length > 0;
+    const hasHit = hits.length > 0;
     const isSettlement = phase === 'settlement';
 
     let statusText = 'Waiting';
@@ -347,14 +547,26 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
         statusText = win % 1 === 0 ? String(win) : win.toFixed(2);
         statusCls = 'win';
       } else {
-        statusText = '0';
-        statusCls = 'lose';
+        const p = PAY[t.selectedNumbers.length] || {};
+        const mult = p[hits.length] !== undefined ? p[hits.length] : 0;
+        const won = mult * t.betAmount;
+        if (won > 0) {
+          statusText = won % 1 === 0 ? String(won) : won.toFixed(2);
+          statusCls = 'win';
+        } else {
+          statusText = '0';
+          statusCls = 'lose';
+        }
       }
     }
 
+    const displayId = isMine
+      ? `My Ticket #${activeTickets.length - idx}`
+      : (t.userId ? (t.userId.length > 6 ? `${t.userId.slice(0, 2)}***${t.userId.slice(-2)}` : t.userId) : `KT-${idx + 1}`);
+
     return (
       <div key={t.ticketId || idx} className={`tk${hasHit ? ' has-hit' : ''}`}>
-        <div className="id">{isMine ? `${activeTickets.length - idx} My Ticket` : t.userId.slice(0, 8)}</div>
+        <div className="id">{displayId}</div>
         <div className="slots">
           {Array.from({ length: 10 }, (_, i) => {
             const v = t.selectedNumbers[i];
@@ -381,12 +593,17 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
   const renderTabContent = (activeTab: string) => {
     if (activeTab === 'game') {
       const mine = activeTickets;
+      const otherTickets = (allRoomTickets || []).filter(
+        t => t.userId !== userId && !mine.some(m => m.ticketId === t.ticketId)
+      );
+      const totalCount = mine.length + otherTickets.length;
       const totalBets = mine.reduce((acc, t) => acc + t.betAmount, 0);
+
       return (
         <div>
           <div className="sub">
             <span>
-              All<b>{9278 + mine.length}</b>
+              All<b>{totalCount}</b>
             </span>
             <span>
               My Tickets<b>{mine.length}</b>
@@ -398,47 +615,14 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
           {/* Player's active tickets at top */}
           {mine.map((t, idx) => renderTicketCard(t, idx, true))}
 
-          {/* Followed by live active tickets from other players (Image 2 exact match) */}
-          {fakeTickets.map((ft, idx) => {
-            const hits = ft.n.filter(n => drawnBalls.includes(n));
-            const isSettlement = phase === 'settlement';
-            let statusText = 'Waiting';
-            let statusCls = 'w';
+          {/* Followed by live active tickets from other real players */}
+          {otherTickets.map((t, idx) => renderTicketCard(t, idx, false))}
 
-            if (isSettlement) {
-              const p = PAY[ft.n.length] || {};
-              const mult = p[hits.length] !== undefined ? p[hits.length] : 0;
-              const won = mult * ft.b;
-              if (won > 0) {
-                statusText = won % 1 === 0 ? String(won) : won.toFixed(2);
-                statusCls = 'win';
-              } else {
-                statusText = '0';
-                statusCls = 'lose';
-              }
-            }
-
-            return (
-              <div key={idx} className="tk">
-                <div className="id">{ft.id}</div>
-                <div className="slots">
-                  {Array.from({ length: 10 }, (_, i) => {
-                    const v = ft.n[i];
-                    const isHit = v && hits.includes(v);
-                    return (
-                      <span key={i} className={v ? `f${isHit ? ' h-other' : ''}` : ''}>
-                        {v || ''}
-                      </span>
-                    );
-                  })}
-                </div>
-                <div className="bt">
-                  <div>Bet {fmt(ft.b)}</div>
-                  <div className={statusCls}>{statusText}</div>
-                </div>
-              </div>
-            );
-          })}
+          {totalCount === 0 && (
+            <div style={{ textAlign: 'center', padding: '24px 16px', color: '#7d8c89', fontSize: '14px' }}>
+              No bets in Round #{roundNumber} yet. Pick 1 to 10 numbers above and tap BET!
+            </div>
+          )}
         </div>
       );
     }
@@ -449,13 +633,67 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
           <button
             type="button"
             className="showb"
-            onClick={() => setShowHistory(prev => !prev)}
+            onClick={() => {
+              const next = !showHistory;
+              setShowHistory(next);
+              if (next) fetchPlayerHistory();
+            }}
           >
             {showHistory ? 'HIDE RESULTS' : 'SHOW THE RESULTS'}
           </button>
-          {showHistory ? (
-            <div className="empty">Round history recorded live on Neon DB</div>
-          ) : null}
+
+          {showHistory && (
+            <div className="history-list">
+              {isLoadingHistory && playerHistory.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '16px', color: '#7d8c89', fontSize: '13px' }}>
+                  Loading round history...
+                </div>
+              ) : playerHistory.length === 0 ? (
+                <div className="empty">No bets yet</div>
+              ) : (
+                playerHistory.map((t, idx) => {
+                  const hits = Array.isArray(t.hitNumbers) && t.hitNumbers.length > 0
+                    ? t.hitNumbers
+                    : (t.selectedNumbers || []).filter((n: number) => (t.drawnNumbers || []).includes(n));
+                  const isWon = (t.payoutAmount ?? 0) > 0 || t.status === 'won';
+                  const statusCls = isWon ? 'win' : 'lose';
+                  const statusText = isWon ? `WON +${fmt(t.payoutAmount)}` : 'Lost';
+
+                  return (
+                    <div key={t.ticketId || idx} className={`tk${hits.length > 0 ? ' has-hit' : ''}`}>
+                      <div className="id" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>Round #{t.roundNumber}</span>
+                        {t.serverSeedHash && (
+                          <span
+                            title={`Provably Fair Hash: ${t.serverSeedHash}`}
+                            style={{ fontSize: '10px', color: '#51c6a6', letterSpacing: '0.5px' }}
+                          >
+                            🛡️ #{String(t.roundNumber)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="slots">
+                        {Array.from({ length: 10 }, (_, i) => {
+                          const v = t.selectedNumbers[i];
+                          const isHit = v && hits.includes(v);
+                          return (
+                            <span key={i} className={v ? `f${isHit ? ' h' : ''}` : ''}>
+                              {v || ''}
+                            </span>
+                          );
+                        })}
+                      </div>
+                      <div className="bt">
+                        <div>Bet {fmt(t.betAmount)}</div>
+                        <div className={statusCls}>{statusText}</div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+
           <div className="fair">
             <img src={SHD} width="40" height="52" alt="Fairness Shield" />
             <h3>FAIRNESS</h3>
@@ -472,6 +710,8 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
             <span>Draw ID</span>
             <span>Combination</span>
           </div>
+
+          {/* Current active round status row */}
           <div className="rr">
             <span className="rs">
               <img src={SHD} width="15" height="20" alt="Shield" />
@@ -481,19 +721,59 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
             </div>
             <div className="wait">{phase === 'drawing' ? 'DRAWING' : 'WAIT'}</div>
           </div>
+
+          {/* Completed past rounds from Neon PostgreSQL */}
+          {recentResults.length === 0 && !isLoadingResults ? (
+            <div className="empty" style={{ textAlign: 'center', padding: '16px', color: '#7d8c89', fontSize: '13px' }}>
+              No past draws recorded yet
+            </div>
+          ) : (
+            recentResults.map((r, i) => {
+              const d = r.drawnAt ? new Date(r.drawnAt) : null;
+              const timeStr = d ? `${pad(d.getHours())}:${pad(d.getMinutes())}` : '';
+              return (
+                <div key={r.roundNumber || i} className="rr">
+                  <span className="rs">
+                    <img src={SHD} width="15" height="20" alt="Shield" />
+                  </span>
+                  <div className="rid">
+                    #{r.roundNumber}
+                    <small>{timeStr}</small>
+                  </div>
+                  <div className="comb">
+                    {(r.drawnNumbers || []).map((num: number, idx: number) => (
+                      <span key={idx}>{num}</span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       );
     }
 
     if (activeTab === 'stats') {
-      const rows = Object.entries(frequencyMap).map(([n, c]) => [Number(n), c as number] as [number, number]);
-      if (sortStats) rows.sort((a, b) => b[1] - a[1]);
-      const maxF = Math.max(20, ...rows.map(r => r[1]));
+      const rows = Array.from({ length: 80 }, (_, i) => {
+        const num = i + 1;
+        const count = frequencyMap[num] || 0;
+        return [num, count] as [number, number];
+      });
+
+      if (sortStats) {
+        // Hot to Cold (highest frequency first)
+        rows.sort((a, b) => b[1] - a[1]);
+      } else {
+        // Numerical 1 to 80
+        rows.sort((a, b) => a[0] - b[0]);
+      }
+
+      const maxF = Math.max(1, ...rows.map(r => r[1]));
 
       return (
         <div>
           <div className="sub">
-            <span>Last 100 rounds</span>
+            <span>Last 100 rounds ({sortStats ? 'Hot to Cold' : '1 to 80'})</span>
             <button
               type="button"
               className="srt"
@@ -505,15 +785,17 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
               </svg>
             </button>
           </div>
-          {rows.slice(0, 15).map(([n, c]) => (
-            <div key={n} className="st">
-              <b>{n}</b>
-              <div className="tr">
-                <i style={{ width: `${(c / maxF) * 100}%` }} />
+          <div className="stats-list" style={{ maxHeight: '420px', overflowY: 'auto' }}>
+            {rows.map(([n, c]) => (
+              <div key={n} className="st">
+                <b>{n}</b>
+                <div className="tr">
+                  <i style={{ width: `${(c / maxF) * 100}%` }} />
+                </div>
+                <span>{c}</span>
               </div>
-              <span>{c}</span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       );
     }
@@ -527,14 +809,24 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
             <span>Bet</span>
             <span>Win</span>
           </div>
-          {leadersList.map((item, idx) => (
-            <div key={idx} className={`lr${idx < 3 ? ' top' : ''}`}>
-              <b>{idx + 1}</b>
-              <span>{item.id}</span>
-              <span>{item.b}</span>
-              <em>{fmt(item.w)} ETB</em>
+          {isLoadingLeaders && leadersList.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '24px 16px', color: '#7d8c89', fontSize: '14px' }}>
+              Loading top winners...
             </div>
-          ))}
+          ) : leadersList.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '24px 16px', color: '#7d8c89', fontSize: '14px' }}>
+              No top winners recorded yet.
+            </div>
+          ) : (
+            leadersList.map((item, idx) => (
+              <div key={idx} className={`lr${idx < 3 ? ' top' : ''}`}>
+                <b>{idx + 1}</b>
+                <span>{item.id}</span>
+                <span>{item.b}</span>
+                <em>{fmt(item.w)} ETB</em>
+              </div>
+            ))
+          )}
           <div className="fair">
             <img src={SHD} width="40" height="52" alt="Fairness Shield" />
             <h3>FAIRNESS</h3>
@@ -778,7 +1070,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
             {isDrawing && (
               <div className="drawwrap" id="drawView" style={{ display: 'block' }}>
                 <div className="count">
-                  <span id="cnt">{pad(drawnBalls.length)}</span>
+                  <span id="cnt">{pad(landedBalls.length)}</span>
                   <s>/</s>20
                 </div>
 
@@ -799,20 +1091,22 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
 
                   {/* Settlement In-Stage Banner */}
                   {phase === 'settlement' && (
-                    <div
-                      className="win-stage-banner"
-                      id="winStageBanner"
-                      style={{ display: 'flex' }}
-                    >
-                      <div className="win-stage-title">
-                        {lastWinAmount > 0 ? 'YOU WIN' : 'TRY AGAIN'}
-                      </div>
-                      {lastWinAmount > 0 && (
-                        <div className="win-stage-val" id="winStageVal">
-                          {lastWinAmount % 1 === 0 ? lastWinAmount : lastWinAmount.toFixed(2)}
+                    (lastWinAmount > 0 || activeTickets.length > 0) ? (
+                      <div
+                        className="win-stage-banner"
+                        id="winStageBanner"
+                        style={{ display: 'flex' }}
+                      >
+                        <div className="win-stage-title">
+                          {lastWinAmount > 0 ? 'YOU WIN' : 'TRY AGAIN'}
                         </div>
-                      )}
-                    </div>
+                        {lastWinAmount > 0 && (
+                          <div className="win-stage-val" id="winStageVal">
+                            {lastWinAmount % 1 === 0 ? lastWinAmount : lastWinAmount.toFixed(2)}
+                          </div>
+                        )}
+                      </div>
+                    ) : null
                   )}
                 </div>
 
