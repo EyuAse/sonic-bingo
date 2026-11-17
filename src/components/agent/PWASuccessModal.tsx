@@ -247,3 +247,4 @@ export const PWASuccessModal: React.FC<PWASuccessModalProps> = ({
     </div>
   );
 };
+

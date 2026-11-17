@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../services/apiClient.ts';
 import { useAdmin } from '../../context/AdminContext.tsx';
+import { usePWAInstall } from '../../hooks/usePWAInstall.ts';
+import { IOSPWAInstallModal } from './IOSPWAInstallModal.tsx';
+import { PWASuccessModal } from './PWASuccessModal.tsx';
 
 interface AgentProfileDeskProps {
   profile: any;
@@ -18,6 +21,20 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
   openMobile
 }) => {
   const { registerBonus } = useAdmin();
+  const {
+    canInstall,
+    isInstalled,
+    isStandalone,
+    isInstalling,
+    showSuccessModal,
+    setShowSuccessModal,
+    showIOSModal,
+    setShowIOSModal,
+    triggerInstall,
+    openApp
+  } = usePWAInstall();
+  const [showManualGuide, setShowManualGuide] = useState(false);
+
   // Security PIN State
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
@@ -829,6 +846,246 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
           </div>
         </div>
       </div>
+
+      {/* ====================================================================
+          3. PWA STANDALONE MOBILE APP TERMINAL & INSTALLATION STATUS
+          ==================================================================== */}
+      <div
+        className="sonic-white-card"
+        style={{
+          background: 'linear-gradient(180deg, #ffffff 0%, #fffcfc 100%)',
+          border: '1px solid #fecaca',
+          borderRadius: '20px',
+          padding: '24px 28px',
+          marginBottom: '24px',
+          boxShadow: '0 4px 18px rgba(220, 38, 38, 0.05)'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
+              style={{
+                width: '46px',
+                height: '46px',
+                borderRadius: '14px',
+                backgroundColor: '#0f172a',
+                border: '1.5px solid #f59e0b',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(245, 158, 11, 0.25)',
+                flexShrink: 0,
+                overflow: 'hidden'
+              }}
+            >
+              <img
+                src="/icons/icon-192.png"
+                alt="Sonic Agent"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '17px', fontWeight: 900, color: '#0f172a', margin: 0 }}>
+                የሞባይል መተግበሪያ (PWA) • Mobile App Terminal
+              </h2>
+              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                ለፈጣን ካሽየር እና ሪቻርጅ አገልግሎት መተግበሪያውን ወደ ስልክዎ መነሻ ስክሪን ይጫኑ
+              </div>
+            </div>
+          </div>
+
+          {/* Status Badge */}
+          <div>
+            {isStandalone ? (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: '#ecfdf5',
+                  color: '#059669',
+                  border: '1px solid #a7f3d0',
+                  padding: '6px 14px',
+                  borderRadius: '20px',
+                  fontSize: '12.5px',
+                  fontWeight: 800
+                }}
+              >
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }} />
+                ተጭኗል (Installed & Standalone Active)
+              </span>
+            ) : (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: '#fffbeb',
+                  color: '#b45309',
+                  border: '1px solid #fde68a',
+                  padding: '6px 14px',
+                  borderRadius: '20px',
+                  fontSize: '12.5px',
+                  fontWeight: 800
+                }}
+              >
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f59e0b' }} />
+                አልተጫነም (Running in Web Browser)
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Action Bar */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '14px',
+            padding: '16px',
+            backgroundColor: '#f8fafc',
+            borderRadius: '16px',
+            border: '1px solid #e2e8f0',
+            marginBottom: '14px'
+          }}
+        >
+          <div style={{ flex: 1, minWidth: '240px', fontSize: '13px', color: '#475569', lineHeight: 1.45 }}>
+            {isStandalone ? (
+              <span>
+                🎉 መተግበሪያው በስልክዎ መነሻ ስክሪን ላይ በሚገባ ተጭኗል። ያለ ብሮውዘር ባር በቀጥታ በሙሉ ስክሪን እየሰሩ ይገኛሉ።
+              </span>
+            ) : (
+              <span>
+                💡 መተግበሪያውን ወደ ስልክዎ በመጫን ያለ ብሮውዘር አድራሻ ባር ልክ እንደ ኔቲቭ አፕ በቀጥታ መጠቀም ይችላሉ።
+              </span>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {isInstalling ? (
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: '#fef3c7',
+                  color: '#b45309',
+                  border: '1px solid #f59e0b',
+                  padding: '10px 18px',
+                  borderRadius: '12px',
+                  fontSize: '13px',
+                  fontWeight: 800
+                }}
+              >
+                <i className="fa-solid fa-spinner fa-spin" style={{ color: '#d97706' }}></i>
+                <span>በመጫን ላይ ነው...</span>
+              </div>
+            ) : isStandalone ? (
+              <button
+                type="button"
+                onClick={openApp}
+                style={{
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '10px 18px',
+                  borderRadius: '12px',
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)'
+                }}
+              >
+                <span>🚀 ሪፍሬሽ አድርግ / Refresh App</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={triggerInstall}
+                style={{
+                  background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '12px',
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 14px rgba(220, 38, 38, 0.35)',
+                  transition: 'transform 0.15s, opacity 0.15s'
+                }}
+              >
+                <i className="fa-solid fa-mobile-screen-button" style={{ color: '#fef08a' }}></i>
+                <span>📱 መተግበሪያውን ጫን / Install App</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setShowManualGuide(!showManualGuide)}
+              style={{
+                background: '#ffffff',
+                color: '#64748b',
+                border: '1px solid #cbd5e1',
+                padding: '10px 14px',
+                borderRadius: '12px',
+                fontSize: '12.5px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <span>{showManualGuide ? 'መመሪያውን ደብቅ' : 'የመጫኛ መመሪያ ℹ️'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Collapsible Manual Instructions */}
+        {showManualGuide && (
+          <div
+            style={{
+              padding: '16px',
+              backgroundColor: '#fffbeb',
+              borderRadius: '14px',
+              border: '1px solid #fef3c7',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              fontSize: '12.5px',
+              color: '#78350f'
+            }}
+          >
+            <div style={{ fontWeight: 800, fontSize: '13px', color: '#92400e' }}>
+              💡 በስልክዎ መጫን ካልቻሉ የሚከተሉትን 3 ቀላል እርምጃዎች ይከተሉ:
+            </div>
+            <div>
+              <strong>🌐 Chrome (Android):</strong> ከላይ በቀኝ የሚገኘውን ሶስት ነጥብ <strong>(⋮)</strong> ይጫኑ ➔ <strong>'Install app'</strong> ወይም <strong>'Add to Home screen'</strong> የሚለውን ይምረጡ።
+            </div>
+            <div>
+              <strong>🍏 Safari (iPhone):</strong> ከታች የሚገኘውን የ <strong>Share (⎋)</strong> ምልክት ይጫኑ ➔ ወደ ታች ዝቅ ብለው <strong>'Add to Home Screen' (➕)</strong> ይምረጡ ➔ ከላይ በቀኝ <strong>'Add'</strong> ይጫኑ።
+            </div>
+            <div>
+              <strong>📱 Samsung Internet:</strong> ከታች የሚገኘውን ሜኑ <strong>(☰)</strong> ይጫኑ ➔ <strong>'+ Add page to'</strong> ➔ <strong>'Home screen'</strong> ይምረጡ።
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* iOS & Android PWA Install Guide Modal */}
+      <IOSPWAInstallModal isOpen={showIOSModal} onClose={() => setShowIOSModal(false)} />
+
+      {/* PWA Success Completion Modal */}
+      <PWASuccessModal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} onOpenApp={openApp} />
 
       {/* ====================================================================
           4. OPERATIONAL STANDARDS & COMPLIANCE BANNER
