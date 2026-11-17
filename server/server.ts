@@ -22,6 +22,8 @@ import withdrawalsAdminRouter from './routes/withdrawalsAdmin.ts';
 import { webhooksRouter } from './routes/webhooks.ts';
 import { setupGameSockets } from './sockets/gameSocket.ts';
 import { gameEngine } from './game/BingoGameEngine.ts';
+import { kenoEngine } from './game/KenoGameEngine.ts';
+import { setupKenoSockets } from './sockets/kenoSocket.ts';
 import { telegramBotService } from './services/telegramBotService.ts';
 
 import rateLimit from 'express-rate-limit';
@@ -48,6 +50,9 @@ initSocketIO(server, CORS_ORIGIN);
 
 // Setup Multiplayer Game Socket Handlers
 setupGameSockets(io);
+
+// Setup Fast Keno Socket Handlers (100% Additive, isolated keno:* namespace)
+setupKenoSockets(io, kenoEngine);
 
 // Security & Body Parsers
 app.use(helmet({
@@ -418,6 +423,9 @@ if (process.env.NODE_ENV !== 'test') {
     });
     telegramBotService.setWebhook().catch(err => {
       console.warn('⚠️ [TelegramBotService] Auto-sync webhook deferred:', err.message || err);
+    });
+    kenoEngine.initializeFromDatabase().catch(err => {
+      console.warn('⚠️ [Fast Keno Engine] DB initialization deferred:', err.message || err);
     });
   });
 }

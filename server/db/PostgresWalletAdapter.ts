@@ -253,3 +253,4 @@ export class PostgresWalletAdapter implements IWalletAdapter {
 }
 
 export const postgresWalletAdapter = new PostgresWalletAdapter();
+

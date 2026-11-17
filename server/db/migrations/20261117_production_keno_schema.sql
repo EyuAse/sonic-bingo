@@ -48,3 +48,4 @@ CREATE INDEX IF NOT EXISTS idx_keno_tickets_round_number ON keno_tickets(round_n
 CREATE INDEX IF NOT EXISTS idx_keno_tickets_user_id ON keno_tickets(user_id);
 CREATE INDEX IF NOT EXISTS idx_keno_tickets_status ON keno_tickets(status);
 CREATE INDEX IF NOT EXISTS idx_keno_tickets_created_at ON keno_tickets(created_at DESC);
+

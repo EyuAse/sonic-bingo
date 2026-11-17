@@ -41,3 +41,4 @@ applyKenoSchema().then(() => {
   console.log('🏁 [Keno Migration] Done.');
   process.exit(0);
 });
+
