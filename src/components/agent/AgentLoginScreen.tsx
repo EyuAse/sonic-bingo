@@ -1,4 +1,6 @@
 import React from 'react';
+import { usePWAInstall } from '../../hooks/usePWAInstall.ts';
+import { IOSPWAInstallModal } from './IOSPWAInstallModal.tsx';
 
 interface AgentLoginScreenProps {
   loginPhone: string;
@@ -23,6 +25,7 @@ export const AgentLoginScreen: React.FC<AgentLoginScreenProps> = ({
   onSubmit,
   onReturnToBingo
 }) => {
+  const { canInstall, showIOSModal, setShowIOSModal, triggerInstall } = usePWAInstall();
   return (
     <div
       style={{
@@ -260,6 +263,33 @@ export const AgentLoginScreen: React.FC<AgentLoginScreenProps> = ({
             Agent Terminal
           </span>
         </div>
+
+        {/* PWA 1-Tap Install Button */}
+        {canInstall && (
+          <button
+            type="button"
+            onClick={triggerInstall}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+              color: '#ffffff',
+              border: '1px solid rgba(254, 240, 138, 0.4)',
+              padding: '7px 18px',
+              borderRadius: '24px',
+              marginBottom: '16px',
+              fontSize: '13px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(220, 38, 38, 0.25)',
+              transition: 'transform 0.15s, box-shadow 0.15s'
+            }}
+          >
+            <i className="fa-solid fa-mobile-screen-button" style={{ color: '#fef08a' }}></i>
+            <span>📱 መተግበሪያውን ጫን / Install App</span>
+          </button>
+        )}
 
         {/* 6. Subtitle with Horizontal Dividing Lines */}
         <div
@@ -597,6 +627,9 @@ export const AgentLoginScreen: React.FC<AgentLoginScreenProps> = ({
           </div>
         </div>
       </div>
+
+      {/* iOS Safari PWA Install Modal */}
+      <IOSPWAInstallModal isOpen={showIOSModal} onClose={() => setShowIOSModal(false)} />
     </div>
   );
 };

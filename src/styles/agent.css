@@ -1678,4 +1678,25 @@
   }
 }
 
+/* ==========================================================================
+   PWA Standalone Mode & iOS Dynamic Island / Safe Area Insets
+   ========================================================================== */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .sonic-agent-mobile-global-topbar {
+    padding-top: max(10px, env(safe-area-inset-top));
+  }
+  .sonic-agent-main-viewport {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+  .sonic-sidebar-container {
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+}
+
+.sonic-agent-pwa-mobile-btn:active {
+  transform: scale(0.95);
+  opacity: 0.9;
+}
+
 

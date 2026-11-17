@@ -20,6 +20,8 @@ interface AgentSidebarProps {
   agentProfile: any;
   pendingRequestsCount?: number;
   onLogout: () => void;
+  canInstall?: boolean;
+  onInstallClick?: () => void;
 }
 
 export const AgentSidebar: React.FC<AgentSidebarProps> = ({
@@ -30,7 +32,9 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
   isMobileOpen,
   closeMobile,
   pendingRequestsCount = 0,
-  onLogout
+  onLogout,
+  canInstall = false,
+  onInstallClick
 }) => {
   // Navigation tabs preserving full functional compatibility with Sonic luxury styling
   const navItems: Array<{
@@ -328,16 +332,45 @@ export const AgentSidebar: React.FC<AgentSidebarProps> = ({
           })}
         </nav>
 
-        {/* Sidebar Footer Logout Button */}
+        {/* Sidebar Footer: Install PWA & Logout Buttons */}
         <div
           style={{
             padding: isCollapsed ? '16px 8px' : '16px 18px',
             borderTop: '1px solid #f2f2f4',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: isCollapsed ? 'center' : 'flex-start'
+            flexDirection: 'column',
+            gap: '8px',
+            alignItems: isCollapsed ? 'center' : 'stretch'
           }}
         >
+          {canInstall && onInstallClick && (
+            <button
+              type="button"
+              onClick={onInstallClick}
+              style={{
+                background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                border: 'none',
+                color: '#ffffff',
+                fontSize: '12px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: isCollapsed ? 'center' : 'flex-start',
+                gap: '8px',
+                padding: isCollapsed ? '8px' : '9px 12px',
+                borderRadius: '10px',
+                boxShadow: '0 2px 8px rgba(220, 38, 38, 0.25)',
+                width: '100%',
+                transition: 'transform 0.15s, opacity 0.15s'
+              }}
+              title="Install App / መተግበሪያውን ጫን"
+            >
+              <i className="fa-solid fa-mobile-screen-button" style={{ fontSize: '14px', color: '#fef08a' }}></i>
+              {!isCollapsed && <span>📱 ጫን / Install App</span>}
+            </button>
+          )}
+
           <button
             type="button"
             onClick={onLogout}

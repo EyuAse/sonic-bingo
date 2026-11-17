@@ -51,7 +51,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return 'admin';
       }
 
-      // 2. Saved portal fallback ONLY when URL has no explicit routing hash
+      // 2. Standalone PWA launch guard
+      // If launched from installed PWA home screen icon, lock directly to 'agent'
+      const isStandalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as any).standalone === true ||
+        document.referrer.includes('android-app://');
+
+      if (isStandalone && (savedPortal === 'agent' || !hash || hash === '#' || hash === '#/')) {
+        return 'agent';
+      }
+
+      // 3. Saved portal fallback ONLY when URL has no explicit routing hash
       if (!hash || hash === '#' || hash === '#/') {
         if (savedPortal === 'agent') return 'agent';
         if (savedPortal === 'withdrawals') return 'withdrawals';

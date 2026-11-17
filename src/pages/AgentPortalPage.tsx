@@ -15,6 +15,8 @@ import { AgentPlayersDesk } from '../components/agent/AgentPlayersDesk.tsx';
 import { AgentPaymentRailsDesk } from '../components/agent/AgentPaymentRailsDesk.tsx';
 import { AgentProfileDesk } from '../components/agent/AgentProfileDesk.tsx';
 import { socketService } from '../services/socketService.ts';
+import { usePWAInstall } from '../hooks/usePWAInstall.ts';
+import { IOSPWAInstallModal } from '../components/agent/IOSPWAInstallModal.tsx';
 
 interface AgentProfile {
   id: string;
@@ -57,6 +59,7 @@ const DESK_TITLES: Record<string, string> = {
 export const AgentPortalPage: React.FC = () => {
   const { switchPage, showToast } = useApp();
   const { user } = useAuth();
+  const { canInstall, showIOSModal, setShowIOSModal, triggerInstall } = usePWAInstall();
 
   // Navigation & Layout State (with URL hash / param support)
   const getInitialTab = (): AgentDeskTab => {
@@ -264,6 +267,8 @@ export const AgentPortalPage: React.FC = () => {
         agentProfile={profile}
         pendingRequestsCount={pendingRequestsCount}
         onLogout={handleLogout}
+        canInstall={canInstall}
+        onInstallClick={triggerInstall}
       />
 
       {/* B. Main Viewport */}
@@ -295,7 +300,32 @@ export const AgentPortalPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="sonic-agent-mobile-topbar-right">
+          <div className="sonic-agent-mobile-topbar-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {canInstall && (
+              <button
+                type="button"
+                onClick={triggerInstall}
+                className="sonic-agent-pwa-mobile-btn"
+                title="Install Sonic Agent"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                  color: '#ffffff',
+                  border: '1px solid rgba(254, 240, 138, 0.4)',
+                  padding: '5px 10px',
+                  borderRadius: '16px',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 6px rgba(220, 38, 38, 0.3)',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <span>📱 ጫን</span>
+              </button>
+            )}
             <div className="sonic-agent-mobile-float-chip" title="Current Wallet Float">
               <span className="float-label">Float</span>
               <span className="float-val">ETB {Number(profile?.walletBalance || 0).toLocaleString()}</span>
@@ -379,6 +409,9 @@ export const AgentPortalPage: React.FC = () => {
           )}
         </main>
       </div>
+
+      {/* iOS Safari PWA Install Modal */}
+      <IOSPWAInstallModal isOpen={showIOSModal} onClose={() => setShowIOSModal(false)} />
     </div>
   );
 };
