@@ -13,8 +13,8 @@
 - **Backend**: Node.js, Express, Native WebSockets (`ws`), TypeScript (Hosted on **Render**).
 - **Database**: Neon Serverless PostgreSQL (`@neondatabase/serverless`).
 - **Hosting / Deployment URLs**:
-  - Cloudflare Frontend: `https://bingo-mini-app.asefaeyob962.workers.dev/` (or `https://lomi-bingo.pages.dev`)
-  - Render Live Backend: `https://bingo-mini-app-30pe.onrender.com` (and `https://bingo-mini-app-hp80.onrender.com`)
+  - Cloudflare Frontend: `https://sonic-bingo.asoeyo029.workers.dev/`
+  - Render Live Backend: `https://sonic-bingo-enod.onrender.com`
   - GitHub Primary: `https://github.com/EyuAse/Bingo-Mini-app.git` (Remote: `origin` / `new-origin`)
   - GitHub Mirror: `https://github.com/tycons9/Bingo-Mini-app.git` (Remote: `tycons-origin`)
 
