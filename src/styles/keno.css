@@ -22,9 +22,21 @@
         }
 
         .keno-fullscreen-view {
+            --bg: #141b1a !important;
+            --panel: #1f2928 !important;
+            --tile: #2e3839 !important;
+            --slot: #262f2e !important;
+            --slotf: #38413f !important;
+            --txt: #e4ecea !important;
+            --mut: #7d8c89 !important;
+            --g: #3ddc97 !important;
+            --g2: #52c280 !important;
+            --y: #f5c542 !important;
+            --r: #ff4d4d !important;
+            --b: #3fa9f5 !important;
             margin: 0;
-            background: var(--bg);
-            color: var(--txt);
+            background: #141b1a !important;
+            color: #e4ecea !important;
             font-family: "Roboto", "Segoe UI", system-ui, sans-serif;
             font-weight: 500
         }
@@ -145,15 +157,24 @@
             box-shadow: 0 6px 18px rgba(61, 220, 151, .22)
         }
 
+        .keno-fullscreen-view .stage,
+        .keno-fullscreen-view .sl,
+        .keno-fullscreen-view #mainSl,
+        .keno-fullscreen-view #pickView,
+        .keno-fullscreen-view .slides {
+            background: #1f2928 !important;
+            color: #e4ecea !important;
+        }
+
         .keno-fullscreen-view .stage {
             margin: 0 10px;
-            background: var(--panel);
+            background: #1f2928 !important;
             border-radius: 10px;
             padding: 10px 12px 12px;
             min-height: 122px;
             position: relative;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, .04)
+            border: 1px solid rgba(255, 255, 255, .04);
         }
 
         .keno-fullscreen-view .stage .arcs {
@@ -269,12 +290,12 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: radial-gradient(circle at 35% 28%, #2f8a64, #0d2a21 72%);
-            border: 2px solid #3ddc97;
+            background: radial-gradient(circle at 35% 28%, #2f8a64, #0d2a21 72%) !important;
+            border: 2px solid #3ddc97 !important;
             display: grid;
             place-items: center;
             font-size: 28px;
-            color: #bff5dc;
+            color: #bff5dc !important;
             font-weight: 900;
             font-style: italic;
             box-shadow: 0 0 18px #3ddc9755, inset 0 0 10px #3ddc9744;
@@ -285,13 +306,13 @@
             margin: 0;
             font-size: 21px;
             font-weight: 700;
-            color: #fff;
+            color: #ffffff !important;
             line-height: 1.15
         }
 
         .keno-fullscreen-view .pick p {
             margin: 3px 0 0;
-            color: #4fdb9a;
+            color: #4fdb9a !important;
             font-weight: 700;
             font-size: 16px
         }
@@ -300,7 +321,7 @@
             margin: calc(var(--up, 0px)*-1) 0 0;
             border-radius: 0;
             border-color: transparent;
-            background: #181f1e;
+            background: #181f1e !important;
             padding: calc(var(--up, 0px) + 6px) 0 14px;
             min-height: 190px;
             overflow: hidden
