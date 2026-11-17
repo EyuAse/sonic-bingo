@@ -42,3 +42,4 @@ export function registerPwaServiceWorker(): void {
       });
   });
 }
+
