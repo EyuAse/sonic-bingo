@@ -243,21 +243,43 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
   }, [agentProfile?.walletBalance, agentProfile?.wallet_balance]);
 
   // =========================================================================
-  // 3. WEBSOCKET REAL-TIME SYNC
+  // 3. WEBSOCKET REAL-TIME SYNC & BACKGROUND HEARTBEAT
   // =========================================================================
   useEffect(() => {
-    const unsubReqCreated = socketService.on('agent_deposit_request_created', (data: any) => {
-      showToast(`📥 New Deposit Request: ETB ${data?.amount || ''} from ${data?.playerName || 'Player'}`);
-      showInternalToast('New deposit request received');
+    const handleNewRequest = (data: any) => {
+      const amount = data?.amount || '';
+      const phone = data?.playerPhone || data?.playerName || 'Player';
+      showToast(`📥 New Deposit Request: ETB ${amount} from ${phone}`);
+      showInternalToast(`New deposit: ${amount} ETB`);
       fetchRequests();
       onActionCompleted();
-    });
+    };
 
-    const unsubReqStatus = socketService.on('agent_deposit_request_status_changed', () => {
+    const handleRequestUpdated = () => {
       fetchRequests();
       if (view === 'hist') fetchHistory();
       onActionCompleted();
+    };
+
+    // 1. Direct Agent-specific notification channels emitted by server/routes/wallet.ts
+    const unsubDirect = agentProfile?.id
+      ? socketService.on(`agent_${agentProfile.id}_new_request`, handleNewRequest)
+      : null;
+
+    const unsubDirectUpdated = agentProfile?.id
+      ? socketService.on(`agent_${agentProfile.id}_request_updated`, handleRequestUpdated)
+      : null;
+
+    // 2. Global notification channels
+    const unsubGlobalNew = socketService.on('agent_new_deposit_request', (data: any) => {
+      if (!agentProfile?.id || data?.agentId === agentProfile.id) {
+        handleNewRequest(data);
+      }
     });
+
+    const unsubDepStatus = socketService.on('deposit_status_updated', handleRequestUpdated);
+    const unsubLegacyCreated = socketService.on('agent_deposit_request_created', handleNewRequest);
+    const unsubLegacyStatus = socketService.on('agent_deposit_request_status_changed', handleRequestUpdated);
 
     const unsubWallet = socketService.on('wallet_updated', (data: any) => {
       if (data?.newBalance !== undefined) {
@@ -270,12 +292,25 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
       }
     });
 
+    // 3. Active 5-second polling fallback while agent is on the Pending requests view
+    let pollInterval: any = null;
+    if (view === 'req' && tab === 'Pending') {
+      pollInterval = setInterval(() => {
+        fetchRequests();
+      }, 5000);
+    }
+
     return () => {
-      unsubReqCreated();
-      unsubReqStatus();
+      if (unsubDirect) unsubDirect();
+      if (unsubDirectUpdated) unsubDirectUpdated();
+      unsubGlobalNew();
+      unsubDepStatus();
+      unsubLegacyCreated();
+      unsubLegacyStatus();
       unsubWallet();
+      if (pollInterval) clearInterval(pollInterval);
     };
-  }, [view, tab, searchQuery, historyPeriod]);
+  }, [view, tab, searchQuery, historyPeriod, agentProfile?.id]);
 
   // =========================================================================
   // 4. APPROVE DEPOSIT ACTION

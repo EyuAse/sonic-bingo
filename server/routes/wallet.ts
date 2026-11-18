@@ -1805,18 +1805,20 @@ router.post('/deposit-via-agent', requireAuth, async (req: AuthenticatedRequest,
     }
 
     // 4. Broadcast real-time WebSocket event to the Agent
-    io.emit(`agent_${agent.id}_new_request`, {
+    const eventPayload = {
       requestId: newRequest.id,
       amount: numAmount,
       playerPhone: cleanPhone,
       paymentMethod,
       transactionCode: cleanTxCode,
-      createdAt: newRequest.created_at
-    });
-    io.emit('agent_new_deposit_request', {
-      agentId: agent.id,
-      requestId: newRequest.id
-    });
+      createdAt: newRequest.created_at,
+      agentId: agent.id
+    };
+
+    io.emit(`agent_${agent.id}_new_request`, eventPayload);
+    io.emit('agent_new_deposit_request', eventPayload);
+    io.emit('agent_deposit_request_created', eventPayload);
+    io.emit('deposit_status_updated', { userId, requestId: newRequest.id });
 
     return res.json({
       success: true,
