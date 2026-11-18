@@ -300,16 +300,48 @@ export class TelegramBotService {
   }
 
   /**
+   * Helper to build standard 4-row persistent quick-action keyboard
+   */
+  public getStandardReplyKeyboard(playAppUrl: string) {
+    return {
+      keyboard: [
+        [{ text: '🎮 Play Sonic Bingo (50 ETB Gift)', web_app: { url: playAppUrl } }],
+        [{ text: '💰 My Wallet & Balance' }, { text: '🎁 Claim 50 ETB Bonus' }],
+        [{ text: '👥 Invite Friends (10%)' }, { text: '📖 How to Play / Rules' }],
+        [{ text: '📢 Official Channel' }, { text: '🎧 24/7 Agent Support' }]
+      ],
+      resize_keyboard: true,
+      is_persistent: true
+    };
+  }
+
+  /**
+   * Helper to build native SIM phone sharing keyboard for first-time onboarding
+   */
+  public getContactShareKeyboard() {
+    return {
+      keyboard: [
+        [{ text: '📱 ስልክ ቁጥርዎን ያጋሩ (Share Phone Number)', request_contact: true }]
+      ],
+      resize_keyboard: true,
+      one_time_keyboard: false
+    };
+  }
+
+  /**
    * Register official Bot Commands list (visible in Telegram's [/] menu)
    */
   public async setMyCommands(customCommands?: Array<{ command: string; description: string }>): Promise<{ success: boolean; message: string }> {
     const commands = customCommands || [
       { command: 'play', description: '🎮 Launch Sonic Bingo Mini App' },
       { command: 'start', description: '👑 Welcome & 50 ETB Bonus Gift' },
-      { command: 'link_phone', description: '📱 Link Verified Phone Number' },
+      { command: 'wallet', description: '💰 Balance, Deposit & Withdraw' },
       { command: 'bonus', description: '🎁 Claim 50 ETB Welcome Bonus' },
-      { command: 'promo', description: '📢 View Active Promotions & Offers' },
-      { command: 'help', description: '📖 How to Play & Win' }
+      { command: 'link_phone', description: '📱 Link Verified SIM Phone' },
+      { command: 'invite', description: '👥 Refer Friends & Earn 10% Float' },
+      { command: 'rules', description: '📖 How to Play & Winning Patterns' },
+      { command: 'support', description: '🎧 24/7 Agent Support' },
+      { command: 'channel', description: '📢 Official Telegram Channel' }
     ];
 
     const res = await this.callApi('setMyCommands', { commands });
@@ -1146,7 +1178,8 @@ export class TelegramBotService {
       await this.sendMessage(chatId, confirmMsg, {
         inlineKeyboard: [
           [{ text: '🎮 አሁን ይጫወቱ / Play Sonic Bingo (50 ETB Gift)', web_app: { url: playAppUrl } }]
-        ]
+        ],
+        replyMarkup: this.getStandardReplyKeyboard(playAppUrl)
       });
       return true;
     }
@@ -1205,7 +1238,8 @@ export class TelegramBotService {
         await this.sendMessage(chatId, confirmMsg, {
           inlineKeyboard: [
             [{ text: '🎮 አሁን ይጫወቱ / Play Sonic Bingo (50 ETB Gift)', web_app: { url: playAppUrl } }]
-          ]
+          ],
+          replyMarkup: this.getStandardReplyKeyboard(playAppUrl)
         });
         return true;
       } catch (err) {
@@ -1329,13 +1363,7 @@ export class TelegramBotService {
           `<i>To unlock the game and claim your 50 ETB Welcome Bonus, tap the button below to share your verified SIM phone number:</i>`;
 
         await this.sendMessage(chatId, gateMsg, {
-          replyMarkup: {
-            keyboard: [
-              [{ text: '📱 ስልክ ቁጥርዎን ያጋሩ (Share Phone Number)', request_contact: true }]
-            ],
-            resize_keyboard: true,
-            one_time_keyboard: true
-          }
+          replyMarkup: this.getContactShareKeyboard()
         });
         return true;
       }
@@ -1374,10 +1402,18 @@ export class TelegramBotService {
         [{ text: '📢 Join Official Channel', url: channelLink }]
       ];
 
+      const standardReplyKeyboard = this.getStandardReplyKeyboard(playAppUrl);
+
       if (welcomePhoto) {
         await this.sendPhoto(chatId, welcomePhoto, welcomeText, { inlineKeyboard });
+        await this.sendMessage(chatId, '👇 <b>ፈጣን አማራጮች / Quick Navigation:</b>', {
+          replyMarkup: standardReplyKeyboard
+        });
       } else {
         await this.sendMessage(chatId, welcomeText, { inlineKeyboard });
+        await this.sendMessage(chatId, '👇 <b>ፈጣን አማራጮች / Quick Navigation:</b>', {
+          replyMarkup: standardReplyKeyboard
+        });
       }
 
       return true;
@@ -1480,6 +1516,136 @@ export class TelegramBotService {
       } else {
         await this.sendMessage(chatId, promoText, { inlineKeyboard });
       }
+      return true;
+    }
+
+    // ── 💰 WALLET & BALANCE COMMAND ──
+    if (text === '/wallet' || text === '💰 My Wallet & Balance' || text.startsWith('💰')) {
+      let balance = 0;
+      let bonus = 0;
+      let locked = 0;
+      let phone = '';
+
+      if (msg.from?.id) {
+        try {
+          const userRes = await query(`
+            SELECT u.phone, COALESCE(w.balance, 0) as balance, COALESCE(w.bonus, 0) as bonus, COALESCE(w.locked_balance, 0) as locked
+            FROM users u
+            LEFT JOIN wallets w ON u.id = w.user_id
+            WHERE u.telegram_id = $1
+          `, [msg.from.id]);
+          if (userRes.rows.length > 0) {
+            const r = userRes.rows[0];
+            balance = parseFloat(r.balance || '0');
+            bonus = parseFloat(r.bonus || '0');
+            locked = parseFloat(r.locked || '0');
+            phone = r.phone || '';
+          }
+        } catch (e) {
+          console.warn('Failed to query user wallet for telegram /wallet:', e);
+        }
+      }
+
+      const walletMsg =
+        `💰 <b>የእርስዎ የሶኒክ ቢንጎ የገንዘብ ቦርሳ</b> 👑\n` +
+        `<b>Your Sonic Bingo Wallet:</b>\n\n` +
+        `💵 <b>ዋና ሂሳብ (Real Balance):</b> <b>${balance.toFixed(2)} ETB</b>\n` +
+        `🎁 <b>ቦነስ ሂሳብ (Bonus Balance):</b> <b>${bonus.toFixed(2)} ETB</b>\n` +
+        `🔒 <b>የተያዘ ሂሳብ (Locked):</b> <b>${locked.toFixed(2)} ETB</b>\n` +
+        `📱 <b>የተገናኘ ስልክ (Phone):</b> ${phone || 'ያልተገናኘ (Not linked)'}\n\n` +
+        `⚡ <b>ፈጣን ተቀማጭ እና ገንዘብ ማውጣት በቴሌብር እና በሲቢኢ ብር!</b>\n` +
+        `<i>Instant deposits & cashouts via Telebirr & CBE. Tap below to launch wallet:</i>`;
+
+      await this.sendMessage(chatId, walletMsg, {
+        inlineKeyboard: [
+          [{ text: '💳 Open Wallet in App (Deposit / Cashout)', web_app: { url: this.getVersionedWebAppUrl(webAppUrl, 'wallet') } }]
+        ]
+      });
+      return true;
+    }
+
+    // ── 👥 INVITE FRIENDS COMMAND ──
+    if (text === '/invite' || text === '👥 Invite Friends (10%)' || text.startsWith('👥')) {
+      const meRes = await this.getMe();
+      const botUser = meRes.result?.username || 'sonicbingobot';
+      const refId = msg.from?.id || 'ref';
+      const refLink = `https://t.me/${botUser}?start=ref_${refId}`;
+
+      const inviteMsg =
+        `👥 <b>ጓደኞችዎን ይጋብዙ — 10% የዕድሜ ልክ ኮሚሽን ያግኙ!</b> 👑🎉\n` +
+        `<b>Invite Friends & Earn 10% Lifetime Bonus!</b>\n\n` +
+        `ጓደኛዎ በእርስዎ ሊንክ ተመዝግቦ የመጀመሪያ ተቀማጭ ሲያደርግ፣ የ <b>10% የገንዘብ ስጦታ</b> በቀጥታ ወደ ሂሳብዎ ይገባል!\n\n` +
+        `🔗 <b>የእርስዎ መጋበዣ ሊንክ (Your Referral Link):</b>\n` +
+        `<code>${refLink}</code>\n\n` +
+        `👇 <i>ይህን መልዕክት ለጓደኞችዎ በማጋራት አሁኑኑ ተጠቃሚ ይሁኑ!</i>`;
+
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent('🎮 Join Sonic Bingo Ethiopia! Get 50 ETB Free Welcome Gift!')}`;
+
+      await this.sendMessage(chatId, inviteMsg, {
+        inlineKeyboard: [
+          [{ text: '📤 Share Link with Friends', url: shareUrl }]
+        ]
+      });
+      return true;
+    }
+
+    // ── 📖 HOW TO PLAY / RULES COMMAND ──
+    if (text === '/rules' || text === '📖 How to Play / Rules' || text.startsWith('📖')) {
+      const rulesMsg =
+        `📖 <b>የሶኒክ ቢንጎ አጨዋወት እና ህጎች</b> 👑\n` +
+        `<b>How to Play 75-Ball Express Bingo:</b>\n\n` +
+        `1️⃣ <b>ክፍል ይምረጡ (Select Room):</b> 10, 20, 50 ወይም 100 ብር ክፍል ይግቡ።\n` +
+        `2️⃣ <b>ካርቴላ ይቁረጡ (Pick Cartelas):</b> ከ 1 እስከ 2 ካርቴላ ይምረጡ።\n` +
+        `3️⃣ <b>ጠሪውን ይከታተሉ (Watch Live Calls):</b> ቁጥሮች በድምፅ እና በቦርዱ ላይ ይጠራሉ (ወይም Auto-Daub ይጠቀሙ)።\n` +
+        `4️⃣ <b>13 የማሸነፊያ መንገዶች (13 Winning Patterns):</b>\n` +
+        `   • Full House (ሙሉ ካርቴላ)\n` +
+        `   • Horizontal, Vertical, Diagonal Lines (መስመሮች)\n` +
+        `   • 4 Corners (አራቱ ማዕዘናት)\n` +
+        `   • Post Stamp & Small Center Box\n` +
+        `5️⃣ <b>ፈጣን ክፍያ (Instant Cashout):</b> እንዳሸነፉ 80% የክፍሉ ገቢ በሰከንድ ውስጥ ወደ ቦርሳዎ ይገባል!\n\n` +
+        `👇 <i>አሁኑኑ ይጫወቱ እና ያሸንፉ!</i>`;
+
+      await this.sendMessage(chatId, rulesMsg, {
+        inlineKeyboard: [
+          [{ text: '🎮 Play Bingo Now', web_app: { url: this.getVersionedWebAppUrl(webAppUrl) } }]
+        ]
+      });
+      return true;
+    }
+
+    // ── 🎧 24/7 AGENT SUPPORT COMMAND ──
+    if (text === '/support' || text === '🎧 24/7 Agent Support' || text.startsWith('🎧')) {
+      const supportMsg =
+        `🎧 <b>የሶኒክ ቢንጎ የደንበኞች አገልግሎት እና ድጋፍ</b> 👑\n` +
+        `<b>24/7 Sonic Bingo Customer Support:</b>\n\n` +
+        `ስለ ተቀማጭ፣ ገንዘብ ማውጣት ወይም ጨዋታው ጥያቄ ወይም እገዛ ካስፈለግዎ፡\n\n` +
+        `📞 <b>ኦፊሴላዊ የቴሌግራም ድጋፍ (Support Desk):</b> @Sonicbingo_support\n` +
+        `📢 <b>ኦፊሴላዊ ቻናል (Channel):</b> @sonicbingo\n` +
+        `⚡ <b>የተመሰከረላቸው ኤጀንቶች (Certified Cashiers):</b> በጨዋታው ውስጥ በካሺየር ገጽ ላይ ያገኛሉ።\n\n` +
+        `እርስዎን ለማገልገል 24/7 ዝግጁ ነን!`;
+
+      await this.sendMessage(chatId, supportMsg, {
+        inlineKeyboard: [
+          [{ text: '💬 Contact Support (@Sonicbingo_support)', url: 'https://t.me/Sonicbingo_support' }],
+          [{ text: '📢 Join Official Channel', url: 'https://t.me/sonicbingo' }]
+        ]
+      });
+      return true;
+    }
+
+    // ── 📢 OFFICIAL CHANNEL COMMAND ──
+    if (text === '/channel' || text === '📢 Official Channel' || text.startsWith('📢')) {
+      const channelMsg =
+        `📢 <b>የሶኒክ ቢንጎ ኦፊሴላዊ የቴሌግራም ማህበረሰብ!</b> 👑\n` +
+        `<b>Official Sonic Bingo Community Channel:</b>\n\n` +
+        `የቀጥታ አሸናፊዎችን፣ ታላላቅ ጃክፖቶችን እና ልዩ የሳምንቱ ማስተዋወቂያዎችን ለመከታተል ቻናላችንን ይቀላቀሉ!\n\n` +
+        `🔗 <b>@sonicbingo</b>`;
+
+      await this.sendMessage(chatId, channelMsg, {
+        inlineKeyboard: [
+          [{ text: '📢 Join Channel Now', url: 'https://t.me/sonicbingo' }]
+        ]
+      });
       return true;
     }
 

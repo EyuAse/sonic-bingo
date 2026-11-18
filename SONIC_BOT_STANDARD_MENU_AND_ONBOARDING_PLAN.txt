@@ -1,0 +1,168 @@
+================================================================================
+                    SONIC BINGO BOT - IMPLEMENTATION PLAN
+      Standard Menu Restoration & First-Time Phone Signup Onboarding
+================================================================================
+
+1. EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+This plan provides a clear, non-technical explanation and blueprint for two 
+key enhancements to the @sonicbingobot in Telegram:
+
+  A. Restoring the Standard [Menu] Button:
+     Explain why currently only a single "Play Bingo" button appears, and how 
+     to bring back the full standard Telegram menu with all commands.
+
+  B. First-Time Phone Sharing Onboarding:
+     Automatically asking new users to share their verified SIM phone number 
+     via Telegram's native contact button upon their first visit, automatically 
+     verifying their account, and instantly awarding a 50.00 ETB Welcome Bonus.
+
+
+================================================================================
+2. WHY IS THERE ONLY A "PLAY BINGO" BUTTON RIGHT NOW?
+================================================================================
+In Telegram, the button at the bottom-left of the chat bar can only be in ONE 
+of two modes at any time:
+
+  MODE 1: Web App Mode (Current Setting)
+  --------------------------------------
+  - Telegram forces the button to be a direct launcher: [Play Bingo]
+  - When the user taps it, the game opens immediately.
+  - PROBLEM: Telegram completely hides the standard [Menu] command popup! 
+    Users cannot see /help, /bonus, /wallet, /invite, or other bot commands.
+
+  MODE 2: Standard Commands Mode (Recommended)
+  --------------------------------------------
+  - Telegram displays the standard blue [Menu] button.
+  - When the user taps it, a popup list appears with all commands:
+      * /play       - Launch Sonic Bingo Game
+      * /wallet     - View Balance, Deposit & Withdraw
+      * /bonus      - Claim 50 ETB Welcome Bonus
+      * /link_phone - Verify SIM Phone Number
+      * /invite     - Refer Friends & Earn 10% Float
+      * /rules      - How to Play 75-Ball Bingo
+      * /support    - 24/7 Agent Support
+      * /channel    - Official Telegram Community
+
+  THE BEST HYBRID SOLUTION:
+  -------------------------
+  1. Set the bottom-left button to MODE 2 ([Menu] button).
+  2. In the chat itself, attach an easy, big persistent keyboard so players 
+     still have a 1-tap [Play Bingo] button right on their screen!
+
+
+================================================================================
+3. FIRST-TIME SIGNUP: NATIVE PHONE SHARING (+50 ETB BONUS)
+================================================================================
+Why use Telegram's Native Contact Sharing instead of typing a phone number?
+  - Authenticity: The phone number comes directly from the user's active SIM card.
+  - Fraud Prevention: Stops users from creating multiple accounts with fake numbers.
+  - Zero Typing Errors: Telebirr and CBE payments match the verified number 100%.
+
+HOW THE FIRST-TIME ONBOARDING WORKS:
+------------------------------------
+
+Step 1: New User Opens Bot
+  User clicks /start or joins through a friend's referral link.
+
+Step 2: Database Phone Check
+  The server checks the Neon PostgreSQL database:
+  - If the user ALREADY has a verified phone:
+    Show the regular welcome message with the [Play Bingo] button.
+  - If the user DOES NOT have a verified phone:
+    Show the First-Time Welcome Gate!
+
+Step 3: The First-Time Welcome Gate
+  The bot sends a greeting and displays a big, native Telegram button:
+  
+  +-------------------------------------------------------------+
+  |    Welcome to Sonic Bingo! 50 ETB Free Gift is Waiting!     |
+  |                                                             |
+  |    To unlock the game and claim your 50.00 ETB Bonus,      |
+  |    please share your verified phone number below.           |
+  |                                                             |
+  |      [  Share Phone Number (50 ETB Free Bonus)  ]           |
+  +-------------------------------------------------------------+
+
+Step 4: User Taps the Button
+  1. Telegram displays a secure confirmation popup:
+     "Share your phone number with @sonicbingobot?"
+  2. The user taps "Share".
+  3. Telegram securely sends the verified phone number to our server.
+
+Step 5: Instant Bonus & Game Unlock
+  1. Server verifies that the contact belongs to this exact user.
+  2. Server saves the phone number to the users table and sets verified = true.
+  3. Server adds 50.00 ETB to the player's wallet bonus balance.
+  4. The bot sends a celebration message:
+     "Congratulations! Your phone is verified and 50.00 ETB Bonus has been credited!"
+  5. The bot unlocks the full game keyboard so the player can start playing!
+
+
+================================================================================
+4. COMPLETE TELEGRAM COMMANDS ROSTER
+================================================================================
+When the user taps [Menu], they will see the following organized list:
+
+  Command        Description
+  ------------   ---------------------------------------------------------------
+  /play          Launch Sonic Bingo Mini App (4 Game Rooms, Live Jackpots)
+  /start         Restart Bot, Welcome Greeting & Daily Bonus
+  /wallet        View Real Balance, Bonus Wallet, Deposit & Cashout Options
+  /bonus         Claim or Check Status of 50.00 ETB Welcome Bonus
+  /link_phone    Link or Update Verified SIM Phone Number
+  /invite        Get Personal Referral Link (Earn 10% on Every Friend's Deposit)
+  /rules         Complete Guide & Winning Patterns for 75-Ball Express
+  /support       Chat with Certified Agent Desk or Admin Support
+  /channel       Join the Official @sonicbingo Announcements Channel
+
+
+================================================================================
+5. IN-CHAT PERSISTENT KEYBOARD (QUICK ACTIONS)
+================================================================================
+In addition to the [Menu] button, verified users will always have these 
+convenient buttons on their chat screen:
+
+  Row 1:  [  Play Sonic Bingo (50 ETB Gift)  ]
+  Row 2:  [ My Wallet & Balance ]    [ Claim Daily Bonus ]
+  Row 3:  [ Invite Friends (10%) ]   [ How to Play / Rules ]
+  Row 4:  [ Official Channel ]       [ 24/7 Agent Support ]
+
+
+================================================================================
+6. STEP-BY-STEP IMPLEMENTATION PLAN
+================================================================================
+
+PHASE 1: Switch Telegram Menu Button to Standard Commands Mode
+  - Change setChatMenuButton from 'web_app' to 'commands' in telegramBotService.ts.
+  - Update setMyCommands with the full list of 9 official bot commands.
+  - Run the update script to sync with Telegram Bot API immediately.
+
+PHASE 2: In-Chat Persistent Quick-Action Keyboard
+  - Update the /start and welcome handlers in telegramBotService.ts.
+  - Include the 4-row interactive keyboard so players can jump into the game 
+    or check their balance in one tap.
+
+PHASE 3: First-Time Onboarding & Phone Sharing Refinement
+  - Ensure the phone check query runs on every /start.
+  - If phone is missing, present the native [Share Phone Number] button.
+  - On contact receipt, atomically credit 50 ETB bonus, mark KYC verified, 
+    and swap the keyboard to the full game menu.
+
+PHASE 4: In-App Mini-App Phone Verification Banner
+  - In the React Mini App, if the user opens the game via a direct link before 
+    verifying, display a golden "Verify Phone for +50 ETB" banner at the top.
+  - Tapping it triggers the Telegram contact flow so no player is left out.
+
+
+================================================================================
+7. SUMMARY & NEXT STEPS
+================================================================================
+This upgrade gives Sonic Bingo:
+  1. A professional, complete Telegram bot with a working [Menu] button.
+  2. Direct 1-tap game play via persistent chat buttons.
+  3. Automated, fraud-proof phone onboarding that gives 50 ETB bonus on signup.
+
+Ready to proceed with Phase 1 and 2 implementation upon user approval.
+================================================================================
+
