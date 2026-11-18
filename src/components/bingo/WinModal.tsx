@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { useBingo, generateCardFromId, BingoCell } from '../../context/BingoContext.tsx';
 import { useLanguage } from '../../context/LanguageContext.tsx';
 import { useAuth } from '../../context/AuthContext.tsx';
+import { soundEngine } from '../../services/soundEngine.ts';
+import { telegramService } from '../../services/telegramService.ts';
 
 // Safe numeric formatter that NEVER throws on undefined, null, or NaN
 const safeLocale = (val: any, fallback = 0): string => {
@@ -149,15 +151,23 @@ export const WinModal: React.FC = () => {
     return () => { isMountedRef.current = false; };
   }, []);
 
+  const isJackpotHitEarly = Boolean((winResult as any)?.isJackpotHit || Number((winResult as any)?.jackpotWonAmount) > 0);
+
   useEffect(() => {
     if (!showWinModal) return;
+    if (isJackpotHitEarly) {
+      telegramService.triggerHaptic('success');
+      try {
+        soundEngine.playWinFanfare();
+      } catch {}
+    }
     const timer = setTimeout(() => {
       if (isMountedRef.current) {
         closeWinModalAndRestart();
       }
     }, 8000);
     return () => clearTimeout(timer);
-  }, [showWinModal, closeWinModalAndRestart]);
+  }, [showWinModal, isJackpotHitEarly, closeWinModalAndRestart]);
 
   if (!showWinModal) return null;
 
@@ -251,7 +261,9 @@ export const WinModal: React.FC = () => {
     const handleShareWin = () => {
       try {
         const text = encodeURIComponent(
-          `🎉 I just won ${safeLocale(userShare)} ETB on Sonic 75-Ball Bingo! Come play and win with me: https://t.me/sonicbingobot/play`
+          isJackpotHit
+            ? `🎉 👑 I just won the 500 ETB GRAND JACKPOT on Sonic 75-Ball Bingo! Total cashout: ${safeLocale(!isOpponentWin ? userShare : effectiveOpponentPayout)} ETB! Play and win with me: https://t.me/sonicbingobot/play`
+            : `🎉 I just won ${safeLocale(userShare)} ETB on Sonic 75-Ball Bingo! Come play and win with me: https://t.me/sonicbingobot/play`
         );
         window.open(`https://t.me/share/url?url=https://t.me/sonicbingobot/play&text=${text}`, '_blank');
       } catch {}
@@ -280,9 +292,12 @@ export const WinModal: React.FC = () => {
       ? (winnerPayout > 0 ? winnerPayout : (netPrizePool > 0 ? (netPrizePool + (isJackpotHit ? jackpotWonAmount : 0)) : grossPot))
       : winnerPayout;
 
+    const normalPotShare = Math.max(0, (!isOpponentWin ? userShare : effectiveOpponentPayout) - (isJackpotHit ? jackpotWonAmount : 0));
+    const totalCashout = !isOpponentWin ? userShare : effectiveOpponentPayout;
+
     return (
       <div className="fresh-victory-modal-backdrop" onClick={closeWinModalAndRestart}>
-        <div className="victory-celebration-card" onClick={e => e.stopPropagation()}>
+        <div className={`victory-celebration-card ${isJackpotHit ? 'jackpot-glow-card' : ''}`} onClick={e => e.stopPropagation()}>
           {/* Close Button */}
           <button
             type="button"
@@ -294,11 +309,50 @@ export const WinModal: React.FC = () => {
           </button>
 
           {/* Glow Aura */}
-          <div className="victory-glow-aura"></div>
+          <div className="victory-glow-aura" style={isJackpotHit ? { background: 'radial-gradient(circle, rgba(245, 158, 11, 0.45) 0%, rgba(220, 38, 38, 0.25) 50%, transparent 70%)' } : {}}></div>
 
-          {/* Trophy Artwork */}
+          {/* Trophy Artwork / Grand Jackpot Crown */}
           <div className="victory-trophy-hero">
-            {isOpponentWin ? (
+            {isJackpotHit ? (
+              <div style={{ position: 'relative', display: 'inline-block', margin: '4px auto 14px' }}>
+                <div
+                  style={{
+                    width: '106px',
+                    height: '106px',
+                    borderRadius: '34px',
+                    background: 'linear-gradient(135deg, #78350f 0%, #b45309 30%, #d97706 70%, #f59e0b 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '52px',
+                    boxShadow: '0 12px 35px rgba(245, 158, 11, 0.65), 0 0 25px rgba(254, 240, 138, 0.5)',
+                    border: '3px solid #fef08a'
+                  }}
+                >
+                  👑
+                </div>
+                <span
+                  style={{
+                    position: 'absolute',
+                    bottom: '-8px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: 'linear-gradient(90deg, #dc2626, #e11d48)',
+                    color: '#ffffff',
+                    fontSize: '10.5px',
+                    fontWeight: 900,
+                    letterSpacing: '0.8px',
+                    padding: '3px 12px',
+                    borderRadius: '999px',
+                    boxShadow: '0 4px 12px rgba(220, 38, 38, 0.55)',
+                    whiteSpace: 'nowrap',
+                    textTransform: 'uppercase'
+                  }}
+                >
+                  500 ETB VAULT
+                </span>
+              </div>
+            ) : isOpponentWin ? (
               <svg className="victory-trophy-svg" viewBox="0 0 140 140" fill="none">
                 <circle cx="70" cy="70" r="54" fill="#fef9c3" />
                 <circle cx="70" cy="70" r="44" fill="#facc15" stroke="#ca8a04" strokeWidth="3" />
@@ -340,7 +394,11 @@ export const WinModal: React.FC = () => {
 
           {/* Title */}
           <h2 className="victory-celebration-title">
-            {isOpponentWin
+            {isJackpotHit
+              ? (!isOpponentWin
+                  ? (lang === 'am' ? '👑 ታላቁ ግራንድ ጃክፖት ተሰብሯል! 💥' : '👑 GRAND JACKPOT VAULT UNLOCKED! 💥')
+                  : (lang === 'am' ? '🚨 500 ብር ግራንድ ጃክፖት ተወሰደ! 👑' : '🚨 500 ETB GRAND JACKPOT HIT! 👑'))
+              : isOpponentWin
               ? `🏆 ${betAmount} ETB HOUSE · BINGO CALLED!`
               : isTrueMultiplayerSplit
               ? `🤝 ${betAmount} ETB HOUSE · SPLIT POT!`
@@ -348,7 +406,17 @@ export const WinModal: React.FC = () => {
           </h2>
 
           <p className="victory-celebration-sub">
-            {isOpponentWin ? (
+            {isJackpotHit ? (
+              !isOpponentWin ? (
+                lang === 'am'
+                  ? <>💥 እንኳን ደስ አለዎት! <b>ካርቴላ #{cartelaNum}</b> ቢንጎ በመሙላት የ <b>500.00 ብር ግራንድ ጃክፖት</b> ወስዷል!</>
+                  : <>💥 INCREDIBLE WIN! Your <b>Cartela #{cartelaNum}</b> completed BINGO and swept the <b>500 ETB Grand Jackpot</b>!</>
+              ) : (
+                lang === 'am'
+                  ? <>ተጫዋች <b>{winnerName}</b> (ካርቴላ #{cartelaNum}) ቢንጎ በመሙላት የ 500 ብር ጃክፖቱን ወስዷል! ቀጣዩ ካዝና አሁን እየሞላ ነው!</>
+                  : <>Player <b>{winnerName}</b> (Cartela #{cartelaNum}) dropped the 500 ETB Grand Jackpot! The next vault is now charging!</>
+              )
+            ) : isOpponentWin ? (
               <>
                 Winner: <strong>{winnerName}</strong> (Cartela #{cartelaNum})
               </>
@@ -363,10 +431,59 @@ export const WinModal: React.FC = () => {
             )}
           </p>
 
+          {/* 🌟 Grand Progressive Jackpot Itemized Payout Card 🌟 */}
+          {isJackpotHit && (
+            <div
+              style={{
+                background: 'linear-gradient(135deg, #451a03 0%, #78350f 40%, #b45309 80%, #d97706 100%)',
+                border: '2px solid #fde047',
+                borderRadius: '20px',
+                padding: '14px 16px',
+                marginBottom: '14px',
+                color: '#ffffff',
+                boxShadow: '0 10px 25px rgba(217, 119, 6, 0.45)',
+                textAlign: 'left'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '20px' }}>👑</span>
+                  <span style={{ fontSize: '11.5px', fontWeight: 900, letterSpacing: '0.6px', textTransform: 'uppercase', color: '#fef08a' }}>
+                    {lang === 'am' ? 'የግራንድ ጃክፖት ሽልማት ዝርዝር' : 'GRAND JACKPOT PAYOUT BREAKDOWN'}
+                  </span>
+                </div>
+                <span style={{ background: '#f59e0b', color: '#451a03', fontSize: '10px', fontWeight: 900, padding: '2px 8px', borderRadius: '999px' }}>
+                  VERIFIED WIN
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#fef3c7', padding: '4px 0', borderBottom: '1px solid rgba(254, 240, 138, 0.25)' }}>
+                <span>{lang === 'am' ? 'የቢንጎ ዙር አሸናፊ (Net Pot):' : 'Bingo Round Prize (Net Pot):'}</span>
+                <strong style={{ color: '#ffffff' }}>+{safeLocale(normalPotShare)} ETB</strong>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', color: '#fde047', padding: '6px 0', borderBottom: '1.5px solid rgba(254, 240, 138, 0.4)' }}>
+                <span style={{ fontWeight: 800 }}>{lang === 'am' ? '🌟 ግራንድ ጃክፖት ካዝና (Grand Vault):' : '🌟 Grand Progressive Jackpot Vault:'}</span>
+                <strong style={{ fontWeight: 900, fontSize: '14px', color: '#fef08a' }}>+{safeLocale(jackpotWonAmount)} ETB</strong>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', paddingTop: '2px' }}>
+                <span style={{ fontSize: '12.5px', fontWeight: 900, color: '#ffffff' }}>
+                  {lang === 'am' ? 'ጠቅላላ የተሸለመው (Total Cashout):' : 'TOTAL CASHOUT PRIZE:'}
+                </span>
+                <span style={{ fontSize: '18px', fontWeight: 900, color: '#34d399', textShadow: '0 2px 8px rgba(16, 185, 129, 0.5)' }}>
+                  +{safeLocale(totalCashout)} ETB
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Prize Box Display (Net Winner Prize Only) */}
           <div className="victory-prize-display-card">
             <span className="victory-prize-label">
-              {isOpponentWin ? 'PRIZE WON BY WINNER' : isTrueMultiplayerSplit ? 'YOUR SPLIT POT SHARE' : 'YOUR NET WINNINGS'}
+              {isJackpotHit
+                ? (!isOpponentWin ? 'TOTAL CASHOUT CREDITED TO WALLET' : 'TOTAL PRIZE WON BY CHAMPION')
+                : (isOpponentWin ? 'PRIZE WON BY WINNER' : isTrueMultiplayerSplit ? 'YOUR SPLIT POT SHARE' : 'YOUR NET WINNINGS')}
             </span>
             <strong className={`victory-prize-amount ${isOpponentWin ? 'gold' : 'green'}`}>
               {isOpponentWin
@@ -379,29 +496,6 @@ export const WinModal: React.FC = () => {
                 ? `Winner played in the ${stakeAmt} ETB Room`
                 : '✓ Instantly credited to your wallet'}
             </span>
-
-            {isJackpotHit && (
-              <div
-                style={{
-                  background: 'linear-gradient(135deg, #b45309 0%, #d97706 50%, #f59e0b 100%)',
-                  color: '#ffffff',
-                  padding: '6px 14px',
-                  borderRadius: '20px',
-                  fontSize: '0.75rem',
-                  fontWeight: 900,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  marginTop: '10px',
-                  boxShadow: '0 3px 12px rgba(245, 158, 11, 0.45)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}
-              >
-                <span>👑</span>
-                <span>{lang === 'am' ? `+${jackpotWonAmount} ብር ግራንድ ጃክፖት ተጨምሯል!` : `+${jackpotWonAmount} ETB GRAND JACKPOT INCLUDED!`}</span>
-              </div>
-            )}
           </div>
 
           {/* ── Winning Cartela 5x5 Matrix Showcase ── */}
