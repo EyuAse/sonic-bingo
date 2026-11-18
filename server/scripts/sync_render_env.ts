@@ -29,7 +29,7 @@ const envVars = [
   },
   {
     key: 'TELEGRAM_WEBAPP_URL',
-    value: 'https://sonic-bingo.onrender.com'
+    value: 'https://sonic-bingo.asoeyo029.workers.dev'
   },
   ...(process.env.CLOUDFLARE_API_TOKEN ? [{
     key: 'CLOUDFLARE_API_TOKEN',
@@ -37,7 +37,7 @@ const envVars = [
   }] : []),
   {
     key: 'CLOUDFLARE_FRONTEND_URL',
-    value: ''
+    value: 'https://sonic-bingo.asoeyo029.workers.dev'
   },
   {
     key: 'VITE_BACKEND_URL',
