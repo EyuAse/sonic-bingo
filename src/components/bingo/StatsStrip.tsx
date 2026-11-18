@@ -35,12 +35,12 @@ export const StatsStrip: React.FC = () => {
     ? Math.max(currentPlayers, cardQuantity || 1)
     : currentPlayers;
 
-  // Dynamic Real-Flow Derash Calculation (70% Winner Payout):
-  // 70% winner payout, 10% progressive jackpot contribution, 20% house fee
+  // Dynamic Real-Flow Derash Calculation (Strictly 77.6% Winner Payout):
+  // 100% total pot minus 20% house commission minus 2.4% progressive jackpot fee = 77.6% net Derash
   const expectedPot = effectivePlayerCount * betAmount;
-  const calculatedPrize = Math.floor(expectedPot * 0.70);
+  const calculatedPrize = Math.floor(expectedPot * 0.776);
 
-  // Derash strictly displays the net prize pool (70% share)
+  // Derash strictly displays the net prize pool (77.6% share)
   const currentPrize = prizePool > 0 ? prizePool : calculatedPrize;
 
   const prizeDisplay = isSpectatingHouse && roundPhase === 'playing'
