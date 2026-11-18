@@ -26,7 +26,13 @@ export const AffiliatePage: React.FC = () => {
   const { balance, bonus, coins, redeemCoins } = useWallet();
   const { lang } = useLanguage();
   const { registerBonus, referralBonusRate } = useAdmin();
-  const { jackpotPool } = useBingo();
+  const { jackpotPool, refreshJackpotPool } = useBingo();
+
+  useEffect(() => {
+    refreshJackpotPool?.();
+  }, [refreshJackpotPool]);
+
+  const effectiveJackpot = (typeof jackpotPool === 'number' && jackpotPool > 0) ? jackpotPool : 480;
 
   const [isRedeemingCoins, setIsRedeemingCoins] = useState(false);
   const [showJackpotModal, setShowJackpotModal] = useState(false);
@@ -275,7 +281,7 @@ export const AffiliatePage: React.FC = () => {
                 {lang === 'am' ? 'ግራንድ ጃክፖት ካዝና' : 'Grand Jackpot Vault'}
               </div>
               <div className="rewards-jackpot-val">
-                {Math.floor(jackpotPool ?? 480)} <span className="rewards-jackpot-val-max">/ 500 ETB</span>
+                {Math.floor(effectiveJackpot)} <span className="rewards-jackpot-val-max">/ 500 ETB</span>
               </div>
             </div>
 
@@ -290,7 +296,7 @@ export const AffiliatePage: React.FC = () => {
           {/* Mini Progress Bar */}
           <div style={{ marginTop: '12px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '999px', height: '8px', overflow: 'hidden' }}>
             <div style={{
-              width: `${Math.min(100, Math.max(0, ((jackpotPool ?? 480) / 500) * 100))}%`,
+              width: `${Math.min(100, Math.max(0, (effectiveJackpot / 500) * 100))}%`,
               height: '100%',
               background: 'linear-gradient(90deg, #f59e0b, #10b981)',
               borderRadius: '999px',
@@ -301,7 +307,7 @@ export const AffiliatePage: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#cbd5e1', marginTop: '6px' }}>
             <span>{lang === 'am' ? '🎯 500 ብር ሲሞላ በዚህ ዙር አሸናፊው ይወስዳል' : '🎯 Drops when vault reaches 500 ETB'}</span>
             <span style={{ fontWeight: 800, color: '#fbbf24' }}>
-              {Math.max(0, 500 - Math.floor(jackpotPool ?? 480))} ETB {lang === 'am' ? 'ቀርቷል' : 'left'}
+              {Math.max(0, 500 - Math.floor(effectiveJackpot))} ETB {lang === 'am' ? 'ቀርቷል' : 'left'}
             </span>
           </div>
 

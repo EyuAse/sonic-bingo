@@ -11,6 +11,7 @@ import React, {
 import { soundEngine } from '../services/soundEngine.ts';
 import { socketService } from '../services/socketService.ts';
 import { telegramService } from '../services/telegramService.ts';
+import { apiClient } from '../services/apiClient.ts';
 import { getApiBase } from '../config/env.ts';
 import { useWallet } from './WalletContext.tsx';
 import { useAuth } from './AuthContext.tsx';
@@ -69,6 +70,8 @@ interface BingoContextType {
   betAmount: number;
   setBetAmount: (amt: number) => void;
   jackpotPool: number;
+  setJackpotPool: (val: number) => void;
+  refreshJackpotPool: () => Promise<number>;
   cardQuantity: number;
   setCardQuantity: (qty: number) => void;
   hasTicket: boolean;
@@ -304,7 +307,26 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   // Betting state (Stakes: 10, 20, 50, 100 Birr)
   const [betAmount, setBetAmountState] = useState<number>(10);
-  const [jackpotPool, setJackpotPool] = useState<number>(0);
+  const [jackpotPool, setJackpotPool] = useState<number>(480);
+
+  const refreshJackpotPool = useCallback(async (): Promise<number> => {
+    try {
+      const res = await apiClient.public.getJackpotDetails();
+      if (res && res.success && typeof res.poolBalance === 'number' && res.poolBalance > 0) {
+        setJackpotPool(res.poolBalance);
+        return res.poolBalance;
+      }
+    } catch (err) {
+      console.warn('⚠️ Could not refresh public jackpot details:', err);
+    }
+    return 480;
+  }, []);
+
+  // Initial fetch on mount across entire app (even before entering any room)
+  useEffect(() => {
+    refreshJackpotPool();
+  }, [refreshJackpotPool]);
+
   const [stakeRoomsSummary, setStakeRoomsSummary] = useState<Record<number, number>>({ 10: 0, 20: 0, 50: 0, 100: 0 });
   const [cardQuantity, setCardQuantityState] = useState<number>(1);
   const [hasTicket, setHasTicket] = useState<boolean>(false);
@@ -1286,16 +1308,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     });
 
     // Fetch initial jackpot balance for current room
-    fetch('/api/jackpots')
-      .then(r => r.json())
-      .then(d => {
-        const list = Array.isArray(d?.jackpots) ? d.jackpots : (Array.isArray(d?.data) ? d.data : []);
-        const p = list.find((item: any) => item.roomId === roomId || item.room_id === roomId || (roomId === 'room-10' && (item.roomId === 'arena' || item.room_id === 'default')));
-        if (p && typeof p.balance === 'number') {
-          setJackpotPool(p.balance);
-        }
-      })
-      .catch(() => {});
+    refreshJackpotPool();
 
     return () => {
       socketService.leaveRoom(roomId);
@@ -2145,6 +2158,8 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         betAmount,
         setBetAmount,
         jackpotPool,
+        setJackpotPool,
+        refreshJackpotPool,
         cardQuantity,
         setCardQuantity,
         hasTicket,

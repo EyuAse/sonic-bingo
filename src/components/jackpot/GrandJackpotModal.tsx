@@ -20,11 +20,11 @@ interface JackpotWinnerRecord {
 }
 
 export const GrandJackpotModal: React.FC<GrandJackpotModalProps> = ({ isOpen, onClose }) => {
-  const { jackpotPool, setBetAmount } = useBingo();
+  const { jackpotPool, setJackpotPool, setBetAmount } = useBingo();
   const { switchPage } = useApp();
   const { lang } = useLanguage();
 
-  const [poolAmount, setPoolAmount] = useState<number>(() => Math.max(jackpotPool ?? 0, 480));
+  const [poolAmount, setPoolAmount] = useState<number>(() => Math.max(jackpotPool || 0, 480));
   const [recentWinners, setRecentWinners] = useState<JackpotWinnerRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -47,6 +47,7 @@ export const GrandJackpotModal: React.FC<GrandJackpotModalProps> = ({ isOpen, on
         if (isMounted && res && res.success) {
           if (res.poolBalance !== undefined && res.poolBalance > 0) {
             setPoolAmount(res.poolBalance);
+            setJackpotPool?.(res.poolBalance);
           }
           if (Array.isArray(res.recentWinners)) {
             setRecentWinners(res.recentWinners);
