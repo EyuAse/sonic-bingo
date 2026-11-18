@@ -79,30 +79,53 @@ router.get('/check-telegram/:telegramId', async (req, res) => {
 });
 
 /**
- * 1-Click Telegram Mini App Authentication
- * Seamlessly logs in or auto-registers the Telegram user with a live Neon DB wallet & welcome bonus.
+ * 1-Click Telegram Mini App Authentication & Phone Login/Registration
+ * Seamlessly logs in or auto-registers the user with a live Neon DB wallet & 50 ETB welcome bonus.
+ * Supports:
+ * 1. Native Telegram WebApp session (telegramId)
+ * 2. Contact-verified phone login (phone)
+ * 3. Unified phone registration or login
  */
-router.post('/telegram', async (req, res) => {
+async function handleTelegramOrPhoneAuth(req: any, res: any) {
   try {
     const { telegramId, username, firstName, lastName, photoUrl, phone, referralCode } = req.body;
 
-    if (!telegramId) {
-      return res.status(400).json({ success: false, error: 'telegramId is required' });
+    let cleanPhone: string | null = null;
+    let altPhone: string | null = null;
+    if (phone && typeof phone === 'string' && phone.trim()) {
+      const digitsOnly = phone.trim().replace(/\D+/g, '');
+      if (digitsOnly.startsWith('251')) {
+        cleanPhone = '0' + digitsOnly.slice(3);
+        altPhone = '+251' + digitsOnly.slice(3);
+      } else if (digitsOnly.startsWith('0')) {
+        cleanPhone = digitsOnly;
+        altPhone = '+251' + digitsOnly.slice(1);
+      } else if (digitsOnly.startsWith('9') || digitsOnly.startsWith('7')) {
+        cleanPhone = '0' + digitsOnly;
+        altPhone = '+251' + digitsOnly;
+      } else {
+        cleanPhone = digitsOnly;
+        altPhone = phone.trim();
+      }
+    }
+
+    if (!telegramId && !cleanPhone) {
+      return res.status(400).json({ success: false, error: 'telegramId or phone is required' });
     }
 
     const tgIdNum = (telegramId && !isNaN(Number(telegramId))) ? Number(telegramId) : null;
-    const cleanUsername = username ? username.replace(/^@/, '') : `user_${tgIdNum || Date.now().toString().slice(-6)}`;
-    const fullName = [firstName, lastName].filter(Boolean).join(' ').trim() || cleanUsername;
+    const cleanUsername = username ? username.replace(/^@/, '') : (cleanPhone ? `user_${cleanPhone.slice(-4)}` : `user_${tgIdNum || Date.now().toString().slice(-6)}`);
+    const fullName = [firstName, lastName].filter(Boolean).join(' ').trim() || (cleanPhone ? `Player ${cleanPhone.slice(-4)}` : cleanUsername);
 
-    // Check if user exists by telegram_id or phone
+    // Check if user exists by telegram_id OR phone (matching either 09.../07... or +251...)
     const existingUserRes = await query(
       `SELECT u.*, w.balance, w.bonus, w.locked_balance 
        FROM users u 
        LEFT JOIN wallets w ON u.id = w.user_id 
-       WHERE (u.telegram_id IS NOT NULL AND u.telegram_id = $1) 
-          OR (u.phone IS NOT NULL AND u.phone = $2)
+       WHERE (u.telegram_id IS NOT NULL AND $1::bigint IS NOT NULL AND u.telegram_id = $1::bigint) 
+          OR (u.phone IS NOT NULL AND $2::text IS NOT NULL AND (u.phone = $2::text OR u.phone = $3::text))
        LIMIT 1`,
-      [tgIdNum, phone || null]
+      [tgIdNum, cleanPhone, altPhone]
     );
 
     let userRow: any;
@@ -155,37 +178,53 @@ router.post('/telegram', async (req, res) => {
         }
       }
 
-      let cleanPhone = userRow.phone;
-      if (phone && typeof phone === 'string' && phone.trim()) {
-        cleanPhone = phone.trim().replace(/^\+?251/, '0').replace(/\s+/g, '');
-        if (!cleanPhone.startsWith('0')) cleanPhone = '0' + cleanPhone;
-      }
+      const finalPhone = cleanPhone || userRow.phone;
 
       await query(
         `UPDATE users 
          SET last_login_at = NOW(),
-             telegram_username = COALESCE($1, telegram_username),
-             first_name = COALESCE($2, first_name),
-             last_name = COALESCE($3, last_name),
-             photo_url = COALESCE($4, photo_url),
-             phone = COALESCE($5, phone),
-             is_kyc_verified = CASE WHEN $5 IS NOT NULL THEN TRUE ELSE is_kyc_verified END,
+             telegram_id = COALESCE(telegram_id, $1),
+             telegram_username = COALESCE($2, telegram_username),
+             first_name = COALESCE($3, first_name),
+             last_name = COALESCE($4, last_name),
+             photo_url = COALESCE($5, photo_url),
+             phone = COALESCE($6, phone),
+             is_kyc_verified = CASE WHEN $6 IS NOT NULL THEN TRUE ELSE is_kyc_verified END,
              bot_started = TRUE
-         WHERE id = $6`,
-        [cleanUsername, firstName || null, lastName || null, photoUrl || null, cleanPhone || null, userRow.id]
+         WHERE id = $7`,
+        [tgIdNum, cleanUsername, firstName || null, lastName || null, photoUrl || null, finalPhone || null, userRow.id]
       );
-      if (cleanPhone) {
-        userRow.phone = cleanPhone;
+      if (finalPhone) {
+        userRow.phone = finalPhone;
         userRow.is_kyc_verified = true;
       }
+      if (tgIdNum && !userRow.telegram_id) {
+        userRow.telegram_id = tgIdNum;
+      }
 
-      walletRow = {
-        balance: parseFloat(userRow.balance || '0'),
-        bonus: parseFloat(userRow.bonus || '0'),
-        lockedBalance: parseFloat(userRow.locked_balance || '0')
-      };
+      // Ensure user has a wallet
+      if (!userRow.balance && userRow.balance !== 0) {
+        const ensuredWallet = await query(
+          `INSERT INTO wallets (user_id, balance, bonus, locked_balance)
+           VALUES ($1, 0.00, 50.00, 0.00)
+           ON CONFLICT (user_id) DO UPDATE SET updated_at = NOW()
+           RETURNING balance, bonus, locked_balance`,
+          [userRow.id]
+        );
+        walletRow = {
+          balance: parseFloat(ensuredWallet.rows[0]?.balance || '0'),
+          bonus: parseFloat(ensuredWallet.rows[0]?.bonus || '50.00'),
+          lockedBalance: parseFloat(ensuredWallet.rows[0]?.locked_balance || '0')
+        };
+      } else {
+        walletRow = {
+          balance: parseFloat(userRow.balance || '0'),
+          bonus: parseFloat(userRow.bonus || '0'),
+          lockedBalance: parseFloat(userRow.locked_balance || '0')
+        };
+      }
     } else {
-      // New User: Create atomically with initial 10 ETB Welcome Bonus & Referral Attribution
+      // New User: Create atomically with initial 50 ETB Welcome Bonus & Referral Attribution
       isNewUser = true;
       const myReferralCode = 'SONIC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
@@ -358,10 +397,13 @@ router.post('/telegram', async (req, res) => {
       wallet: walletRow
     });
   } catch (error: any) {
-    console.error('❌ [Auth Telegram Error]:', error);
+    console.error('❌ [Auth Telegram/Phone Error]:', error);
     return res.status(500).json({ success: false, error: error.message || 'Authentication failed' });
   }
-});
+}
+
+router.post('/telegram', handleTelegramOrPhoneAuth);
+router.post('/phone-register-or-login', handleTelegramOrPhoneAuth);
 
 /**
  * Standard Phone & PIN Registration

@@ -158,15 +158,28 @@ export class TelegramBotService {
 
   /**
    * Helper to ensure clean base Web App URLs for Telegram Mini App
+   * Supports startParam string or object of query parameters (tg_id, phone, etc.)
    */
-  public getVersionedWebAppUrl(baseUrl: string, param?: string): string {
+  public getVersionedWebAppUrl(baseUrl: string, paramOrExtra?: string | Record<string, any>): string {
     if (!baseUrl) return '';
     const cleanUrl = baseUrl.replace(/([?&])v=[^&]*(&|$)/g, '$1').replace(/[?&]$/, '');
-    if (param) {
+    if (!paramOrExtra) return cleanUrl;
+
+    if (typeof paramOrExtra === 'string') {
       const sep = cleanUrl.includes('?') ? '&' : '?';
-      return `${cleanUrl}${sep}startapp=${encodeURIComponent(param)}`;
+      return `${cleanUrl}${sep}startapp=${encodeURIComponent(paramOrExtra)}`;
     }
-    return cleanUrl;
+
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(paramOrExtra)) {
+      if (v !== undefined && v !== null && v !== '') {
+        params.append(k, String(v));
+      }
+    }
+    const queryStr = params.toString();
+    if (!queryStr) return cleanUrl;
+    const sep = cleanUrl.includes('?') ? '&' : '?';
+    return `${cleanUrl}${sep}${queryStr}`;
   }
 
   /**
@@ -1174,11 +1187,22 @@ export class TelegramBotService {
         `እንኳን ደስ አለዎት! አሁን ጨዋታውን መክፈት ይችላሉ። ከታች ያለውን ይጫኑ 👇\n\n` +
         `<i>Your phone has been verified and 50.00 ETB Bonus is active! Tap below to play:</i>`;
 
-      const playAppUrl = this.getVersionedWebAppUrl(webAppUrl);
+      const playAppUrl = this.getVersionedWebAppUrl(webAppUrl, {
+        tg_id: tgUserId,
+        phone: cleanPhone,
+        first_name: firstName || undefined,
+        username: username || undefined
+      });
+
+      // 1. Send celebration with prominent inline Play button
       await this.sendMessage(chatId, confirmMsg, {
         inlineKeyboard: [
           [{ text: '🎮 አሁን ይጫወቱ / Play Sonic Bingo (50 ETB Gift)', web_app: { url: playAppUrl } }]
-        ],
+        ]
+      });
+
+      // 2. Update bottom persistent quick keyboard
+      await this.sendMessage(chatId, '👇 ከታች ባለው ሜኑ በፍጥነት መክፈት ይችላሉ / Quick Navigation:', {
         replyMarkup: this.getStandardReplyKeyboard(playAppUrl)
       });
       return true;
@@ -1234,11 +1258,22 @@ export class TelegramBotService {
           `እንኳን ደስ አለዎት! አሁን ጨዋታውን መክፈት ይችላሉ። ከታች ያለውን ይጫኑ 👇\n\n` +
           `<i>Your phone has been verified and 50.00 ETB Bonus is active! Tap below to play:</i>`;
 
-        const playAppUrl = this.getVersionedWebAppUrl(webAppUrl);
+        const playAppUrl = this.getVersionedWebAppUrl(webAppUrl, {
+          tg_id: tgUserId,
+          phone: cleanPhone,
+          first_name: firstName || undefined,
+          username: username || undefined
+        });
+
+        // 1. Send celebration with prominent inline Play button
         await this.sendMessage(chatId, confirmMsg, {
           inlineKeyboard: [
             [{ text: '🎮 አሁን ይጫወቱ / Play Sonic Bingo (50 ETB Gift)', web_app: { url: playAppUrl } }]
-          ],
+          ]
+        });
+
+        // 2. Update bottom persistent quick keyboard
+        await this.sendMessage(chatId, '👇 ከታች ባለው ሜኑ በፍጥነት መክፈት ይችላሉ / Quick Navigation:', {
           replyMarkup: this.getStandardReplyKeyboard(playAppUrl)
         });
         return true;
@@ -1336,6 +1371,7 @@ export class TelegramBotService {
 
       // ── 🛡️ MANDATORY PHONE VERIFICATION CHECK ──
       let hasVerifiedPhone = false;
+      let userPhone: string | undefined = undefined;
       if (msg.from?.id) {
         try {
           const userCheck = await query(
@@ -1344,6 +1380,7 @@ export class TelegramBotService {
           );
           if (userCheck.rows.length > 0 && userCheck.rows[0].phone && String(userCheck.rows[0].phone).trim() !== '') {
             hasVerifiedPhone = true;
+            userPhone = userCheck.rows[0].phone;
           }
         } catch (e) {
           console.warn('Error checking verified phone on /start:', e);
@@ -1397,12 +1434,20 @@ export class TelegramBotService {
 
       const channelLink = cfg.channelId ? `https://t.me/${cfg.channelId.replace('@', '')}` : 'https://t.me/sonicbingo';
 
+      const verifiedPlayAppUrl = this.getVersionedWebAppUrl(webAppUrl, {
+        startapp: startParam || undefined,
+        tg_id: msg.from?.id,
+        phone: userPhone || undefined,
+        first_name: msg.from?.first_name || undefined,
+        username: msg.from?.username || undefined
+      });
+
       const inlineKeyboard = [
-        [{ text: '🎮 Play Bingo Now (50 ETB Gift)', web_app: { url: playAppUrl } }],
+        [{ text: '🎮 Play Bingo Now (50 ETB Gift)', web_app: { url: verifiedPlayAppUrl } }],
         [{ text: '📢 Join Official Channel', url: channelLink }]
       ];
 
-      const standardReplyKeyboard = this.getStandardReplyKeyboard(playAppUrl);
+      const standardReplyKeyboard = this.getStandardReplyKeyboard(verifiedPlayAppUrl);
 
       if (welcomePhoto) {
         await this.sendPhoto(chatId, welcomePhoto, welcomeText, { inlineKeyboard });

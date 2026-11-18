@@ -22,18 +22,33 @@ export const TelegramRegisterModal: React.FC<TelegramRegisterModalProps> = ({
   const { lang } = useLanguage();
   const { telegramUser } = useAuth();
 
-  const [phoneInput, setPhoneInput] = useState('');
+  const [phoneInput, setPhoneInput] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const p = urlParams.get('phone');
+      if (p) {
+        let clean = p.replace(/^\+?251/, '0').replace(/\s+/g, '');
+        if (!clean.startsWith('0')) clean = '0' + clean;
+        return clean;
+      }
+    } catch {}
+    return '';
+  });
   const [phoneError, setPhoneError] = useState('');
 
   if (!isOpen) return null;
 
+  const urlTgId = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('tg_id') : null;
+  const effectiveId = telegramUser?.id || urlTgId;
+
   const displayName = telegramUser
     ? `${telegramUser.first_name || ''} ${telegramUser.last_name || ''}`.trim() || `@${telegramUser.username}`
-    : 'Telegram Player';
+    : 'Sonic Player';
 
   const displayHandle = telegramUser?.username
     ? `@${telegramUser.username}`
-    : `ID: ${telegramUser?.id || 'Telegram User'}`;
+    : (effectiveId ? `ID: ${effectiveId}` : (phoneInput ? `Phone: ${phoneInput}` : 'Sonic Player'));
 
   const handleOneTapContact = async () => {
     try {

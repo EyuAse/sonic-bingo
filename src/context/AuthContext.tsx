@@ -28,6 +28,7 @@ interface AuthContextType {
   login: (payload: LoginPayload) => Promise<User>;
   loginWithPhone: (phone: string, pin: string) => Promise<User>;
   loginWithTelegram: (tgUser?: TelegramUser, customPhone?: string, referralCode?: string) => Promise<{ user: User; isNewUser: boolean }>;
+  loginOrRegisterWithPhone?: (phone: string, fullName?: string, referralCode?: string) => Promise<{ user: User; isNewUser: boolean }>;
   logout: () => void;
   resetPin: (phone: string, otpCode: string, newPin: string) => Promise<boolean>;
   updateProfile: (data: Partial<User>) => Promise<User | null>;
@@ -367,24 +368,43 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           legacyKeys.forEach(k => localStorage.removeItem(k));
         }
 
-        // 1. Initialize Telegram WebApp SDK
+        // 1. Initialize Telegram WebApp SDK & resiliently await Telegram User
         telegramService.initWebApp();
         const startParam = telegramService.getStartParam();
         if (startParam && typeof window !== 'undefined') {
           sessionStorage.setItem('sonic_pending_referral', startParam);
         }
-        const tgUser = telegramService.getTelegramUser();
-        const isTg = telegramService.isTelegram() && !!tgUser;
+
+        const tgUser = await telegramService.waitForTelegramUser(350);
+
+        // Check if phone or tg_id is passed via query params from bot launcher
+        let phoneFromUrl: string | undefined = undefined;
+        let tgIdFromUrl: number | undefined = undefined;
+        if (typeof window !== 'undefined') {
+          const urlParams = new URLSearchParams(window.location.search);
+          const p = urlParams.get('phone');
+          if (p) phoneFromUrl = p;
+          const tid = urlParams.get('tg_id');
+          if (tid && !isNaN(Number(tid))) tgIdFromUrl = Number(tid);
+        }
+
+        const effectiveTgUser = tgUser || (tgIdFromUrl ? {
+          id: tgIdFromUrl,
+          first_name: 'Telegram Player',
+          username: undefined
+        } : null);
+
+        const isTg = telegramService.isTelegram() || !!effectiveTgUser;
         setIsInsideTelegram(isTg);
-        setTelegramUser(tgUser);
+        if (effectiveTgUser) setTelegramUser(effectiveTgUser);
 
         // 2. Multi-Account Isolation: If inside Telegram, clear previous user's cached data if account switched
-        if (isTg && tgUser && tgUser.id) {
+        if (effectiveTgUser && effectiveTgUser.id) {
           const storedUserJson = localStorage.getItem('sonic_user');
           if (storedUserJson) {
             try {
               const parsed = JSON.parse(storedUserJson);
-              if (parsed.telegramId && String(parsed.telegramId) !== String(tgUser.id)) {
+              if (parsed.telegramId && String(parsed.telegramId) !== String(effectiveTgUser.id)) {
                 // Switched to a different Telegram account on the same phone!
                 localStorage.removeItem('sonic_auth_token');
                 localStorage.removeItem('sonic_user');
@@ -393,69 +413,68 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               }
             } catch {}
           }
+        }
 
-          const isExplicitlyLoggedOut =
-            typeof window !== 'undefined' && localStorage.getItem(`sonic_explicit_logout_${tgUser.id}`) === 'true';
+        const isExplicitlyLoggedOut =
+          typeof window !== 'undefined' && effectiveTgUser?.id
+            ? localStorage.getItem(`sonic_explicit_logout_${effectiveTgUser.id}`) === 'true'
+            : (typeof window !== 'undefined' && localStorage.getItem('sonic_explicit_logout') === 'true');
 
-          // Auto-authenticate: loginWithTelegram handles both login + registration
+        // Auto-authenticate: loginWithTelegram handles both login + registration (Telegram or Bot-verified Phone)
+        if (!isExplicitlyLoggedOut && (effectiveTgUser || phoneFromUrl)) {
           try {
-            if (!isExplicitlyLoggedOut) {
-              const pendingRef = (typeof window !== 'undefined' ? sessionStorage.getItem('sonic_pending_referral') : null) || startParam || undefined;
-              const apiResult = await apiClient.auth.loginWithTelegram(tgUser, undefined, pendingRef);
-              const rawPhone = apiResult.user.phone;
-              const tgIdStr = String(tgUser.id);
-              const isRealServerPhone =
-                rawPhone &&
-                rawPhone.length >= 9 &&
-                !rawPhone.startsWith('+25198888') &&
-                rawPhone !== '0911234567' &&
-                !rawPhone.includes(tgIdStr.slice(-6)) &&
-                rawPhone !== `09${tgIdStr.slice(-8)}`;
+            const pendingRef = (typeof window !== 'undefined' ? sessionStorage.getItem('sonic_pending_referral') : null) || startParam || undefined;
+            const apiResult = await apiClient.auth.loginWithTelegram(effectiveTgUser || undefined, phoneFromUrl, pendingRef);
+            const rawPhone = apiResult.user.phone || phoneFromUrl || '';
+            const isRealServerPhone =
+              rawPhone &&
+              rawPhone.length >= 9 &&
+              !rawPhone.startsWith('+25198888') &&
+              rawPhone !== '0911234567';
 
-              const mappedUser: User = {
-                id: apiResult.user.id,
-                telegramId: apiResult.user.telegramId,
-                telegramUsername: apiResult.user.telegramUsername,
-                fullName: apiResult.user.fullName || tgUser.first_name,
-                phone: isRealServerPhone ? rawPhone : '',
-                nationalPhone: isRealServerPhone ? `0${rawPhone.slice(-9)}` : '',
-                formattedPhone: isRealServerPhone ? rawPhone : '',
-                carrier: isRealServerPhone ? (apiResult.user.carrier || 'ethiotelecom') : undefined,
-                isPhoneVerified: !!isRealServerPhone,
-                role: apiResult.user.role || 'player',
-                status: (apiResult.user.status as any) || 'active',
-                suspendReason: apiResult.user.suspendReason || undefined,
-                referralCode: apiResult.user.referralCode,
-                attachedAccounts: apiResult.user.attachedAccounts || [],
-                pin: '1234',
-                createdAt: apiResult.user.createdAt || new Date().toISOString(),
-                lastLogin: new Date().toISOString()
-              };
+            const mappedUser: User = {
+              id: apiResult.user.id,
+              telegramId: apiResult.user.telegramId || effectiveTgUser?.id,
+              telegramUsername: apiResult.user.telegramUsername || effectiveTgUser?.username,
+              fullName: apiResult.user.fullName || effectiveTgUser?.first_name || (rawPhone ? `Player ${rawPhone.slice(-4)}` : 'Sonic Player'),
+              phone: isRealServerPhone ? rawPhone : '',
+              nationalPhone: isRealServerPhone ? `0${rawPhone.slice(-9)}` : '',
+              formattedPhone: isRealServerPhone ? rawPhone : '',
+              carrier: isRealServerPhone ? (apiResult.user.carrier || 'ethiotelecom') : undefined,
+              isPhoneVerified: !!isRealServerPhone,
+              role: apiResult.user.role || 'player',
+              status: (apiResult.user.status as any) || 'active',
+              suspendReason: apiResult.user.suspendReason || undefined,
+              referralCode: apiResult.user.referralCode,
+              attachedAccounts: apiResult.user.attachedAccounts || [],
+              pin: '1234',
+              createdAt: apiResult.user.createdAt || new Date().toISOString(),
+              lastLogin: new Date().toISOString()
+            };
 
-              // Enforce or clear suspension state authoritatively from DB
-              if (apiResult.user.status === 'suspended') {
-                const reason = apiResult.user.suspendReason || 'Account suspended by compliance.';
-                setSuspensionNotice({ reason });
-                mappedUser.status = 'suspended';
-                mappedUser.suspendReason = reason;
-              } else {
-                setSuspensionNotice(null);
-                mappedUser.status = 'active';
-                mappedUser.suspendReason = undefined;
-              }
-
-              setUser(mappedUser);
-              setToken(apiResult.token);
-              setIsFirstTimeTelegramUser(!!apiResult.isNewUser);
-              localStorage.setItem('sonic_user', JSON.stringify(mappedUser));
-              localStorage.setItem('sonic_auth_token', apiResult.token);
-              if (apiResult.wallet) {
-                localStorage.setItem('sonic_live_balance', apiResult.wallet.balance.toFixed(2));
-                localStorage.setItem('sonic_live_bonus', apiResult.wallet.bonus.toFixed(2));
-                window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: apiResult.wallet }));
-              }
-              return;
+            // Enforce or clear suspension state authoritatively from DB
+            if (apiResult.user.status === 'suspended') {
+              const reason = apiResult.user.suspendReason || 'Account suspended by compliance.';
+              setSuspensionNotice({ reason });
+              mappedUser.status = 'suspended';
+              mappedUser.suspendReason = reason;
+            } else {
+              setSuspensionNotice(null);
+              mappedUser.status = 'active';
+              mappedUser.suspendReason = undefined;
             }
+
+            setUser(mappedUser);
+            setToken(apiResult.token);
+            setIsFirstTimeTelegramUser(!!apiResult.isNewUser);
+            localStorage.setItem('sonic_user', JSON.stringify(mappedUser));
+            localStorage.setItem('sonic_auth_token', apiResult.token);
+            if (apiResult.wallet) {
+              localStorage.setItem('sonic_live_balance', apiResult.wallet.balance.toFixed(2));
+              localStorage.setItem('sonic_live_bonus', apiResult.wallet.bonus.toFixed(2));
+              window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: apiResult.wallet }));
+            }
+            return;
           } catch (err) {
             console.warn('⚠️ Server auth check notice:', (err as any)?.message || err);
             // Fall back to existing cached session on any network/server glitch so existing user is never kicked to sign-up
@@ -644,31 +663,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     customPhone?: string,
     referralCode?: string
   ): Promise<{ user: User; isNewUser: boolean }> => {
-    const tgUser = customTgUser || telegramUser;
-    if (!tgUser) {
-      throw new Error('Telegram session not found. Please register or login with your phone number.');
+    let tgUser = customTgUser || telegramUser || telegramService.getTelegramUser();
+    if (!tgUser && typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlTgId = urlParams.get('tg_id');
+      if (urlTgId && !isNaN(Number(urlTgId))) {
+        tgUser = {
+          id: Number(urlTgId),
+          first_name: urlParams.get('first_name') || urlParams.get('name') || 'Telegram Player',
+          username: urlParams.get('username') || undefined
+        };
+      }
+    }
+
+    if (!tgUser && !customPhone) {
+      throw new Error(
+        lang === 'am'
+          ? 'እባክዎ ስልክ ቁጥርዎን ያስገቡ።'
+          : 'Please enter your phone number to continue.'
+      );
     }
 
     setIsLoading(true);
     try {
       const refCode = referralCode || (typeof window !== 'undefined' ? sessionStorage.getItem('sonic_pending_referral') || undefined : undefined);
-      const apiResult = await apiClient.auth.loginWithTelegram(tgUser, customPhone, refCode);
+      const apiResult = await apiClient.auth.loginWithTelegram(tgUser || undefined, customPhone, refCode);
       localStorage.removeItem('sonic_explicit_logout');
 
-      const tgIdStr = String(tgUser.id);
-      const isRealPhoneProvided = customPhone || (apiResult.user.phone &&
-        apiResult.user.phone.length >= 9 &&
-        !apiResult.user.phone.startsWith('+25198888') &&
-        apiResult.user.phone !== '0911234567' &&
-        !apiResult.user.phone.includes(tgIdStr.slice(-6)) &&
-        apiResult.user.phone !== `09${tgIdStr.slice(-8)}`);
-      const finalPhone = isRealPhoneProvided ? (customPhone || apiResult.user.phone) : '';
+      const rawPhone = customPhone || apiResult.user.phone || '';
+      const isRealPhoneProvided = !!rawPhone && rawPhone.length >= 9;
+      const finalPhone = isRealPhoneProvided ? rawPhone : '';
 
       const mappedUser: User = {
         id: apiResult.user.id,
-        telegramId: apiResult.user.telegramId,
-        telegramUsername: apiResult.user.telegramUsername,
-        fullName: apiResult.user.fullName || `${tgUser.first_name || ''} ${tgUser.last_name || ''}`.trim(),
+        telegramId: apiResult.user.telegramId || tgUser?.id,
+        telegramUsername: apiResult.user.telegramUsername || tgUser?.username,
+        fullName: apiResult.user.fullName || (tgUser ? `${tgUser.first_name || ''} ${tgUser.last_name || ''}`.trim() : (finalPhone ? `Player ${finalPhone.slice(-4)}` : 'Sonic Player')),
         phone: finalPhone,
         nationalPhone: finalPhone ? `0${finalPhone.slice(-9)}` : '',
         formattedPhone: finalPhone,
@@ -707,12 +737,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       throw new Error(
         lang === 'am'
-          ? '⚠️ ግንኙነት አልተሳካም። እባክዎ እንደገና ይሞክሩ።'
-          : '⚠️ Connection failed. Please try again.'
+          ? (err?.message || '⚠️ ግንኙነት አልተሳካም። እባክዎ እንደገና ይሞክሩ።')
+          : (err?.message || '⚠️ Connection failed. Please try again.')
       );
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const loginOrRegisterWithPhone = async (
+    phone: string,
+    _fullName?: string,
+    referralCode?: string
+  ): Promise<{ user: User; isNewUser: boolean }> => {
+    return loginWithTelegram(undefined, phone, referralCode);
   };
 
   const logout = () => {
@@ -810,6 +848,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         login,
         loginWithPhone: (phone: string, pin: string) => login({ phone, pin }),
         loginWithTelegram,
+        loginOrRegisterWithPhone,
         logout,
         resetPin,
         updateProfile

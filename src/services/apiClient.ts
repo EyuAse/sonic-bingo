@@ -146,18 +146,47 @@ export const apiClient = {
       return data;
     },
 
-    async loginWithTelegram(tgUser: any, customPhone?: string, referralCode?: string) {
+    async loginWithTelegram(tgUser?: any, customPhone?: string, referralCode?: string) {
       const payload = {
-        telegramId: tgUser.id,
-        username: tgUser.username,
-        firstName: tgUser.first_name,
-        lastName: tgUser.last_name,
-        photoUrl: tgUser.photo_url,
+        telegramId: tgUser?.id || undefined,
+        username: tgUser?.username || undefined,
+        firstName: tgUser?.first_name || undefined,
+        lastName: tgUser?.last_name || undefined,
+        photoUrl: tgUser?.photo_url || undefined,
         phone: customPhone,
         referralCode
       };
 
       const res = await fetchWithRetry(`${API_BASE}/auth/telegram`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await handleResponse<{
+        success: boolean;
+        token: string;
+        user: any;
+        wallet: { balance: number; bonus: number; lockedBalance: number };
+        isNewUser: boolean;
+      }>(res);
+
+      if (data.token) {
+        localStorage.setItem('sonic_auth_token', data.token);
+      }
+
+      return data;
+    },
+
+    async phoneRegisterOrLogin(phone: string, fullName?: string, referralCode?: string, telegramId?: number) {
+      const payload = {
+        phone,
+        fullName,
+        referralCode,
+        telegramId
+      };
+
+      const res = await fetchWithRetry(`${API_BASE}/auth/phone-register-or-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
