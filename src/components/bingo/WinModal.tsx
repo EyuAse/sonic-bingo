@@ -139,7 +139,7 @@ export const WinModal: React.FC = () => {
     closeWinModalAndRestart,
     betAmount
   } = useBingo();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { user } = useAuth();
 
   // Auto-dismiss after 8 seconds to match celebration countdown
@@ -265,8 +265,10 @@ export const WinModal: React.FC = () => {
       .map((x: any) => (typeof x === 'number' ? x : Number(x?.index ?? x)))
       .filter((n: any) => typeof n === 'number' && !isNaN(n));
 
-    // Pot & Commission calculations
+    // Pot & Commission & Jackpot calculations
     const grossPot = Number(safeWinResult.totalPot) || Number(winnerPayout) || 0;
+    const isJackpotHit = Boolean((safeWinResult as any).isJackpotHit || Number((safeWinResult as any).jackpotWonAmount) > 0);
+    const jackpotWonAmount = Number((safeWinResult as any).jackpotWonAmount) || (isJackpotHit ? 500 : 0);
     const houseFee = typeof (safeWinResult as any).houseFee === 'number'
       ? Number((safeWinResult as any).houseFee) || 0
       : (isTrueMultiplayerSplit ? 0 : Math.max(0, grossPot - (Number(winnerPayout) || 0)));
@@ -275,7 +277,7 @@ export const WinModal: React.FC = () => {
       : Math.max(0, grossPot - houseFee);
     const isFeeCharged = houseFee > 0;
     const effectiveOpponentPayout = isOpponentWin
-      ? (netPrizePool > 0 ? netPrizePool : (winnerPayout > 0 ? winnerPayout : grossPot - houseFee))
+      ? (winnerPayout > 0 ? winnerPayout : (netPrizePool > 0 ? (netPrizePool + (isJackpotHit ? jackpotWonAmount : 0)) : grossPot))
       : winnerPayout;
 
     return (
@@ -377,6 +379,29 @@ export const WinModal: React.FC = () => {
                 ? `Winner played in the ${stakeAmt} ETB Room`
                 : '✓ Instantly credited to your wallet'}
             </span>
+
+            {isJackpotHit && (
+              <div
+                style={{
+                  background: 'linear-gradient(135deg, #b45309 0%, #d97706 50%, #f59e0b 100%)',
+                  color: '#ffffff',
+                  padding: '6px 14px',
+                  borderRadius: '20px',
+                  fontSize: '0.75rem',
+                  fontWeight: 900,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  marginTop: '10px',
+                  boxShadow: '0 3px 12px rgba(245, 158, 11, 0.45)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                <span>👑</span>
+                <span>{lang === 'am' ? `+${jackpotWonAmount} ብር ግራንድ ጃክፖት ተጨምሯል!` : `+${jackpotWonAmount} ETB GRAND JACKPOT INCLUDED!`}</span>
+              </div>
+            )}
           </div>
 
           {/* ── Winning Cartela 5x5 Matrix Showcase ── */}

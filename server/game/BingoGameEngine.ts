@@ -3219,7 +3219,7 @@ class BingoGameEngine {
       if (botWinners.length > 0 && realWinners.length === 0) {
         try {
           if (isRoom10) {
-            displayWinnerPayout = netPayout; // Exactly 424 ETB on 530 ETB pot
+            displayWinnerPayout = netPayout + totalJackpotAwarded; // Full payout: regular net pot + 500 ETB Jackpot (if hit)
           }
 
           // If jackpot was hit in this bot-won round, reset the pool to excess carryover
@@ -3266,7 +3266,7 @@ class BingoGameEngine {
           for (const bw of botWinners) {
             const matchingOpp = room.opponentCards.find(o => o.cartelaId === bw.cartelaId);
             const botStake = matchingOpp?.stakeAmount || 10;
-            const botPayout = isRoom10 ? netPayout : perCardPayout;
+            const botPayout = isRoom10 ? (netPayout + totalJackpotAwarded) : perCardPayout;
             if (!isRoom10) {
               displayWinnerPayout = botPayout;
             }
@@ -3277,7 +3277,7 @@ class BingoGameEngine {
                 [botPayout, matchingOpp.botUserId]
               );
 
-              const botWinRef = `BOT-WIN-${Date.now().toString().slice(-6)}`;
+              const botWinRef = `WIN-${Date.now().toString().slice(-6)}`;
               await query(
                 `INSERT INTO wallet_transactions (user_id, type, amount, balance_after, reference_code, status, payment_method, description)
                  VALUES ($1, 'win', $2, (SELECT balance FROM wallets WHERE user_id = $1), $3, 'completed', 'in_game', $4)`,
@@ -3303,11 +3303,11 @@ class BingoGameEngine {
         ? (room.tickets.get(firstWinner.userId || '')?.[0]?.betAmount || 10)
         : (matchingOpp?.stakeAmount || 10);
 
-      const primaryEntityId = firstWinner.isReal ? `real_${firstWinner.userId}` : `bot_${firstWinner.cartelaId}`;
+      const primaryEntityId = firstWinner.isReal ? `real_${firstWinner.userId}` : `player_${firstWinner.cartelaId}`;
       const externalCoWinners = Array.from(
         new Set(
           effectiveWinningCards
-            .filter(w => (w.isReal ? `real_${w.userId}` : `bot_${w.cartelaId}`) !== primaryEntityId)
+            .filter(w => (w.isReal ? `real_${w.userId}` : `player_${w.cartelaId}`) !== primaryEntityId)
             .map(w => w.userName)
         )
       );
@@ -3316,15 +3316,19 @@ class BingoGameEngine {
       const isBotSoloWinInRoom10 = isRoom10 && botWinners.length > 0 && realWinners.length === 0;
       const effectiveIsSplit = isBotSoloWinInRoom10 ? false : isSplit;
       const effectiveCoWinners = isBotSoloWinInRoom10 ? [] : (isSplit ? externalCoWinners : []);
-      const effectiveShare = isBotSoloWinInRoom10 ? netPayout : (isSplit ? (realWinnersByUser.size === 2 ? Math.floor(totalCombinedPot * 0.64) : Math.floor(totalCombinedPot / (realWinnersByUser.size || 2))) : displayWinnerPayout);
-      const effectiveWinnerPayout = isBotSoloWinInRoom10 ? netPayout : displayWinnerPayout;
+      const effectiveShare = isBotSoloWinInRoom10 
+        ? (netPayout + totalJackpotAwarded) 
+        : (isSplit ? (realWinnersByUser.size === 2 ? Math.floor(totalCombinedPot * 0.64) : Math.floor(totalCombinedPot / (realWinnersByUser.size || 2))) : displayWinnerPayout);
+      const effectiveWinnerPayout = isBotSoloWinInRoom10 
+        ? (netPayout + totalJackpotAwarded) 
+        : displayWinnerPayout;
 
       const winResult = {
         roomId: room.id,
         winType: effectiveIsSplit
           ? (realWinners.length > 0 ? 'user_split' : 'opponent_win')
           : (firstWinner.isReal ? 'user_solo' : 'opponent_win'),
-        winnerId: firstWinner.userId || matchingOpp?.botUserId || `bot_${firstWinner.cartelaId}`,
+        winnerId: firstWinner.userId || matchingOpp?.botUserId || `player_${firstWinner.cartelaId}`,
         winnerName: firstWinner.userName,
         winnerNames: Array.from(new Set(effectiveWinningCards.map(w => w.userName))),
         winnerUserIds: Array.from(new Set(realWinners.map(rw => rw.userId))),
