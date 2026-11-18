@@ -3264,6 +3264,18 @@ class BingoGameEngine {
               newPoolBalance: room.jackpotPoolBalance
             });
             console.log(`🏆 [Jackpot Reset] Bot winner won round in ${room.id}. Progressive jackpot of ${totalJackpotAwarded} ETB reset to carryover: ${room.jackpotPoolBalance} ETB`);
+
+            // Record into jackpot_winners for past champions history
+            try {
+              const winnerDisplayName = botWinners[0]?.userName || 'Player';
+              await query(
+                `INSERT INTO jackpot_winners (room_id, round_id, user_id, amount, balls_count, winner_name)
+                 VALUES ($1, $2, $3, $4, $5, $6)`,
+                [dbRoomId, room.currentRoundId || null, botUserUuid, totalJackpotAwarded, ballsDrawn, winnerDisplayName]
+              );
+            } catch (jwErr) {
+              console.warn('⚠️ [GameEngine] Failed to insert bot jackpot winner into jackpot_winners:', jwErr);
+            }
           }
           for (const bw of botWinners) {
             const matchingOpp = room.opponentCards.find(o => o.cartelaId === bw.cartelaId);
