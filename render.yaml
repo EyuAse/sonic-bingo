@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: sonic-bingo
+    runtime: node
+    plan: free
+    region: ohio
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "5000"
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: ADMIN_PIN
+        value: "1234"
+      - key: JWT_SECRET
+        value: sonic_bingo_super_secret_production_key_2026_et
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_9sCNYmzVL8iO@ep-sparkling-star-b5rtglfq-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+      - key: TELEGRAM_BOT_TOKEN
+        value: 8736053891:AAHCNqXA-1DZIJA5ylb-oYw1EAEkHfX9Xjc
+      - key: TELEGRAM_BOT_USERNAME
+        value: sonicbingobot
+      - key: TELEGRAM_CHANNEL_ID
+        value: "@sonicbingo"
+      - key: TELEGRAM_WEBAPP_URL
+        value: https://sonic-bingo.asoeyo029.workers.dev
+      - key: CLOUDFLARE_FRONTEND_URL
+        value: https://sonic-bingo.asoeyo029.workers.dev
+      - key: VITE_BACKEND_URL
+        value: https://sonic-bingo.onrender.com
