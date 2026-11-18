@@ -1391,7 +1391,7 @@ router.get(['/agents/active', '/agents/available'], async (_req, res) => {
               ap.active_rails, 
               COALESCE(ap.is_online, true) as is_online, 
               ap.wallet_balance,
-              u.full_name, u.phone as user_phone
+              u.full_name, u.phone as user_phone, u.telegram_username
        FROM agent_profiles ap
        JOIN users u ON ap.user_id = u.id
        WHERE ap.status = 'active'
@@ -1427,6 +1427,7 @@ router.get(['/agents/active', '/agents/available'], async (_req, res) => {
         telebirrName: effectiveTelebirrName,
         mpesaPhone: cleanMpesa || null,
         mpesaName: effectiveMpesaName,
+        telegramUsername: a.telegram_username ? String(a.telegram_username).trim().replace('@', '') : null,
         supportedRails,
         hasConfiguredRails: supportedRails.length > 0,
         isOnline: a.is_online !== false,
@@ -1467,7 +1468,7 @@ router.get('/agents/assigned', async (req, res) => {
               ap.active_rails, 
               COALESCE(ap.is_online, true) as is_online, 
               ap.wallet_balance,
-              u.full_name, u.phone as user_phone
+              u.full_name, u.phone as user_phone, u.telegram_username
        FROM agent_profiles ap
        JOIN users u ON ap.user_id = u.id
        WHERE ap.status = 'active'
@@ -1508,6 +1509,7 @@ router.get('/agents/assigned', async (req, res) => {
           telebirrName: effectiveTelebirrName,
           mpesaPhone: cleanMpesa || null,
           mpesaName: effectiveMpesaName,
+          telegramUsername: a.telegram_username ? String(a.telegram_username).trim().replace('@', '') : null,
           supportedRails,
           hasConfiguredRails: supportedRails.length > 0,
           isOnline: a.is_online !== false,

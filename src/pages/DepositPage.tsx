@@ -43,6 +43,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
     telebirrName?: string;
     mpesaPhone: string | null;
     mpesaName?: string;
+    telegramUsername?: string | null;
     supportedRails?: string[];
     isOnline: boolean;
     avgApprovalMinutes: number;
@@ -62,6 +63,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
     telebirrName?: string;
     mpesaPhone: string | null;
     mpesaName?: string;
+    telegramUsername?: string | null;
     supportedRails?: string[];
     isOnline: boolean;
     avgApprovalMinutes: number;
@@ -93,6 +95,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
     telebirrName?: string;
     mpesaPhone: string | null;
     mpesaName?: string;
+    telegramUsername?: string | null;
     supportedRails?: string[];
     isOnline: boolean;
     avgApprovalMinutes: number;
@@ -981,6 +984,22 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                           </span>
                         ))}
                       </div>
+
+                      {/* Telegram Support Action for this Agent */}
+                      <a
+                        href={`https://t.me/${selectedAgent.telegramUsername ? selectedAgent.telegramUsername.replace('@', '') : 'SonicGameOfficialBot'}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="sonic-agent-telegram-btn"
+                        title="Chat with Agent on Telegram"
+                      >
+                        <i className="fa-brands fa-telegram"></i>
+                        <span>
+                          {lang === 'am'
+                            ? `የኤጀንት #${selectedAgent.agentCode} ቴሌግራም ያግኙ`
+                            : `Chat with Agent #${selectedAgent.agentCode} on Telegram`}
+                        </span>
+                      </a>
 
                       {/* Bottom Footer: Session Note */}
                       <div className="sonic-assigned-footer">

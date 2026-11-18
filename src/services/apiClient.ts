@@ -560,6 +560,7 @@ export const apiClient = {
           cbeName?: string;
           mpesaPhone: string | null;
           mpesaName?: string;
+          telegramUsername?: string | null;
           supportedRails?: string[];
           isOnline: boolean;
           avgApprovalMinutes: number;
@@ -585,6 +586,7 @@ export const apiClient = {
           telebirrName?: string;
           mpesaPhone: string | null;
           mpesaName?: string;
+          telegramUsername?: string | null;
           supportedRails?: string[];
           hasConfiguredRails?: boolean;
           isOnline: boolean;

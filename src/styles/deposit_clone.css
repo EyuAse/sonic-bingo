@@ -544,6 +544,37 @@
   white-space: nowrap;
 }
 
+/* Agent Telegram Direct Support Action Button */
+.sonic-agent-telegram-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #0088cc 0%, #00a2f5 100%);
+  color: #ffffff !important;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 8px 14px;
+  border-radius: 9px;
+  text-decoration: none;
+  box-shadow: 0 3px 10px rgba(0, 136, 204, 0.35);
+  transition: all 0.2s ease;
+  z-index: 3;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sonic-agent-telegram-btn:hover {
+  background: linear-gradient(135deg, #0099e6 0%, #1ab2ff 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(0, 136, 204, 0.5);
+  color: #ffffff !important;
+}
+
+.sonic-agent-telegram-btn i {
+  font-size: 14px;
+}
+
 /* Card Bottom: Micro Divider & Session Note */
 .sonic-assigned-footer {
   width: 100%;
