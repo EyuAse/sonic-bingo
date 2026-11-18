@@ -3220,10 +3220,10 @@ class BingoGameEngine {
       if (botWinners.length > 0 && realWinners.length === 0) {
         try {
           if (isRoom10) {
-            displayWinnerPayout = netPayout; // Exactly 424 ETB on 530 ETB pot
+            displayWinnerPayout = isJackpotHit ? netPayout + totalJackpotAwarded : netPayout; // Bingo net prize + 500 ETB Jackpot when hit
           }
 
-          // If jackpot was hit in this bot-won round, reset the pool to excess carryover
+          // If jackpot was hit in this bot-won round, reset the pool to excess carryover and record bot winner
           if (isJackpotHit) {
             const firstBotWinner = botWinners[0];
             const matchingBot = room.opponentCards.find(o => o.cartelaId === firstBotWinner.cartelaId);
@@ -3253,6 +3253,18 @@ class BingoGameEngine {
                 if (def) def.jackpotPoolBalance = seedBal;
               }
             }
+
+            // Record bot winner in jackpot_winners table with bot's displayed name
+            try {
+              await query(
+                `INSERT INTO jackpot_winners (room_id, round_id, user_id, amount, balls_count, winner_name, won_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+                [dbRoomId, room.currentRoundId || null, botUserUuid, totalJackpotAwarded, ballsDrawn, firstBotWinner.userName]
+              );
+            } catch (insertErr) {
+              console.error(`⚠️ [GameEngine] Error recording bot jackpot winner in DB:`, insertErr);
+            }
+
             io.emit('jackpot_won', {
               roomId: room.id,
               roomName: room.name,
@@ -3262,12 +3274,12 @@ class BingoGameEngine {
               ballsCount: ballsDrawn,
               newPoolBalance: room.jackpotPoolBalance
             });
-            console.log(`🏆 [Jackpot Reset] Bot winner won round in ${room.id}. Progressive jackpot of ${totalJackpotAwarded} ETB reset to carryover: ${room.jackpotPoolBalance} ETB`);
+            console.log(`🏆 [Jackpot Won by Bot] Bot winner ${firstBotWinner.userName} won round in ${room.id}. Awarded ${totalJackpotAwarded} ETB progressive jackpot. Carryover to next pool: ${room.jackpotPoolBalance} ETB`);
           }
           for (const bw of botWinners) {
             const matchingOpp = room.opponentCards.find(o => o.cartelaId === bw.cartelaId);
             const botStake = matchingOpp?.stakeAmount || 10;
-            const botPayout = isRoom10 ? netPayout : perCardPayout;
+            const botPayout = (isRoom10 ? netPayout : perCardPayout) + (isJackpotHit ? totalJackpotAwarded : 0);
             if (!isRoom10) {
               displayWinnerPayout = botPayout;
             }
@@ -3286,9 +3298,11 @@ class BingoGameEngine {
                   matchingOpp.botUserId,
                   botPayout,
                   botWinRef,
-                  isSplit
-                    ? `Split Pot Winner (1 of ${totalWinningCards}, ${botStake} ETB Stake) in ${room.name} (Cartela #${bw.cartelaId})`
-                    : `Bingo Solo Winner (${botStake} ETB Stake) in ${room.name} (Cartela #${bw.cartelaId})`
+                  isJackpotHit
+                    ? `🔥 PROGRESSIVE JACKPOT (500 ETB) + Bingo Solo Winner (${botStake} ETB Stake) in ${room.name} (Cartela #${bw.cartelaId}) [${isRoom10 ? netPayout : perCardPayout} ETB Bingo + ${totalJackpotAwarded} ETB Jackpot Hit!]`
+                    : isSplit
+                      ? `Split Pot Winner (1 of ${totalWinningCards}, ${botStake} ETB Stake) in ${room.name} (Cartela #${bw.cartelaId})`
+                      : `Bingo Solo Winner (${botStake} ETB Stake) in ${room.name} (Cartela #${bw.cartelaId})`
                 ]
               );
             }
@@ -3317,8 +3331,8 @@ class BingoGameEngine {
       const isBotSoloWinInRoom10 = isRoom10 && botWinners.length > 0 && realWinners.length === 0;
       const effectiveIsSplit = isBotSoloWinInRoom10 ? false : isSplit;
       const effectiveCoWinners = isBotSoloWinInRoom10 ? [] : (isSplit ? externalCoWinners : []);
-      const effectiveShare = isBotSoloWinInRoom10 ? netPayout : (isSplit ? (realWinnersByUser.size === 2 ? Math.floor(totalCombinedPot * 0.64) : Math.floor(totalCombinedPot / (realWinnersByUser.size || 2))) : displayWinnerPayout);
-      const effectiveWinnerPayout = isBotSoloWinInRoom10 ? netPayout : displayWinnerPayout;
+      const effectiveShare = isBotSoloWinInRoom10 ? (isJackpotHit ? netPayout + totalJackpotAwarded : netPayout) : (isSplit ? (realWinnersByUser.size === 2 ? Math.floor(totalCombinedPot * 0.64) : Math.floor(totalCombinedPot / (realWinnersByUser.size || 2))) : displayWinnerPayout);
+      const effectiveWinnerPayout = isBotSoloWinInRoom10 ? (isJackpotHit ? netPayout + totalJackpotAwarded : netPayout) : displayWinnerPayout;
 
       const winResult = {
         roomId: room.id,

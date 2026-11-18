@@ -546,7 +546,7 @@ adminJackpotsRouter.get('/winners', requireAdmin, async (req: AuthenticatedReque
     const countRes = await query(`
       SELECT COUNT(jw.id) as total_rows
       FROM jackpot_winners jw
-      JOIN users u ON jw.user_id = u.id
+      LEFT JOIN users u ON jw.user_id = u.id
       ${whereSql}
     `, values);
     const totalRows = parseInt(countRes.rows[0]?.total_rows || '0', 10);
@@ -561,12 +561,12 @@ adminJackpotsRouter.get('/winners', requireAdmin, async (req: AuthenticatedReque
         jw.amount,
         jw.balls_count,
         jw.won_at,
-        u.full_name as winner_name,
+        COALESCE(u.full_name, jw.winner_name, 'Standby Bot') as winner_name,
         u.phone as winner_phone,
         u.telegram_username,
         gr.round_number
       FROM jackpot_winners jw
-      JOIN users u ON jw.user_id = u.id
+      LEFT JOIN users u ON jw.user_id = u.id
       LEFT JOIN game_rounds gr ON jw.round_id = gr.id
       ${whereSql}
       ORDER BY jw.won_at DESC
