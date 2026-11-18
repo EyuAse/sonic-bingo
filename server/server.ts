@@ -279,25 +279,40 @@ const getClientIp = (req: express.Request): string => {
   return req.ip || '127.0.0.1';
 };
 
+// Client identifier prioritizing authenticated user session token over CGNAT shared mobile carrier IP
+const getClientIdentifier = (req: express.Request): string => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    if (token && token.length >= 16) {
+      return `auth_${token.slice(-32)}`;
+    }
+  }
+  return getClientIp(req);
+};
+
 // Rate Limiters for DoS and Brute-Force Hardening
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   limit: 200, // Telegram Mini Apps auto-auth on every open
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  keyGenerator: (req) => getClientIp(req),
+  keyGenerator: (req) => getClientIdentifier(req),
   message: { success: false, error: 'Too many authentication attempts. Please try again in 15 minutes.' }
 });
 
 const walletLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  limit: 300, // Account for fallback polling during socket disconnection
+  limit: 60, // 60 state-changing write operations per minute per authenticated user
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  keyGenerator: (req) => getClientIp(req),
+  keyGenerator: (req) => getClientIdentifier(req),
   skip: (req) => {
-    // Exempt public read-only agent catalog & assigned cashier endpoints from throttling
-    return req.path.startsWith('/agents');
+    // 1. Exempt ALL read-only polling requests from throttling (balance, history, pending checks)
+    if (req.method === 'GET') return true;
+    // 2. Exempt public read-only agent catalog & assigned cashier endpoints
+    if (req.path.startsWith('/agents')) return true;
+    return false;
   },
   message: { success: false, error: 'Too many requests. Please slow down.' }
 });
