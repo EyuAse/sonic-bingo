@@ -1794,8 +1794,12 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  // Buy Ticket via Live Socket Engine & Neon DB with Anytime Pre-Betting
+  // Buy Ticket via Live Socket Engine & Neon DB (strictly during lobby countdown)
   const buyTicket = async () => {
+    if (roundPhase !== 'lobby') {
+      showToast(lang === 'am' ? '⚠️ ካርቴላ መግዛት የሚቻለው በሎቢ ሰዓት ብቻ ነው!' : '⚠️ Ticket purchases are strictly allowed during the lobby countdown!');
+      return;
+    }
     if (selectedCartelaIds.filter(id => id > 0).length < cardQuantity) {
       showToast('🎟️ Please select your cartela board(s) first!');
       openCartelaPicker();
@@ -1896,58 +1900,9 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     showToast(`🎟️ Playing ${totalPlayableCards} Cartela${totalPlayableCards > 1 ? 's' : ''} (${totalCost} ETB)!`);
   };
 
+  // Mid-game pre-buying disabled: ticket purchases strictly permitted during lobby countdown
   const preBuyNextRound = async () => {
-    const totalCost = betAmount * cardQuantity;
-    const totalFunds = balance + bonus;
-    if (totalFunds < totalCost) {
-      setInsufficientBalanceDetails({
-        required: totalCost,
-        balance: totalFunds,
-        shortfall: totalCost - totalFunds
-      });
-      setShowInsufficientBalanceModal(true);
-      return;
-    }
-
-    if (user?.id) {
-      const roomId = getActiveRoomId();
-      const activeIds = selectedCartelaIds.slice(0, totalPlayableCards);
-      const res = await socketService.buyTicket(roomId, user.id, user.fullName, activeIds, betAmount, autoPlayRef.current);
-      if (!res.success) {
-        showToast(`❌ ${res.error || 'Pre-buy failed'}`);
-        return;
-      }
-      if (res.tickets && res.tickets.length > 0) {
-        const newIds = res.tickets.map((t: any) => t.cartelaId);
-        const updatedIds: number[] = [
-          newIds[0] || selectedCartelaIds[0],
-          newIds[1] || selectedCartelaIds[1],
-          newIds[2] || selectedCartelaIds[2],
-          newIds[3] || selectedCartelaIds[3]
-        ].filter(Boolean);
-        setSelectedCartelaIds(updatedIds);
-        if (res.tickets[0]) setCartela1Data(res.tickets[0].cardMatrix);
-        if (res.tickets[1]) setCartela2Data(res.tickets[1].cardMatrix);
-        if (res.tickets[2]) setCartela3Data(res.tickets[2].cardMatrix);
-        if (res.tickets[3]) setCartela4Data(res.tickets[3].cardMatrix);
-      }
-    } else {
-      const success = deductBalance(totalCost);
-      if (!success) {
-        setInsufficientBalanceDetails({
-          required: totalCost,
-          balance: totalFunds,
-          shortfall: totalCost - totalFunds
-        });
-        setShowInsufficientBalanceModal(true);
-        return;
-      }
-    }
-
-    setHasPreBoughtNext(true);
-    soundEngine.playLuckyPick();
-    refreshBalance();
-    showToast(`🎟️ Pre-Bought ${totalPlayableCards} Cartelas for next round! ✓`);
+    showToast(lang === 'am' ? '⚠️ ካርቴላ መግዛት የሚቻለው በሎቢ ሰዓት ብቻ ነው!' : '⚠️ Ticket purchases are strictly allowed during the lobby countdown!');
   };
 
   // Safe Voluntary Lobby Exit / Disconnect Refund

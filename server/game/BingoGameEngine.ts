@@ -867,6 +867,15 @@ class BingoGameEngine {
     else if (customStake === 10) targetRoomId = 'room-10';
 
     const room = this.getRoom(targetRoomId);
+
+    // 🛡️ Strict Lobby Purchase Gate: No buying or pre-buying allowed after game begins
+    if (room.phase !== 'lobby') {
+      return {
+        success: false,
+        error: 'Ticket purchases are strictly permitted only during the lobby countdown.'
+      };
+    }
+
     const stakePerCard = room.stakeAmount;
 
     // Determine quantity requested (1 or 2 cards)
@@ -877,16 +886,14 @@ class BingoGameEngine {
       quantity = Math.max(1, Math.min(MAX_TICKETS_PER_PLAYER, requestedCartelaIds));
     }
 
-    // Multi-Device / Double-Click Protection: If user already has active or pre-bought tickets, return existing tickets without deducting balance again
-    const hasActiveLobbyTickets = room.phase === 'lobby' && room.tickets.has(userId) && (room.tickets.get(userId)?.length || 0) > 0;
-    const hasPreBoughtTickets = room.phase !== 'lobby' && room.nextRoundTickets && room.nextRoundTickets.has(userId) && (room.nextRoundTickets.get(userId)?.length || 0) > 0;
+    // Multi-Device / Double-Click Protection: If user already has active tickets, return existing tickets without deducting balance again
+    const hasActiveLobbyTickets = room.tickets.has(userId) && (room.tickets.get(userId)?.length || 0) > 0;
 
-    if (hasActiveLobbyTickets || hasPreBoughtTickets) {
-      const existing = hasActiveLobbyTickets ? room.tickets.get(userId)! : room.nextRoundTickets.get(userId)!;
-      console.log(`🎟️ [Multi-Device/Double-Click] User ${userName} (${userId}) already has ${existing.length} tickets (PreBuy: ${Boolean(hasPreBoughtTickets)}). Returning active cards.`);
+    if (hasActiveLobbyTickets) {
+      const existing = room.tickets.get(userId)!;
+      console.log(`🎟️ [Multi-Device/Double-Click] User ${userName} (${userId}) already has ${existing.length} tickets. Returning active cards.`);
       return {
         success: true,
-        preBoughtForNextRound: Boolean(hasPreBoughtTickets),
         tickets: existing
       };
     }
@@ -1066,17 +1073,9 @@ class BingoGameEngine {
         isAutoPlay: resolvedAutoPlay
       }));
 
-      const isPreBuy = room.phase !== 'lobby';
-
-      if (isPreBuy) {
-        // Queue for next round (Anytime Pre-Betting)
-        const existingQueued = room.nextRoundTickets.get(userId) || [];
-        room.nextRoundTickets.set(userId, [...existingQueued, ...playerTickets]);
-        console.log(`🎟️ [Pre-Betting] User ${userName} (${userId}) queued ${playerTickets.length} cartelas for Round #${room.roundNumber + 1}`);
-      } else {
-        // Immediately active in current lobby
-        room.tickets.set(userId, playerTickets);
-        room.realPlayerCount = this.getRealCartelaCount(room);
+      // Immediately active in current lobby (purchases strictly restricted to lobby phase)
+      room.tickets.set(userId, playerTickets);
+      room.realPlayerCount = this.getRealCartelaCount(room);
         const isRoom10 = room.id === 'room-10' || room.id === ARENA_ROOM_ID;
         room.waitingForPlayers = isRoom10 ? room.tickets.size < 1 : room.tickets.size < 2;
         if (isRoom10) {

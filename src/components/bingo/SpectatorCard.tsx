@@ -3,7 +3,7 @@ import { useBingo } from '../../context/BingoContext.tsx';
 import { useLanguage } from '../../context/LanguageContext.tsx';
 
 export const SpectatorCard: React.FC = () => {
-  const { buyTicket, lobbyCountdown, roundPhase, hasPreBoughtNext, roomMode, betAmount } = useBingo();
+  const { buyTicket, lobbyCountdown, roundPhase, roomMode, betAmount } = useBingo();
   const { t, lang } = useLanguage();
 
   const isLobby = roundPhase === 'lobby';
@@ -46,10 +46,10 @@ export const SpectatorCard: React.FC = () => {
       <p className="spectator-card-sub">
         {isSpectatingHouse
           ? (lang === 'am'
-              ? `ይህ ${betAmount} ብር ክፍል ቢያንስ 2 ተጫዋቾች እስኪገቡ በመመልከት ላይ ነው። ለቀጣይ ዙር ካርቴላ ቀድመው ይግዙ!`
-              : `This ${betAmount} ETB house is currently spectating. Pre-buy your ticket now to activate the pot for the next round!`)
+              ? `ይህ ${betAmount} ብር ክፍል ቢያንስ 2 ተጫዋቾች እስኪገቡ በመመልከት ላይ ነው። መደብ በቅርቡ በሎቢ ይከፈታል!`
+              : `This ${betAmount} ETB house is currently spectating. Betting opens during the lobby countdown!`)
           : (isPlaying
-              ? (lang === 'am' ? 'የቀጥታ ጨዋታ በመካሄድ ላይ ነው። ለቀጣይ ዙር ካርቴላ ቀድመው ይግዙ!' : 'A live round is currently in progress. Pre-buy now for the next round!')
+              ? (lang === 'am' ? 'የቀጥታ ጨዋታ በመካሄድ ላይ ነው። መደብ በቅርቡ በሎቢ ይከፈታል!' : 'A live round is currently in progress. Betting opens when the round completes.')
               : t('bingo.spectatorSub'))}
       </p>
 
@@ -70,19 +70,24 @@ export const SpectatorCard: React.FC = () => {
         )}
       </div>
 
-      {/* Golden Action Button */}
-      <button
-        type="button"
-        className="btn-spectator-buy-gold"
-        onClick={buyTicket}
-      >
-        <i className="fa-solid fa-ticket"></i>
-        <span>
-          {hasPreBoughtNext
-            ? (lang === 'am' ? 'ካርቴላ ቀድመው ገዝተዋል ✓' : 'TICKET PRE-BOUGHT ✓')
-            : (isPlaying ? (lang === 'am' ? 'ለቀጣይ ዙር ይግዙ' : 'PRE-BUY FOR NEXT ROUND') : t('bingo.buyTicket'))}
-        </span>
-      </button>
+      {/* Action Button / In-Progress Status */}
+      {isLobby ? (
+        <button
+          type="button"
+          className="btn-spectator-buy-gold"
+          onClick={buyTicket}
+        >
+          <i className="fa-solid fa-ticket"></i>
+          <span>{t('bingo.buyTicket')}</span>
+        </button>
+      ) : (
+        <div className="spectator-in-progress-badge">
+          <i className="fa-solid fa-hourglass-half"></i>
+          <span>
+            {lang === 'am' ? 'ጨዋታው በመካሄድ ላይ ነው • መደብ በሎቢ ይከፈታል' : 'Round in progress • Betting opens in lobby'}
+          </span>
+        </div>
+      )}
     </div>
   );
 };
