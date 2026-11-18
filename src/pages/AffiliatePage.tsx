@@ -83,7 +83,7 @@ export const AffiliatePage: React.FC = () => {
     (user?.id ? user.id.replace(/^UID-TG-/, 'SONIC-') : 'SONIC-7842');
   const referralLink =
     referralData?.referralLink ||
-    `https://t.me/SonicGameBot/play?startapp=ref_${referralCode}`;
+    `https://t.me/sonicbingobot/play?startapp=ref_${referralCode}`;
 
   const totalInvited = referralData ? referralData.totalInvited : 0;
   const totalEarned = referralData ? referralData.totalEarned : 0;

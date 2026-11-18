@@ -987,7 +987,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
 
                       {/* Telegram Support Action for this Agent */}
                       <a
-                        href={`https://t.me/${selectedAgent.telegramUsername ? selectedAgent.telegramUsername.replace('@', '') : 'SonicGameOfficialBot'}`}
+                        href={`https://t.me/${selectedAgent.telegramUsername ? selectedAgent.telegramUsername.replace('@', '') : 'sonicbingobot'}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="sonic-agent-telegram-btn"

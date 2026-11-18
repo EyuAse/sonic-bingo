@@ -74,7 +74,7 @@ router.post('/login', async (req, res) => {
         lowBalanceThreshold: parseFloat(user.low_balance_threshold || '5000'),
         targetMonthly: parseFloat(user.target_monthly || '50000'),
         commissionRate: parseFloat(user.commission_rate || '10.0'),
-        refLink: `https://t.me/SonicGameOfficialBot?start=agent_${user.agent_code}`
+        refLink: `https://t.me/${(process.env.TELEGRAM_BOT_USERNAME || 'sonicbingobot').replace(/^@/, '')}?start=agent_${user.agent_code}`
       }
     });
   } catch (error: any) {
@@ -121,7 +121,7 @@ router.get('/profile', requireAgent, async (req: AuthenticatedRequest, res: Resp
         targetMonthly: parseFloat(ap.target_monthly || '50000'),
         commissionRate: parseFloat(ap.commission_rate || '10.0'),
         status: ap.status,
-        inviteLink: `https://t.me/${process.env.TELEGRAM_BOT_USERNAME || 'SonicGameOfficialBot'}?start=agent_${ap.agent_code}`
+        inviteLink: `https://t.me/${(process.env.TELEGRAM_BOT_USERNAME || 'sonicbingobot').replace(/^@/, '')}?start=agent_${ap.agent_code}`
       }
     });
   } catch (error: any) {
@@ -158,7 +158,7 @@ router.get('/dashboard-analytics', requireAgent, async (req: AuthenticatedReques
     const isLowBalance = walletBalance <= lowThreshold;
     const commissionRate = parseFloat(agent.commission_rate || '10.0');
     const targetMonthly = parseFloat(agent.target_monthly || '35000');
-    const botUser = process.env.TELEGRAM_BOT_USERNAME || 'SonicGameOfficialBot';
+    const botUser = (process.env.TELEGRAM_BOT_USERNAME || 'sonicbingobot').replace(/^@/, '');
     const referralLink = `https://t.me/${botUser}?start=agent_${agent.agent_code}`;
 
     // 2. Parallel Database Aggregation
@@ -1514,7 +1514,7 @@ router.get('/players', requireAgent, async (req: AuthenticatedRequest, res: Resp
       periods5Day.push({ periodIndex: 5 - k, label, count });
     }
 
-    const botUsername = (process.env.TELEGRAM_BOT_USERNAME || 'SonicGameOfficialBot').replace(/^@/, '');
+    const botUsername = (process.env.TELEGRAM_BOT_USERNAME || 'sonicbingobot').replace(/^@/, '');
     const referralLink = `https://t.me/${botUsername}?start=agent_${agent.agent_code}`;
 
     return res.json({

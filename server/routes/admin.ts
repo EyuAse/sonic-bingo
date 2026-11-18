@@ -1847,7 +1847,7 @@ router.get('/agents', requireAdmin, async (_req, res) => {
         total_players: parseInt(row.total_players || '0', 10),
         active_players: parseInt(row.active_players || '0', 10),
         total_volume_deposited: parseFloat(row.total_volume_deposited || '0'),
-        refLink: `https://t.me/SonicGameOfficialBot?start=agent_${row.agent_code}`
+        refLink: `https://t.me/${(process.env.TELEGRAM_BOT_USERNAME || 'sonicbingobot').replace(/^@/, '')}?start=agent_${row.agent_code}`
       }))
     });
   } catch (error: any) {
@@ -1924,7 +1924,7 @@ router.get('/agents/:id/details', requireAdmin, async (req: AuthenticatedRequest
         cashout_commission_rate: parseFloat(agent.cashout_commission_rate || '2.00'),
         target_monthly: parseFloat(agent.target_monthly || '50000.00'),
         low_balance_threshold: parseFloat(agent.low_balance_threshold || '5000.00'),
-        refLink: `https://t.me/SonicGameOfficialBot?start=agent_${agent.agent_code}`
+        refLink: `https://t.me/${(process.env.TELEGRAM_BOT_USERNAME || 'sonicbingobot').replace(/^@/, '')}?start=agent_${agent.agent_code}`
       },
       stats: {
         totalDeposits: parseFloat(depositsRes.rows[0]?.total_deposits || '0'),
@@ -2055,7 +2055,7 @@ router.post('/agents/create', requireAdmin, async (req: AuthenticatedRequest, re
         phone: cleanPhone,
         city: cleanCity,
         initialPassword: rawPassword,
-        refLink: `https://t.me/SonicGameOfficialBot?start=agent_${result.profile.agent_code}`
+        refLink: `https://t.me/${(process.env.TELEGRAM_BOT_USERNAME || 'sonicbingobot').replace(/^@/, '')}?start=agent_${result.profile.agent_code}`
       }
     });
   } catch (error: any) {

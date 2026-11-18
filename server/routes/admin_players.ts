@@ -777,7 +777,8 @@ adminPlayersRouter.post('/:id/message', requireAdmin, async (req: AuthenticatedR
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
-    const formattedMsg = `📩 <b>Official Notice from Sonic Bingo Administration</b>\n\n${safeContent}\n\n<i>This is a direct message sent via @SonicGameOfficialBot. For help, contact support.</i>`;
+    const botUsername = (process.env.TELEGRAM_BOT_USERNAME || 'sonicbingobot').replace(/^@/, '');
+    const formattedMsg = `📩 <b>Official Notice from Sonic Bingo Administration</b>\n\n${safeContent}\n\n<i>This is a direct message sent via @${botUsername}. For help, contact support.</i>`;
 
     await TelegramBotService.getInstance().sendMessage(user.telegram_id, formattedMsg, { parseMode: 'HTML' });
 

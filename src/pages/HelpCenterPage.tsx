@@ -74,7 +74,7 @@ export const HelpCenterPage: React.FC = () => {
   };
 
   const handleOpenCommunity = () => {
-    window.open('https://t.me/SonicGameEthiopia', '_blank');
+    window.open('https://t.me/sonicbingo', '_blank');
   };
 
   const toggleFaq = (id: string) => {

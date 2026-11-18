@@ -281,3 +281,4 @@ export const GrandJackpotModal: React.FC<GrandJackpotModalProps> = ({ isOpen, on
     </div>
   );
 };
+

@@ -35,7 +35,7 @@ export class TelegramBotService {
   }
 
   /**
-   * Normalizes channel handles or full URLs (e.g. 'https://t.me/SonicGameEthiopia' -> '@SonicGameEthiopia')
+   * Normalizes channel handles or full URLs (e.g. 'https://t.me/sonicbingo' -> '@sonicbingo')
    */
   public normalizeChannelIdentifier(input?: string): string {
     if (!input) return '';
@@ -108,7 +108,7 @@ export class TelegramBotService {
       if (process.env.TELEGRAM_WEBAPP_URL) webAppUrl = process.env.TELEGRAM_WEBAPP_URL;
     }
 
-    const normalizedChannel = this.normalizeChannelIdentifier(channelId || '@SonicGameEthiopia');
+    const normalizedChannel = this.normalizeChannelIdentifier(channelId || '@sonicbingo');
 
     this.cachedConfig = {
       token: token.trim(),
@@ -427,7 +427,7 @@ export class TelegramBotService {
     message: string;
   }> {
     const cfg = await this.getConfig();
-    const channel = (targetChat || cfg.channelId || '@SonicGameEthiopia').trim();
+    const channel = (targetChat || cfg.channelId || '@sonicbingo').trim();
 
     if (!channel) {
       return { success: false, channel: '', deletedCount: 0, scannedCount: 0, message: 'No target channel specified' };
@@ -492,7 +492,7 @@ export class TelegramBotService {
     description: string;
   }> {
     const cfg = await this.getConfig();
-    const channel = this.normalizeChannelIdentifier(channelInput || cfg.channelId || '@SonicGameEthiopia');
+    const channel = this.normalizeChannelIdentifier(channelInput || cfg.channelId || '@sonicbingo');
     if (!channel) {
       return { ok: false, channel: '', canPost: false, isAdministrator: false, description: 'No channel configured' };
     }
@@ -565,7 +565,7 @@ export class TelegramBotService {
     }
 
     const meRes = await this.getMe();
-    const botUser = meRes.result?.username || 'SonicGameOfficialBot';
+    const botUser = meRes.result?.username || 'sonicbingobot';
 
     // Build inline keyboard if button details provided
     const inlineKeyboard: any[][] = [];
@@ -616,7 +616,7 @@ export class TelegramBotService {
 
     // 1. Single Channel or Group Broadcast
     if (opts.targetType === 'channel' || opts.targetType === 'group') {
-      const rawTarget = opts.targetId || cfg.channelId || '@SonicGameEthiopia';
+      const rawTarget = opts.targetId || cfg.channelId || '@sonicbingo';
       const targetChat = this.normalizeChannelIdentifier(rawTarget);
       if (!targetChat) {
         return { success: false, totalRecipients: 0, sentCount: 0, failedCount: 0, message: 'Target channel or group username/ID is missing' };
@@ -629,7 +629,7 @@ export class TelegramBotService {
           totalRecipients: 0,
           sentCount: 0,
           failedCount: 1,
-          message: `Cannot post to '${targetChat}'. That is an individual Telegram user ID, not a Channel. Telegram Channel usernames start with '@' (e.g. @SonicGameEthiopia) or channel chat IDs start with -100 (e.g. -100xxxxxxx).`
+          message: `Cannot post to '${targetChat}'. That is an individual Telegram user ID, not a Channel. Telegram Channel usernames start with '@' (e.g. @sonicbingo) or channel chat IDs start with -100 (e.g. -100xxxxxxx).`
         };
       }
 
@@ -671,7 +671,7 @@ export class TelegramBotService {
         } else if (desc.includes("can't send messages to the bot")) {
           friendlyError = `A bot cannot post messages to itself. Please specify a Telegram Channel (e.g. @YourChannel) where @${botUser} is an Administrator, or select 'All Players (Direct)'.`;
         } else if (desc.includes('bot was blocked by the user') || desc.includes("can't initiate conversation")) {
-          friendlyError = `Failed to post to '${targetChat}': The target identifier belongs to an individual user who blocked the bot. Telegram Channels start with @ (e.g. @SonicGameEthiopia) or -100.`;
+          friendlyError = `Failed to post to '${targetChat}': The target identifier belongs to an individual user who blocked the bot. Telegram Channels start with @ (e.g. @sonicbingo) or -100.`;
         }
       }
 
@@ -914,7 +914,7 @@ export class TelegramBotService {
     // Execute concurrent channel cross-post if requested
     let channelCrossPostResult: any = null;
     if (opts.crossPostChannel) {
-      const channelChat = this.normalizeChannelIdentifier(cfg.channelId || '@SonicGameEthiopia');
+      const channelChat = this.normalizeChannelIdentifier(cfg.channelId || '@sonicbingo');
       try {
         let chanRes;
         const channelKeyboard: any[][] = [];
@@ -994,7 +994,7 @@ export class TelegramBotService {
 ⚡ <i>The next round is starting now! Tap below to join and claim your win!</i>`;
 
     const meRes = await this.getMe();
-    const botUser = meRes.result?.username || 'SonicGameOfficialBot';
+    const botUser = meRes.result?.username || 'sonicbingobot';
     const channelPlayUrl = `https://t.me/${botUser}/play`;
 
     const inlineKeyboard = [
@@ -1239,7 +1239,7 @@ export class TelegramBotService {
           `ስርዓታችንን ለማሻሻል እና የተሻለ አገልግሎት ለመስጠት ጨዋታው ለጥቂት ሰዓታት በጊዜያዊ ጥገና ላይ ይቆያል።\n\n` +
           `🔒 <b>የእርስዎ ቀሪ ሂሳብ እና ገንዘብ 100% ደህንነቱ የተጠበቀ ነው!</b>\n` +
           `በቅርቡ በታላቅ ማሻሻያ እንመለሳለን።\n\n` +
-          `📢 <i>ዝርዝር መረጃ ለማግኘት ቻናላችንን ይከታተሉ: @SonicGameEthiopia</i>\n\n` +
+          `📢 <i>ዝርዝር መረጃ ለማግኘት ቻናላችንን ይከታተሉ: @sonicbingo</i>\n\n` +
           `────────────────\n` +
           `🛠️ <b>Sonic Bingo is under scheduled maintenance.</b>\n` +
           `All player wallet balances are 100% safe. We will be back online shortly!`;
@@ -1367,7 +1367,7 @@ export class TelegramBotService {
         console.warn('Could not read custom welcome greeting:', e);
       }
 
-      const channelLink = cfg.channelId ? `https://t.me/${cfg.channelId.replace('@', '')}` : 'https://t.me/SonicGameEthiopia';
+      const channelLink = cfg.channelId ? `https://t.me/${cfg.channelId.replace('@', '')}` : 'https://t.me/sonicbingo';
 
       const inlineKeyboard = [
         [{ text: '🎮 Play Bingo Now (50 ETB Gift)', web_app: { url: playAppUrl } }],
@@ -1454,7 +1454,7 @@ export class TelegramBotService {
 👇 አሁኑኑ ጨዋታውን ይክፈቱ እና ያሸንፉ!`;
       let promoPhoto = '';
       let btnText = '🎮 Play Bingo & Claim Offer';
-      let btnUrl = `https://t.me/LomiBingobot/play`;
+      let btnUrl = `https://t.me/sonicbingobot/play`;
 
       try {
         const promoRes = await query(

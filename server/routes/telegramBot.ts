@@ -36,7 +36,7 @@ router.get('/status', async (_req, res) => {
     let channelMembers = 4;
     try {
       const chCountRes = await telegramBotService.callApi('getChatMemberCount', {
-        chat_id: config.channelId || '@SonicGameEthiopia'
+        chat_id: config.channelId || '@sonicbingo'
       });
       if (chCountRes.ok && typeof chCountRes.result === 'number') {
         channelMembers = chCountRes.result;
@@ -349,7 +349,7 @@ router.get('/active-promo', async (_req, res) => {
 
     const cfg = await telegramBotService.getConfig();
     const meRes = await telegramBotService.getMe();
-    const botUser = meRes.result?.username || 'SonicGameOfficialBot';
+    const botUser = meRes.result?.username || 'sonicbingobot';
 
     return res.json({
       success: true,

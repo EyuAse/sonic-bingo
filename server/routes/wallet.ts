@@ -597,7 +597,8 @@ router.get('/referrals', requireAuth, async (req: AuthenticatedRequest, res) => 
       await query('UPDATE users SET referral_code = $1 WHERE id = $2', [referralCode, userId]);
     }
 
-    const referralLink = `https://t.me/SonicGameOfficialBot/play?startapp=ref_${referralCode}`;
+    const botUser = process.env.TELEGRAM_BOT_USERNAME || 'sonicbingobot';
+    const referralLink = `https://t.me/${botUser}/play?startapp=ref_${referralCode}`;
 
     // 2. Fetch real referrals data from Neon DB
     const friendsRes = await query(

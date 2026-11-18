@@ -55,15 +55,15 @@ export const StatsStrip: React.FC = () => {
   const effectiveInRoom = Math.max(activeUsersCount, currentPlayers, hasTicket ? (cardQuantity || 1) : 0);
   const playersDisplay = isLobbyWaiting
     ? (betAmount === 10
-        ? `${effectivePlayerCount}`
-        : (effectivePlayerCount >= 1 || hasTicket
-            ? '1/2 ⏳'
-            : (effectiveInRoom >= 2
-                ? (lang === 'am' ? `${effectiveInRoom} ተጫዋች` : `${effectiveInRoom} in Room`)
-                : (lang === 'am' ? 'ይጠብቁ ⏳' : 'Waiting ⏳'))))
+      ? `${effectivePlayerCount}`
+      : (effectivePlayerCount >= 1 || hasTicket
+        ? '1/2 ⏳'
+        : (effectiveInRoom >= 2
+          ? (lang === 'am' ? `${effectiveInRoom} ተጫዋች` : `${effectiveInRoom} in Room`)
+          : (lang === 'am' ? 'ይጠብቁ ⏳' : 'Waiting ⏳'))))
     : (isSpectatingHouse && roundPhase === 'playing'
-        ? (lang === 'am' ? 'እይታ 👁️' : 'Spectate 👁️')
-        : `${betAmount === 10 ? effectivePlayerCount : Math.max(currentPlayers, hasTicket ? (cardQuantity || 1) : 0)}`);
+      ? (lang === 'am' ? 'እይታ 👁️' : 'Spectate 👁️')
+      : `${betAmount === 10 ? effectivePlayerCount : Math.max(currentPlayers, hasTicket ? (cardQuantity || 1) : 0)}`);
 
   const canSwitchStake = roundPhase === 'lobby' || !hasTicket;
 
