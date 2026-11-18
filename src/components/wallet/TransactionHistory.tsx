@@ -21,17 +21,35 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   const { t, lang } = useLanguage();
   const [activeTab, setActiveTab] = useState<'deposits' | 'withdrawals'>(initialTab);
   const [zoomImage, setZoomImage] = useState<string | null>(null);
-  const [liveTransactions, setLiveTransactions] = useState<any[]>([]);
+  const [liveTransactions, setLiveTransactions] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('sonic_user_transactions');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (_) {}
+    return [];
+  });
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const fetchTransactions = React.useCallback(async () => {
     try {
+      setIsLoading(true);
+      setLoadError(null);
       const data = await apiClient.wallet.getTransactions();
       if (data && Array.isArray(data.transactions)) {
         setLiveTransactions(data.transactions);
+        try {
+          localStorage.setItem('sonic_user_transactions', JSON.stringify(data.transactions));
+        } catch (_) {}
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Could not fetch player transactions:', err);
+      setLoadError(err.message || 'Failed to sync latest transactions');
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -77,16 +95,35 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   return (
     <div className="fresh-tx-history-container">
       {/* 1. Top Navigation Bar */}
-      <div className="tx-history-top-navbar">
-        {onBack && (
-          <button type="button" className="btn-tx-back" onClick={onBack}>
-            <i className="fa-solid fa-arrow-left"></i>
-            <span>{t('history.backToWallet')}</span>
-          </button>
-        )}
-        <h2 className="tx-page-title">
-          {activeTab === 'deposits' ? t('history.depositsTab') : t('history.withdrawalsTab')}
-        </h2>
+      <div className="tx-history-top-navbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {onBack && (
+            <button type="button" className="btn-tx-back" onClick={onBack}>
+              <i className="fa-solid fa-arrow-left"></i>
+              <span>{t('history.backToWallet')}</span>
+            </button>
+          )}
+          <h2 className="tx-page-title" style={{ margin: 0 }}>
+            {activeTab === 'deposits' ? t('history.depositsTab') : t('history.withdrawalsTab')}
+          </h2>
+        </div>
+        <button
+          type="button"
+          onClick={fetchTransactions}
+          disabled={isLoading}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: '#64748b',
+            fontSize: '15px',
+            cursor: 'pointer',
+            padding: '6px 10px',
+            borderRadius: '8px'
+          }}
+          title={lang === 'am' ? 'አድስ' : 'Refresh'}
+        >
+          <i className={`fa-solid fa-rotate-right ${isLoading ? 'fa-spin' : ''}`}></i>
+        </button>
       </div>
 
       {/* 2. Modern 2-Tab Switcher Bar */}
@@ -114,7 +151,14 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
 
       {/* 3. Transaction Cards List */}
       <div className="tx-history-cards-list">
-        {activeList.length === 0 ? (
+        {isLoading && activeList.length === 0 ? (
+          <div className="tx-history-empty-card" style={{ padding: '36px 16px' }}>
+            <i className="fa-solid fa-circle-notch fa-spin" style={{ fontSize: '26px', color: '#0088cc', marginBottom: '12px' }}></i>
+            <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>
+              {lang === 'am' ? 'የግብይት ታሪክ በመጫን ላይ...' : 'Loading transaction records...'}
+            </span>
+          </div>
+        ) : activeList.length === 0 ? (
           <div className="tx-history-empty-card">
             <div className="empty-icon-circle">
               <i className="fa-solid fa-receipt"></i>
@@ -125,6 +169,24 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
             <p className="empty-subtext">
               {lang === 'am' ? 'የእርስዎ የግብይት እና የክፍያ ታሪክ እዚህ በእውነተኛ ጊዜ ይታያል።' : 'Your transactions and live settlement status will appear here in real time.'}
             </p>
+            <button
+              type="button"
+              onClick={fetchTransactions}
+              style={{
+                marginTop: '12px',
+                padding: '6px 16px',
+                background: '#f1f5f9',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                color: '#1e293b'
+              }}
+            >
+              <i className="fa-solid fa-rotate-right" style={{ marginRight: '6px' }}></i>
+              {lang === 'am' ? 'እንደገና ሞክር' : 'Refresh'}
+            </button>
           </div>
         ) : (
           activeList.map(tx => {

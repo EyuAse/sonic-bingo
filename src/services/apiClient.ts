@@ -368,7 +368,7 @@ export const apiClient = {
     },
 
     async getTransactions() {
-      const res = await fetch(`${API_BASE}/wallet/transactions`, {
+      const res = await fetchWithRetry(`${API_BASE}/wallet/transactions`, {
         headers: { ...getAuthHeader() }
       });
       const data = await handleResponse<{
