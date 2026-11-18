@@ -31,6 +31,10 @@ const envVars = [
     key: 'TELEGRAM_WEBAPP_URL',
     value: 'https://sonic-bingo.onrender.com'
   },
+  ...(process.env.CLOUDFLARE_API_TOKEN ? [{
+    key: 'CLOUDFLARE_API_TOKEN',
+    value: process.env.CLOUDFLARE_API_TOKEN
+  }] : []),
   {
     key: 'CLOUDFLARE_FRONTEND_URL',
     value: ''

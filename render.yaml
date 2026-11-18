@@ -4,9 +4,11 @@ services:
     runtime: node
     plan: free
     region: ohio
-    buildCommand: npm install && npm run build
+    buildCommand: npm install && npm run build && npx wrangler deploy
     startCommand: npm start
     envVars:
+      - key: CLOUDFLARE_API_TOKEN
+        sync: false
       - key: NODE_ENV
         value: production
       - key: PORT
