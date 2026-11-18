@@ -29,11 +29,11 @@ const envVars = [
   },
   {
     key: 'TELEGRAM_WEBAPP_URL',
-    value: 'https://sonic-bingo.asoeyo029.workers.dev'
+    value: 'https://sonic-bingo.onrender.com'
   },
   {
     key: 'CLOUDFLARE_FRONTEND_URL',
-    value: 'https://sonic-bingo.asoeyo029.workers.dev'
+    value: ''
   },
   {
     key: 'VITE_BACKEND_URL',
@@ -121,3 +121,4 @@ syncRender().catch(err => {
   console.error('❌ Fatal error:', err);
   process.exit(1);
 });
+

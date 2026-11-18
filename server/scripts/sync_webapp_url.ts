@@ -7,7 +7,7 @@ import { telegramBotService } from '../services/telegramBotService.ts';
 
 async function main() {
   const cliArg = process.argv[2];
-  const newUrl = cliArg || process.env.TELEGRAM_WEBAPP_URL || 'https://sonic-bingo.asoeyo029.workers.dev';
+  const newUrl = cliArg || process.env.TELEGRAM_WEBAPP_URL || 'https://sonic-bingo.onrender.com';
   console.log(`Setting telegram_webapp_url in database to: ${newUrl}`);
 
   await query(
