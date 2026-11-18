@@ -27,6 +27,27 @@ export const AffiliatePage: React.FC = () => {
   const { registerBonus, referralBonusRate } = useAdmin();
   const { jackpotPool } = useBingo();
 
+  const [affiliateJackpot, setAffiliateJackpot] = useState<number>(() => {
+    return typeof jackpotPool === 'number' && jackpotPool > 0 ? jackpotPool : 280;
+  });
+
+  useEffect(() => {
+    if (typeof jackpotPool === 'number' && jackpotPool > 0) {
+      setAffiliateJackpot(jackpotPool);
+    }
+  }, [jackpotPool]);
+
+  useEffect(() => {
+    fetch('/api/jackpot/status')
+      .then(r => r.json())
+      .then(d => {
+        if (d?.success && typeof d?.balance === 'number') {
+          setAffiliateJackpot(d.balance);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const [isRedeemingCoins, setIsRedeemingCoins] = useState(false);
 
   const [referralData, setReferralData] = useState<{
@@ -172,7 +193,7 @@ export const AffiliatePage: React.FC = () => {
       >
         {/* ── 1a. Executive "HIT THE JACKPOT" 3D Spotlight Card (Inspired by Image 2) ── */}
         {(() => {
-          const currentJackpot = Math.max(0, Math.floor(jackpotPool ?? 280));
+          const currentJackpot = Math.max(0, Math.floor(affiliateJackpot > 0 ? affiliateJackpot : 280));
           const isJackpotReady = currentJackpot >= 500;
           const progressPercent = Math.min(100, Math.max(5, (currentJackpot / 500) * 100));
 

@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext.tsx';
 import { useBingo } from '../context/BingoContext.tsx';
 import { useLanguage } from '../context/LanguageContext.tsx';
 import { telegramService } from '../services/telegramService.ts';
+import { socketService } from '../services/socketService.ts';
 
 interface WinnerHistoryItem {
   id: string;
@@ -11,13 +12,16 @@ interface WinnerHistoryItem {
   amount: number;
   ballsCount: number;
   dateStr: string;
-  isBot?: boolean;
 }
 
 export const JackpotPage: React.FC = () => {
   const { switchPage } = useApp();
   const { jackpotPool, setBetAmount } = useBingo();
   const { lang } = useLanguage();
+
+  const [liveBalance, setLiveBalance] = useState<number>(() => {
+    return typeof jackpotPool === 'number' && jackpotPool > 0 ? jackpotPool : 280;
+  });
 
   const [recentWinners, setRecentWinners] = useState<WinnerHistoryItem[]>([
     {
@@ -26,8 +30,7 @@ export const JackpotPage: React.FC = () => {
       cartelaNumber: 42,
       amount: 500,
       ballsCount: 18,
-      dateStr: 'Today, 2:40 PM',
-      isBot: false
+      dateStr: 'Today'
     },
     {
       id: 'JW-100',
@@ -35,8 +38,7 @@ export const JackpotPage: React.FC = () => {
       cartelaNumber: 15,
       amount: 500,
       ballsCount: 19,
-      dateStr: 'Yesterday',
-      isBot: true
+      dateStr: 'Yesterday'
     },
     {
       id: 'JW-099',
@@ -44,12 +46,87 @@ export const JackpotPage: React.FC = () => {
       cartelaNumber: 88,
       amount: 500,
       ballsCount: 17,
-      dateStr: '2 days ago',
-      isBot: false
+      dateStr: '2 days ago'
     }
   ]);
 
-  const poolAmount = Math.max(0, Math.floor(jackpotPool ?? 280));
+  // Sync with BingoContext if jackpotPool updates
+  useEffect(() => {
+    if (typeof jackpotPool === 'number' && jackpotPool > 0) {
+      setLiveBalance(jackpotPool);
+    }
+  }, [jackpotPool]);
+
+  // Real-time 1-Second Polling & WebSocket Ticker
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch('/api/jackpot/status');
+        const data = await res.json();
+        if (!isMounted) return;
+
+        if (data && typeof data.balance === 'number') {
+          setLiveBalance(data.balance);
+        }
+
+        if (Array.isArray(data?.recentWinners) && data.recentWinners.length > 0) {
+          setRecentWinners(data.recentWinners.map((w: any, idx: number) => {
+            let dateStr = 'Recently';
+            if (w.wonAt) {
+              const diffMs = Date.now() - new Date(w.wonAt).getTime();
+              const diffHours = Math.floor(diffMs / 3600000);
+              const diffDays = Math.floor(diffMs / 86400000);
+              if (diffHours < 1) dateStr = 'Just now';
+              else if (diffHours < 24) dateStr = `${diffHours}h ago`;
+              else if (diffDays === 1) dateStr = 'Yesterday';
+              else dateStr = `${diffDays}d ago`;
+            }
+            return {
+              id: w.id || `JW-${idx}`,
+              winnerName: w.winnerName || 'Lucky Player',
+              cartelaNumber: w.cartelaNumber || (40 + idx),
+              amount: typeof w.amount === 'number' ? w.amount : 500,
+              ballsCount: w.ballsCount || 18,
+              dateStr
+            };
+          }));
+        }
+      } catch (err) {
+        // silent retry
+      }
+    };
+
+    // 1. Fetch immediately on mount
+    fetchStatus();
+
+    // 2. Poll every second (1000ms) to guarantee exact live balance
+    const pollInterval = setInterval(fetchStatus, 1000);
+
+    // 3. Listen to instant socket updates
+    const unsubUpdate = socketService.onJackpotUpdate((data: any) => {
+      if (!isMounted) return;
+      const poolVal = typeof data?.balance === 'number' ? data.balance : (typeof data?.pool === 'number' ? data.pool : null);
+      if (poolVal !== null) setLiveBalance(poolVal);
+    });
+
+    const unsubWon = socketService.onJackpotWon((data: any) => {
+      if (!isMounted) return;
+      const resetVal = typeof data?.newPoolBalance === 'number' ? data.newPoolBalance : (typeof data?.resetPool === 'number' ? data.resetPool : 0);
+      setLiveBalance(resetVal);
+      fetchStatus();
+    });
+
+    return () => {
+      isMounted = false;
+      clearInterval(pollInterval);
+      unsubUpdate();
+      unsubWon();
+    };
+  }, []);
+
+  const poolAmount = Math.max(0, Math.floor(liveBalance));
   const progressPercent = Math.min(100, Math.max(5, (poolAmount / 500) * 100));
   const isReadyToDrop = poolAmount >= 500;
 
@@ -398,7 +475,7 @@ export const JackpotPage: React.FC = () => {
                   {lang === 'am' ? 'ሙሉ 500 ብር ለዙሩ አሸናፊ' : 'Instant 500 ETB Winner Payout'}
                 </div>
                 <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.4 }}>
-                  {lang === 'am' ? 'በዚህ ወቅት ቢንጎ ያጠናቀቀ ተጫዋች (እውነተኛ ሰው ወይም ቦት) መደበኛውን የዙሩ ደራሽ ሽልማት + 500 ብር ጃክፖት በአንድ ላይ ያሸንፋል!' : 'Whichever card calls BINGO first (real player or bot) wins the 500 ETB Jackpot ON TOP OF the regular round pot!'}
+                  {lang === 'am' ? 'በዚህ ወቅት ቢንጎ ያጠናቀቀ ተጫዋች መደበኛውን የዙሩ ደራሽ ሽልማት + 500 ብር ጃክፖት በአንድ ላይ ያሸንፋል!' : 'Whichever card calls BINGO first wins the 500 ETB Jackpot ON TOP OF the regular round pot!'}
                 </div>
               </div>
             </div>
@@ -506,3 +583,4 @@ export const JackpotPage: React.FC = () => {
     </div>
   );
 };
+

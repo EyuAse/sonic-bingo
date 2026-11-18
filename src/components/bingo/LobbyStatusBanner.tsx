@@ -166,7 +166,7 @@ export const LobbyStatusBanner: React.FC = () => {
                   : displayPlayerCount <= 5
                   ? (lang === 'am' ? '🎯 100% የድል ክፍያ፡ 0% የቤት ክፍያ (አሸናፊው ሁሉንም ይወስዳል!)' : '🎯 100% Payout Tier: 0% House Fee (Winner takes all!)')
                   : displayPlayerCount <= 10
-                  ? (lang === 'am' ? '🛡️ 100% እውነተኛ ተጫዋቾች (ምንም ቦቶች የሉም)' : '🛡️ 100% Real Players (No Bots in Room)')
+                  ? (lang === 'am' ? '🛡️ 100% እውነተኛ ተጫዋቾች (ቀጥታ የሰው ለሰው ግጥሚያ)' : '🛡️ 100% Real Players (Live Peer-to-Peer Match)')
                   : (lang === 'am' ? '⚡ ትልቅ የአሬና ጨዋታ' : '⚡ Big Arena Match')}
               </p>
             </div>

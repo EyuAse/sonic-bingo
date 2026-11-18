@@ -103,7 +103,7 @@ export const StatsStrip: React.FC = () => {
             <span className="status-strip-lbl jackpot-lbl">{lang === 'am' ? 'ጃክፖት' : 'JACKPOT'}</span>
           </div>
           <span className="status-strip-val jackpot-val">
-            {Math.floor(jackpotPool ?? 0)}/500
+            {Math.floor(jackpotPool > 0 ? jackpotPool : 280)}/500
           </span>
         </div>
 

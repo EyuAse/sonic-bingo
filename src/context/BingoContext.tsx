@@ -552,6 +552,46 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   }, []);
 
+  // Global Progressive Jackpot Sync: Keeps jackpotPool updated across all pages (Games, Rewards, Jackpot, Bingo)
+  useEffect(() => {
+    const fetchGlobalJackpot = async () => {
+      try {
+        const res = await fetch('/api/jackpot/status');
+        const data = await res.json();
+        if (data && typeof data.balance === 'number') {
+          setJackpotPool(data.balance);
+        }
+      } catch {
+        try {
+          const res = await fetch('/api/jackpots');
+          const d = await res.json();
+          const list = Array.isArray(d?.jackpots) ? d.jackpots : [];
+          const r10 = list.find((item: any) => item.roomId === 'room-10' || item.room_id === 'room-10');
+          if (r10 && typeof r10.balance === 'number') {
+            setJackpotPool(r10.balance);
+          }
+        } catch {}
+      }
+    };
+
+    fetchGlobalJackpot();
+
+    const unsubUpdate = socketService.onJackpotUpdate((data: any) => {
+      const poolVal = typeof data.balance === 'number' ? data.balance : (typeof data.pool === 'number' ? data.pool : null);
+      if (poolVal !== null) setJackpotPool(poolVal);
+    });
+
+    const unsubWon = socketService.onJackpotWon((data: any) => {
+      const resetVal = typeof data.newPoolBalance === 'number' ? data.newPoolBalance : (typeof data.resetPool === 'number' ? data.resetPool : 0);
+      setJackpotPool(resetVal);
+    });
+
+    return () => {
+      unsubUpdate();
+      unsubWon();
+    };
+  }, []);
+
   // Keep Cartelas synchronized when IDs change (safe when unselected)
   useEffect(() => {
     if (roundPhase === 'lobby' || !hasTicket) {

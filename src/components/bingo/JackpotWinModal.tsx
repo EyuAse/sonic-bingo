@@ -350,3 +350,4 @@ export const JackpotWinModal: React.FC<JackpotWinModalProps> = ({
     </div>
   );
 };
+
