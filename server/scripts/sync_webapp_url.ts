@@ -28,7 +28,7 @@ async function main() {
   console.log('Menu button update result:', menuResult);
 
   console.log(`\nRegistering webhook with Telegram API...`);
-  const backendWebhookUrl = 'https://sonic-bingo-enod.onrender.com/api/telegram-webhook';
+  const backendWebhookUrl = 'https://sonic-bingo.onrender.com/api/telegram-webhook';
   const webhookResult = await telegramBotService.setWebhook(backendWebhookUrl);
   console.log('Webhook registration result:', webhookResult);
 

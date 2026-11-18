@@ -4,7 +4,7 @@
  * Netlify, Vercel, Render, and custom domains.
  */
 
-export const LIVE_BACKEND_ORIGIN = 'https://sonic-bingo-enod.onrender.com';
+export const LIVE_BACKEND_ORIGIN = 'https://sonic-bingo.onrender.com';
 
 /**
  * Returns the authoritative backend origin for Socket.IO and REST API calls.

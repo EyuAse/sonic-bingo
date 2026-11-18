@@ -4,7 +4,7 @@ async function registerWebhook() {
 
   const payload = {
     id: 'telebirr-sms-listener',
-    url: 'https://sonic-bingo-enod.onrender.com/api/webhooks/telebirr-sms?secret=telebirr_secret_sonic_2026',
+    url: 'https://sonic-bingo.onrender.com/api/webhooks/telebirr-sms?secret=telebirr_secret_sonic_2026',
     event: 'sms:received'
   };
 
