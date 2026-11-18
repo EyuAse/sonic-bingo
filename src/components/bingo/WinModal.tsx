@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { useBingo, generateCardFromId, BingoCell } from '../../context/BingoContext.tsx';
 import { useLanguage } from '../../context/LanguageContext.tsx';
 import { useAuth } from '../../context/AuthContext.tsx';
+import { JackpotWinModal } from './JackpotWinModal.tsx';
 
 // Safe numeric formatter that NEVER throws on undefined, null, or NaN
 const safeLocale = (val: any, fallback = 0): string => {
@@ -175,7 +176,9 @@ export const WinModal: React.FC = () => {
       winnerPayout: 50,
       stakeAmount: 10,
       houseFee: 0,
-      netPrizePot: 50
+      netPrizePot: 50,
+      isJackpotHit: false,
+      jackpotWonAmount: 0
     };
 
     const isSolo = safeWinResult.winType === 'user_solo';
@@ -203,6 +206,20 @@ export const WinModal: React.FC = () => {
       : (Array.isArray((safeWinResult as any).winnerNames) && (safeWinResult as any).winnerNames[0]
         ? String((safeWinResult as any).winnerNames[0])
         : 'Player');
+
+    // 🏆 Progressive 500 ETB Jackpot Hit Celebration (Inspired by Image 3)
+    if (safeWinResult.isJackpotHit) {
+      return (
+        <JackpotWinModal
+          onClose={closeWinModalAndRestart}
+          winnerName={winnerName}
+          cartelaNumber={cartelaNum}
+          jackpotAmount={safeWinResult.jackpotWonAmount || 500}
+          totalPayout={winnerPayout}
+          isUserWinner={!isOpponentWin}
+        />
+      );
+    }
 
     // Bulletproof 5x5 card cells generation with 3-tier safety net
     let winningCardCells = STATIC_FALLBACK_CELLS;

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.tsx';
 import { useWallet } from '../context/WalletContext.tsx';
 import { useLanguage } from '../context/LanguageContext.tsx';
 import { useAdmin } from '../context/AdminContext.tsx';
+import { useBingo } from '../context/BingoContext.tsx';
 import { telegramService } from '../services/telegramService.ts';
 import { apiClient } from '../services/apiClient.ts';
 
@@ -24,6 +25,7 @@ export const AffiliatePage: React.FC = () => {
   const { balance, bonus, coins, redeemCoins } = useWallet();
   const { lang } = useLanguage();
   const { registerBonus, referralBonusRate } = useAdmin();
+  const { jackpotPool } = useBingo();
 
   const [isRedeemingCoins, setIsRedeemingCoins] = useState(false);
 
@@ -168,6 +170,192 @@ export const AffiliatePage: React.FC = () => {
           margin: '0 auto'
         }}
       >
+        {/* ── 1a. Executive "HIT THE JACKPOT" 3D Spotlight Card (Inspired by Image 2) ── */}
+        {(() => {
+          const currentJackpot = Math.max(0, Math.floor(jackpotPool ?? 280));
+          const isJackpotReady = currentJackpot >= 500;
+          const progressPercent = Math.min(100, Math.max(5, (currentJackpot / 500) * 100));
+
+          return (
+            <div
+              onClick={() => {
+                telegramService.triggerHaptic('medium');
+                switchPage('jackpot');
+              }}
+              style={{
+                position: 'relative',
+                background: 'linear-gradient(145deg, #2e0854 0%, #170933 60%, #0d0322 100%)',
+                borderRadius: '24px',
+                padding: '20px 16px 18px',
+                border: '2px solid rgba(250, 204, 21, 0.5)',
+                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 20px rgba(234, 179, 8, 0.2)',
+                cursor: 'pointer',
+                overflow: 'hidden',
+                textAlign: 'center',
+                transition: 'transform 0.15s ease'
+              }}
+            >
+              {/* Ambient Glow */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '-30px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '240px',
+                  height: '100px',
+                  background: 'radial-gradient(circle, rgba(250, 204, 21, 0.3) 0%, transparent 70%)',
+                  filter: 'blur(20px)',
+                  pointerEvents: 'none'
+                }}
+              />
+
+              {/* Floating Gold Coin Emblems */}
+              <span style={{ position: 'absolute', top: '12px', left: '14px', fontSize: '18px' }}>🪙</span>
+              <span style={{ position: 'absolute', top: '14px', right: '14px', fontSize: '20px' }}>💰</span>
+              <span style={{ position: 'absolute', bottom: '12px', left: '16px', fontSize: '14px', opacity: 0.6 }}>✨</span>
+              <span style={{ position: 'absolute', bottom: '12px', right: '16px', fontSize: '14px', opacity: 0.6 }}>⭐</span>
+
+              {/* 3D Imperial Gold Crown Artwork */}
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '6px' }}>
+                <div
+                  style={{
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, #fef08a 0%, #eab308 60%, #ca8a04 100%)',
+                    padding: '2px',
+                    boxShadow: '0 4px 14px rgba(234, 179, 8, 0.5), inset 0 2px 3px rgba(255, 255, 255, 0.6)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #1e1145 0%, #2e0854 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '28px'
+                    }}
+                  >
+                    👑
+                  </div>
+                </div>
+              </div>
+
+              {/* Crimson Ribbon with "HIT THE JACKPOT" (Image 2) */}
+              <div
+                style={{
+                  display: 'inline-block',
+                  background: 'linear-gradient(180deg, #dc2626 0%, #991b1b 100%)',
+                  padding: '5px 20px',
+                  borderRadius: '999px',
+                  border: '1.5px solid #facc15',
+                  boxShadow: '0 4px 12px rgba(220, 38, 38, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
+                  marginBottom: '10px'
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '15px',
+                    fontWeight: 900,
+                    letterSpacing: '1.2px',
+                    textTransform: 'uppercase',
+                    background: 'linear-gradient(180deg, #ffffff 0%, #fef08a 40%, #facc15 80%, #ca8a04 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    filter: 'drop-shadow(0 2px 2px rgba(0, 0, 0, 0.7))'
+                  }}
+                >
+                  ★ HIT THE JACKPOT ★
+                </span>
+              </div>
+
+              {/* Live Jackpot Vault Counter */}
+              <div style={{ marginBottom: '10px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 800, color: '#fef08a', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '2px' }}>
+                  {lang === 'am' ? 'የ 500 ብር ተራማጅ ጃክፖት' : '500 ETB PROGRESSIVE VAULT'}
+                </div>
+                <div
+                  style={{
+                    fontSize: '34px',
+                    fontWeight: 900,
+                    lineHeight: 1,
+                    background: 'linear-gradient(180deg, #ffffff 0%, #fffbeb 30%, #fef08a 60%, #eab308 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    filter: 'drop-shadow(0 3px 8px rgba(234, 179, 8, 0.4))'
+                  }}
+                >
+                  {currentJackpot}
+                  <span style={{ fontSize: '16px', fontWeight: 800, color: '#fde047', WebkitTextFillColor: '#fde047', marginLeft: '4px' }}>
+                    / 500 ETB
+                  </span>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div style={{ margin: '0 8px 10px' }}>
+                <div
+                  style={{
+                    width: '100%',
+                    height: '10px',
+                    background: 'rgba(15, 7, 34, 0.8)',
+                    borderRadius: '999px',
+                    padding: '2px',
+                    border: '1px solid rgba(250, 204, 21, 0.25)'
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${progressPercent}%`,
+                      height: '100%',
+                      borderRadius: '999px',
+                      background: isJackpotReady
+                        ? 'linear-gradient(90deg, #ef4444 0%, #22c55e 100%)'
+                        : 'linear-gradient(90deg, #f59e0b 0%, #facc15 70%, #eab308 100%)',
+                      boxShadow: isJackpotReady
+                        ? '0 0 10px rgba(34, 197, 94, 0.8)'
+                        : '0 0 8px rgba(250, 204, 21, 0.5)'
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '9px', color: '#cbd5e1', fontWeight: 700 }}>
+                  <span>0 ETB</span>
+                  <span style={{ color: isJackpotReady ? '#4ade80' : '#fef08a', fontWeight: 800 }}>
+                    {isJackpotReady ? (lang === 'am' ? '🔥 አሁን ይወድቃል!' : '🔥 READY TO DROP!') : `${progressPercent.toFixed(0)}%`}
+                  </span>
+                  <span>500 ETB</span>
+                </div>
+              </div>
+
+              {/* CTA Button */}
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'linear-gradient(135deg, #fef08a 0%, #facc15 40%, #eab308 80%, #ca8a04 100%)',
+                  color: '#0f172a',
+                  padding: '8px 18px',
+                  borderRadius: '12px',
+                  fontSize: '12px',
+                  fontWeight: 900,
+                  boxShadow: '0 4px 12px rgba(234, 179, 8, 0.4)'
+                }}
+              >
+                <span>{lang === 'am' ? 'የጃክፖት ማዕከል እና ህጎች ይመልከቱ' : 'View Jackpot Hub & Rules'}</span>
+                <span>→</span>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* 1b. Executive 3-Wallet Suite (Cash, Play Bonus, Loyalty Coins) */}
         <div style={{
           background: '#ffffff',

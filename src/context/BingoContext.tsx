@@ -55,6 +55,10 @@ export interface WinResult {
   stakeAmount?: number;
   houseFee?: number;
   netPrizePot?: number;
+  isJackpotHit?: boolean;
+  jackpotWonAmount?: number;
+  jackpotFee?: number;
+  jackpotPool?: number;
 }
 
 export type RoundPhase = 'lobby' | 'locked' | 'playing' | 'winner';

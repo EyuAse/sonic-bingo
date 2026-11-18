@@ -32,6 +32,7 @@ import { AboutSonicPage } from './pages/AboutSonicPage.tsx';
 import { AdminPage } from './pages/AdminPage.tsx';
 import { AgentPortalPage } from './pages/AgentPortalPage.tsx';
 import { WithdrawalsAdminPage } from './pages/WithdrawalsAdminPage.tsx';
+import { JackpotPage } from './pages/JackpotPage.tsx';
 import { AppSplashScreen } from './components/common/AppSplashScreen.tsx';
 
 export const App: React.FC = () => {
@@ -131,7 +132,8 @@ export const App: React.FC = () => {
     currentPage === 'help' ||
     currentPage === 'about' ||
     currentPage === 'deposit' ||
-    currentPage === 'withdraw';
+    currentPage === 'withdraw' ||
+    currentPage === 'jackpot';
 
   const isDedicatedGamePage = currentPage === 'bingo' || currentPage === 'keno';
   const isDesktop = telegramService.isDesktopPlatform();
@@ -160,6 +162,7 @@ export const App: React.FC = () => {
       {currentPage === 'account-info' && <AccountInfoPage />}
       {currentPage === 'help' && <HelpCenterPage />}
       {currentPage === 'about' && <AboutSonicPage />}
+      {currentPage === 'jackpot' && <JackpotPage />}
 
       {/* Bottom Navigation */}
       {!isStandalonePage && !isDedicatedGamePage && <BottomNav />}

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useBingo } from '../../context/BingoContext.tsx';
 import { useLanguage } from '../../context/LanguageContext.tsx';
+import { useApp } from '../../context/AppContext.tsx';
 import { StakeRoomSelectorModal } from '../games/StakeRoomSelectorModal.tsx';
 
 export const StatsStrip: React.FC = () => {
+  const { switchPage } = useApp();
   const {
     betAmount,
     setBetAmount,
@@ -83,20 +85,25 @@ export const StatsStrip: React.FC = () => {
           <span className="status-strip-val text-dark-val">{gameId}</span>
         </div>
 
-        {/* 2. Derash (ደራሽ / Prize Pool 70%) */}
+        {/* 2. Derash (ደራሽ / Net Winner Prize) */}
         <div className="status-strip-box derash-box">
-          <span className="status-strip-lbl">{lang === 'am' ? 'ደራሽ (70%)' : 'DERASH (70%)'}</span>
+          <span className="status-strip-lbl">{lang === 'am' ? 'ደራሽ' : 'DERASH'}</span>
           <span className="status-strip-val text-green">{prizeDisplay}</span>
         </div>
 
-        {/* 3. Progressive Jackpot Vault (10% Pool) */}
-        <div className="status-strip-box jackpot-strip-box" title="Progressive Jackpot">
+        {/* 3. Progressive Jackpot Vault (Target 500 ETB) */}
+        <div
+          className="status-strip-box jackpot-strip-box clickable-jackpot-pill"
+          title="Progressive Jackpot (Tap to view details)"
+          onClick={() => switchPage && switchPage('jackpot')}
+          style={{ cursor: 'pointer' }}
+        >
           <div className="jackpot-hdr-row">
             <span className="jackpot-crown-emblem">👑</span>
             <span className="status-strip-lbl jackpot-lbl">{lang === 'am' ? 'ጃክፖት' : 'JACKPOT'}</span>
           </div>
           <span className="status-strip-val jackpot-val">
-            {jackpotPool >= 1000 ? `${(jackpotPool / 1000).toFixed(1)}K` : `${Math.floor(jackpotPool ?? 0)}`}
+            {Math.floor(jackpotPool ?? 0)}/500
           </span>
         </div>
 
