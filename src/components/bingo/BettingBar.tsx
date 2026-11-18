@@ -168,7 +168,7 @@ export const BettingBar: React.FC = () => {
                 <span>
                   {hasSelectedCartelas && selectedCartelaIds.length > 0
                     ? `#${selectedCartelaIds.slice(0, cardQuantity).join(', #')}`
-                    : (lang === 'am' ? 'ካርቴላ ይምረጡ' : '#600, #30, #42')}
+                    : (lang === 'am' ? 'ካርቴላ ይምረጡ' : 'Pick Cartela')}
                 </span>
               </button>
 
