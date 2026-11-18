@@ -12,14 +12,15 @@ if (!connectionString) {
   throw new Error('FATAL: DATABASE_URL environment variable is required to connect to Neon PostgreSQL.');
 }
 
-// Neon Serverless Connection Pool with Free-Tier Keep-Alive Optimization
-// Extends idleTimeoutMillis from 15s to 5 minutes to prevent connection thrashing
-// and eliminate ~380 MB / 2 days of repetitive TLS/WebSocket handshakes.
+// Neon Serverless Connection Pool with High-Concurrency Optimization
+// max: 50 connections accommodates 200+ concurrent cartela purchases during lobby countdown spikes
+// connectionTimeoutMillis: 10000 (10s fast-fail guard prevents infinite request queue starvation)
+// idleTimeoutMillis: 180000 (3 minutes keeps active pool warm while safely recycling idle sockets)
 export const pool = new Pool({
   connectionString,
-  max: 10,
-  idleTimeoutMillis: 300000, // 5 minutes (prevents reconnecting every 15s)
-  connectionTimeoutMillis: 30000,
+  max: 50,
+  idleTimeoutMillis: 180000,
+  connectionTimeoutMillis: 10000,
   allowExitOnIdle: false
 });
 
@@ -58,7 +59,11 @@ export async function withTransaction<T>(
     await client.query('COMMIT');
     return result;
   } catch (error) {
-    await client.query('ROLLBACK');
+    try {
+      await client.query('ROLLBACK');
+    } catch (rbErr) {
+      console.warn('⚠️ [Neon DB Rollback Note]:', rbErr);
+    }
     throw error;
   } finally {
     client.release();
