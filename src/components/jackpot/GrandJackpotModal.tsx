@@ -201,10 +201,10 @@ export const GrandJackpotModal: React.FC<GrandJackpotModalProps> = ({ isOpen, on
               <div className="grand-jackpot-rule-item">
                 <span className="grand-jackpot-rule-num">2</span>
                 <div>
-                  <strong>{lang === 'am' ? 'የካዝናው እድገት:' : 'Vault Growth:'}</strong>{' '}
+                  <strong>{lang === 'am' ? 'የካዝናው ፈጣን እድገት:' : 'Continuous Vault Growth:'}</strong>{' '}
                   {lang === 'am'
-                    ? 'በእያንዳንዱ ዙር ከተቆረጠው ካርቴላ 10% ወደ ጃክፖት ካዝናው ይገባል።'
-                    : '10% of all cartela stakes automatically feed the jackpot vault.'}
+                    ? 'በእያንዳንዱ ዙር ጨዋታ የጃክፖት ካዝናው ያለማቋረጥ እያደገ ወደ 500 ብር ግብ በፍጥነት ይቃረባል።'
+                    : 'Every active round automatically boosts the jackpot vault closer and closer to the 500 ETB drop target!'}
                 </div>
               </div>
 
