@@ -4,7 +4,7 @@ async function testAllAdminEndpoints() {
   const loginRes = await fetch(`${baseUrl}/api/auth/admin-login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ pin: '1234' })
+    body: JSON.stringify({ pin: process.env.ADMIN_PIN || 'sonic@2026!' })
   });
   const loginData = await loginRes.json();
   console.log('Login success:', loginData.success, 'Token prefix:', loginData.token?.substring(0, 20));

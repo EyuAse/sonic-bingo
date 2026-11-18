@@ -13,13 +13,14 @@ const router = Router();
  */
 router.post('/admin-login', async (req, res) => {
   try {
-    const { pin } = req.body;
+    const pin = req.body.pin || req.body.password;
     if (!pin) {
-      return res.status(400).json({ success: false, error: 'Admin PIN is required' });
+      return res.status(400).json({ success: false, error: 'Admin Password is required' });
     }
 
-    if (pin !== '1234' && pin !== process.env.ADMIN_PIN) {
-      return res.status(401).json({ success: false, error: 'Invalid Admin PIN.' });
+    const expectedPin = process.env.ADMIN_PIN || process.env.ADMIN_PASSWORD || 'sonic@2026!';
+    if (pin !== expectedPin) {
+      return res.status(401).json({ success: false, error: 'Invalid Admin Password.' });
     }
 
     // Find or create the Admin Cashier account
@@ -27,14 +28,21 @@ router.post('/admin-login', async (req, res) => {
     let adminRow = adminRes.rows[0];
 
     if (!adminRow) {
-      const hashedPin = await bcrypt.hash('1234', 10);
+      const hashedPin = await bcrypt.hash(expectedPin, 10);
       const newAdmin = await query(
         `INSERT INTO users (phone, full_name, pin_hash, role, status)
-         VALUES ('0998983344', 'Mekonen Woldekidane (Cashier)', $1, 'admin', 'active')
+         VALUES ('0998983344', 'Sonic Master Admin', $1, 'admin', 'active')
          RETURNING *`,
         [hashedPin]
       );
       adminRow = newAdmin.rows[0];
+    } else if (adminRow.pin_hash) {
+      const isHashCurrent = await bcrypt.compare(expectedPin, adminRow.pin_hash);
+      if (!isHashCurrent) {
+        const newHashed = await bcrypt.hash(expectedPin, 10);
+        await query(`UPDATE users SET pin_hash = $1 WHERE id = $2`, [newHashed, adminRow.id]);
+        adminRow.pin_hash = newHashed;
+      }
     }
 
     const authUser = {
@@ -595,7 +603,24 @@ router.post('/login', async (req, res) => {
     }
 
     const userRow = userRes.rows[0];
-    if (userRow.pin_hash) {
+    if (userRow.role === 'admin') {
+      const expectedPin = process.env.ADMIN_PIN || process.env.ADMIN_PASSWORD || 'sonic@2026!';
+      const isExpectedMatch = pin === expectedPin;
+      let isHashMatch = false;
+      if (userRow.pin_hash) {
+        isHashMatch = await bcrypt.compare(pin, userRow.pin_hash);
+      }
+      if (!isExpectedMatch && !isHashMatch) {
+        return res.status(401).json({ success: false, error: 'Invalid Admin Password.' });
+      }
+      if (isExpectedMatch && userRow.pin_hash) {
+        const isCurrent = await bcrypt.compare(expectedPin, userRow.pin_hash);
+        if (!isCurrent) {
+          const newHashed = await bcrypt.hash(expectedPin, 10);
+          await query(`UPDATE users SET pin_hash = $1 WHERE id = $2`, [newHashed, userRow.id]);
+        }
+      }
+    } else if (userRow.pin_hash) {
       const match = await bcrypt.compare(pin, userRow.pin_hash);
       if (!match) {
         return res.status(401).json({ success: false, error: 'Invalid PIN. Please try again.' });

@@ -142,7 +142,75 @@ html:has(.admin-fullscreen-root) {
   color: #ef4444;
   font-size: 0.8125rem;
   font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.admin-password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
   margin-bottom: 16px;
+}
+
+.admin-password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.admin-password-input-icon {
+  position: absolute;
+  left: 14px;
+  color: #94a3b8;
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+.admin-password-input {
+  width: 100%;
+  padding: 13px 44px 13px 40px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.admin-password-input:focus {
+  background: #ffffff;
+  border-color: #facc15;
+  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.25);
+}
+
+.admin-password-input.input-error {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.admin-password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 6px;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: color 0.15s ease;
+}
+
+.admin-password-toggle-btn:hover {
+  color: #0f172a;
 }
 
 .pin-keypad {
