@@ -246,12 +246,19 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
   // 3. WEBSOCKET REAL-TIME SYNC
   // =========================================================================
   useEffect(() => {
-    const unsubReqCreated = socketService.on('agent_deposit_request_created', (data: any) => {
-      showToast(`📥 New Deposit Request: ETB ${data?.amount || ''} from ${data?.playerName || 'Player'}`);
+    const handleNewDeposit = (data: any) => {
+      if (data?.agentId && agentProfile?.id && data.agentId !== agentProfile.id) return;
+      showToast(`📥 New Deposit Request: ETB ${data?.amount || ''} from ${data?.playerName || data?.playerPhone || 'Player'}`);
       showInternalToast('New deposit request received');
       fetchRequests();
       onActionCompleted();
-    });
+    };
+
+    const unsubReqCreated = socketService.on('agent_deposit_request_created', handleNewDeposit);
+    const unsubGlobalReq = socketService.on('agent_new_deposit_request', handleNewDeposit);
+    const unsubAgentReq = agentProfile?.id
+      ? socketService.on(`agent_${agentProfile.id}_new_request`, handleNewDeposit)
+      : () => {};
 
     const unsubReqStatus = socketService.on('agent_deposit_request_status_changed', () => {
       fetchRequests();
@@ -272,10 +279,12 @@ export const AgentDepositRequestsDesk: React.FC<AgentDepositRequestsDeskProps> =
 
     return () => {
       unsubReqCreated();
+      unsubGlobalReq();
+      unsubAgentReq();
       unsubReqStatus();
       unsubWallet();
     };
-  }, [view, tab, searchQuery, historyPeriod]);
+  }, [agentProfile?.id, view, tab, searchQuery, historyPeriod]);
 
   // =========================================================================
   // 4. APPROVE DEPOSIT ACTION
