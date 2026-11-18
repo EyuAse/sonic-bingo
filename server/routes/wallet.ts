@@ -1405,18 +1405,24 @@ router.get(['/agents/active', '/agents/available'], async (_req, res) => {
       const activeList = (a.active_rails || '').split(',').map((s: string) => s.trim()).filter(Boolean);
       const supportedRails: string[] = [];
       
-      const cleanTelebirr = a.telebirr_phone ? String(a.telebirr_phone).trim() : '';
-      if (activeList.includes('Telebirr') && cleanTelebirr.length >= 8) {
+      const rawTelebirr = (a.telebirr_phone && String(a.telebirr_phone).trim()) || (a.user_phone && String(a.user_phone).trim()) || '';
+      const cleanTelebirr = rawTelebirr.replace(/\s+/g, '');
+      if (cleanTelebirr.length >= 8 && (activeList.includes('Telebirr') || activeList.length === 0)) {
         supportedRails.push('Telebirr');
       }
 
-      const cleanMpesa = a.mpesa_phone ? String(a.mpesa_phone).trim() : '';
-      if (activeList.includes('M-Pesa') && cleanMpesa.length >= 8) {
+      const rawMpesa = (a.mpesa_phone && String(a.mpesa_phone).trim()) || (a.user_phone && String(a.user_phone).trim()) || '';
+      const cleanMpesa = rawMpesa.replace(/\s+/g, '');
+      if (cleanMpesa.length >= 8 && activeList.includes('M-Pesa')) {
         supportedRails.push('M-Pesa');
       }
 
-      const effectiveTelebirrName = (a.telebirr_name && a.telebirr_name.trim()) || a.full_name || 'Sonic Agent';
-      const effectiveMpesaName = (a.mpesa_name && a.mpesa_name.trim()) || a.full_name || 'Sonic Agent';
+      if (supportedRails.length === 0 && cleanTelebirr.length >= 8) {
+        supportedRails.push('Telebirr');
+      }
+
+      const effectiveTelebirrName = (a.telebirr_name && a.telebirr_name.trim()) || (a.full_name && a.full_name.trim()) || `Sonic Agent #${a.agent_code}`;
+      const effectiveMpesaName = (a.mpesa_name && a.mpesa_name.trim()) || (a.full_name && a.full_name.trim()) || `Sonic Agent #${a.agent_code}`;
 
       return {
         id: a.id,
@@ -1478,23 +1484,29 @@ router.get('/agents/assigned', async (req, res) => {
     );
 
     // Format & filter agents who have configured active rails (Telebirr or M-Pesa)
-    const eligibleAgents = agentsRes.rows
+    let eligibleAgents = agentsRes.rows
       .map(a => {
         const activeList = (a.active_rails || '').split(',').map((s: string) => s.trim()).filter(Boolean);
         const supportedRails: string[] = [];
 
-        const cleanTelebirr = a.telebirr_phone ? String(a.telebirr_phone).trim() : '';
-        if (activeList.includes('Telebirr') && cleanTelebirr.length >= 8) {
+        const rawTelebirr = (a.telebirr_phone && String(a.telebirr_phone).trim()) || (a.user_phone && String(a.user_phone).trim()) || '';
+        const cleanTelebirr = rawTelebirr.replace(/\s+/g, '');
+        if (cleanTelebirr.length >= 8 && (activeList.includes('Telebirr') || activeList.length === 0)) {
           supportedRails.push('Telebirr');
         }
 
-        const cleanMpesa = a.mpesa_phone ? String(a.mpesa_phone).trim() : '';
-        if (activeList.includes('M-Pesa') && cleanMpesa.length >= 8) {
+        const rawMpesa = (a.mpesa_phone && String(a.mpesa_phone).trim()) || (a.user_phone && String(a.user_phone).trim()) || '';
+        const cleanMpesa = rawMpesa.replace(/\s+/g, '');
+        if (cleanMpesa.length >= 8 && activeList.includes('M-Pesa')) {
           supportedRails.push('M-Pesa');
         }
 
-        const effectiveTelebirrName = (a.telebirr_name && a.telebirr_name.trim()) || a.full_name || 'Sonic Agent';
-        const effectiveMpesaName = (a.mpesa_name && a.mpesa_name.trim()) || a.full_name || 'Sonic Agent';
+        if (supportedRails.length === 0 && cleanTelebirr.length >= 8) {
+          supportedRails.push('Telebirr');
+        }
+
+        const effectiveTelebirrName = (a.telebirr_name && a.telebirr_name.trim()) || (a.full_name && a.full_name.trim()) || `Sonic Agent #${a.agent_code}`;
+        const effectiveMpesaName = (a.mpesa_name && a.mpesa_name.trim()) || (a.full_name && a.full_name.trim()) || `Sonic Agent #${a.agent_code}`;
 
         const rawBalance = Math.max(0, parseFloat(a.wallet_balance || '0'));
         // Damped weighted tickets: Base 100 + floor(sqrt(balance))
@@ -1519,6 +1531,52 @@ router.get('/agents/assigned', async (req, res) => {
         };
       })
       .filter(a => a.hasConfiguredRails);
+
+    // If no agents met the balance >= 50.00 filter, query any active agent in agent_profiles
+    if (eligibleAgents.length === 0) {
+      const fallbackQuery = await query(
+        `SELECT ap.id, ap.agent_code, ap.status, 
+                ap.telebirr_phone, 
+                ap.telebirr_name, 
+                ap.mpesa_phone, 
+                ap.mpesa_name,
+                ap.active_rails, 
+                COALESCE(ap.is_online, true) as is_online, 
+                ap.wallet_balance,
+                u.full_name, u.phone as user_phone, u.telegram_username as user_telegram
+         FROM agent_profiles ap
+         JOIN users u ON ap.user_id = u.id
+         WHERE ap.status = 'active'
+         ORDER BY ap.wallet_balance DESC, ap.created_at ASC
+         LIMIT 5`
+      );
+      if (fallbackQuery.rows.length > 0) {
+        eligibleAgents = fallbackQuery.rows.map(a => {
+          const rawTelebirr = (a.telebirr_phone && String(a.telebirr_phone).trim()) || (a.user_phone && String(a.user_phone).trim()) || '';
+          const cleanTelebirr = rawTelebirr.replace(/\s+/g, '');
+          const rawMpesa = (a.mpesa_phone && String(a.mpesa_phone).trim()) || (a.user_phone && String(a.user_phone).trim()) || '';
+          const cleanMpesa = rawMpesa.replace(/\s+/g, '');
+          const supportedRails = cleanTelebirr.length >= 8 ? ['Telebirr'] : (cleanMpesa.length >= 8 ? ['M-Pesa'] : ['Telebirr']);
+          return {
+            id: a.id,
+            agentCode: a.agent_code,
+            displayName: `Sonic Agent #${a.agent_code}`,
+            phone: cleanTelebirr || cleanMpesa || a.user_phone || null,
+            telebirrPhone: cleanTelebirr || null,
+            telebirrName: (a.telebirr_name && a.telebirr_name.trim()) || (a.full_name && a.full_name.trim()) || `Sonic Agent #${a.agent_code}`,
+            mpesaPhone: cleanMpesa || null,
+            mpesaName: (a.mpesa_name && a.mpesa_name.trim()) || (a.full_name && a.full_name.trim()) || `Sonic Agent #${a.agent_code}`,
+            supportedRails,
+            hasConfiguredRails: true,
+            isOnline: true,
+            avgApprovalMinutes: 2,
+            telegramUsername: a.user_telegram ? a.user_telegram.replace(/^@/, '') : 'SonicBingoAgentDemo',
+            walletBalance: Math.max(0, parseFloat(a.wallet_balance || '0')),
+            weight: 100
+          };
+        });
+      }
+    }
 
     if (eligibleAgents.length === 0) {
       return res.json({

@@ -546,7 +546,7 @@ export const apiClient = {
     },
 
     async getActiveAgents() {
-      const res = await fetch(`${API_BASE}/wallet/agents/active`);
+      const res = await fetchWithRetry(`${API_BASE}/wallet/agents/active`);
       return handleResponse<{
         success: boolean;
         agents: Array<{
@@ -574,7 +574,7 @@ export const apiClient = {
       if (preferredAgentId) params.append('preferredAgentId', preferredAgentId);
       const queryStr = params.toString();
       const url = queryStr ? `${API_BASE}/wallet/agents/assigned?${queryStr}` : `${API_BASE}/wallet/agents/assigned`;
-      const res = await fetch(url);
+      const res = await fetchWithRetry(url);
       return handleResponse<{
         success: boolean;
         agent: {

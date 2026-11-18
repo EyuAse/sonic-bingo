@@ -40,8 +40,8 @@ export { io };
 const app = express();
 const server = http.createServer(app);
 
-// Trust Render's reverse proxy so rate limiting tracks real client IPs
-app.set('trust proxy', 1);
+// Trust upstream proxies (Cloudflare CDN + Render edge) so rate limiting tracks real client IPs
+app.set('trust proxy', true);
 
 const PORT = process.env.PORT || 5000;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
@@ -266,20 +266,39 @@ app.post('/api/rooms/reset', (req, res) => {
   res.json({ success: true, message: 'Rooms reset to synchronized lobby.' });
 });
 
+// Real client IP extractor honoring Cloudflare & Render reverse proxy headers
+const getClientIp = (req: express.Request): string => {
+  const cfIp = req.headers['cf-connecting-ip'];
+  if (cfIp) return String(cfIp).trim();
+  const xRealIp = req.headers['x-real-ip'];
+  if (xRealIp) return String(xRealIp).trim();
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) {
+    return String(forwarded).split(',')[0].trim();
+  }
+  return req.ip || '127.0.0.1';
+};
+
 // Rate Limiters for DoS and Brute-Force Hardening
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 100, // Telegram Mini Apps auto-auth on every open; 30 was too aggressive
+  limit: 200, // Telegram Mini Apps auto-auth on every open
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  keyGenerator: (req) => getClientIp(req),
   message: { success: false, error: 'Too many authentication attempts. Please try again in 15 minutes.' }
 });
 
 const walletLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  limit: 120, // Account for fallback polling during socket disconnection
+  limit: 300, // Account for fallback polling during socket disconnection
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  keyGenerator: (req) => getClientIp(req),
+  skip: (req) => {
+    // Exempt public read-only agent catalog & assigned cashier endpoints from throttling
+    return req.path.startsWith('/agents');
+  },
   message: { success: false, error: 'Too many requests. Please slow down.' }
 });
 
