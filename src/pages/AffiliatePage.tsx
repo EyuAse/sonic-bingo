@@ -4,8 +4,10 @@ import { useAuth } from '../context/AuthContext.tsx';
 import { useWallet } from '../context/WalletContext.tsx';
 import { useLanguage } from '../context/LanguageContext.tsx';
 import { useAdmin } from '../context/AdminContext.tsx';
+import { useBingo } from '../context/BingoContext.tsx';
 import { telegramService } from '../services/telegramService.ts';
 import { apiClient } from '../services/apiClient.ts';
+import { GrandJackpotModal } from '../components/jackpot/GrandJackpotModal.tsx';
 
 interface ReferredFriend {
   id: string;
@@ -24,8 +26,10 @@ export const AffiliatePage: React.FC = () => {
   const { balance, bonus, coins, redeemCoins } = useWallet();
   const { lang } = useLanguage();
   const { registerBonus, referralBonusRate } = useAdmin();
+  const { jackpotPool } = useBingo();
 
   const [isRedeemingCoins, setIsRedeemingCoins] = useState(false);
+  const [showJackpotModal, setShowJackpotModal] = useState(false);
 
   const [referralData, setReferralData] = useState<{
     referralCode: string;
@@ -257,6 +261,68 @@ export const AffiliatePage: React.FC = () => {
             <span style={{ fontWeight: 700, color: '#d97706' }}>{coins % 1000} / 1000 🪙</span>
           </div>
         </div>
+
+        {/* 1c. 500 ETB Progressive Grand Jackpot Showcase Card */}
+        <div className="rewards-jackpot-showcase-card">
+          <div className="rewards-jackpot-badge-tag">
+            <i className="fa-solid fa-crown"></i>
+            <span>{lang === 'am' ? '500 ብር ግራንድ ጃክፖት' : '500 ETB PROGRESSIVE VAULT'}</span>
+          </div>
+
+          <div className="rewards-jackpot-row">
+            <div>
+              <div className="rewards-jackpot-title">
+                {lang === 'am' ? 'ግራንድ ጃክፖት ካዝና' : 'Grand Jackpot Vault'}
+              </div>
+              <div className="rewards-jackpot-val">
+                {Math.floor(jackpotPool ?? 480)} <span className="rewards-jackpot-val-max">/ 500 ETB</span>
+              </div>
+            </div>
+
+            <div className="rewards-jackpot-thumb">
+              <img
+                src="/images/hit_the_jackpot.jpg"
+                alt="500 ETB Jackpot"
+              />
+            </div>
+          </div>
+
+          {/* Mini Progress Bar */}
+          <div style={{ marginTop: '12px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '999px', height: '8px', overflow: 'hidden' }}>
+            <div style={{
+              width: `${Math.min(100, Math.max(0, ((jackpotPool ?? 480) / 500) * 100))}%`,
+              height: '100%',
+              background: 'linear-gradient(90deg, #f59e0b, #10b981)',
+              borderRadius: '999px',
+              transition: 'width 0.4s ease'
+            }}></div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#cbd5e1', marginTop: '6px' }}>
+            <span>{lang === 'am' ? '🎯 500 ብር ሲሞላ በዚህ ዙር አሸናፊው ይወስዳል' : '🎯 Drops when vault reaches 500 ETB'}</span>
+            <span style={{ fontWeight: 800, color: '#fbbf24' }}>
+              {Math.max(0, 500 - Math.floor(jackpotPool ?? 480))} ETB {lang === 'am' ? 'ቀርቷል' : 'left'}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            className="rewards-jackpot-open-btn"
+            onClick={() => {
+              telegramService.triggerHaptic('light');
+              setShowJackpotModal(true);
+            }}
+          >
+            <i className="fa-solid fa-trophy"></i>
+            <span>{lang === 'am' ? 'የጃክፖት ዝርዝርና ደንቦችን ይመልከቱ' : 'Open Jackpot Vault & Rules'}</span>
+          </button>
+        </div>
+
+        {/* Grand Jackpot Modal View */}
+        <GrandJackpotModal
+          isOpen={showJackpotModal}
+          onClose={() => setShowJackpotModal(false)}
+        />
 
         {/* 2. Top Hero Card: Warm Creamy Lemon Background with 3D Treasure Chest */}
         <div

@@ -104,6 +104,22 @@ export const apiClient = {
         coinRedemptionMinCoins: number;
         coinCreditTarget: string;
       }>(res);
+    },
+
+    async getJackpotDetails() {
+      const res = await fetch(`${API_BASE}/public/jackpot-details`);
+      return handleResponse<{
+        success: boolean;
+        poolBalance: number;
+        targetThreshold: number;
+        recentWinners: Array<{
+          id: string;
+          winnerName: string;
+          amount: number;
+          ballsCount: number;
+          wonAt: string;
+        }>;
+      }>(res);
     }
   },
 

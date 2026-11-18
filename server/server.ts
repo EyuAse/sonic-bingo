@@ -318,6 +318,52 @@ app.get('/api/public/bonus-config', async (_req, res) => {
   }
 });
 
+// Public endpoint for live Progressive Jackpot 500 details & real recent winners
+app.get('/api/public/jackpot-details', async (_req, res) => {
+  try {
+    const liveRoom = gameEngine.getRoom('room-10');
+    let poolBal = liveRoom?.jackpotPoolBalance;
+
+    if (poolBal === undefined || isNaN(poolBal)) {
+      const poolRes = await query(`
+        SELECT room_id, balance, last_won_amount, last_won_at 
+        FROM jackpot_pool 
+        WHERE room_id IN ('room-10', 'arena') 
+        ORDER BY updated_at DESC 
+        LIMIT 1
+      `);
+      const poolRow = poolRes.rows[0];
+      poolBal = poolRow ? parseFloat(poolRow.balance || '0') : 480;
+    }
+
+    const winnersRes = await query(`
+      SELECT jw.id, jw.amount, jw.won_at, jw.balls_count,
+             COALESCE(jw.winner_name, u.full_name, 'Player') as winner_name
+      FROM jackpot_winners jw
+      LEFT JOIN users u ON jw.user_id = u.id
+      WHERE jw.room_id IN ('room-10', 'room_10', 'arena')
+      ORDER BY jw.won_at DESC
+      LIMIT 5
+    `);
+
+    return res.json({
+      success: true,
+      poolBalance: poolBal,
+      targetThreshold: 500,
+      recentWinners: winnersRes.rows.map(w => ({
+        id: w.id,
+        winnerName: w.winner_name,
+        amount: parseFloat(w.amount || '0'),
+        ballsCount: w.balls_count,
+        wonAt: w.won_at
+      }))
+    });
+  } catch (err: any) {
+    console.error('❌ [Public Jackpot Details Error]:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch jackpot details' });
+  }
+});
+
 // Public Inbound Telegram Webhook aliases (accepts /api/telegram-webhook, /api/telegram/webhook, /telegram-webhook)
 app.post(['/api/telegram-webhook', '/api/telegram/webhook', '/telegram-webhook'], async (req, res) => {
   try {

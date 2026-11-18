@@ -1103,7 +1103,6 @@ class BingoGameEngine {
             roomId: ARENA_ROOM_ID
           });
         }
-      }
 
       io.emit('stake_rooms_summary', this.getStakeRoomsSummary());
 
@@ -3067,10 +3066,13 @@ class BingoGameEngine {
 
                 // Record progressive jackpot winner if hit
                 if (isJackpotHit) {
+                  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+                  const dbUserId = isUuid ? userId : null;
+                  const winnerDisplayName = userWinningCards[0]?.userName || 'Player';
                   await client.query(
-                    `INSERT INTO jackpot_winners (room_id, round_id, user_id, amount, balls_count)
-                     VALUES ($1, $2, $3, $4, $5)`,
-                    [dbRoomId, room.currentRoundId || null, userId, userJackpotShare, ballsDrawn]
+                    `INSERT INTO jackpot_winners (room_id, round_id, user_id, amount, balls_count, winner_name)
+                     VALUES ($1, $2, $3, $4, $5, $6)`,
+                    [dbRoomId, room.currentRoundId || null, dbUserId, userJackpotShare, ballsDrawn, winnerDisplayName]
                   );
                 }
 
