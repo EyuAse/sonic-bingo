@@ -132,9 +132,9 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
     }
   }, [phase, drawnBalls]);
 
-  // Unified User Numbers (Picked Numbers in current hand + Placed Bet Numbers from Active Tickets)
-  const userNumbers = useMemo(() => {
-    const set = new Set<number>(selectedNumbers);
+  // Placed Bet Numbers from Active Tickets in this round (used strictly for ball hit illumination)
+  const ticketNumbers = useMemo(() => {
+    const set = new Set<number>();
     activeTickets.forEach((t: any) => {
       const nums = t.selectedNumbers || t.numbers || [];
       if (Array.isArray(nums)) {
@@ -142,7 +142,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
       }
     });
     return set;
-  }, [selectedNumbers, activeTickets]);
+  }, [activeTickets]);
 
   // Certified Instant Client-Side Win Calculation on Draw Completion (0ms latency fallback)
   const roundTotalWin = useMemo(() => {
@@ -176,7 +176,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
       });
     }
 
-    const isHit = userNumbers.has(currentDrawnBall);
+    const isHit = ticketNumbers.has(currentDrawnBall);
     const big = bigRef.current;
     const drawnContainer = drawnRef.current;
 
@@ -263,7 +263,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
       if (flightTimeout) clearTimeout(flightTimeout);
       if (flyingEl) flyingEl.remove();
     };
-  }, [currentDrawnBall, phase, userNumbers, playPopSound, playHitChime, playTone, drawnBalls]);
+  }, [currentDrawnBall, phase, ticketNumbers, playPopSound, playHitChime, playTone, drawnBalls]);
 
   // Win fanfare on settlement
   useEffect(() => {
@@ -637,7 +637,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
               ) : playerHistory.length === 0 ? (
                 <div className="empty">No bets yet</div>
               ) : (
-                playerHistory.map((t, idx) => {
+                playerHistory.slice(0, 10).map((t, idx) => {
                   const hits = Array.isArray(t.hitNumbers) && t.hitNumbers.length > 0
                     ? t.hitNumbers
                     : (t.selectedNumbers || []).filter((n: number) => (t.drawnNumbers || []).includes(n));
@@ -714,7 +714,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
               No past draws recorded yet
             </div>
           ) : (
-            recentResults.map((r, i) => {
+            recentResults.slice(0, 10).map((r, i) => {
               const d = r.drawnAt ? new Date(r.drawnAt) : null;
               const timeStr = d ? `${pad(d.getHours())}:${pad(d.getMinutes())}` : '';
               return (
@@ -898,8 +898,8 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
             </div>
           </header>
 
-          {/* Authentic Timer Badge */}
-          <div className="timer" id="timer" style={{ visibility: isDrawing ? 'hidden' : 'visible' }}>
+          {/* Authentic Timer Badge (Hidden from layout during draw/settlement to snap stage full-bleed to header) */}
+          <div className="timer" id="timer" style={{ display: isDrawing ? 'none' : 'block' }}>
             00 : {pad(timeRemaining)}
           </div>
 
@@ -907,9 +907,9 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
           <div className={`stage${isDrawing ? ' drawing' : ''}`} id="stage">
             <svg className="arcs" viewBox="0 0 348 126" preserveAspectRatio="xMidYMid slice">
               <g fill="none" stroke="rgba(255,255,255,.05)" strokeWidth="1.5">
-                <circle cx="250" cy="70" r="55" />
-                <circle cx="250" cy="70" r="90" />
-                <circle cx="250" cy="70" r="125" />
+                <circle cx={isDrawing ? "174" : "250"} cy="70" r="55" />
+                <circle cx={isDrawing ? "174" : "250"} cy="70" r="90" />
+                <circle cx={isDrawing ? "174" : "250"} cy="70" r="125" />
               </g>
             </svg>
 
@@ -1065,18 +1065,18 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
                   <span
                     className={`ball big${
                       currentDrawnBall
-                        ? ` emerging${userNumbers.has(currentDrawnBall) ? ' hit' : ''}`
+                        ? ` emerging${ticketNumbers.has(currentDrawnBall) ? ' hit' : ''}`
                         : ' hidden'
                     }`}
                     id="big"
                     ref={bigRef}
-                    style={currentDrawnBall && phase !== 'settlement' ? undefined : { display: 'none' }}
+                    style={currentDrawnBall && phase !== 'settlement' && phase !== 'settling' && landedBalls.length < 20 ? undefined : { display: 'none' }}
                   >
                     <span className="ball-num">{currentDrawnBall || '–'}</span>
                   </span>
 
-                  {/* Settlement In-Stage Banner */}
-                  {phase === 'settlement' && (
+                  {/* Settlement In-Stage Banner (Appears immediately on 20th ball landing with 0ms freeze) */}
+                  {(phase === 'settlement' || phase === 'settling' || landedBalls.length >= 20) && (
                     (effectiveWin > 0 || activeTickets.length > 0) ? (
                       <div
                         className="win-stage-banner"
@@ -1101,7 +1101,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
                   {dockedSlots.map((ballNum, idx) => (
                     <span
                       key={idx}
-                      className={ballNum ? `ball${userNumbers.has(ballNum) ? ' hit' : ''}` : 'ball-slot'}
+                      className={ballNum ? `ball${ticketNumbers.has(ballNum) ? ' hit' : ''}` : 'ball-slot'}
                     >
                       {ballNum && <span className="ball-num">{ballNum}</span>}
                     </span>
@@ -1115,9 +1115,9 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
           {!isDrawing && (
             <div className="grid" id="grid">
               {cells.map(num => {
-                const isSel = userNumbers.has(num);
-                const isHit = isSel && drawnBalls.includes(num);
-                const isDrw = !isSel && drawnBalls.includes(num);
+                const isSel = selectedNumbers.has(num);
+                const isHit = ticketNumbers.has(num) && drawnBalls.includes(num);
+                const isDrw = !ticketNumbers.has(num) && drawnBalls.includes(num);
                 const isHot = hotSet.has(num);
                 const isCold = coldSet.has(num);
 

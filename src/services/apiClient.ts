@@ -563,6 +563,7 @@ export const apiClient = {
           supportedRails?: string[];
           isOnline: boolean;
           avgApprovalMinutes: number;
+          telegramUsername?: string;
         }>;
       }>(res);
     },
@@ -589,6 +590,7 @@ export const apiClient = {
           hasConfiguredRails?: boolean;
           isOnline: boolean;
           avgApprovalMinutes: number;
+          telegramUsername?: string;
         } | null;
         totalOnlineAgents: number;
         message?: string;

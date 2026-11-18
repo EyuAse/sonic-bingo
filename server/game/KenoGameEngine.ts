@@ -54,7 +54,7 @@ export class KenoGameEngine extends EventEmitter {
   // Round Timing Configurations (Atlas-V Fast Keno: 60s Total Round Cycle)
   public readonly BETTING_SECONDS = 30; // 30s Betting Window
   public readonly DRAW_BALL_INTERVAL_MS = 1200; // 1.2s per ball (24s for 20 balls)
-  public readonly SETTLEMENT_SECONDS = 6; // 6s Celebration & Settlement
+  public readonly SETTLEMENT_SECONDS = 4; // 4s server window ensures client gets full 3s+ of celebration
 
   // State Machine Variables
   public currentRoundNumber = 1;
@@ -396,7 +396,10 @@ export class KenoGameEngine extends EventEmitter {
         drawnBalls: [...this.drawnBallsThisRound]
       });
 
-      await new Promise(res => setTimeout(res, this.DRAW_BALL_INTERVAL_MS));
+      // Only delay between balls 1 to 19 (do NOT delay after the final 20th ball!)
+      if (index < this.currentDrawSequence.length - 1) {
+        await new Promise(res => setTimeout(res, this.DRAW_BALL_INTERVAL_MS));
+      }
     }
 
     await this.settleRound();

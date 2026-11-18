@@ -195,6 +195,8 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setCurrentDrawnBall(null);
       setActiveTickets([]);
       setAllRoomTickets([]);
+      setSelectedNumbers(new Set());
+      setLastSettlement(null);
       setLastWinAmount(0);
       hitsCountRef.current = 0;
     };

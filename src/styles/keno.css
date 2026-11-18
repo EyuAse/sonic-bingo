@@ -206,9 +206,8 @@
             width: 34px;
             height: 34px;
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: grid !important;
+            place-items: center !important;
             text-align: center;
             font-family: "Roboto Condensed", "Roboto", -apple-system, sans-serif;
             background: radial-gradient(circle at 50% 88%, #1f4f82 0%, #0e2542 32%, #08111f 65%, #04070e 100%);
@@ -237,12 +236,22 @@
         }
 
         .keno-fullscreen-view .ball-num {
-            position: relative;
+            position: absolute !important;
+            inset: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
             z-index: 5;
             color: #ffffff !important;
             font-weight: 900 !important;
             font-size: 15px;
             line-height: 1 !important;
+            transform: translateY(-0.5px) !important;
             text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 2px #000;
             pointer-events: none;
         }
@@ -318,13 +327,18 @@
         }
 
         .keno-fullscreen-view .stage.drawing {
-            margin: calc(var(--up, 0px)*-1) 0 0;
-            border-radius: 0;
-            border-color: transparent;
+            margin: 0 !important;
+            border-radius: 0 !important;
+            border-color: transparent !important;
             background: #181f1e !important;
-            padding: calc(var(--up, 0px) + 6px) 0 14px;
-            min-height: 190px;
-            overflow: hidden
+            width: 100% !important;
+            max-width: 100% !important;
+            left: 0 !important;
+            right: 0 !important;
+            padding: 8px 0 16px !important;
+            min-height: 215px !important;
+            overflow: hidden !important;
+            box-sizing: border-box !important;
         }
 
         .keno-fullscreen-view header,
@@ -375,6 +389,9 @@
             align-items: center;
             justify-content: center;
             position: relative;
+        }
+
+        .keno-fullscreen-view .glow:has(#big:not(.hidden)) {
             box-shadow: 0 0 0 12px rgba(61, 220, 151, .05), 0 0 0 13px rgba(255, 255, 255, .06), 0 0 0 32px rgba(61, 220, 151, .03), 0 0 0 33px rgba(255, 255, 255, .05), 0 0 0 54px rgba(61, 220, 151, .015), 0 0 0 55px rgba(255, 255, 255, .04);
         }
 
@@ -383,12 +400,25 @@
             height: 66px;
             border: 2px solid rgba(140, 190, 230, 0.5);
             box-shadow: 0 0 26px rgba(61, 220, 151, 0.35), 0 6px 16px rgba(0, 0, 0, 0.8), inset 0 0 12px rgba(90, 160, 230, 0.5), inset 0 -8px 12px rgba(50, 120, 200, 0.35);
+            position: relative;
+            display: grid !important;
+            place-items: center !important;
         }
 
         .keno-fullscreen-view .ball.big .ball-num {
+            position: absolute !important;
+            inset: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+            width: 100% !important;
+            height: 100% !important;
             font-size: 34px !important;
             font-weight: 900 !important;
             color: #ffffff !important;
+            line-height: 1 !important;
+            transform: translateY(-1px) !important;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.8);
         }
 
@@ -432,7 +462,7 @@
             padding: 0 6px !important;
             box-sizing: border-box !important;
             width: 100% !important;
-            max-width: 380px !important;
+            max-width: 420px !important;
             margin-left: auto !important;
             margin-right: auto !important;
         }
@@ -440,10 +470,13 @@
         .keno-fullscreen-view .drawn .ball,
         .keno-fullscreen-view .drawn .ball-slot {
             width: 100% !important;
-            max-width: 31px !important;
+            max-width: 35px !important;
             height: auto !important;
             aspect-ratio: 1 !important;
             margin: 0 auto !important;
+            display: grid !important;
+            place-items: center !important;
+            position: relative !important;
         }
 
         .keno-fullscreen-view .drawn .ball-slot {
@@ -452,11 +485,24 @@
         }
 
         .keno-fullscreen-view .drawn .ball .ball-num {
-            font-size: 13px !important;
-            font-weight: 800 !important;
+            position: absolute !important;
+            inset: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            font-family: "Roboto Condensed", "Roboto", -apple-system, sans-serif !important;
+            font-size: 13.5px !important;
+            font-weight: 900 !important;
             color: #ffffff !important;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9) !important;
             line-height: 1 !important;
+            transform: translateY(-0.5px) !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 2px #000 !important;
+            pointer-events: none !important;
         }
 
         .keno-fullscreen-view .drawn .ball.hit {

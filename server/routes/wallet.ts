@@ -1391,7 +1391,7 @@ router.get(['/agents/active', '/agents/available'], async (_req, res) => {
               ap.active_rails, 
               COALESCE(ap.is_online, true) as is_online, 
               ap.wallet_balance,
-              u.full_name, u.phone as user_phone
+              u.full_name, u.phone as user_phone, u.telegram_username as user_telegram
        FROM agent_profiles ap
        JOIN users u ON ap.user_id = u.id
        WHERE ap.status = 'active'
@@ -1430,7 +1430,8 @@ router.get(['/agents/active', '/agents/available'], async (_req, res) => {
         supportedRails,
         hasConfiguredRails: supportedRails.length > 0,
         isOnline: a.is_online !== false,
-        avgApprovalMinutes: 2
+        avgApprovalMinutes: 2,
+        telegramUsername: a.user_telegram ? a.user_telegram.replace(/^@/, '') : 'SonicBingoAgentDemo'
       };
     });
 
@@ -1467,7 +1468,7 @@ router.get('/agents/assigned', async (req, res) => {
               ap.active_rails, 
               COALESCE(ap.is_online, true) as is_online, 
               ap.wallet_balance,
-              u.full_name, u.phone as user_phone
+              u.full_name, u.phone as user_phone, u.telegram_username as user_telegram
        FROM agent_profiles ap
        JOIN users u ON ap.user_id = u.id
        WHERE ap.status = 'active'
@@ -1512,6 +1513,7 @@ router.get('/agents/assigned', async (req, res) => {
           hasConfiguredRails: supportedRails.length > 0,
           isOnline: a.is_online !== false,
           avgApprovalMinutes: 2,
+          telegramUsername: a.user_telegram ? a.user_telegram.replace(/^@/, '') : 'SonicBingoAgentDemo',
           walletBalance: rawBalance,
           weight
         };

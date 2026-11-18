@@ -544,6 +544,95 @@
   white-space: nowrap;
 }
 
+/* Small Switch Agent Button inside Agent Card Top */
+.sonic-agent-card-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  border-radius: 9999px;
+  padding: 3px 9px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #fbbf24;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.sonic-agent-card-switch-btn:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.28);
+  border-color: #fbbf24;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
+  transform: translateY(-1px);
+}
+
+.sonic-agent-card-switch-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.sonic-agent-card-switch-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Actions Row: Direct Telegram Contact */
+.sonic-assigned-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  z-index: 2;
+  margin-top: 2px;
+}
+
+.sonic-agent-card-telegram-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.16) 0%, rgba(2, 132, 199, 0.28) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.18);
+  box-sizing: border-box;
+}
+
+.sonic-agent-card-telegram-btn i {
+  color: #38bdf8;
+  font-size: 15px;
+}
+
+.sonic-agent-card-telegram-btn:hover {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.28) 0%, rgba(2, 132, 199, 0.42) 100%);
+  border-color: #38bdf8;
+  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.32);
+  transform: translateY(-1px);
+}
+
+.sonic-agent-card-telegram-btn:active {
+  transform: scale(0.98);
+}
+
+.sonic-agent-card-tg-handle {
+  font-size: 11px;
+  font-weight: 800;
+  color: #38bdf8;
+  background: rgba(14, 165, 233, 0.2);
+  padding: 1px 6px;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
+}
+
 /* Card Bottom: Micro Divider & Session Note */
 .sonic-assigned-footer {
   width: 100%;

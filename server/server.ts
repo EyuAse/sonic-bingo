@@ -352,7 +352,7 @@ app.get('/api/keno/history', async (req, res) => {
        LEFT JOIN keno_rounds r ON t.round_id = r.id OR t.round_number = r.round_number
        WHERE t.user_id = $1 OR t.user_id = $2
        ORDER BY t.created_at DESC
-       LIMIT 40`,
+       LIMIT 10`,
       [resolvedUserId, targetUserId]
     );
 
@@ -394,7 +394,7 @@ app.get('/api/keno/results', async (_req, res) => {
        FROM keno_rounds
        WHERE status = 'settled'
        ORDER BY round_number DESC
-       LIMIT 30`
+       LIMIT 10`
     );
 
     const results = dbRes.rows.map(r => ({

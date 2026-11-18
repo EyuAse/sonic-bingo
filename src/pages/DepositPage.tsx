@@ -7,6 +7,7 @@ import { TelebirrLogo, MpesaLogo } from '../components/wallet/PaymentLogos.tsx';
 import { LanguageDropdown } from '../components/common/LanguageDropdown.tsx';
 import { apiClient } from '../services/apiClient.ts';
 import { socketService } from '../services/socketService.ts';
+import { telegramService } from '../services/telegramService.ts';
 import {
   SonicCrownLogo,
   GoldCoinsStackIcon,
@@ -46,6 +47,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
     supportedRails?: string[];
     isOnline: boolean;
     avgApprovalMinutes: number;
+    telegramUsername?: string;
   }>>([]);
   const [isLoadingAgents, setIsLoadingAgents] = useState<boolean>(true);
   const [agentLoadError, setAgentLoadError] = useState<string | null>(null);
@@ -65,6 +67,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
     supportedRails?: string[];
     isOnline: boolean;
     avgApprovalMinutes: number;
+    telegramUsername?: string;
   } | null>(null);
   const [agentDepositAmount, setAgentDepositAmount] = useState<number>(100);
   const [copiedText, setCopiedText] = useState<string | null>(null);
@@ -963,10 +966,22 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                           </div>
                         </div>
 
-                        <span className="sonic-status-pill-emerald" style={{ flexShrink: 0, padding: '3px 8px', fontSize: '10.5px' }}>
-                          <span className="sonic-pulse-dot" style={{ width: 6, height: 6 }}></span>
-                          Online
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                          <span className="sonic-status-pill-emerald" style={{ padding: '3px 8px', fontSize: '10.5px' }}>
+                            <span className="sonic-pulse-dot" style={{ width: 6, height: 6 }}></span>
+                            Online
+                          </span>
+                          <button
+                            type="button"
+                            className="sonic-agent-card-switch-btn"
+                            onClick={handleReRollAgent}
+                            disabled={isReRollingAgent || isLoadingAgents}
+                            title={lang === 'am' ? 'ሌላ ኤጀንት ቀይር' : 'Switch Agent'}
+                          >
+                            <i className={`fa-solid fa-arrows-rotate ${isReRollingAgent ? 'fa-spin' : ''}`}></i>
+                            <span>{lang === 'am' ? 'ቀይር' : 'Switch'}</span>
+                          </button>
+                        </div>
                       </div>
 
                       {/* Middle Row: Active Rails Chips */}
@@ -980,6 +995,26 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                             <span>{r === 'Telebirr' ? 'Telebirr Instant' : 'Safaricom M-Pesa'}</span>
                           </span>
                         ))}
+                      </div>
+
+                      {/* Direct Telegram Chat Redirect Button */}
+                      <div className="sonic-assigned-actions-row">
+                        <button
+                          type="button"
+                          className="sonic-agent-card-telegram-btn"
+                          onClick={() => {
+                            const tgUser = selectedAgent.telegramUsername || 'SonicBingoAgentDemo';
+                            const clean = tgUser.replace(/^@/, '');
+                            telegramService.openTelegramLink(`https://t.me/${clean}`);
+                          }}
+                          title={lang === 'am' ? 'ኤጀንቱን ቴሌግራም ላይ ያነጋግሩ' : 'Contact Agent on Telegram'}
+                        >
+                          <i className="fa-brands fa-telegram"></i>
+                          <span>{lang === 'am' ? 'ቴሌግራም ላይ ያነጋግሩ' : 'Chat on Telegram'}</span>
+                          <span className="sonic-agent-card-tg-handle">
+                            @{selectedAgent.telegramUsername ? selectedAgent.telegramUsername.replace(/^@/, '') : 'SonicBingoAgentDemo'}
+                          </span>
+                        </button>
                       </div>
 
                       {/* Bottom Footer: Session Note */}
