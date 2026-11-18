@@ -47,7 +47,7 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
   const [showConfirmPin, setShowConfirmPin] = useState(false);
 
   // Referral Deep Link & QR
-  const inviteLink = profile?.inviteLink || (profile?.agentCode ? `https://t.me/SonicGameOfficialBot?start=agent_${profile.agentCode}` : '');
+  const inviteLink = profile?.inviteLink || (profile?.agentCode ? `https://t.me/sonicbingobot?start=agent_${profile.agentCode}` : '');
   const qrUrl = inviteLink
     ? `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=12&data=${encodeURIComponent(inviteLink)}`
     : '';

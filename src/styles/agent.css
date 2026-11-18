@@ -1740,4 +1740,116 @@
   opacity: 0.9;
 }
 
+/* ==========================================================================
+   AGENT PAYMENT RAILS DESK MOBILE RESPONSIVE PRECISION
+   ========================================================================== */
+.sonic-payment-rails-desk {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.sonic-payment-rails-card {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  padding: 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+}
+
+.sonic-payment-rails-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 26px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sonic-payment-rail-item {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border-radius: 16px;
+  padding: 20px;
+  transition: all 0.15s ease;
+}
+
+.sonic-payment-rail-item.active-telebirr {
+  background: #ffffff;
+  border: 1.5px solid #0284c7;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.08);
+}
+
+.sonic-payment-rail-item.active-mpesa {
+  background: #ffffff;
+  border: 1.5px solid #10b981;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.08);
+}
+
+.sonic-payment-rail-item.inactive {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  box-shadow: none;
+}
+
+.sonic-payment-rails-save-btn {
+  width: auto;
+  min-width: 240px;
+  padding: 13px 28px;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .sonic-payment-rails-desk {
+    padding: 16px 8px !important;
+  }
+  .sonic-payment-rails-card {
+    padding: 20px 14px !important;
+    border-radius: 16px !important;
+  }
+  .sonic-payment-rails-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .sonic-payment-rail-item {
+    padding: 16px 14px !important;
+  }
+  .sonic-payment-rails-save-btn {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .sonic-payment-rails-desk {
+    padding: 10px 2px !important;
+  }
+  .sonic-payment-rails-card {
+    padding: 16px 12px !important;
+    border-radius: 14px !important;
+  }
+  .sonic-payment-rail-item {
+    padding: 14px 10px !important;
+  }
+  .sonic-payment-rails-save-btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 12px 16px !important;
+  }
+}
+
+
 

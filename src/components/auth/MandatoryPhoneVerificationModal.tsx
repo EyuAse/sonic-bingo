@@ -108,7 +108,7 @@ export const MandatoryPhoneVerificationModal: React.FC = () => {
   };
 
   const handleOpenBot = () => {
-    telegramService.openTelegramLink('https://t.me/SonicGameOfficialBot?start=link_phone');
+    telegramService.openTelegramLink('https://t.me/sonicbingobot?start=link_phone');
     handleDismiss();
   };
 

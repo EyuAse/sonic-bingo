@@ -398,7 +398,7 @@ export const AgentsDesk: React.FC = () => {
       if (res && res.success && res.agent) {
         const ag = res.agent;
         const portalUrl = `${window.location.origin}/#agent`;
-        const refLink = `https://t.me/SonicGameOfficialBot?start=agent_${ag.agent_code}`;
+        const refLink = `https://t.me/sonicbingobot?start=agent_${ag.agent_code}`;
 
         setCreatedCredentials({
           agentCode: ag.agent_code,
@@ -457,7 +457,7 @@ export const AgentsDesk: React.FC = () => {
 
   const handleGenerateInvite = () => {
     const code = Math.random().toString(36).slice(2, 8).toUpperCase();
-    const link = `https://t.me/SonicGameOfficialBot?start=join_agent_${code}`;
+    const link = `https://t.me/sonicbingobot?start=join_agent_${code}`;
     setGeneratedInviteLink(link);
     copyToClipboard(link, 'Onboarding invite link generated and copied!');
   };
@@ -849,7 +849,7 @@ export const AgentsDesk: React.FC = () => {
                     <input
                       type="text"
                       readOnly
-                      value={`https://t.me/SonicGameOfficialBot?start=join_agent_${selectedAgent.agent_code}`}
+                      value={`https://t.me/sonicbingobot?start=join_agent_${selectedAgent.agent_code}`}
                       className="enqu-panel-input"
                       style={{ flex: 1 }}
                     />
@@ -859,7 +859,7 @@ export const AgentsDesk: React.FC = () => {
                       style={{ padding: '10px 16px', fontSize: '13px' }}
                       onClick={() =>
                         copyToClipboard(
-                          `https://t.me/SonicGameOfficialBot?start=join_agent_${selectedAgent.agent_code}`,
+                          `https://t.me/sonicbingobot?start=join_agent_${selectedAgent.agent_code}`,
                           'Agent onboarding link copied!'
                         )
                       }

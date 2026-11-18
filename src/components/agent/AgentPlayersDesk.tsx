@@ -95,9 +95,13 @@ export const AgentPlayersDesk: React.FC<AgentPlayersDeskProps> = ({
   const [periods5Day, setPeriods5Day] = useState<Period5Day[]>([]);
   const [referralLink, setReferralLink] = useState<string>(
     agentProfile?.inviteLink ||
-    (agentProfile?.agent_code ? `https://t.me/SonicGameOfficialBot?start=agent_${agentProfile.agent_code}` : '')
+    (agentProfile?.agent_code || agentProfile?.agentCode
+      ? `https://t.me/sonicbingobot?start=agent_${agentProfile.agent_code || agentProfile.agentCode}`
+      : '')
   );
-  const [commissionRate, setCommissionRate] = useState<number>(10.0);
+  const [commissionRate, setCommissionRate] = useState<number>(
+    agentProfile?.commission_rate ?? agentProfile?.commissionRate ?? 5.0
+  );
 
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'All' | 'Active' | 'Inactive' | 'No deposit yet'>('All');
@@ -178,11 +182,14 @@ export const AgentPlayersDesk: React.FC<AgentPlayersDeskProps> = ({
 
   // Sync referral link from agentProfile if available
   useEffect(() => {
-    if (agentProfile?.inviteLink) setReferralLink(agentProfile.inviteLink);
-    if (agentProfile?.agent_code && !agentProfile?.inviteLink) {
-      setReferralLink(`https://t.me/SonicGameOfficialBot?start=agent_${agentProfile.agent_code}`);
+    if (agentProfile?.inviteLink) {
+      setReferralLink(agentProfile.inviteLink);
+    } else if (agentProfile?.agent_code || agentProfile?.agentCode) {
+      setReferralLink(`https://t.me/sonicbingobot?start=agent_${agentProfile.agent_code || agentProfile.agentCode}`);
     }
-    setCommissionRate(10.0);
+    if (agentProfile?.commission_rate !== undefined || agentProfile?.commissionRate !== undefined) {
+      setCommissionRate(agentProfile.commission_rate ?? agentProfile.commissionRate);
+    }
   }, [agentProfile]);
 
   // =========================================================================
@@ -202,7 +209,7 @@ export const AgentPlayersDesk: React.FC<AgentPlayersDeskProps> = ({
   };
 
   const handleShareTelegram = () => {
-    const text = `🎉 ተጫወቱ እና አሸንፉ በ Enqu Game / Sonic Bingo! በዚህ ሊንክ ይመዝገቡ እና የ 50 ብር የነፃ መመዝገቢያ ቦነስ ያግኙ:`;
+    const text = `🎉 በ Sonic Bingo ይጫወቱ እና ያሸንፉ! 🎁 በዚህ የኤጀንት ሊንክ ሲመዘገቡ የ 50 ብር ነፃ መመዝገቢያ ቦነስ ወዲያውኑ ያገኛሉ:`;
     const url = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(text)}`;
     if (typeof window !== 'undefined') {
       window.open(url, '_blank');
@@ -210,7 +217,7 @@ export const AgentPlayersDesk: React.FC<AgentPlayersDeskProps> = ({
   };
 
   const handleCopyInviteMessage = async () => {
-    const message = `👋 ሰላም! በ Enqu Game (Sonic Bingo) ቴሌግራም ሚኒ-አፕ በቀላሉ እየተጫወቱ ያሸንፉ!\n\n🎁 በዚህ ሊንክ ሲመዘገቡ የ 50 ብር የነፃ ቦነስ ያገኛሉ:\n👉 ${referralLink}\n\nአሁኑኑ ይጀምሩ!`;
+    const message = `👋 ሰላም! በ Sonic Bingo (@sonicbingobot) ምርጥ የቢንጎ ጨዋታዎች እየተጫወቱ በቀላሉ ያሸንፉ!\n\n🎁 በዚህ ሊንክ ሲመዘገቡ የ 50 ETB ነፃ መመዝገቢያ ቦነስ ያገኛሉ:\n👉 ${referralLink}\n\nአሁኑኑ ተቀላቅለው ይጫወቱ! 🚀`;
     try {
       if (navigator?.clipboard?.writeText) {
         await navigator.clipboard.writeText(message);

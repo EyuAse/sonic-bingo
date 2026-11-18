@@ -782,14 +782,158 @@
 }
 
 @media (max-width: 520px) {
-  .players-enqu-root .g4 {
-    grid-template-columns: 1fr;
+  .players-enqu-root {
+    overflow-x: hidden;
+    width: 100%;
   }
+
+  .players-enqu-root .top {
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
   .players-enqu-root .top h1 {
-    font-size: 23px;
+    font-size: 22px;
   }
+
+  .players-enqu-root .top .sub {
+    font-size: 12.5px;
+  }
+
+  .players-enqu-root .hero {
+    grid-template-columns: 1fr !important;
+    padding: 18px 14px !important;
+    border-radius: 20px !important;
+    gap: 14px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .players-enqu-root .hero > div {
+    min-width: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .players-enqu-root .hero .kl {
+    font-size: 11px !important;
+    letter-spacing: .08em !important;
+  }
+
+  .players-enqu-root .hero h2 {
+    font-size: 19px !important;
+    line-height: 1.35 !important;
+    letter-spacing: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    margin: 6px 0 !important;
+  }
+
+  .players-enqu-root .hero p {
+    font-size: 12.5px !important;
+    line-height: 1.45 !important;
+    max-width: 100% !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  .players-enqu-root .link {
+    padding: 6px 6px 6px 12px !important;
+    font-size: 12px !important;
+    margin-top: 12px !important;
+    gap: 6px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+  }
+
+  .players-enqu-root .link span {
+    font-size: 11.5px !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .players-enqu-root .link button {
+    padding: 7px 12px !important;
+    font-size: 12px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .players-enqu-root .btns {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin-top: 10px !important;
+  }
+
+  .players-enqu-root .btns button {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 10px 6px !important;
+    font-size: 12px !important;
+    text-align: center !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .players-enqu-root .mini {
+    width: 100% !important;
+    min-width: 0 !important;
+    gap: 8px !important;
+  }
+
+  .players-enqu-root .mini div {
+    padding: 10px 12px !important;
+    border-radius: 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+  }
+
+  .players-enqu-root .mini span {
+    font-size: 12px !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .players-enqu-root .mini b {
+    font-size: 14px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    text-align: right !important;
+  }
+
+  .players-enqu-root .g4 {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
   .players-enqu-root .k3 {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .players-enqu-root .hero {
+    padding: 14px 10px !important;
+    border-radius: 16px !important;
+  }
+
+  .players-enqu-root .hero h2 {
+    font-size: 17.5px !important;
+  }
+
+  .players-enqu-root .btns {
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
   }
 }
 

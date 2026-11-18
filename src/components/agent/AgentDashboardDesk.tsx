@@ -124,7 +124,7 @@ export const AgentDashboardDesk: React.FC<AgentDashboardDeskProps> = ({
 
   // Referral Link
   const referralLink = analytics?.agent?.referralLink ||
-    `https://t.me/SonicGameOfficialBot?start=agent_${agentCode}`;
+    `https://t.me/sonicbingobot?start=agent_${agentCode}`;
 
   const handleCopyReferral = () => {
     navigator.clipboard.writeText(referralLink);

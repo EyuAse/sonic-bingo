@@ -251,9 +251,9 @@ export const WinModal: React.FC = () => {
     const handleShareWin = () => {
       try {
         const text = encodeURIComponent(
-          `🎉 I just won ${safeLocale(userShare)} ETB on Sonic 75-Ball Bingo! Come play and win with me: https://t.me/SonicGameOfficialBot/play`
+          `🎉 I just won ${safeLocale(userShare)} ETB on Sonic 75-Ball Bingo! Come play and win with me: https://t.me/sonicbingobot/play`
         );
-        window.open(`https://t.me/share/url?url=https://t.me/SonicGameOfficialBot/play&text=${text}`, '_blank');
+        window.open(`https://t.me/share/url?url=https://t.me/sonicbingobot/play&text=${text}`, '_blank');
       } catch {}
     };
 

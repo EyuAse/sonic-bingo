@@ -45,3 +45,4 @@ main().catch(err => {
   console.error('❌ Upgrade script failed:', err);
   process.exit(1);
 });
+

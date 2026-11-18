@@ -124,7 +124,7 @@ export const AgentPaymentRailsDesk: React.FC<AgentPaymentRailsDeskProps> = ({
   ].filter(Boolean).length;
 
   return (
-    <div className="sonic-agent-desk-container" style={{ padding: '24px 20px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div className="sonic-agent-desk-container sonic-payment-rails-desk">
       {/* ====================================================================
           1. DESK HEADER
           ==================================================================== */}
@@ -260,16 +260,7 @@ export const AgentPaymentRailsDesk: React.FC<AgentPaymentRailsDeskProps> = ({
           2. MAIN CONFIGURATION FORM
           ==================================================================== */}
       <form onSubmit={handleSaveAccounts}>
-        <div
-          className="sonic-white-card"
-          style={{
-            borderRadius: '20px',
-            border: '1px solid #e2e8f0',
-            padding: '28px',
-            marginBottom: '24px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)'
-          }}
-        >
+        <div className="sonic-white-card sonic-payment-rails-card">
           {isLoadingAccounts ? (
             <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>
               <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '24px', marginBottom: '12px', color: '#d97706' }}></i>
@@ -278,24 +269,10 @@ export const AgentPaymentRailsDesk: React.FC<AgentPaymentRailsDeskProps> = ({
           ) : (
             <>
               {/* Rails Grid */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                  gap: '20px',
-                  marginBottom: '26px'
-                }}
-              >
+              <div className="sonic-payment-rails-grid">
                 {/* 1. Telebirr Account Card */}
                 <div
-                  style={{
-                    background: paymentAccounts.telebirr.isActive ? '#ffffff' : '#f8fafc',
-                    border: paymentAccounts.telebirr.isActive ? '1.5px solid #0284c7' : '1px solid #e2e8f0',
-                    borderRadius: '16px',
-                    padding: '20px',
-                    boxShadow: paymentAccounts.telebirr.isActive ? '0 4px 14px rgba(2, 132, 199, 0.08)' : 'none',
-                    transition: 'all 0.15s ease'
-                  }}
+                  className={`sonic-payment-rail-item ${paymentAccounts.telebirr.isActive ? 'active-telebirr' : 'inactive'}`}
                 >
                   <div
                     style={{
@@ -322,7 +299,9 @@ export const AgentPaymentRailsDesk: React.FC<AgentPaymentRailsDeskProps> = ({
                         gap: '6px',
                         cursor: 'pointer',
                         fontSize: '12px',
-                        fontWeight: 800
+                        fontWeight: 800,
+                        flexShrink: 0,
+                        whiteSpace: 'nowrap'
                       }}
                     >
                       <input
@@ -367,7 +346,7 @@ export const AgentPaymentRailsDesk: React.FC<AgentPaymentRailsDeskProps> = ({
                             telebirr: { ...prev.telebirr, accountNumber: e.target.value }
                           }))
                         }
-                        style={{ padding: '10px 14px', fontSize: '13px' }}
+                        style={{ padding: '10px 14px', fontSize: '13px', width: '100%', boxSizing: 'border-box' }}
                       />
                     </div>
 
@@ -395,7 +374,7 @@ export const AgentPaymentRailsDesk: React.FC<AgentPaymentRailsDeskProps> = ({
                             telebirr: { ...prev.telebirr, accountName: e.target.value }
                           }))
                         }
-                        style={{ padding: '10px 14px', fontSize: '13px' }}
+                        style={{ padding: '10px 14px', fontSize: '13px', width: '100%', boxSizing: 'border-box' }}
                       />
                     </div>
                   </div>
@@ -403,14 +382,7 @@ export const AgentPaymentRailsDesk: React.FC<AgentPaymentRailsDeskProps> = ({
 
                 {/* 2. Safaricom M-Pesa Card */}
                 <div
-                  style={{
-                    background: paymentAccounts.mpesa.isActive ? '#ffffff' : '#f8fafc',
-                    border: paymentAccounts.mpesa.isActive ? '1.5px solid #10b981' : '1px solid #e2e8f0',
-                    borderRadius: '16px',
-                    padding: '20px',
-                    boxShadow: paymentAccounts.mpesa.isActive ? '0 4px 14px rgba(16, 185, 129, 0.08)' : 'none',
-                    transition: 'all 0.15s ease'
-                  }}
+                  className={`sonic-payment-rail-item ${paymentAccounts.mpesa.isActive ? 'active-mpesa' : 'inactive'}`}
                 >
                   <div
                     style={{
@@ -437,7 +409,9 @@ export const AgentPaymentRailsDesk: React.FC<AgentPaymentRailsDeskProps> = ({
                         gap: '6px',
                         cursor: 'pointer',
                         fontSize: '12px',
-                        fontWeight: 800
+                        fontWeight: 800,
+                        flexShrink: 0,
+                        whiteSpace: 'nowrap'
                       }}
                     >
                       <input
@@ -482,7 +456,7 @@ export const AgentPaymentRailsDesk: React.FC<AgentPaymentRailsDeskProps> = ({
                             mpesa: { ...prev.mpesa, accountNumber: e.target.value }
                           }))
                         }
-                        style={{ padding: '10px 14px', fontSize: '13px' }}
+                        style={{ padding: '10px 14px', fontSize: '13px', width: '100%', boxSizing: 'border-box' }}
                       />
                     </div>
 
@@ -510,7 +484,7 @@ export const AgentPaymentRailsDesk: React.FC<AgentPaymentRailsDeskProps> = ({
                             mpesa: { ...prev.mpesa, accountName: e.target.value }
                           }))
                         }
-                        style={{ padding: '10px 14px', fontSize: '13px' }}
+                        style={{ padding: '10px 14px', fontSize: '13px', width: '100%', boxSizing: 'border-box' }}
                       />
                     </div>
                   </div>
@@ -538,17 +512,7 @@ export const AgentPaymentRailsDesk: React.FC<AgentPaymentRailsDeskProps> = ({
 
                 <button
                   type="submit"
-                  className="sonic-btn-gold"
-                  style={{
-                    width: 'auto',
-                    minWidth: '240px',
-                    padding: '13px 28px',
-                    fontSize: '13px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px'
-                  }}
+                  className="sonic-btn-gold sonic-payment-rails-save-btn"
                   disabled={isSavingAccounts || isLoadingAccounts}
                 >
                   {isSavingAccounts ? (
@@ -575,10 +539,12 @@ export const AgentPaymentRailsDesk: React.FC<AgentPaymentRailsDeskProps> = ({
           background: '#ffffff',
           borderRadius: '16px',
           border: '1px solid #e2e8f0',
-          padding: '20px',
+          padding: '16px 14px',
           display: 'flex',
           alignItems: 'flex-start',
-          gap: '16px'
+          gap: '14px',
+          boxSizing: 'border-box',
+          width: '100%'
         }}
       >
         <div
