@@ -1106,6 +1106,8 @@ class BingoGameEngine {
 
       io.emit('stake_rooms_summary', this.getStakeRoomsSummary());
 
+      const isPreBuy = false;
+
       return {
         success: true,
         preBoughtForNextRound: isPreBuy,
