@@ -45,7 +45,7 @@ ensureWithdrawalColumns().catch(() => {});
 
 const JWT_SECRET = process.env.JWT_SECRET || 'sonic_bingo_super_secret_production_key_2026_et';
 const WITHDRAWAL_ADMIN_PIN = process.env.WITHDRAWAL_ADMIN_PIN || '5678';
-const SUPER_ADMIN_PIN = process.env.ADMIN_PIN || process.env.ADMIN_PASSWORD || 'sonic@2026!';
+const SUPER_ADMIN_PIN = process.env.ADMIN_PIN || '1234';
 
 export interface WithdrawalAdminUser {
   role: 'withdrawal_admin' | 'admin';

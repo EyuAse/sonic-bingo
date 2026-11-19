@@ -3,38 +3,49 @@ import { useAdmin } from '../../context/AdminContext.tsx';
 import { useApp } from '../../context/AppContext.tsx';
 
 export const AdminPINModal: React.FC = () => {
-  const { loginAdmin } = useAdmin();
+  const { loginAdmin, brandName } = useAdmin();
   const { switchPage, showToast } = useApp();
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
+
+  const handleKeyPress = (num: string) => {
+    if (pin.length < 6) {
+      const newPin = pin + num;
+      setPin(newPin);
+      setError(false);
+      if (newPin.length === 4) {
+        // Auto-check on 4 digits
+        if (loginAdmin(newPin)) {
+          showToast('🔓 Admin Portal Unlocked');
+        } else {
+          setError(true);
+        }
+      }
+    }
+  };
+
+  const handleBackspace = () => {
+    setPin(prev => prev.slice(0, -1));
+    setError(false);
+  };
+
+  const handleClear = () => {
+    setPin('');
+    setError(false);
+  };
 
   const handleBackToGame = () => {
     window.location.hash = '';
     switchPage('games');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!password.trim() || isLoading) return;
-
-    setIsLoading(true);
-    setError(false);
-
-    try {
-      const success = await loginAdmin(password.trim());
-      if (success) {
-        showToast('🔓 Admin Portal Unlocked');
-      } else {
-        setError(true);
-        showToast('❌ Incorrect Admin Password');
-      }
-    } catch {
+    if (loginAdmin(pin)) {
+      showToast('🔓 Admin Portal Unlocked');
+    } else {
       setError(true);
-      showToast('❌ Login Failed');
-    } finally {
-      setIsLoading(false);
+      showToast('❌ Incorrect PIN');
     }
   };
 
@@ -51,67 +62,59 @@ export const AdminPINModal: React.FC = () => {
           <span className="pin-portal-badge">PRIVATE ADMIN PORTAL</span>
         </div>
 
-        <p className="pin-prompt">Enter Security Master Password to access system controls</p>
+        <p className="pin-prompt">Enter Security Master PIN to access system controls</p>
 
-        <form onSubmit={handleSubmit} className="admin-password-form">
-          <div className="admin-password-input-wrapper">
-            <i className="fa-solid fa-lock admin-password-input-icon"></i>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              className={`admin-password-input ${error ? 'input-error shake-error' : ''}`}
-              placeholder="Enter Admin Password..."
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setError(false);
-              }}
-              autoFocus
-              autoComplete="current-password"
-            />
+        {/* PIN Indicators */}
+        <div className={`pin-dots-row ${error ? 'shake-error' : ''}`}>
+          {[0, 1, 2, 3].map(idx => (
+            <div
+              key={idx}
+              className={`pin-dot ${idx < pin.length ? 'filled' : ''} ${error ? 'dot-error' : ''}`}
+            ></div>
+          ))}
+        </div>
+
+        {error && <p className="pin-error-text">⚠️ Invalid Admin PIN. Try default: 1234</p>}
+
+        {/* Numeric Keypad */}
+        <div className="pin-keypad">
+          {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(digit => (
             <button
+              key={digit}
               type="button"
-              className="admin-password-toggle-btn"
-              onClick={() => setShowPassword(!showPassword)}
-              title={showPassword ? 'Hide password' : 'Show password'}
-              tabIndex={-1}
+              className="pin-key-btn"
+              onClick={() => handleKeyPress(digit)}
             >
-              <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+              {digit}
             </button>
-          </div>
+          ))}
+          <button type="button" className="pin-key-btn key-action" onClick={handleClear}>
+            C
+          </button>
+          <button type="button" className="pin-key-btn" onClick={() => handleKeyPress('0')}>
+            0
+          </button>
+          <button type="button" className="pin-key-btn key-action" onClick={handleBackspace}>
+            <i className="fa-solid fa-delete-left"></i>
+          </button>
+        </div>
 
-          {error && (
-            <p className="pin-error-text">⚠️ Invalid Admin Password. Access Denied.</p>
-          )}
-
-          <div className="pin-actions-row">
-            <button
-              type="button"
-              className="btn-pin-cancel"
-              onClick={handleBackToGame}
-              disabled={isLoading}
-            >
-              <i className="fa-solid fa-arrow-left"></i> Exit to Games
-            </button>
-            <button
-              type="submit"
-              className="btn-pin-unlock"
-              disabled={!password.trim() || isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <i className="fa-solid fa-circle-notch fa-spin"></i> Verifying...
-                </>
-              ) : (
-                <>
-                  <i className="fa-solid fa-lock-open"></i> Unlock Portal
-                </>
-              )}
-            </button>
-          </div>
-        </form>
+        <div className="pin-actions-row">
+          <button type="button" className="btn-pin-cancel" onClick={handleBackToGame}>
+            <i className="fa-solid fa-arrow-left"></i> Exit to Games
+          </button>
+          <button
+            type="button"
+            className="btn-pin-unlock"
+            disabled={pin.length < 4}
+            onClick={handleSubmit}
+          >
+            <i className="fa-solid fa-lock-open"></i> Unlock
+          </button>
+        </div>
 
         <div className="pin-footer-hint">
-          <span>Protected by Sonic Bingo Enterprise V3 Security</span>
+          <span>Protected by Sonic Bingo Engine V3 Security</span>
         </div>
       </div>
     </div>

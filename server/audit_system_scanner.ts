@@ -107,7 +107,7 @@ async function runComprehensiveAudit() {
       const adminLoginRes = await fetch('http://localhost:5000/api/auth/admin-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: process.env.ADMIN_PIN || 'sonic@2026!' })
+        body: JSON.stringify({ pin: '1234' })
       });
       const adminData = await adminLoginRes.json();
 

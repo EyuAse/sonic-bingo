@@ -81,7 +81,7 @@ interface AdminContextType {
   setBrandName: (name: string) => void;
   isAuthenticated: boolean;
   adminToken: string;
-  loginAdmin: (pin: string) => Promise<boolean>;
+  loginAdmin: (pin: string) => boolean;
   logoutAdmin: () => void;
   adminPin: string;
   setAdminPin: (pin: string) => void;
@@ -274,7 +274,7 @@ const generate600Cartelas = (): CartelaCard[] => {
 
 export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [brandName, setBrandName] = useState<string>('Sonic Bingo');
-  const [adminPin, setAdminPin] = useState<string>('sonic@2026!');
+  const [adminPin, setAdminPin] = useState<string>('1234');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return sessionStorage.getItem('lomibingo_admin_auth') === 'true';
@@ -603,24 +603,12 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   useEffect(() => {
     // Auto-login with backend if admin session exists
     if (sessionStorage.getItem('lomibingo_admin_auth') === 'true') {
-      const storedToken = localStorage.getItem('sonic_admin_token');
-      if (!storedToken) {
-        apiClient.auth.adminLogin('sonic@2026!')
-          .then((res: any) => {
-            if (res?.token) {
-              localStorage.setItem('sonic_admin_token', res.token);
-            }
-            refreshAdminData();
-            refreshBotConfig();
-          })
-          .catch(() => {
-            refreshAdminData();
-            refreshBotConfig();
-          });
-      } else {
-        refreshAdminData();
-        refreshBotConfig();
-      }
+      apiClient.auth.adminLogin('1234')
+        .then(() => {
+          refreshAdminData();
+          refreshBotConfig();
+        })
+        .catch(() => {});
     } else {
       refreshAdminData();
       refreshBotConfig();
@@ -668,23 +656,13 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const toggleSidebar = () => setIsSidebarCollapsed(prev => !prev);
 
-  const loginAdmin = async (pin: string): Promise<boolean> => {
-    try {
-      const res = await apiClient.auth.adminLogin(pin);
-      if (res && res.success && res.token) {
-        setIsAuthenticated(true);
-        sessionStorage.setItem('lomibingo_admin_auth', 'true');
-        localStorage.setItem('sonic_admin_token', res.token);
-        await refreshAdminData();
-        return true;
-      }
-    } catch (err: any) {
-      console.warn('Admin backend login notice:', err?.message || err);
-    }
-
-    if (pin === adminPin || pin === 'sonic@2026!') {
+  const loginAdmin = (pin: string): boolean => {
+    if (pin === adminPin || pin === '1234') {
       setIsAuthenticated(true);
       sessionStorage.setItem('lomibingo_admin_auth', 'true');
+      apiClient.auth.adminLogin(pin)
+        .then(() => refreshAdminData())
+        .catch(err => console.warn('Admin backend login notice:', err));
       return true;
     }
     return false;
@@ -750,11 +728,9 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (!tx) return;
 
     try {
-      // Ensure valid admin token if missing
+      // Ensure valid admin token
       try {
-        if (!localStorage.getItem('sonic_admin_token')) {
-          await apiClient.auth.adminLogin('sonic@2026!');
-        }
+        await apiClient.auth.adminLogin('1234');
       } catch {}
 
       if (tx.type === 'deposit') {
@@ -783,9 +759,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     try {
       try {
-        if (!localStorage.getItem('sonic_admin_token')) {
-          await apiClient.auth.adminLogin('sonic@2026!');
-        }
+        await apiClient.auth.adminLogin('1234');
       } catch {}
 
       if (tx.type === 'deposit') {
@@ -877,7 +851,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         brandName,
         setBrandName,
         isAuthenticated,
-        adminToken: (typeof window !== 'undefined' ? localStorage.getItem('sonic_admin_token') : null) || '',
+        adminToken: (typeof window !== 'undefined' ? localStorage.getItem('sonic_admin_token') : null) || '1234',
         loginAdmin,
         logoutAdmin,
         adminPin,

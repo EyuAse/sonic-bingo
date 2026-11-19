@@ -57,7 +57,7 @@ const envVars = [
   },
   {
     key: 'ADMIN_PIN',
-    value: 'sonic@2026!'
+    value: '1234'
   },
   {
     key: 'JWT_SECRET',
