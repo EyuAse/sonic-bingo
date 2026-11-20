@@ -886,10 +886,10 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
             </div>
             <div>
               <h2 style={{ fontSize: '17px', fontWeight: 900, color: '#0f172a', margin: 0 }}>
-                የሞባይል መተግበሪያ (PWA) • Mobile App Terminal
+                Mobile App Terminal (PWA)
               </h2>
               <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                ለፈጣን ካሽየር እና ሪቻርጅ አገልግሎት መተግበሪያውን ወደ ስልክዎ መነሻ ስክሪን ይጫኑ
+                Install the terminal app to your home screen for rapid cashier and recharge operations.
               </div>
             </div>
           </div>
@@ -912,7 +912,7 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
                 }}
               >
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }} />
-                ተጭኗል (Installed & Standalone Active)
+                Installed (Standalone Terminal Active)
               </span>
             ) : (
               <span
@@ -930,7 +930,7 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
                 }}
               >
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f59e0b' }} />
-                አልተጫነም (Running in Web Browser)
+                Web Browser Mode (Not Installed)
               </span>
             )}
           </div>
@@ -954,11 +954,11 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
           <div style={{ flex: 1, minWidth: '240px', fontSize: '13px', color: '#475569', lineHeight: 1.45 }}>
             {isStandalone ? (
               <span>
-                🎉 መተግበሪያው በስልክዎ መነሻ ስክሪን ላይ በሚገባ ተጭኗል። ያለ ብሮውዘር ባር በቀጥታ በሙሉ ስክሪን እየሰሩ ይገኛሉ።
+                🎉 Terminal is installed on your device. You are operating directly in full-screen mode without browser bars.
               </span>
             ) : (
               <span>
-                💡 መተግበሪያውን ወደ ስልክዎ በመጫን ያለ ብሮውዘር አድራሻ ባር ልክ እንደ ኔቲቭ አፕ በቀጥታ መጠቀም ይችላሉ።
+                💡 Install the application to your home screen to operate full-screen just like a native app without browser bars.
               </span>
             )}
           </div>
@@ -980,7 +980,7 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
                 }}
               >
                 <i className="fa-solid fa-spinner fa-spin" style={{ color: '#d97706' }}></i>
-                <span>በመጫን ላይ ነው...</span>
+                <span>Installing...</span>
               </div>
             ) : isStandalone ? (
               <button
@@ -1001,7 +1001,7 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
                   boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)'
                 }}
               >
-                <span>🚀 ሪፍሬሽ አድርግ / Refresh App</span>
+                <span>🚀 Refresh Terminal</span>
               </button>
             ) : (
               <button
@@ -1024,7 +1024,7 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
                 }}
               >
                 <i className="fa-solid fa-mobile-screen-button" style={{ color: '#fef08a' }}></i>
-                <span>📱 መተግበሪያውን ጫን / Install App</span>
+                <span>📱 Install App Terminal</span>
               </button>
             )}
 
@@ -1045,7 +1045,7 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
                 gap: '6px'
               }}
             >
-              <span>{showManualGuide ? 'መመሪያውን ደብቅ' : 'የመጫኛ መመሪያ ℹ️'}</span>
+              <span>{showManualGuide ? 'Hide Guide' : 'Installation Guide ℹ️'}</span>
             </button>
           </div>
         </div>
@@ -1066,16 +1066,16 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
             }}
           >
             <div style={{ fontWeight: 800, fontSize: '13px', color: '#92400e' }}>
-              💡 በስልክዎ መጫን ካልቻሉ የሚከተሉትን 3 ቀላል እርምጃዎች ይከተሉ:
+              💡 If automatic installation does not prompt, follow these 3 quick steps:
             </div>
             <div>
-              <strong>🌐 Chrome (Android):</strong> ከላይ በቀኝ የሚገኘውን ሶስት ነጥብ <strong>(⋮)</strong> ይጫኑ ➔ <strong>'Install app'</strong> ወይም <strong>'Add to Home screen'</strong> የሚለውን ይምረጡ።
+              <strong>🌐 Chrome (Android):</strong> Tap the 3 dots <strong>(⋮)</strong> in the top-right ➔ select <strong>'Install app'</strong> or <strong>'Add to Home screen'</strong>.
             </div>
             <div>
-              <strong>🍏 Safari (iPhone):</strong> ከታች የሚገኘውን የ <strong>Share (⎋)</strong> ምልክት ይጫኑ ➔ ወደ ታች ዝቅ ብለው <strong>'Add to Home Screen' (➕)</strong> ይምረጡ ➔ ከላይ በቀኝ <strong>'Add'</strong> ይጫኑ።
+              <strong>🍏 Safari (iPhone):</strong> Tap the <strong>Share (⎋)</strong> icon at the bottom ➔ scroll down and select <strong>'Add to Home Screen' (➕)</strong> ➔ tap <strong>'Add'</strong> in the top-right.
             </div>
             <div>
-              <strong>📱 Samsung Internet:</strong> ከታች የሚገኘውን ሜኑ <strong>(☰)</strong> ይጫኑ ➔ <strong>'+ Add page to'</strong> ➔ <strong>'Home screen'</strong> ይምረጡ።
+              <strong>📱 Samsung Internet:</strong> Tap the menu <strong>(☰)</strong> at the bottom ➔ select <strong>'+ Add page to'</strong> ➔ tap <strong>'Home screen'</strong>.
             </div>
           </div>
         )}
@@ -1086,79 +1086,6 @@ export const AgentProfileDesk: React.FC<AgentProfileDeskProps> = ({
 
       {/* PWA Success Completion Modal */}
       <PWASuccessModal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} onOpenApp={openApp} />
-
-      {/* ====================================================================
-          4. OPERATIONAL STANDARDS & COMPLIANCE BANNER
-          ==================================================================== */}
-      <div
-        className="sonic-white-card"
-        style={{
-          background: '#f8fafc',
-          border: '1px solid #e2e8f0',
-          borderRadius: '20px',
-          padding: '24px 28px'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px' }}>
-
-          {/* Rules List */}
-          <div style={{ flex: 1, minWidth: '300px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-              <span style={{ fontSize: '18px' }}>🛡️</span>
-              <h2 style={{ fontSize: '15px', fontWeight: 900, color: '#0f172a', margin: 0 }}>
-                Sonic Bingo Agency Compliance & Operational Rules
-              </h2>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#475569', lineHeight: 1.5 }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                <span style={{ fontWeight: 900, color: '#0284c7' }}>1.</span>
-                <span>
-                  <strong>SMS & Cash Verification First:</strong> Always verify incoming Telebirr/CBE SMS or receive physical cash in hand before executing player cash-in.
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                <span style={{ fontWeight: 900, color: '#059669' }}>2.</span>
-                <span>
-                  <strong>Authoritative Voucher Code Settlement:</strong> Only disburse cash after verifying the 8-character withdrawal voucher code in your terminal.
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                <span style={{ fontWeight: 900, color: '#d97706' }}>3.</span>
-                <span>
-                  <strong>Peak Liquidity Buffer:</strong> Maintain at least 1,000 ETB float during peak hours (03:00 PM – 11:00 PM EAT) to prevent transaction pauses.
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Support Desk Action Button */}
-          <div>
-            <a
-              href="https://t.me/SonicSupport"
-              target="_blank"
-              rel="noreferrer"
-              style={{
-                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                color: '#ffffff',
-                padding: '12px 22px',
-                borderRadius: '12px',
-                fontSize: '13px',
-                fontWeight: 800,
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <i className="fa-brands fa-telegram" style={{ fontSize: '16px' }}></i>
-              <span>Contact Admin Desk</span>
-            </a>
-          </div>
-        </div>
-      </div>
 
     </div>
   );
