@@ -277,7 +277,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [adminPin, setAdminPin] = useState<string>('1234');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return sessionStorage.getItem('lomibingo_admin_auth') === 'true';
+    return sessionStorage.getItem('sonic_admin_auth') === 'true' || sessionStorage.getItem('lomibingo_admin_auth') === 'true';
   });
 
   // 20% System Lock (House Commission) Default
@@ -602,7 +602,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   useEffect(() => {
     // Auto-login with backend if admin session exists
-    if (sessionStorage.getItem('lomibingo_admin_auth') === 'true') {
+    if (sessionStorage.getItem('sonic_admin_auth') === 'true' || sessionStorage.getItem('lomibingo_admin_auth') === 'true') {
       apiClient.auth.adminLogin('1234')
         .then(() => {
           refreshAdminData();
@@ -659,6 +659,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const loginAdmin = (pin: string): boolean => {
     if (pin === adminPin || pin === '1234') {
       setIsAuthenticated(true);
+      sessionStorage.setItem('sonic_admin_auth', 'true');
       sessionStorage.setItem('lomibingo_admin_auth', 'true');
       apiClient.auth.adminLogin(pin)
         .then(() => refreshAdminData())
@@ -670,6 +671,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const logoutAdmin = () => {
     setIsAuthenticated(false);
+    sessionStorage.removeItem('sonic_admin_auth');
     sessionStorage.removeItem('lomibingo_admin_auth');
     localStorage.removeItem('sonic_admin_token');
   };

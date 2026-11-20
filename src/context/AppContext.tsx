@@ -31,25 +31,37 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentPage, setCurrentPage] = useState<PageId>(() => {
     if (typeof window !== 'undefined') {
-      const hash = (window.location.hash || '').toLowerCase();
+      const rawHash = (window.location.hash || '').toLowerCase();
       const path = (window.location.pathname || '').toLowerCase();
+      const search = (window.location.search || '').toLowerCase();
       const savedPortal = localStorage.getItem('sonic_active_portal');
 
-      // 1. Explicit Hash/Path routing ALWAYS has highest priority!
-      if (hash.includes('agent') || path.includes('agent')) {
-        return 'agent';
-      }
-      if (hash.includes('withdrawals') || path.includes('withdrawals')) {
-        return 'withdrawals';
-      }
-      if (
-        hash.includes('lomibingo-admin-vbingo') ||
-        hash.includes('admin') ||
-        path.includes('lomibingo-admin-vbingo') ||
-        path.includes('admin')
-      ) {
-        return 'admin';
-      }
+      // Detect if running inside Telegram Mini App
+      const isTelegram =
+        search.includes('tg_id') ||
+        search.includes('tgwebappdata') ||
+        rawHash.includes('tgwebappdata') ||
+        !!(window as any)?.Telegram?.WebApp?.initData;
+
+      // Extract explicit routing hash (disregard Telegram authentication hash)
+      const isTgDataHash = rawHash.startsWith('#tgwebappdata');
+      const routeHash = isTgDataHash ? '' : rawHash;
+
+      // 1. Strict route-prefix matching (NEVER use loose .includes() which catches Telegram user names!)
+      const isAgentRoute =
+        routeHash.startsWith('#/agent') ||
+        path.startsWith('/agent');
+
+      const isWithdrawalsRoute =
+        routeHash.startsWith('#/withdrawals') ||
+        path.startsWith('/withdrawals');
+
+      const isAdminRoute =
+        routeHash.startsWith('#/sonic-admin') ||
+        routeHash === '#/admin' ||
+        routeHash.startsWith('#/lomibingo-admin-vbingo') ||
+        path === '/sonic-admin' ||
+        path === '/admin';
 
       // 2. Standalone PWA launch guard
       // If launched from installed PWA home screen icon, lock directly to 'agent'
@@ -58,15 +70,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         (window.navigator as any).standalone === true ||
         document.referrer.includes('android-app://');
 
-      if (isStandalone && (savedPortal === 'agent' || !hash || hash === '#' || hash === '#/')) {
+      if (isAgentRoute) {
+        return 'agent';
+      }
+      if (isWithdrawalsRoute) {
+        return 'withdrawals';
+      }
+      if (isAdminRoute && !isTelegram) {
+        return 'admin';
+      }
+
+      if (isStandalone && (savedPortal === 'agent' || !routeHash || routeHash === '#' || routeHash === '#/')) {
         return 'agent';
       }
 
-      // 3. Saved portal fallback ONLY when URL has no explicit routing hash
-      if (!hash || hash === '#' || hash === '#/') {
+      // 3. Telegram users ALWAYS start at player arena (landing / games)
+      if (isTelegram) {
+        localStorage.removeItem('sonic_active_portal');
+        return 'landing';
+      }
+
+      // 4. Saved portal fallback ONLY when URL has no explicit routing hash (Admin is NEVER a bare fallback!)
+      if (!routeHash || routeHash === '#' || routeHash === '#/') {
         if (savedPortal === 'agent') return 'agent';
         if (savedPortal === 'withdrawals') return 'withdrawals';
-        if (savedPortal === 'admin') return 'admin';
       }
     }
     return 'landing';
@@ -77,21 +104,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // URL Hash routing listener for private routes
   React.useEffect(() => {
     const handleHashChange = () => {
-      const hash = (window.location.hash || '').toLowerCase();
+      const rawHash = (window.location.hash || '').toLowerCase();
       const path = (window.location.pathname || '').toLowerCase();
 
+      // Disregard Telegram WebApp authentication hash
+      if (rawHash.startsWith('#tgwebappdata')) return;
+
       // 1. Explicit Hash/Path routing ALWAYS has highest priority!
-      if (hash.includes('agent') || path.includes('agent')) {
+      if (rawHash.startsWith('#/agent') || path.startsWith('/agent')) {
         setCurrentPage('agent');
         localStorage.setItem('sonic_active_portal', 'agent');
-      } else if (hash.includes('withdrawals') || path.includes('withdrawals')) {
+      } else if (rawHash.startsWith('#/withdrawals') || path.startsWith('/withdrawals')) {
         setCurrentPage('withdrawals');
         localStorage.setItem('sonic_active_portal', 'withdrawals');
       } else if (
-        hash.includes('lomibingo-admin-vbingo') ||
-        hash.includes('admin') ||
-        path.includes('lomibingo-admin-vbingo') ||
-        path.includes('admin')
+        rawHash.startsWith('#/sonic-admin') ||
+        rawHash === '#/admin' ||
+        rawHash.startsWith('#/lomibingo-admin-vbingo') ||
+        path === '/sonic-admin' ||
+        path === '/admin'
       ) {
         setCurrentPage('admin');
         localStorage.setItem('sonic_active_portal', 'admin');
@@ -104,7 +135,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const switchPage = (page: PageId) => {
     setCurrentPage(page);
     if (page === 'admin') {
-      window.location.hash = '/lomibingo-Admin-vBingo';
+      window.location.hash = '/sonic-admin';
       localStorage.setItem('sonic_active_portal', 'admin');
     } else if (page === 'withdrawals') {
       window.location.hash = '/withdrawals';

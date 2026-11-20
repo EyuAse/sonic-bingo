@@ -42,18 +42,34 @@ export const App: React.FC = () => {
   // Seamless routing: If user is authenticated in Telegram, jump straight into games!
   useEffect(() => {
     if (isAuthenticated && (currentPage === 'landing' || currentPage === 'login' || currentPage === 'signup')) {
-      const isAgentHash = typeof window !== 'undefined' && (
-        (window.location.hash || '').toLowerCase().includes('agent') ||
-        (window.location.pathname || '').toLowerCase().includes('agent') ||
-        localStorage.getItem('sonic_active_portal') === 'agent'
+      const rawHash = typeof window !== 'undefined' ? (window.location.hash || '').toLowerCase() : '';
+      const routeHash = rawHash.startsWith('#tgwebappdata') ? '' : rawHash;
+      const isAgentRoute = typeof window !== 'undefined' && (
+        routeHash.startsWith('#/agent') ||
+        window.location.pathname.toLowerCase().startsWith('/agent') ||
+        (localStorage.getItem('sonic_active_portal') === 'agent' && !rawHash.startsWith('#tgwebappdata'))
       );
-      if (isAgentHash) {
+      if (isAgentRoute) {
         switchPage('agent');
         return;
       }
       switchPage('games');
     }
   }, [isAuthenticated, currentPage, switchPage]);
+
+  // Telegram Safety Guard: Never trap Telegram players on the Admin PIN Modal
+  useEffect(() => {
+    const isTg = typeof window !== 'undefined' && (
+      window.location.search.includes('tg_id') ||
+      window.location.search.includes('tgWebAppData') ||
+      (window.location.hash || '').includes('tgWebAppData') ||
+      !!(window as any)?.Telegram?.WebApp?.initData
+    );
+
+    if (isTg && currentPage === 'admin') {
+      switchPage('games');
+    }
+  }, [currentPage, switchPage]);
 
   // Evict to landing page immediately if concurrent session alert is triggered or unauthenticated on protected page
   useEffect(() => {
