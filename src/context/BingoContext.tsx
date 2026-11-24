@@ -18,6 +18,7 @@ import { useAuth } from './AuthContext.tsx';
 import { useApp } from './AppContext.tsx';
 import { useAdmin } from './AdminContext.tsx';
 import { useLanguage } from './LanguageContext.tsx';
+import { resolveMappedCardId } from '../../shared/cartelaDeckShuffle.ts';
 
 export interface BingoCell {
   index: number;
@@ -81,6 +82,7 @@ interface BingoContextType {
   stakeRoomsSummary: Record<number, number>;
 
   // 600 Cartelas Pool & Selection
+  cardShuffleSeed: number;
   selectedCartelaIds: number[];
   setSelectedCartelaIds: (ids: number[]) => void;
   hasSelectedCartelas: boolean;
@@ -159,9 +161,10 @@ interface BingoContextType {
 
 const BingoContext = createContext<BingoContextType | undefined>(undefined);
 
-// Generate 75-Ball 5x5 Matrix from Cartela ID (deterministic)
-export const generateCardFromId = (cartelaId: number): BingoCell[] => {
-  let seed = cartelaId * 7919 + 1013;
+// Generate 75-Ball 5x5 Matrix from Cartela ID (mapped via active round shuffleSeed)
+export const generateCardFromId = (cartelaId: number, shuffleSeed: number = 0): BingoCell[] => {
+  const effectiveCardId = resolveMappedCardId(cartelaId, shuffleSeed);
+  let seed = effectiveCardId * 7919 + 1013;
   const pseudoRandom = () => {
     seed = (seed * 9301 + 49297) % 233280;
     return seed / 233280;
@@ -333,6 +336,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [hasPreBoughtNext, setHasPreBoughtNext] = useState<boolean>(false);
 
   // 600 Cartelas Pool Selection (User Assigned — starts unselected)
+  const [cardShuffleSeed, setCardShuffleSeed] = useState<number>(0);
   const [selectedCartelaIds, setSelectedCartelaIds] = useState<number[]>([]);
   const [isCartelaPickerOpen, setIsCartelaPickerOpen] = useState<boolean>(false);
   const [occupiedCartelaIds, setOccupiedCartelaIds] = useState<number[]>([]);
@@ -570,15 +574,15 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   }, []);
 
-  // Keep Cartelas synchronized when IDs change (safe when unselected)
+  // Keep Cartelas synchronized when IDs or round deck seed change (safe when unselected)
   useEffect(() => {
     if (roundPhase === 'lobby' || !hasTicket) {
-      setCartela1Data(selectedCartelaIds[0] ? generateCardFromId(selectedCartelaIds[0]) : []);
-      setCartela2Data(selectedCartelaIds[1] ? generateCardFromId(selectedCartelaIds[1]) : []);
-      setCartela3Data(selectedCartelaIds[2] ? generateCardFromId(selectedCartelaIds[2]) : []);
-      setCartela4Data(selectedCartelaIds[3] ? generateCardFromId(selectedCartelaIds[3]) : []);
+      setCartela1Data(selectedCartelaIds[0] ? generateCardFromId(selectedCartelaIds[0], cardShuffleSeed) : []);
+      setCartela2Data(selectedCartelaIds[1] ? generateCardFromId(selectedCartelaIds[1], cardShuffleSeed) : []);
+      setCartela3Data(selectedCartelaIds[2] ? generateCardFromId(selectedCartelaIds[2], cardShuffleSeed) : []);
+      setCartela4Data(selectedCartelaIds[3] ? generateCardFromId(selectedCartelaIds[3], cardShuffleSeed) : []);
     }
-  }, [selectedCartelaIds, roundPhase, hasTicket]);
+  }, [selectedCartelaIds, roundPhase, hasTicket, cardShuffleSeed]);
 
   // canWin detection
   useEffect(() => {
@@ -680,6 +684,9 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const selectedCartelaIdsRef = useRef(selectedCartelaIds);
   selectedCartelaIdsRef.current = selectedCartelaIds;
+
+  const cardShuffleSeedRef = useRef(cardShuffleSeed);
+  cardShuffleSeedRef.current = cardShuffleSeed;
 
   const addBalanceRef = useRef(addBalance);
   addBalanceRef.current = addBalance;
@@ -824,10 +831,10 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               saved.selectedCartelaIds[2] || selectedCartelaIds[2],
               saved.selectedCartelaIds[3] || selectedCartelaIds[3]
             ].filter(Boolean));
-            setCartela1Data(generateCardFromId(saved.selectedCartelaIds[0]));
-            if (saved.selectedCartelaIds[1]) setCartela2Data(generateCardFromId(saved.selectedCartelaIds[1]));
-            if (saved.selectedCartelaIds[2]) setCartela3Data(generateCardFromId(saved.selectedCartelaIds[2]));
-            if (saved.selectedCartelaIds[3]) setCartela4Data(generateCardFromId(saved.selectedCartelaIds[3]));
+            setCartela1Data(generateCardFromId(saved.selectedCartelaIds[0], cardShuffleSeedRef.current));
+            if (saved.selectedCartelaIds[1]) setCartela2Data(generateCardFromId(saved.selectedCartelaIds[1], cardShuffleSeedRef.current));
+            if (saved.selectedCartelaIds[2]) setCartela3Data(generateCardFromId(saved.selectedCartelaIds[2], cardShuffleSeedRef.current));
+            if (saved.selectedCartelaIds[3]) setCartela4Data(generateCardFromId(saved.selectedCartelaIds[3], cardShuffleSeedRef.current));
           }
           setHasTicket(true);
           setGameActive(true);
@@ -866,6 +873,11 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       // Room isolation guard: ignore broadcasts from other stake rooms
       if (state.roomId && state.roomId !== roomId) return;
 
+      if (typeof state.cardShuffleSeed === 'number' && state.cardShuffleSeed > 0) {
+        cardShuffleSeedRef.current = state.cardShuffleSeed;
+        setCardShuffleSeed(state.cardShuffleSeed);
+      }
+
       if (typeof state.roundNumber === 'number' && state.roundNumber !== roundNumberRef.current) {
         console.log(`🔄 [BingoContext] Round transition: #${roundNumberRef.current} -> #${state.roundNumber}`);
         setRoundNumber(state.roundNumber);
@@ -881,10 +893,10 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           setCartela4Data([]);
         } else {
           const currentIds = selectedCartelaIdsRef.current;
-          setCartela1Data(generateCardFromId(currentIds[0]));
-          setCartela2Data(generateCardFromId(currentIds[1]));
-          setCartela3Data(currentIds[2] ? generateCardFromId(currentIds[2]) : []);
-          setCartela4Data(currentIds[3] ? generateCardFromId(currentIds[3]) : []);
+          setCartela1Data(generateCardFromId(currentIds[0], cardShuffleSeedRef.current));
+          setCartela2Data(generateCardFromId(currentIds[1], cardShuffleSeedRef.current));
+          setCartela3Data(currentIds[2] ? generateCardFromId(currentIds[2], cardShuffleSeedRef.current) : []);
+          setCartela4Data(currentIds[3] ? generateCardFromId(currentIds[3], cardShuffleSeedRef.current) : []);
         }
       }
 
@@ -938,10 +950,10 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             setSelectedCartelaIds(remainingIds);
             selectedCartelaIdsRef.current = remainingIds;
 
-            setCartela1Data(remainingIds[0] ? generateCardFromId(remainingIds[0]) : []);
-            setCartela2Data(remainingIds[1] ? generateCardFromId(remainingIds[1]) : []);
-            setCartela3Data(remainingIds[2] ? generateCardFromId(remainingIds[2]) : []);
-            setCartela4Data(remainingIds[3] ? generateCardFromId(remainingIds[3]) : []);
+            setCartela1Data(remainingIds[0] ? generateCardFromId(remainingIds[0], cardShuffleSeedRef.current) : []);
+            setCartela2Data(remainingIds[1] ? generateCardFromId(remainingIds[1], cardShuffleSeedRef.current) : []);
+            setCartela3Data(remainingIds[2] ? generateCardFromId(remainingIds[2], cardShuffleSeedRef.current) : []);
+            setCartela4Data(remainingIds[3] ? generateCardFromId(remainingIds[3], cardShuffleSeedRef.current) : []);
 
             showToast(
               lang === 'am'
@@ -1120,10 +1132,10 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       } else {
         // Active player with bought ticket: generate fresh unmarked cards
         const currentIds = selectedCartelaIdsRef.current;
-        setCartela1Data(generateCardFromId(currentIds[0]));
-        setCartela2Data(generateCardFromId(currentIds[1]));
-        setCartela3Data(currentIds[2] ? generateCardFromId(currentIds[2]) : []);
-        setCartela4Data(currentIds[3] ? generateCardFromId(currentIds[3]) : []);
+        setCartela1Data(generateCardFromId(currentIds[0], cardShuffleSeedRef.current));
+        setCartela2Data(generateCardFromId(currentIds[1], cardShuffleSeedRef.current));
+        setCartela3Data(currentIds[2] ? generateCardFromId(currentIds[2], cardShuffleSeedRef.current) : []);
+        setCartela4Data(currentIds[3] ? generateCardFromId(currentIds[3], cardShuffleSeedRef.current) : []);
       }
     });
 
@@ -1342,6 +1354,11 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const applyRoomSnapshot = useCallback((data: any) => {
     if (!data || !data.success) return;
 
+    if (typeof data.cardShuffleSeed === 'number' && data.cardShuffleSeed > 0) {
+      cardShuffleSeedRef.current = data.cardShuffleSeed;
+      setCardShuffleSeed(data.cardShuffleSeed);
+    }
+
     if (typeof data.roundNumber === 'number' && data.roundNumber !== roundNumberRef.current) {
       setRoundNumber(data.roundNumber);
       clearManualMarks();
@@ -1355,10 +1372,10 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setCartela4Data([]);
       } else {
         const currentIds = selectedCartelaIdsRef.current;
-        if (currentIds[0]) setCartela1Data(generateCardFromId(currentIds[0]));
-        if (currentIds[1]) setCartela2Data(generateCardFromId(currentIds[1]));
-        if (currentIds[2]) setCartela3Data(generateCardFromId(currentIds[2]));
-        if (currentIds[3]) setCartela4Data(generateCardFromId(currentIds[3]));
+        if (currentIds[0]) setCartela1Data(generateCardFromId(currentIds[0], cardShuffleSeedRef.current));
+        if (currentIds[1]) setCartela2Data(generateCardFromId(currentIds[1], cardShuffleSeedRef.current));
+        if (currentIds[2]) setCartela3Data(generateCardFromId(currentIds[2], cardShuffleSeedRef.current));
+        if (currentIds[3]) setCartela4Data(generateCardFromId(currentIds[3], cardShuffleSeedRef.current));
       }
     }
 
@@ -1427,10 +1444,10 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           setSelectedCartelaIds(remainingIds);
           selectedCartelaIdsRef.current = remainingIds;
 
-          setCartela1Data(remainingIds[0] ? generateCardFromId(remainingIds[0]) : []);
-          setCartela2Data(remainingIds[1] ? generateCardFromId(remainingIds[1]) : []);
-          setCartela3Data(remainingIds[2] ? generateCardFromId(remainingIds[2]) : []);
-          setCartela4Data(remainingIds[3] ? generateCardFromId(remainingIds[3]) : []);
+          setCartela1Data(remainingIds[0] ? generateCardFromId(remainingIds[0], cardShuffleSeedRef.current) : []);
+          setCartela2Data(remainingIds[1] ? generateCardFromId(remainingIds[1], cardShuffleSeedRef.current) : []);
+          setCartela3Data(remainingIds[2] ? generateCardFromId(remainingIds[2], cardShuffleSeedRef.current) : []);
+          setCartela4Data(remainingIds[3] ? generateCardFromId(remainingIds[3], cardShuffleSeedRef.current) : []);
 
           showToast(
             lang === 'am'
@@ -1660,10 +1677,10 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setSelectedCartelaIds(prev => {
       const updated = [...prev];
       updated[slotIdx] = clamped;
-      if (slotIdx === 0) setCartela1Data(generateCardFromId(clamped));
-      else if (slotIdx === 1) setCartela2Data(generateCardFromId(clamped));
-      else if (slotIdx === 2) setCartela3Data(generateCardFromId(clamped));
-      else if (slotIdx === 3) setCartela4Data(generateCardFromId(clamped));
+      if (slotIdx === 0) setCartela1Data(generateCardFromId(clamped, cardShuffleSeedRef.current));
+      else if (slotIdx === 1) setCartela2Data(generateCardFromId(clamped, cardShuffleSeedRef.current));
+      else if (slotIdx === 2) setCartela3Data(generateCardFromId(clamped, cardShuffleSeedRef.current));
+      else if (slotIdx === 3) setCartela4Data(generateCardFromId(clamped, cardShuffleSeedRef.current));
       return updated;
     });
     soundEngine.playPop();
@@ -1696,10 +1713,10 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
 
       // Sync data matrices
-      setCartela1Data(updated[0] ? generateCardFromId(updated[0]) : []);
-      setCartela2Data(updated[1] ? generateCardFromId(updated[1]) : []);
-      setCartela3Data(updated[2] ? generateCardFromId(updated[2]) : []);
-      setCartela4Data(updated[3] ? generateCardFromId(updated[3]) : []);
+      setCartela1Data(updated[0] ? generateCardFromId(updated[0], cardShuffleSeedRef.current) : []);
+      setCartela2Data(updated[1] ? generateCardFromId(updated[1], cardShuffleSeedRef.current) : []);
+      setCartela3Data(updated[2] ? generateCardFromId(updated[2], cardShuffleSeedRef.current) : []);
+      setCartela4Data(updated[3] ? generateCardFromId(updated[3], cardShuffleSeedRef.current) : []);
 
       return updated;
     });
@@ -1716,10 +1733,10 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
       next[cardIdx] = newId;
 
-      if (cardIdx === 0) setCartela1Data(generateCardFromId(newId));
-      else if (cardIdx === 1) setCartela2Data(generateCardFromId(newId));
-      else if (cardIdx === 2) setCartela3Data(generateCardFromId(newId));
-      else if (cardIdx === 3) setCartela4Data(generateCardFromId(newId));
+      if (cardIdx === 0) setCartela1Data(generateCardFromId(newId, cardShuffleSeedRef.current));
+      else if (cardIdx === 1) setCartela2Data(generateCardFromId(newId, cardShuffleSeedRef.current));
+      else if (cardIdx === 2) setCartela3Data(generateCardFromId(newId, cardShuffleSeedRef.current));
+      else if (cardIdx === 3) setCartela4Data(generateCardFromId(newId, cardShuffleSeedRef.current));
 
       return next;
     });
@@ -1745,10 +1762,10 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
 
     setSelectedCartelaIds(newIds);
-    setCartela1Data(newIds[0] ? generateCardFromId(newIds[0]) : []);
-    setCartela2Data(newIds[1] ? generateCardFromId(newIds[1]) : []);
-    setCartela3Data(newIds[2] ? generateCardFromId(newIds[2]) : []);
-    setCartela4Data(newIds[3] ? generateCardFromId(newIds[3]) : []);
+    setCartela1Data(newIds[0] ? generateCardFromId(newIds[0], cardShuffleSeedRef.current) : []);
+    setCartela2Data(newIds[1] ? generateCardFromId(newIds[1], cardShuffleSeedRef.current) : []);
+    setCartela3Data(newIds[2] ? generateCardFromId(newIds[2], cardShuffleSeedRef.current) : []);
+    setCartela4Data(newIds[3] ? generateCardFromId(newIds[3], cardShuffleSeedRef.current) : []);
 
     soundEngine.playPop();
     showToast(count >= 2 ? `🎲 Shuffled Cartelas (#${newIds.join(', #')})` : `🎲 Shuffled to Cartela #${newIds[0]}`);
@@ -1760,10 +1777,10 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setSelectedCartelaIds(prev => {
       const next = [...prev];
       next[cardIdx] = clamped;
-      if (cardIdx === 0) setCartela1Data(generateCardFromId(clamped));
-      else if (cardIdx === 1) setCartela2Data(generateCardFromId(clamped));
-      else if (cardIdx === 2) setCartela3Data(generateCardFromId(clamped));
-      else if (cardIdx === 3) setCartela4Data(generateCardFromId(clamped));
+      if (cardIdx === 0) setCartela1Data(generateCardFromId(clamped, cardShuffleSeedRef.current));
+      else if (cardIdx === 1) setCartela2Data(generateCardFromId(clamped, cardShuffleSeedRef.current));
+      else if (cardIdx === 2) setCartela3Data(generateCardFromId(clamped, cardShuffleSeedRef.current));
+      else if (cardIdx === 3) setCartela4Data(generateCardFromId(clamped, cardShuffleSeedRef.current));
       return next;
     });
     showToast(`🎟️ Selected Cartela #${clamped}`);
@@ -2167,6 +2184,7 @@ export const BingoProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         buyTicket,
         preBuyNextRound,
         stakeRoomsSummary,
+        cardShuffleSeed,
         selectedCartelaIds,
         setSelectedCartelaIds,
         hasSelectedCartelas,

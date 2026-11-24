@@ -1,7 +1,9 @@
+import crypto from 'crypto';
 import { io } from '../io.ts';
 import { query, withTransaction } from '../db.ts';
 import { telegramBotService } from '../services/telegramBotService.ts';
 import { coinService } from '../services/coinService.ts';
+import { findNonRepeatingNextShuffleSeed } from '../../shared/cartelaDeckShuffle.ts';
 import {
   type BingoCell,
   generateCardFromId,
@@ -75,6 +77,7 @@ export interface GameRoomState {
   winnerCountdown: number;
   currentRoundId: string | null;
   roundNumber: number;
+  cardShuffleSeed: number;
   drawnNumbers: number[];
   ballSequence: number[];
   currentCall: { num: number; col: string; index: number } | null;
@@ -358,6 +361,7 @@ class BingoGameEngine {
       winnerCountdown: 8,
       currentRoundId: null,
       roundNumber: 1,
+      cardShuffleSeed: findNonRepeatingNextShuffleSeed(0, () => crypto.randomInt(1, 2000000000)),
       drawnNumbers: [],
       ballSequence: [],
       currentCall: null,
@@ -929,7 +933,7 @@ class BingoGameEngine {
             const yieldedBot = room.opponentCards[conflictingBotIdx];
             console.log(`🤝 [Room 10 Standby Bot Yield] Bot "${yieldedBot.opponentName}" yielded Cartela #${reqId} to human player ${userName} and re-rolled to Cartela #${newBotCartelaId}`);
             yieldedBot.cartelaId = newBotCartelaId;
-            yieldedBot.cardMatrix = generateCardFromId(newBotCartelaId);
+            yieldedBot.cardMatrix = generateCardFromId(newBotCartelaId, room.cardShuffleSeed);
           }
         }
       }
@@ -1066,7 +1070,7 @@ class BingoGameEngine {
         userId,
         userName,
         cartelaId: id,
-        cardMatrix: generateCardFromId(id),
+        cardMatrix: generateCardFromId(id, room.cardShuffleSeed),
         betAmount: stakePerCard,
         socketId,
         isBonus: !this.isDepositedUser(userId),
@@ -1274,7 +1278,7 @@ class BingoGameEngine {
         room.opponentCards.push({
           botUserId: botProfile.id,
           cartelaId: botCartelaId,
-          cardMatrix: generateCardFromId(botCartelaId),
+          cardMatrix: generateCardFromId(botCartelaId, room.cardShuffleSeed),
           opponentName: botProfile.name,
           stakeAmount: room.stakeAmount,
           isHouseBot: i === 0
@@ -1307,7 +1311,7 @@ class BingoGameEngine {
           room.opponentCards.push({
             botUserId: botProfile.id,
             cartelaId: botCartelaId,
-            cardMatrix: generateCardFromId(botCartelaId),
+            cardMatrix: generateCardFromId(botCartelaId, room.cardShuffleSeed),
             opponentName: botProfile.name,
             stakeAmount: room.stakeAmount,
             isHouseBot: room.opponentCards.length === 0
@@ -1337,7 +1341,7 @@ class BingoGameEngine {
           }
           console.log(`🤝 [Room 10 Bot Auto-Yield] Bot "${bot.opponentName}" yielded colliding Cartela #${bot.cartelaId} -> new Cartela #${newBotCartelaId}`);
           bot.cartelaId = newBotCartelaId;
-          bot.cardMatrix = generateCardFromId(newBotCartelaId);
+          bot.cardMatrix = generateCardFromId(newBotCartelaId, room.cardShuffleSeed);
         }
       }
     }
@@ -1408,7 +1412,7 @@ class BingoGameEngine {
             room.opponentCards.push({
               botUserId: b.id,
               cartelaId: botCartelaId,
-              cardMatrix: generateCardFromId(botCartelaId),
+              cardMatrix: generateCardFromId(botCartelaId, room.cardShuffleSeed),
               opponentName: b.name,
               stakeAmount: room.stakeAmount,
               isHouseBot: i === 0
@@ -1426,10 +1430,11 @@ class BingoGameEngine {
       if (room.nextRoundTickets && room.nextRoundTickets.size > 0) {
         room.tickets = new Map(room.nextRoundTickets);
         for (const [uid, tList] of room.tickets.entries()) {
-          if (this.playerModes.has(uid)) {
-            const m = this.playerModes.get(uid)!;
-            tList.forEach(t => { t.isAutoPlay = m; });
-          }
+          const m = this.playerModes.has(uid) ? this.playerModes.get(uid)! : undefined;
+          tList.forEach(t => {
+            if (typeof m === 'boolean') t.isAutoPlay = m;
+            t.cardMatrix = generateCardFromId(t.cartelaId, room.cardShuffleSeed);
+          });
         }
         room.nextRoundTickets.clear();
         console.log(`🎟️ [Lobby ${room.id}] Activated pre-bought tickets for ${room.tickets.size} users for Round #${room.roundNumber}`);
@@ -1566,7 +1571,7 @@ class BingoGameEngine {
             room10.opponentCards.push({
               botUserId: nextBot.id,
               cartelaId: botCartelaId,
-              cardMatrix: generateCardFromId(botCartelaId),
+              cardMatrix: generateCardFromId(botCartelaId, room10.cardShuffleSeed),
               opponentName: nextBot.name,
               stakeAmount: room10.stakeAmount,
               isHouseBot: false
@@ -1674,7 +1679,7 @@ class BingoGameEngine {
               room.opponentCards.push({
                 botUserId: botProfile.id,
                 cartelaId: botCartelaId,
-                cardMatrix: generateCardFromId(botCartelaId),
+                cardMatrix: generateCardFromId(botCartelaId, room.cardShuffleSeed),
                 opponentName: botProfile.name,
                 stakeAmount: room.stakeAmount,
                 isHouseBot: i === 0
@@ -3651,6 +3656,7 @@ class BingoGameEngine {
           const room = this.rooms.get(roomId);
           if (!room) continue;
           room.roundNumber += 1;
+          room.cardShuffleSeed = findNonRepeatingNextShuffleSeed(room.cardShuffleSeed, () => crypto.randomInt(1, 2000000000));
           room.tickets.clear();
         }
         this.startMasterLobbyTimer();
@@ -3695,6 +3701,14 @@ class BingoGameEngine {
       r.drawnNumbers = [];
       r.currentCall = null;
       r.winResult = null;
+      r.cardShuffleSeed = findNonRepeatingNextShuffleSeed(r.cardShuffleSeed, () => crypto.randomInt(1, 2000000000));
+    } else {
+      for (const rId of STAKE_ROOM_IDS) {
+        const rm = this.rooms.get(rId);
+        if (rm) {
+          rm.cardShuffleSeed = findNonRepeatingNextShuffleSeed(rm.cardShuffleSeed, () => crypto.randomInt(1, 2000000000));
+        }
+      }
     }
     this.startMasterLobbyTimer();
     console.log(`🔄 [GameEngine] Force reset rooms to synchronized lobby`);
@@ -3716,6 +3730,7 @@ class BingoGameEngine {
       phase: room.phase,
       mode: room.mode || (room.tickets.size >= 2 ? 'active' : 'spectating'),
       roundNumber: room.roundNumber,
+      cardShuffleSeed: room.cardShuffleSeed,
       lobbyCountdown: room.lobbyCountdown,
       winnerCountdown: room.winnerCountdown,
       playersCount: this.getRoomPlayersCount(room),

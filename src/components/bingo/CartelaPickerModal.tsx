@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useBingo, generateCardFromId } from '../../context/BingoContext.tsx';
 import { useApp } from '../../context/AppContext.tsx';
 import { useLanguage } from '../../context/LanguageContext.tsx';
@@ -20,6 +20,7 @@ export const CartelaPickerModal: React.FC = () => {
     selectedCartelaIds,
     toggleCartelaSelection,
     occupiedCartelaIds,
+    cardShuffleSeed,
     cardQuantity,
     betAmount,
     buyTicket,
@@ -33,6 +34,11 @@ export const CartelaPickerModal: React.FC = () => {
   const [previewCartelaId, setPreviewCartelaId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  // Reset inspected preview board whenever round deck shuffles
+  useEffect(() => {
+    setPreviewCartelaId(null);
+  }, [cardShuffleSeed]);
+
   const activeRange = CARD_RANGES[activeRangeIdx] || CARD_RANGES[0];
 
   // Active selected cartelas according to cardQuantity
@@ -43,8 +49,8 @@ export const CartelaPickerModal: React.FC = () => {
   // Preview cells for inspected cartela (defaults to first selected)
   const currentPreviewId = previewCartelaId || activeSelected[0] || 1;
   const previewCells = useMemo(() => {
-    return generateCardFromId(currentPreviewId);
-  }, [currentPreviewId]);
+    return generateCardFromId(currentPreviewId, cardShuffleSeed);
+  }, [currentPreviewId, cardShuffleSeed]);
 
   if (!isCartelaPickerOpen) return null;
 

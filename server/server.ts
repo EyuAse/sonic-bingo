@@ -228,6 +228,7 @@ app.get('/api/rooms/:id/sync', (req, res) => {
     phase: room.phase,
     mode: room.mode || (gameEngine.getRealCartelaCount(room) >= 2 ? 'active' : 'spectating'),
     roundNumber: room.roundNumber,
+    cardShuffleSeed: room.cardShuffleSeed,
     lobbyCountdown: room.lobbyCountdown,
     winnerCountdown: room.winnerCountdown,
     stakeAmount: room.stakeAmount,

@@ -126,6 +126,7 @@ export function setupGameSockets(io: Server) {
           phase: room.phase,
           mode: room.mode || (room.tickets.size >= 2 ? 'active' : 'spectating'),
           roundNumber: room.roundNumber,
+          cardShuffleSeed: room.cardShuffleSeed,
           lobbyCountdown: room.lobbyCountdown,
           winnerCountdown: room.winnerCountdown,
           stakeAmount: room.stakeAmount,

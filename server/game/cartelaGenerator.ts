@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { resolveMappedCardId } from '../../shared/cartelaDeckShuffle.ts';
 
 export interface BingoCell {
   index: number;
@@ -10,11 +11,12 @@ export interface BingoCell {
 }
 
 /**
- * Deterministic PRNG using Cartela ID seed
- * Matches frontend generator perfectly so Cartela #X has identical numbers everywhere
+ * Deterministic PRNG using Cartela ID (mapped via optional round shuffleSeed).
+ * Matches frontend generator perfectly so Cartela #X has identical numbers everywhere.
  */
-export function generateCardFromId(cartelaId: number): BingoCell[] {
-  let seed = cartelaId * 7919 + 1013;
+export function generateCardFromId(cartelaId: number, shuffleSeed: number = 0): BingoCell[] {
+  const effectiveCardId = resolveMappedCardId(cartelaId, shuffleSeed);
+  let seed = effectiveCardId * 7919 + 1013;
   const pseudoRandom = () => {
     seed = (seed * 9301 + 49297) % 233280;
     return seed / 233280;
