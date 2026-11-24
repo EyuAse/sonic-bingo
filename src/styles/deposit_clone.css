@@ -1793,3 +1793,221 @@
   cursor: not-allowed;
   background: #f8fafc;
 }
+
+/* Card 1: Withdrawable Balance & Cashier Card (Withdraw Reference Image) */
+.sonic-clean-balance-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.sonic-clean-balance-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sonic-clean-balance-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.sonic-clean-live-desk {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0d9488;
+}
+
+.sonic-clean-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #0d9488;
+  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.2);
+}
+
+.sonic-clean-balance-val {
+  font-size: 26px;
+  font-weight: 900;
+  color: #0f172a;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+  margin: 1px 0 3px 0;
+}
+
+.sonic-clean-balance-curr {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-left: 4px;
+}
+
+.sonic-clean-balance-bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-top: 5px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.sonic-clean-cashier-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sonic-clean-cashier-title {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.sonic-clean-cashier-sub {
+  font-size: 10px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.sonic-clean-cashier-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.sonic-clean-fee-tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #0d9488;
+}
+
+.sonic-clean-limit-tag {
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+/* Card 2: Withdrawal Criteria Verified (Image 1) */
+.sonic-clean-criteria-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 6px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.sonic-clean-criteria-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sonic-clean-criteria-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.sonic-clean-eligible-badge {
+  font-size: 11px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: 0.3px;
+}
+
+.sonic-clean-eligible-badge.locked {
+  color: #f59e0b;
+}
+
+.sonic-clean-criteria-grid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 3px;
+}
+
+.sonic-clean-criteria-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sonic-clean-criteria-col:last-child {
+  align-items: flex-end;
+}
+
+.sonic-clean-criteria-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.sonic-clean-criteria-val {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* Phase 3: Text Input with Icons & Support Button */
+.sonic-clean-input-icon {
+  font-size: 13.5px;
+  color: #64748b;
+  margin-right: 9px;
+  flex-shrink: 0;
+}
+
+.sonic-clean-text-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #0f172a;
+  padding: 0;
+}
+
+.sonic-clean-text-input::placeholder {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.sonic-clean-support-btn {
+  width: 100%;
+  height: 42px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.1px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  margin-top: 1px;
+}
+
+.sonic-clean-support-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.sonic-clean-support-btn:active {
+  background: #f1f5f9;
+}

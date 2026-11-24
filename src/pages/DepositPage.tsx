@@ -599,7 +599,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
           >
             <i className="fa-solid fa-arrow-left"></i>
           </button>
-          <h2 className="sonic-deposit-title-clean">Deposit</h2>
+          <h2 className="sonic-deposit-title-clean">{activeTab === 'deposit' ? 'Deposit' : 'Withdraw'}</h2>
           <div className="sonic-deposit-header-right">
             <button
               type="button"
@@ -611,55 +611,6 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
             </button>
           </div>
         </div>
-
-        {/* Quick Segmented Toggle (Visible when in Withdraw tab or secondary navigation) */}
-        {activeTab === 'withdraw' && (
-          <div style={{
-            display: 'flex',
-            background: '#e2e8f0',
-            borderRadius: '14px',
-            padding: '3px',
-            marginBottom: '4px'
-          }}>
-            <button
-              type="button"
-              onClick={() => setActiveTab('deposit')}
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                border: 'none',
-                borderRadius: '11px',
-                background: 'transparent',
-                color: '#64748b',
-                fontWeight: 800,
-                fontSize: '12.5px',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              📥 {lang === 'am' ? 'ገንዘብ አስገባ (Deposit)' : 'Deposit via Agent'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('withdraw')}
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                border: 'none',
-                borderRadius: '11px',
-                background: '#ffffff',
-                color: '#0f172a',
-                fontWeight: 800,
-                fontSize: '12.5px',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              📤 {lang === 'am' ? 'ገንዘብ አውጣ (Withdraw)' : 'Withdraw via Agent'}
-            </button>
-          </div>
-        )}
 
         {activeTab === 'deposit' && (
           <>
@@ -1014,24 +965,28 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
 
       {/* TAB 2: WITHDRAW FUNDS VIA DECENTRALIZED AGENT */}
           {activeTab === 'withdraw' && (
-            <div className="sonic-deposit-form-flow">
-              {/* 1. Hero Withdrawable Balance Banner */}
-              <div className="sonic-balance-hero-banner">
-                <div className="sonic-balance-hero-left">
-                  <GoldCoinsStackIcon size={38} />
-                  <div className="sonic-balance-hero-text">
-                    <span className="sonic-balance-hero-eyebrow">
-                      {lang === 'am' ? 'የሚወጣ ቀሪ ሒሳብ' : 'Withdrawable Balance'}
-                    </span>
-                    <div className="sonic-balance-hero-val">
-                      {balance.toFixed(2)}
-                      <span className="sonic-balance-hero-curr">ETB</span>
-                    </div>
-                  </div>
+            <div className="sonic-deposit-clean-shell" style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+              {/* Card 1: Withdrawable Balance & Cashier Status Card (Image 1) */}
+              <div className="sonic-clean-balance-card">
+                <div className="sonic-clean-balance-top">
+                  <span className="sonic-clean-balance-label">Withdrawable Balance</span>
+                  <span className="sonic-clean-live-desk">
+                    <span className="sonic-clean-live-dot"></span>
+                    Live Desk
+                  </span>
                 </div>
-                <div className="sonic-fee-free-pill">
-                  <i className="fa-solid fa-shield-halved"></i>
-                  <span>{lang === 'am' ? '0% ክፍያ (ነፃ)' : '0% Fee (Free)'}</span>
+                <div className="sonic-clean-balance-val">
+                  {balance.toFixed(2)} <span className="sonic-clean-balance-curr">ETB</span>
+                </div>
+                <div className="sonic-clean-balance-bottom">
+                  <div className="sonic-clean-cashier-info">
+                    <span className="sonic-clean-cashier-title">Payout Cashier</span>
+                    <span className="sonic-clean-cashier-sub">Direct Payout to Telebirr & Safaricom M-Pesa</span>
+                  </div>
+                  <div className="sonic-clean-cashier-meta">
+                    <span className="sonic-clean-fee-tag">0% Fee Free</span>
+                    <span className="sonic-clean-limit-tag">Max 2,000 ETB</span>
+                  </div>
                 </div>
               </div>
 
@@ -1214,361 +1169,163 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                 </div>
               ) : (
                 /* CASE B: 100% DIRECT CENTRAL OFFICIAL CASHIER WITHDRAWAL FORM */
-                <form onSubmit={handleWithdrawSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {/* Official Central Cashier Desk Banner */}
-                  <div style={{
-                    background: 'linear-gradient(135deg, #181b20, #0f1216)',
-                    borderRadius: '16px',
-                    padding: '14px 16px',
-                    color: '#ffffff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    boxShadow: '0 4px 14px rgba(0,0,0,0.2)'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{
-                        width: '38px',
-                        height: '38px',
-                        borderRadius: '50%',
-                        background: 'rgba(245, 158, 11, 0.15)',
-                        border: '1px solid rgba(245, 158, 11, 0.4)',
-                        display: 'grid',
-                        placeItems: 'center',
-                        color: '#fbbf24',
-                        fontSize: '16px'
-                      }}>
-                        <i className="fa-solid fa-building-columns"></i>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '14.5px', fontWeight: 700, color: '#f8fafc' }}>
-                          {lang === 'am' ? 'ኦፊሴላዊ የክፍያ ማዕከል' : 'Official Payout Cashier'}
-                        </div>
-                        <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '2px' }}>
-                          {lang === 'am' ? 'ቀጥታ ክፍያ በቴሌብር ወይም ሳፋሪኮም ኤም-ፔሳ (እስከ 2,000 ብር)' : 'Direct payouts to Telebirr & Safaricom M-Pesa (Max 2,000 ETB)'}
-                        </div>
-                      </div>
-                    </div>
-                    <span style={{
-                      background: 'rgba(16, 185, 129, 0.15)',
-                      color: '#34d399',
-                      border: '1px solid rgba(16, 185, 129, 0.3)',
-                      borderRadius: '20px',
-                      padding: '4px 10px',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}>
-                      <span className="sonic-pulse-dot" style={{ width: 6, height: 6, background: '#10b981' }}></span>
-                      {lang === 'am' ? 'ክፍት ነው' : 'Live Desk'}
-                    </span>
-                  </div>
-
-                  {/* 🛡️ Responsible Gaming & Anti-Fraud Compliance Card */}
-                  {withdrawalEligibility && (
-                    <div
-                      style={{
-                        background: withdrawalEligibility.eligible ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
-                        border: `1px solid ${withdrawalEligibility.eligible ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.35)'}`,
-                        borderRadius: '16px',
-                        padding: '12px 14px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '8px'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '16px' }}>{withdrawalEligibility.eligible ? '🛡️' : '🔒'}</span>
-                          <strong style={{ fontSize: '13px', color: withdrawalEligibility.eligible ? '#34d399' : '#fbbf24' }}>
-                            {withdrawalEligibility.eligible
-                              ? (lang === 'am' ? 'የማውጣት መስፈርቶች ተሟልተዋል' : 'Withdrawal Criteria Verified')
-                              : (lang === 'am' ? 'የማውጣት መስፈርት አልተሟላም' : 'Withdrawal Criteria Locked')}
-                          </strong>
-                        </div>
-                        <span
-                          style={{
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            padding: '2px 8px',
-                            borderRadius: '8px',
-                            background: withdrawalEligibility.eligible ? '#10b981' : '#f59e0b',
-                            color: '#fff'
-                          }}
-                        >
-                          {withdrawalEligibility.eligible ? (lang === 'am' ? 'ተፈቅዷል' : 'ELIGIBLE') : (lang === 'am' ? 'የተቆለፈ' : 'LOCKED')}
-                        </span>
-                      </div>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11.5px' }}>
-                        <div style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '6px 8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                          <div style={{ color: '#94a3b8', marginBottom: '2px' }}>{lang === 'am' ? 'የተጠናቀቁ ጨዋታዎች' : 'Completed Games'}</div>
-                          <strong style={{ color: withdrawalEligibility.completedGames >= 5 ? '#34d399' : '#fbbf24', fontSize: '12.5px' }}>
-                            {withdrawalEligibility.completedGames} / 5 {withdrawalEligibility.completedGames >= 5 ? '✓' : ''}
-                          </strong>
-                        </div>
-                        <div style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '6px 8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                          <div style={{ color: '#94a3b8', marginBottom: '2px' }}>{lang === 'am' ? 'የዛሬ ወጪዎች' : "Today's Withdrawals"}</div>
-                          <strong style={{ color: withdrawalEligibility.todayWithdrawals < 3 ? '#34d399' : '#f43f5e', fontSize: '12.5px' }}>
-                            {withdrawalEligibility.todayWithdrawals} / 3 {withdrawalEligibility.todayWithdrawals < 3 ? '✓' : ''}
-                          </strong>
-                        </div>
-                      </div>
-
-                      {!withdrawalEligibility.eligible && (
-                        <p style={{ margin: 0, fontSize: '11px', color: '#f59e0b', lineHeight: 1.4 }}>
-                          {withdrawalEligibility.completedGames < 5
-                            ? (lang === 'am'
-                                ? `⚠️ ገንዘብ ለማውጣት ቢያንስ 5 ጨዋታዎችን ማጠናቀቅ አለብዎት (ያጠናቀቁት፡ ${withdrawalEligibility.completedGames}/5 ጨዋታ)።`
-                                : `⚠️ You must complete at least 5 games before requesting a withdrawal (Completed: ${withdrawalEligibility.completedGames}/5 games).`)
-                            : (lang === 'am'
-                                ? '⚠️ የቀን ገደብ ደርሷል፡ በቀን ቢበዛ 3 ጊዜ ብቻ ማውጣት ይቻላል። እባክዎ ነገ እንደገና ይሞክሩ።'
-                                : '⚠️ Maximum 3 withdrawals allowed per day. Please try again tomorrow.')}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Step 1: Withdrawal Amount Card (Harmonized with Deposit Shell) */}
-                  <div className="sonic-amount-card-shell">
-                    <div className="sonic-amount-header-row">
-                      <div className="sonic-amount-header-left">
-                        <GoldCoinsStackIcon size={28} />
-                        <div className="sonic-amount-titles">
-                          <h4>{lang === 'am' ? 'የማውጣት መጠን' : 'Withdrawal Amount'}</h4>
-                          <p>{lang === 'am' ? 'የሚወጣውን መጠን ይምረጡ' : 'Choose an amount to withdraw'}</p>
-                        </div>
-                      </div>
-                      <span className="sonic-amount-min-tag">
-                        {lang === 'am' ? 'ዝቅተኛ፡ 50 • ከፍተኛ፡ 2,000 ብር' : 'Min: 50 • Max: 2,000 ETB'}
+                <form onSubmit={handleWithdrawSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+                  {/* Card 2: Withdrawal Criteria Verified (Image 1) */}
+                  <div className="sonic-clean-criteria-card">
+                    <div className="sonic-clean-criteria-header">
+                      <span className="sonic-clean-criteria-title">
+                        {lang === 'am' ? 'የማውጣት መስፈርቶች ተረጋግጠዋል' : 'Withdrawal Criteria Verified'}
+                      </span>
+                      <span className={`sonic-clean-eligible-badge ${withdrawalEligibility && !withdrawalEligibility.eligible ? 'locked' : ''}`}>
+                        {withdrawalEligibility && !withdrawalEligibility.eligible ? 'LOCKED' : 'ELIGIBLE'}
                       </span>
                     </div>
 
-                    {/* 3x2 Quick Chips Grid */}
-                    <div className="sonic-amount-chips-grid">
-                      {[50, 100, 200, 500, 1000, 2000].map(amt => (
-                        <button
-                          key={amt}
-                          type="button"
-                          className={`sonic-amount-chip-btn ${withdrawAmount === amt ? 'active' : ''}`}
-                          onClick={() => setWithdrawAmount(amt)}
-                        >
-                          {amt} ETB
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        className={`sonic-amount-chip-btn ${withdrawAmount === Math.min(2000, Math.floor(balance)) && balance >= 50 ? 'active' : ''}`}
-                        onClick={() => setWithdrawAmount(Math.min(2000, Math.floor(balance)))}
-                        style={{ fontWeight: 900 }}
-                      >
-                        {lang === 'am' ? 'ሁሉንም (እስከ 2,000)' : '★ Max (Up to 2,000)'}
-                      </button>
+                    <div className="sonic-clean-criteria-grid">
+                      <div className="sonic-clean-criteria-col">
+                        <span className="sonic-clean-criteria-label">
+                          {lang === 'am' ? 'የተጠናቀቁ ጨዋታዎች' : 'Competed Game'}
+                        </span>
+                        <span className="sonic-clean-criteria-val">
+                          {withdrawalEligibility?.completedGames ?? 20}/5
+                        </span>
+                      </div>
+                      <div className="sonic-clean-criteria-col">
+                        <span className="sonic-clean-criteria-label">
+                          {lang === 'am' ? 'የዛሬ ወጪዎች' : "Today's Withdrawal"}
+                        </span>
+                        <span className="sonic-clean-criteria-val">
+                          {withdrawalEligibility?.todayWithdrawals ?? 0}/5
+                        </span>
+                      </div>
                     </div>
 
-                    {/* Large ETB Currency Input */}
-                    <div className="sonic-amount-input-box">
-                      <span className="sonic-currency-label">ETB</span>
+                    {withdrawalEligibility && !withdrawalEligibility.eligible && (
+                      <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#f59e0b', lineHeight: 1.35 }}>
+                        {withdrawalEligibility.completedGames < 5
+                          ? (lang === 'am'
+                              ? `⚠️ ገንዘብ ለማውጣት ቢያንስ 5 ጨዋታዎችን ማጠናቀቅ አለብዎት (${withdrawalEligibility.completedGames}/5)።`
+                              : `⚠️ You must complete at least 5 games before withdrawing (${withdrawalEligibility.completedGames}/5 games).`)
+                          : (lang === 'am'
+                              ? '⚠️ የቀን ገደብ ደርሷል (ቢበዛ 5 ጊዜ)።'
+                              : '⚠️ Maximum withdrawals reached for today.')}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Field 1: Payment Method Dropdown (Image 1) */}
+                  <div className="sonic-clean-field-group">
+                    <label className="sonic-clean-label">Payment Method</label>
+                    <div
+                      className="sonic-clean-select-box"
+                      onClick={() => setWithdrawMethod(withdrawMethod === 'Telebirr' ? 'M-Pesa' : 'Telebirr')}
+                      title="Click to toggle payment rail (Telebirr / M-Pesa)"
+                    >
+                      <span className="sonic-clean-select-val">
+                        {withdrawMethod === 'Telebirr' ? 'Telebirr' : 'Safaricom M-Pesa'}
+                      </span>
+                      <i className="fa-solid fa-chevron-down sonic-clean-select-chevron"></i>
+                    </div>
+                  </div>
+
+                  {/* Field 2: Receiving Phone Number (Image 1) */}
+                  <div className="sonic-clean-field-group">
+                    <label className="sonic-clean-label">
+                      {withdrawMethod === 'Telebirr'
+                        ? (lang === 'am' ? 'ገንዘቡ የሚላክበት የቴሌብር ስልክ ቁጥር (09.../07...)' : 'Receiving Telebirr Phone Number (09.../07...)')
+                        : (lang === 'am' ? 'ገንዘቡ የሚላክበት የሳፋሪኮም ኤም-ፔሳ ስልክ ቁጥር (07...)' : 'Receiving Safaricom M-Pesa Phone Number (07...)')}
+                    </label>
+                    <div className="sonic-clean-input-box">
+                      <i className="fa-solid fa-phone sonic-clean-input-icon"></i>
+                      <input
+                        type="tel"
+                        value={withdrawAccount}
+                        onChange={e => setWithdrawAccount(e.target.value)}
+                        placeholder="09........"
+                        className="sonic-clean-text-input"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Field 3: Account Holder Full Name (Image 1) */}
+                  <div className="sonic-clean-field-group">
+                    <label className="sonic-clean-label">
+                      {lang === 'am' ? 'የሂሳብ ባለቤቱ ሙሉ ስም' : 'Account Holder Full Name'}
+                    </label>
+                    <div className="sonic-clean-input-box">
+                      <i className="fa-solid fa-user sonic-clean-input-icon"></i>
+                      <input
+                        type="text"
+                        value={withdrawAccountName}
+                        onChange={e => setWithdrawAccountName(e.target.value)}
+                        placeholder="Marta Eshetu"
+                        className="sonic-clean-text-input"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Field 4: Withdrawal Amount (Image 1) */}
+                  <div className="sonic-clean-field-group">
+                    <label className="sonic-clean-label">
+                      {lang === 'am' ? 'የማውጣት መጠን' : 'Withdrawal Amount'}
+                    </label>
+                    <div className="sonic-clean-input-box">
+                      <span className="sonic-clean-currency">ETB</span>
                       <input
                         type="number"
                         value={withdrawAmount || ''}
                         onChange={e => setWithdrawAmount(Number(e.target.value))}
-                        className="sonic-amount-big-field"
-                        placeholder="200"
+                        placeholder="100"
                         min={50}
                         max={2000}
+                        className="sonic-clean-amount-input"
                         required
                       />
-                      <div className="sonic-input-gold-swoosh"></div>
                     </div>
                   </div>
 
-                  {/* Golden Escrow & Net Payout Guarantee Card */}
-                  <div className="sonic-coins-reward-card">
-                    <div className="sonic-coins-reward-left">
-                      <GoldenEscrowShieldIcon size={36} />
-                      <div className="sonic-coins-reward-titles">
-                        <h5>
-                          {lang === 'am'
-                            ? `የተጣራ ክፍያ፡ ${withdrawAmount || 0} ብር (100% ነፃ)`
-                            : `Net Payout: ${withdrawAmount || 0} ETB (0% Player Fee)`}
-                        </h5>
-                        <p>
-                          {lang === 'am'
-                            ? '🛡️ ገንዘብዎ በደህና Escrow ውስጥ ይቆያል፤ ኤጀንቱ እስኪልክ ድረስ ሙሉ ጥበቃ አለው።'
-                            : '🛡️ Funds held safely in atomic escrow until confirmed. 1-click instant refund.'}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="sonic-coins-reward-arrow">›</span>
-                  </div>
+                  {/* Action Button 1: Request Payout (Image 1) */}
+                  <button
+                    type="submit"
+                    className="sonic-clean-submit-btn"
+                    disabled={
+                      isSubmittingWithdraw ||
+                      withdrawAmount < 50 ||
+                      withdrawAmount > 2000 ||
+                      withdrawAmount > balance ||
+                      (withdrawalEligibility !== null && !withdrawalEligibility.eligible)
+                    }
+                  >
+                    {isSubmittingWithdraw ? (
+                      <>
+                        <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '8px' }}></i>
+                        <span>{lang === 'am' ? 'በመላክ ላይ...' : 'Submitting Payout Request...'}</span>
+                      </>
+                    ) : (
+                      lang === 'am'
+                        ? `አሁን ${withdrawAmount > 0 ? `${withdrawAmount} ብር` : ''} ማውጣት ጠይቅ`
+                        : `Request ${withdrawAmount > 0 ? `${withdrawAmount} ETB` : '100 ETB'} Payout`
+                    )}
+                  </button>
 
-                  {/* Step 3: Destination Payout Rail & Account */}
-                  <div className="sonic-step-header-row">
-                    <div className="sonic-step-badge-pill">
-                      <span className="sonic-step-number-circle">3</span>
-                      <span className="sonic-step-label-text">
-                        {lang === 'am' ? 'የክፍያ መቀበያ መስመር እና ሂሳብ' : 'Destination Payout Rail & Account'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Rails Selector Grid (Telebirr & M-Pesa only) */}
-                  <div className="sonic-rails-selector-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
-                    {/* Telebirr Tab */}
-                    <div
-                      className={withdrawMethod === 'Telebirr' ? 'sonic-rail-obsidian-tab' : 'sonic-rail-light-tab'}
-                      onClick={() => setWithdrawMethod('Telebirr')}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <TelebirrLogo size={28} />
-                        <div>
-                          <div className={withdrawMethod === 'Telebirr' ? 'sonic-rail-title-white' : 'sonic-rail-title-dark'}>
-                            Telebirr
-                          </div>
-                          <div className={withdrawMethod === 'Telebirr' ? 'sonic-rail-sub-gold' : 'sonic-rail-sub-muted'}>
-                            ⚡ Instant
-                          </div>
-                        </div>
-                      </div>
-                      {withdrawMethod === 'Telebirr' ? (
-                        <div className="sonic-amber-circle-chevron" style={{ width: 22, height: 22, fontSize: 13 }}>›</div>
-                      ) : (
-                        <i className="fa-solid fa-chevron-right" style={{ color: '#cbd5e1', fontSize: '11px' }}></i>
-                      )}
-                    </div>
-
-                    {/* M-Pesa Tab */}
-                    <div
-                      className={withdrawMethod === 'M-Pesa' ? 'sonic-rail-obsidian-tab' : 'sonic-rail-light-tab'}
-                      onClick={() => setWithdrawMethod('M-Pesa')}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <MpesaLogo size={28} />
-                        <div>
-                          <div className={withdrawMethod === 'M-Pesa' ? 'sonic-rail-title-white' : 'sonic-rail-title-dark'}>
-                            Safaricom M-Pesa
-                          </div>
-                          <div className={withdrawMethod === 'M-Pesa' ? 'sonic-rail-sub-gold' : 'sonic-rail-sub-muted'}>
-                            ⚡ Instant Mobile
-                          </div>
-                        </div>
-                      </div>
-                      {withdrawMethod === 'M-Pesa' ? (
-                        <div className="sonic-amber-circle-chevron" style={{ width: 22, height: 22, fontSize: 13 }}>›</div>
-                      ) : (
-                        <i className="fa-solid fa-chevron-right" style={{ color: '#cbd5e1', fontSize: '11px' }}></i>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Saved Accounts Fast-Fill Chips */}
-                  {user?.attachedAccounts && user.attachedAccounts.length > 0 && (
-                    <div>
-                      <span className="sonic-input-tiny-label">
-                        {lang === 'am' ? 'የተቀመጡ ሂሳቦች (ለመምረጥ ይጫኑ)' : 'Saved Accounts (1-Tap Fast Fill)'}
-                      </span>
-                      <div className="sonic-saved-accounts-wrap">
-                        {user.attachedAccounts.filter(acc => acc.type === 'Telebirr' || acc.type === 'M-Pesa').map(acc => {
-                          const isAccActive = withdrawAccount === acc.accountNumber;
-                          return (
-                            <button
-                              key={acc.id}
-                              type="button"
-                              className={`sonic-saved-account-chip ${isAccActive ? 'active' : ''}`}
-                              onClick={() => {
-                                setWithdrawAccount(acc.accountNumber);
-                                if (acc.name) setWithdrawAccountName(acc.name);
-                                if (acc.type === 'Telebirr' || acc.type === 'M-Pesa') {
-                                  setWithdrawMethod(acc.type);
-                                }
-                              }}
-                            >
-                              <i className="fa-solid fa-bolt"></i>
-                              <span>{acc.type}: {acc.accountNumber.slice(0, 4)}***{acc.accountNumber.slice(-3)} ({acc.name})</span>
-                              {isAccActive && <span>✓</span>}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Payout Account Fields in Proof Card */}
-                  <div className="sonic-proof-card">
-                    <div className="sonic-input-field-group">
-                      <label className="sonic-input-tiny-label">
-                        {withdrawMethod === 'Telebirr'
-                          ? (lang === 'am' ? 'ገንዘቡ የሚላክበት የቴሌብር ስልክ ቁጥር' : 'Receiving Telebirr Phone Number (09... / 07...)')
-                          : (lang === 'am' ? 'ገንዘቡ የሚላክበት የሳፋሪኮም ኤም-ፔሳ ስልክ ቁጥር' : 'Receiving Safaricom M-Pesa Phone Number (07...)')}
-                      </label>
-                      <div className="sonic-proof-field-wrap">
-                        <i className="fa-solid fa-mobile-screen"></i>
-                        <input
-                          type="text"
-                          value={withdrawAccount}
-                          onChange={e => setWithdrawAccount(e.target.value)}
-                          className="sonic-proof-text-input"
-                          placeholder={withdrawMethod === 'Telebirr' ? '09... or 07...' : '07...'}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="sonic-input-field-group" style={{ marginTop: '10px' }}>
-                      <label className="sonic-input-tiny-label">
-                        {lang === 'am' ? 'የሂሳብ ባለቤቱ ሙሉ ስም' : 'Account Holder Full Name'}
-                      </label>
-                      <div className="sonic-proof-field-wrap">
-                        <i className="fa-solid fa-user-check"></i>
-                        <input
-                          type="text"
-                          value={withdrawAccountName}
-                          onChange={e => setWithdrawAccountName(e.target.value)}
-                          className="sonic-proof-text-input"
-                          placeholder="e.g. Abebe Kebede"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    {/* Big Gold Payout Submission Button */}
-                    <button
-                      type="submit"
-                      className="sonic-primary-gold-submit-btn"
-                      disabled={
-                        isSubmittingWithdraw ||
-                        withdrawAmount < 50 ||
-                        withdrawAmount > 2000 ||
-                        withdrawAmount > balance ||
-                        (withdrawalEligibility !== null && !withdrawalEligibility.eligible)
+                  {/* Action Button 2: Need Support (Image 1) */}
+                  <button
+                    type="button"
+                    className="sonic-clean-support-btn"
+                    onClick={() => {
+                      const tg = selectedWithdrawAgent?.telegramUsername || selectedAgent?.telegramUsername || 'SonicBingoSupport';
+                      const cleanTg = tg.replace(/^@/, '');
+                      if (window.Telegram?.WebApp?.openTelegramLink) {
+                        window.Telegram.WebApp.openTelegramLink(`https://t.me/${cleanTg}`);
+                      } else {
+                        window.open(`https://t.me/${cleanTg}`, '_blank');
                       }
-                      style={{
-                        marginTop: '12px',
-                        opacity: (withdrawalEligibility !== null && !withdrawalEligibility.eligible) ? 0.6 : 1,
-                        cursor: (withdrawalEligibility !== null && !withdrawalEligibility.eligible) ? 'not-allowed' : 'pointer'
-                      }}
-                    >
-                      {isSubmittingWithdraw ? (
-                        <>
-                          <i className="fa-solid fa-spinner fa-spin"></i>
-                          <span>{lang === 'am' ? 'በመላክ ላይ...' : 'Submitting Payout Request...'}</span>
-                        </>
-                      ) : (
-                        <>
-                          <i className="fa-solid fa-bolt"></i>
-                          <span>
-                            {lang === 'am'
-                              ? `አሁን ${withdrawAmount > 0 ? `${withdrawAmount} ብር` : ''} ማውጣት ጠይቅ`
-                              : `Request ${withdrawAmount > 0 ? `${withdrawAmount} ETB` : ''} Payout`}
-                          </span>
-                        </>
-                      )}
-                    </button>
-                  </div>
+                    }}
+                  >
+                    {lang === 'am' ? 'እርዳታ ይፈልጋሉ (Support)' : 'Need Support'}
+                  </button>
                 </form>
               )}
             </div>
