@@ -2535,6 +2535,25 @@
   background: #ffffff;
 }
 
+/* Deposit Payment Method Dropdown Card (Full Width matching Withdraw) */
+.sonic-exact-deposit-method-card {
+  width: 100%;
+  border: 1.5px solid #ef4444;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #ffffff 0%, #fff5f5 100%);
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-sizing: border-box;
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.08);
+  transition: box-shadow 0.15s ease;
+}
+
+.sonic-exact-deposit-method-card:hover {
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+}
+
 /* Luxury Agent Cashier Card (Image 1 Exact Match) */
 .sonic-exact-agent-card {
   background: #ffffff;
@@ -2618,12 +2637,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 6px;
 }
 
 .sonic-exact-agent-name-code {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 800;
   color: #0f172a;
+  white-space: nowrap;
 }
 
 .sonic-exact-agent-name-code .code {
@@ -2768,6 +2789,213 @@
 .sonic-exact-sms-textarea::placeholder {
   color: #94a3b8;
   font-weight: 500;
+}
+
+/* Deposit Waiting Page Card (Light UI matching Image 2 & Image 3) */
+.sonic-waiting-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 20px 16px;
+  text-align: center;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-sizing: border-box;
+}
+
+.sonic-waiting-card.pending {
+  border-color: #fecaca;
+}
+
+.sonic-waiting-card.approved {
+  border-color: #86efac;
+}
+
+.sonic-waiting-card.rejected {
+  border-color: #fca5a5;
+}
+
+.sonic-waiting-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.sonic-waiting-icon-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+.sonic-waiting-icon-circle.pending {
+  background: #fef2f2;
+  border: 2.5px solid #ef4444;
+  color: #dc2626;
+  animation: pulse 1.8s infinite;
+}
+
+.sonic-waiting-icon-circle.approved {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.sonic-waiting-icon-circle.rejected {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.sonic-waiting-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.sonic-waiting-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.45;
+  white-space: pre-line;
+  font-weight: 500;
+}
+
+.sonic-waiting-summary-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 13px;
+  text-align: left;
+}
+
+.sonic-waiting-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sonic-waiting-summary-row .label {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.sonic-waiting-summary-row .val {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.sonic-waiting-summary-row .val.amount {
+  color: #16a34a;
+  font-size: 14.5px;
+  font-weight: 900;
+}
+
+.sonic-waiting-summary-row .val.mono {
+  font-family: monospace;
+  color: #dc2626;
+}
+
+.sonic-waiting-summary-row.coins {
+  padding-top: 6px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.sonic-waiting-summary-row .val.gold {
+  color: #d97706;
+}
+
+.sonic-waiting-chat-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.sonic-waiting-chat-agent-btn {
+  width: 100%;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #0f172a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.sonic-waiting-chat-agent-btn:hover {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+  transform: translateY(-1px);
+}
+
+.sonic-waiting-chat-icon {
+  color: #0088cc;
+  font-size: 18px;
+}
+
+.sonic-waiting-chat-helper {
+  font-size: 11.5px;
+  color: #0284c7;
+  margin: 0;
+  line-height: 1.45;
+  white-space: pre-line;
+  font-weight: 500;
+}
+
+.sonic-waiting-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sonic-waiting-done-btn {
+  width: 100%;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: #10b981;
+  color: #ffffff;
+  font-size: 14.5px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.sonic-waiting-cancel-link {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 6px;
+  font-family: inherit;
+}
+
+.sonic-waiting-cancel-link:hover {
+  color: #dc2626;
 }
 
 .sonic-exact-method-input-row {

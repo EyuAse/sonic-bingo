@@ -34,6 +34,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>(initialTab);
   const [showTxHistory, setShowTxHistory] = useState<boolean>(false);
   const [isWithdrawDropdownOpen, setIsWithdrawDropdownOpen] = useState<boolean>(false);
+  const [isDepositDropdownOpen, setIsDepositDropdownOpen] = useState<boolean>(false);
   const quickAmounts = [50, 100, 200, 500, 1000, 1500];
 
   // Active Authorized Agents for In-Person / Online Deposit & Cashout (Dynamic Multi-Rail)
@@ -141,15 +142,53 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
     }
   };
 
+  // Switch Deposit Payment Rail dynamically and load a matching agent if current agent lacks the chosen rail
+  const handleSwitchDepositRail = async (rail: 'Telebirr' | 'M-Pesa') => {
+    setAgentPaymentRail(rail);
+    setIsDepositDropdownOpen(false);
+    setAgentLoadError(null);
+
+    const hasRailOnCurrent = rail === 'Telebirr'
+      ? Boolean(selectedAgent?.telebirrPhone)
+      : Boolean(selectedAgent?.mpesaPhone);
+
+    if (hasRailOnCurrent) {
+      return;
+    }
+
+    setIsLoadingAgents(true);
+    try {
+      const assignedRes = await apiClient.wallet.getAssignedAgent(undefined, undefined, rail);
+      if (assignedRes && assignedRes.success && assignedRes.agent) {
+        const ag = assignedRes.agent;
+        setSelectedAgent(ag);
+        setTotalOnlineAgents(assignedRes.totalOnlineAgents || 1);
+        sessionStorage.setItem('sonic_assigned_agent_id', ag.id);
+      } else {
+        setSelectedAgent(null);
+        setAgentLoadError(
+          lang === 'am'
+            ? `በአሁኑ ሰዓት ${rail === 'M-Pesa' ? 'ኤም-ፔሳ' : 'ቴሌብር'} የሚቀበል ንቁ ኤጀንት የለም።`
+            : `No online certified agents currently accept ${rail === 'M-Pesa' ? 'Safaricom M-Pesa' : 'Telebirr'}. Please try another payment method.`
+        );
+      }
+    } catch (err) {
+      console.warn('Failed to switch agent for rail:', rail, err);
+      setAgentLoadError(lang === 'am' ? 'ኤጀንት መቀየር አልተቻለም' : `Failed to find an agent supporting ${rail}.`);
+    } finally {
+      setIsLoadingAgents(false);
+    }
+  };
+
   // Load single assigned agent via fair damped weighted lottery with session persistence
-  const loadAgentData = async (excludeAgentId?: string) => {
+  const loadAgentData = async (excludeAgentId?: string, preferredRail?: 'Telebirr' | 'M-Pesa') => {
     setIsLoadingAgents(true);
     setAgentLoadError(null);
 
     // 1. Request assigned agent (respects preferred session agent or lottery exclusion)
     try {
       const preferredId = !excludeAgentId ? (sessionStorage.getItem('sonic_assigned_agent_id') || undefined) : undefined;
-      const assignedRes = await apiClient.wallet.getAssignedAgent(excludeAgentId, preferredId);
+      const assignedRes = await apiClient.wallet.getAssignedAgent(excludeAgentId, preferredId, preferredRail);
       if (assignedRes && assignedRes.success && assignedRes.agent) {
         const ag = assignedRes.agent;
         setTotalOnlineAgents(assignedRes.totalOnlineAgents || 1);
@@ -160,14 +199,23 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
       } else {
         // Fallback to active agents list if assigned endpoint had 0 agents
         const agentsRes = await apiClient.wallet.getActiveAgents();
-        if (agentsRes && agentsRes.success && Array.isArray(agentsRes.agents) && agentsRes.agents.length > 0) {
-          setActiveAgents(agentsRes.agents);
-          setTotalOnlineAgents(agentsRes.agents.length);
-          sessionStorage.setItem('sonic_assigned_agent_id', agentsRes.agents[0].id);
-          handleSelectDepositAgent(agentsRes.agents[0]);
-          handleSelectWithdrawAgent(agentsRes.agents[0]);
+        const matchingAgents = preferredRail && agentsRes?.agents
+          ? agentsRes.agents.filter((a: any) => (a.supportedRails || []).includes(preferredRail))
+          : agentsRes?.agents || [];
+
+        if (agentsRes && agentsRes.success && matchingAgents.length > 0) {
+          setActiveAgents(matchingAgents);
+          setTotalOnlineAgents(matchingAgents.length);
+          sessionStorage.setItem('sonic_assigned_agent_id', matchingAgents[0].id);
+          handleSelectDepositAgent(matchingAgents[0]);
+          handleSelectWithdrawAgent(matchingAgents[0]);
         } else {
-          setAgentLoadError(lang === 'am' ? 'በአሁኑ ሰዓት ንቁ ኤጀንት የለም' : 'No certified agents currently available');
+          setSelectedAgent(null);
+          setAgentLoadError(
+            preferredRail
+              ? (lang === 'am' ? `በአሁኑ ሰዓት ${preferredRail} የሚቀበል ንቁ ኤጀንት የለም` : `No online agents currently accept ${preferredRail}.`)
+              : (lang === 'am' ? 'በአሁኑ ሰዓት ንቁ ኤጀንት የለም' : 'No certified agents currently available')
+          );
         }
       }
     } catch (err: any) {
@@ -525,9 +573,10 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
           amount: agentDepositAmount,
           paymentMethod: agentPaymentRail,
           transactionCode: cleanCode.toUpperCase(),
-          status: 'pending',
+          status: (res as any).status === 'approved' ? 'approved' : 'pending',
           agentCode: res.agentCode,
           agentDisplayName: res.agentDisplayName,
+          agentTelegramUsername: res.agentTelegramUsername || selectedAgent.telegramUsername || null,
           createdAt: new Date().toISOString()
         });
       }
@@ -650,198 +699,136 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
 
         {activeTab === 'deposit' && (
           <>
-            {/* CASE A: ACTIVE / PENDING / APPROVED / REJECTED REQUEST TRACKER */}
+            {/* CASE A: ACTIVE / PENDING / APPROVED / REJECTED REQUEST TRACKER (Light UI matching Image 2 & Image 3) */}
             {activeAgentRequest ? (
               <div
-                style={{
-                  background: '#0f172a',
-                  border: activeAgentRequest.status === 'approved'
-                    ? '2px solid #10b981'
+                className={`sonic-waiting-card ${
+                  activeAgentRequest.status === 'approved'
+                    ? 'approved'
                     : activeAgentRequest.status === 'rejected'
-                    ? '2px solid #ef4444'
-                    : '2px solid #f59e0b',
-                  borderRadius: '20px',
-                  padding: '24px 20px',
-                  textAlign: 'center',
-                  boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  color: '#f8fafc'
-                }}
+                    ? 'rejected'
+                    : 'pending'
+                }`}
               >
-                {/* Status Icon & Header */}
-                <div style={{ marginBottom: '16px' }}>
+                {/* Status Icon & Header (Image 2) */}
+                <div className="sonic-waiting-header">
                   {activeAgentRequest.status === 'approved' ? (
-                    <div
-                      style={{
-                        width: '70px',
-                        height: '70px',
-                        margin: '0 auto 12px',
-                        borderRadius: '50%',
-                        background: '#10b981',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '32px',
-                        color: '#ffffff'
-                      }}
-                    >
-                      ✓
+                    <div className="sonic-waiting-icon-circle approved">
+                      <i className="fa-solid fa-check"></i>
                     </div>
                   ) : activeAgentRequest.status === 'rejected' ? (
-                    <div
-                      style={{
-                        width: '70px',
-                        height: '70px',
-                        margin: '0 auto 12px',
-                        borderRadius: '50%',
-                        background: '#ef4444',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '32px',
-                        color: '#ffffff'
-                      }}
-                    >
-                      ✕
+                    <div className="sonic-waiting-icon-circle rejected">
+                      <i className="fa-solid fa-xmark"></i>
                     </div>
                   ) : (
-                    <div
-                      style={{
-                        width: '70px',
-                        height: '70px',
-                        margin: '0 auto 12px',
-                        borderRadius: '50%',
-                        border: '3px solid #f59e0b',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '28px',
-                        animation: 'pulse 1.8s infinite',
-                        background: 'rgba(245, 158, 11, 0.15)'
-                      }}
-                    >
-                      📡
+                    <div className="sonic-waiting-icon-circle pending">
+                      <i className="fa-solid fa-tower-broadcast"></i>
                     </div>
                   )}
 
-                  <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '6px' }}>
+                  <h3 className="sonic-waiting-title">
                     {activeAgentRequest.status === 'approved'
                       ? (lang === 'am' ? 'ተቀማጭዎ በተሳካ ሁኔታ ተረጋግጧል!' : 'Deposit Confirmed & Credited!')
                       : activeAgentRequest.status === 'rejected'
                       ? (lang === 'am' ? 'ተቀማጭዎ አልተሳካም' : 'Deposit Rejected')
                       : (lang === 'am' ? 'ኤጀንቱ ክፍያዎን በማረጋገጥ ላይ ነው...' : 'Sonic Agent is Verifying Payment...')}
                   </h3>
-                  <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
+                  <p className="sonic-waiting-subtitle">
                     {activeAgentRequest.status === 'approved'
                       ? (lang === 'am' ? 'ገንዘቡ ወደ ዋሌትዎ ገብቷል። መልካም ዕድል በጨዋታው!' : 'Funds have been credited to your wallet balance. Good luck!')
                       : activeAgentRequest.status === 'rejected'
                       ? (activeAgentRequest.rejectionReason || (lang === 'am' ? 'እባክዎ የግብይት መለያውን ወይም የላኩትን መጠን ትክክለኛነት ያረጋግጡ።' : 'Please check transaction ID or transfer amount.'))
-                      : (lang === 'am' ? 'የተመረጡት ኤጀንት የቴሌብር/ባንክ ኤስኤምኤስ መልዕክት በማጣራት ላይ ናቸው። ጥቂት ሰከንዶች ይጠብቁ።' : 'The certified agent is matching your SMS reference. Please wait a moment.')}
+                      : (lang === 'am' ? 'ኤጀንቱ የእርስዎን የኤስኤምኤስ ማጣቀሻ በማዛመድ ላይ ነው። እባክዎ ትንሽ ይጠብቁ' : 'The agent is matching your SMS reference.\nPlease wait a moment')}
                   </p>
                 </div>
 
                 {/* Details Breakdown */}
-                <div
-                  style={{
-                    background: '#1e293b',
-                    borderRadius: '12px',
-                    padding: '14px',
-                    marginBottom: '16px',
-                    fontSize: '13px',
-                    textAlign: 'left'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span style={{ color: '#94a3b8' }}>{lang === 'am' ? 'ኤጀንት' : 'Sonic Agent'}:</span>
-                    <strong style={{ color: '#f8fafc' }}>👑 {activeAgentRequest.agentDisplayName || `Sonic Agent #${activeAgentRequest.agentCode || ''}`}</strong>
+                <div className="sonic-waiting-summary-box">
+                  <div className="sonic-waiting-summary-row">
+                    <span className="label">{lang === 'am' ? 'ኤጀንት' : 'Sonic Agent'}:</span>
+                    <strong className="val">{activeAgentRequest.agentDisplayName || `Sonic Agent #${activeAgentRequest.agentCode || ''}`}</strong>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span style={{ color: '#94a3b8' }}>{lang === 'am' ? 'የተላከ መጠን' : 'Amount'}:</span>
-                    <strong style={{ color: '#10b981', fontSize: '15px' }}>{activeAgentRequest.amount} ETB</strong>
+                  <div className="sonic-waiting-summary-row">
+                    <span className="label">{lang === 'am' ? 'የተላከ መጠን' : 'Amount'}:</span>
+                    <strong className="val amount">{activeAgentRequest.amount} ETB</strong>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span style={{ color: '#94a3b8' }}>{lang === 'am' ? 'የግብይት መለያ (Tx ID)' : 'Tx Reference'}:</span>
-                    <strong style={{ color: '#fbbf24', fontFamily: 'monospace' }}>{activeAgentRequest.transactionCode}</strong>
+                  <div className="sonic-waiting-summary-row">
+                    <span className="label">{lang === 'am' ? 'የግብይት መለያ (Tx ID)' : 'Tx Reference'}:</span>
+                    <strong className="val mono">{activeAgentRequest.transactionCode}</strong>
                   </div>
                   {activeAgentRequest.coinsAwarded && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid #334155' }}>
-                      <span style={{ color: '#94a3b8' }}>{lang === 'am' ? 'የተሰጠ ቦነስ' : 'Sonic Coins'}:</span>
-                      <strong style={{ color: '#f59e0b' }}>+{activeAgentRequest.coinsAwarded} 🪙</strong>
+                    <div className="sonic-waiting-summary-row coins">
+                      <span className="label">{lang === 'am' ? 'የተሰጠ ቦነስ' : 'Sonic Coins'}:</span>
+                      <strong className="val gold">+{activeAgentRequest.coinsAwarded} 🪙</strong>
                     </div>
                   )}
                 </div>
 
+                {/* Chat with Agent Block (Image 3 Exact Match) */}
+                {activeAgentRequest.status === 'pending' && (
+                  <div className="sonic-waiting-chat-block">
+                    <button
+                      type="button"
+                      className="sonic-waiting-chat-agent-btn"
+                      onClick={() => {
+                        const rawTg = activeAgentRequest.agentTelegramUsername || selectedAgent?.telegramUsername || 'Sonicbingo_support';
+                        const cleanTg = String(rawTg).replace(/^@/, '');
+                        const chatUrl = `https://t.me/${cleanTg}`;
+                        if (window.Telegram?.WebApp?.openTelegramLink) {
+                          window.Telegram.WebApp.openTelegramLink(chatUrl);
+                        } else {
+                          window.open(chatUrl, '_blank');
+                        }
+                      }}
+                    >
+                      <i className="fa-solid fa-paper-plane sonic-waiting-chat-icon"></i>
+                      <span>
+                        {lang === 'am'
+                          ? `ከኤጀንት # ${activeAgentRequest.agentCode || ''} ጋር ያውሩ`
+                          : `Chat with Agent # ${activeAgentRequest.agentCode || ''}`}
+                      </span>
+                    </button>
+                    <p className="sonic-waiting-chat-helper">
+                      {lang === 'am'
+                        ? 'ስለ ተቀማጭ ክፍያው ኤጀንቱን ያነጋግሩ።\nገንዘብ ሲያስገቡ ማንኛውም መዘግየት ወይም ስህተት ካጋጠመዎት ያሳውቁ።'
+                        : 'Please speak to the agent regarding to the deposit.\nIf you encounter any delays or errors while making a deposit.'}
+                    </p>
+                  </div>
+                )}
+
                 {/* Action Buttons */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div className="sonic-waiting-actions">
                   {activeAgentRequest.status === 'approved' ? (
                     <button
                       type="button"
+                      className="sonic-waiting-done-btn"
                       onClick={handleDismissApprovedDeposit}
-                      style={{
-                        background: '#10b981',
-                        color: '#ffffff',
-                        border: 'none',
-                        padding: '12px',
-                        borderRadius: '10px',
-                        fontSize: '14px',
-                        fontWeight: 800,
-                        cursor: 'pointer'
-                      }}
                     >
                       {lang === 'am' ? 'ጨርሻለሁ (ወደ አዲስ ካሺየር)' : 'Done / Return to Cashier'}
                     </button>
                   ) : activeAgentRequest.status === 'rejected' ? (
                     <button
                       type="button"
+                      className="sonic-exact-payout-btn"
                       onClick={handleDismissRejectedDeposit}
-                      style={{
-                        background: '#ef4444',
-                        color: '#ffffff',
-                        border: 'none',
-                        padding: '12px',
-                        borderRadius: '10px',
-                        fontSize: '14px',
-                        fontWeight: 800,
-                        cursor: 'pointer'
-                      }}
                     >
-                      🔄 {lang === 'am' ? 'በሌላ ኤጀንት እንደገና ይሞክሩ' : 'Try Again with Another Agent'}
+                      <i className="fa-solid fa-rotate"></i>
+                      <span>{lang === 'am' ? 'በሌላ ኤጀንት እንደገና ይሞክሩ' : 'Try Again with Another Agent'}</span>
                     </button>
                   ) : (
                     <>
                       <button
                         type="button"
+                        className="sonic-exact-payout-btn"
                         onClick={() => refreshPendingRequests()}
-                        style={{
-                          background: '#334155',
-                          border: '1px solid #475569',
-                          color: '#f8fafc',
-                          padding: '12px',
-                          borderRadius: '10px',
-                          fontSize: '13px',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '8px'
-                        }}
                       >
                         <i className="fa-solid fa-rotate"></i>
-                        {lang === 'am' ? 'ሁኔታውን ያድሱ' : 'Refresh Status'}
+                        <span>{lang === 'am' ? 'ሁኔታውን ያድሱ' : 'Refresh Status'}</span>
                       </button>
                       <button
                         type="button"
+                        className="sonic-waiting-cancel-link"
                         onClick={handleDismissPendingDeposit}
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          color: '#64748b',
-                          fontSize: '12px',
-                          cursor: 'pointer',
-                          marginTop: '4px'
-                        }}
                       >
                         {lang === 'am' ? 'ይቅር / አዲስ ፎርም ክፈት' : 'Cancel / Open New Form'}
                       </button>
@@ -877,7 +864,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                   </div>
                 </div>
 
-                {/* Field 2: Payment Method (Image 1 Exact Match) */}
+                {/* Field 2: Payment Method (Visible Interactive Dropdown matching Withdraw Page) */}
                 <div className="sonic-exact-section-group">
                   <div className="sonic-exact-section-header">
                     <div className="sonic-deposit-red-icon-badge">
@@ -887,38 +874,71 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                       {lang === 'am' ? 'የክፍያ ዘዴ' : 'Payment Method'}
                     </span>
                   </div>
-                  <div
-                    className="sonic-exact-deposit-method-card"
-                    onClick={() => {
-                      const rails = (selectedAgent?.supportedRails || ['Telebirr']).filter(r => r !== 'CBE');
-                      if (rails.length > 1) {
-                        setAgentPaymentRail(prev => prev === 'Telebirr' ? 'M-Pesa' : 'Telebirr');
-                      } else {
-                        setAgentPaymentRail(prev => prev === 'Telebirr' ? 'M-Pesa' : 'Telebirr');
-                      }
-                    }}
-                    title="Click to toggle payment rail (Telebirr / Safaricom M-Pesa)"
-                  >
-                    <div className="sonic-exact-method-left">
-                      {agentPaymentRail === 'Telebirr' ? <TelebirrLogo size={24} /> : <MpesaLogo size={24} />}
-                      <span className="sonic-exact-method-name">
-                        {agentPaymentRail === 'Telebirr' ? 'Telebirr' : 'Safaricom M-Pesa'}
-                      </span>
-                    </div>
-                    <div className="sonic-exact-method-right">
-                      <div className="sonic-exact-method-check">
-                        <i className="fa-solid fa-check"></i>
+                  <div className="sonic-exact-deposit-method-card">
+                    <div
+                      className="sonic-exact-method-top-row"
+                      onClick={() => setIsDepositDropdownOpen(!isDepositDropdownOpen)}
+                      title="Click to select payment method (Telebirr / Safaricom M-Pesa)"
+                    >
+                      <div className="sonic-exact-method-left">
+                        {agentPaymentRail === 'Telebirr' ? <TelebirrLogo size={24} /> : <MpesaLogo size={24} />}
+                        <span className="sonic-exact-method-name">
+                          {agentPaymentRail === 'Telebirr' ? 'Telebirr' : 'Safaricom M-Pesa'}
+                        </span>
+                      </div>
+                      <div className="sonic-exact-method-right">
+                        <span className="sonic-exact-change-tag">
+                          {lang === 'am' ? 'ቀይር' : 'Change'}
+                        </span>
+                        <div className="sonic-exact-method-check">
+                          <i className="fa-solid fa-check"></i>
+                        </div>
+                        <i className={`fa-solid fa-chevron-down sonic-exact-chevron ${isDepositDropdownOpen ? 'open' : ''}`}></i>
                       </div>
                     </div>
+
+                    {isDepositDropdownOpen && (
+                      <div className="sonic-exact-dropdown-list">
+                        <div
+                          className={`sonic-exact-dropdown-item ${agentPaymentRail === 'Telebirr' ? 'active' : ''}`}
+                          onClick={() => handleSwitchDepositRail('Telebirr')}
+                        >
+                          <div className="sonic-exact-item-left">
+                            <TelebirrLogo size={22} />
+                            <span className="sonic-exact-item-title">Telebirr</span>
+                          </div>
+                          {agentPaymentRail === 'Telebirr' ? (
+                            <div className="sonic-exact-item-check"><i className="fa-solid fa-check"></i></div>
+                          ) : (
+                            <div className="sonic-exact-item-radio"></div>
+                          )}
+                        </div>
+
+                        <div
+                          className={`sonic-exact-dropdown-item ${agentPaymentRail === 'M-Pesa' ? 'active' : ''}`}
+                          onClick={() => handleSwitchDepositRail('M-Pesa')}
+                        >
+                          <div className="sonic-exact-item-left">
+                            <MpesaLogo size={22} />
+                            <span className="sonic-exact-item-title">Safaricom M-Pesa</span>
+                          </div>
+                          {agentPaymentRail === 'M-Pesa' ? (
+                            <div className="sonic-exact-item-check"><i className="fa-solid fa-check"></i></div>
+                          ) : (
+                            <div className="sonic-exact-item-radio"></div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Field 3: Compact Recipient Account Card with Agent Online Badge (Image 1 Exact Match) */}
                 {isLoadingAgents ? (
                   <div className="sonic-clean-account-card" style={{ justifyContent: 'center', textAlign: 'center', padding: '16px 12px' }}>
-                    <i className="fa-solid fa-circle-notch fa-spin" style={{ color: '#0088cc', fontSize: '18px', marginRight: '8px' }}></i>
+                    <i className="fa-solid fa-circle-notch fa-spin" style={{ color: '#dc2626', fontSize: '18px', marginRight: '8px' }}></i>
                     <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>
-                      {lang === 'am' ? 'ተረኛ ኤጀንት በመመደብ ላይ...' : 'Assigning online certified agent...'}
+                      {lang === 'am' ? 'ተረኛ ኤጀንት በመመደብ ላይ...' : `Assigning online ${agentPaymentRail} agent...`}
                     </span>
                   </div>
                 ) : !selectedAgent ? (
@@ -928,20 +948,20 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                     </span>
                     <button
                       type="button"
-                      onClick={() => loadAgentData()}
-                      style={{ marginTop: '6px', padding: '4px 12px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                      onClick={() => loadAgentData(undefined, agentPaymentRail)}
+                      style={{ marginTop: '6px', padding: '4px 12px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
                     >
                       {lang === 'am' ? 'እንደገና ሞክር' : 'Retry'}
                     </button>
                   </div>
                 ) : (() => {
                   const currentAccount = agentPaymentRail === 'Telebirr'
-                    ? (selectedAgent.telebirrPhone || selectedAgent.phone || '0983998935')
-                    : (selectedAgent.mpesaPhone || selectedAgent.phone || '0712131415');
+                    ? (selectedAgent.telebirrPhone || (selectedAgent.supportedRails?.includes('Telebirr') ? selectedAgent.phone : '') || '')
+                    : (selectedAgent.mpesaPhone || '');
 
                   const currentName = agentPaymentRail === 'Telebirr'
-                    ? (selectedAgent.telebirrName || selectedAgent.displayName || 'Tsinat Alemayehu')
-                    : (selectedAgent.mpesaName || selectedAgent.displayName || 'Tsinat Alemayehu');
+                    ? (selectedAgent.telebirrName || selectedAgent.displayName || 'Sonic Agent')
+                    : (selectedAgent.mpesaName || selectedAgent.displayName || 'Sonic Agent');
 
                   return (
                     <div className="sonic-exact-agent-card">
@@ -1487,17 +1507,16 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                     )}
                   </button>
 
-                  {/* Action Button 2: Need Support (Exact Image Match) */}
+                  {/* Action Button 2: Need Support (Strictly routes to @Sonicbingo_support) */}
                   <button
                     type="button"
                     className="sonic-exact-support-btn"
                     onClick={() => {
-                      const tg = selectedWithdrawAgent?.telegramUsername || selectedAgent?.telegramUsername || 'SonicBingoSupport';
-                      const cleanTg = tg.replace(/^@/, '');
+                      const supportUrl = 'https://t.me/Sonicbingo_support';
                       if (window.Telegram?.WebApp?.openTelegramLink) {
-                        window.Telegram.WebApp.openTelegramLink(`https://t.me/${cleanTg}`);
+                        window.Telegram.WebApp.openTelegramLink(supportUrl);
                       } else {
-                        window.open(`https://t.me/${cleanTg}`, '_blank');
+                        window.open(supportUrl, '_blank');
                       }
                     }}
                   >

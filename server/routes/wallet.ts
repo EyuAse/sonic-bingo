@@ -1459,6 +1459,7 @@ router.get('/agents/assigned', async (req, res) => {
   try {
     const excludeAgentId = req.query.excludeAgentId ? String(req.query.excludeAgentId).trim() : null;
     const preferredAgentId = req.query.preferredAgentId ? String(req.query.preferredAgentId).trim() : null;
+    const requestedRail = req.query.rail ? String(req.query.rail).trim() : null;
 
     const agentsRes = await query(
       `SELECT ap.id, ap.agent_code, ap.status, 
@@ -1519,14 +1520,16 @@ router.get('/agents/assigned', async (req, res) => {
           weight
         };
       })
-      .filter(a => a.hasConfiguredRails);
+      .filter(a => a.hasConfiguredRails && (!requestedRail || a.supportedRails.includes(requestedRail)));
 
     if (eligibleAgents.length === 0) {
       return res.json({
         success: true,
         agent: null,
         totalOnlineAgents: 0,
-        message: 'No certified agents currently online with active payment rails'
+        message: requestedRail
+          ? `No certified agents currently online supporting ${requestedRail}`
+          : 'No certified agents currently online with active payment rails'
       });
     }
 
@@ -1608,13 +1611,18 @@ router.post('/deposit-via-agent', requireAuth, async (req: AuthenticatedRequest,
     }
 
     // 1. Locate Agent Profile (by ID or Unique Code)
-    let agentQuery = 'SELECT id, agent_code, wallet_balance, status, is_online, telebirr_phone, cbe_account, mpesa_phone, active_rails FROM agent_profiles WHERE ';
+    let agentQuery = `SELECT ap.id, ap.agent_code, ap.wallet_balance, ap.status, ap.is_online,
+                             ap.telebirr_phone, ap.cbe_account, ap.mpesa_phone, ap.active_rails,
+                             u.telegram_username
+                      FROM agent_profiles ap
+                      LEFT JOIN users u ON ap.user_id = u.id
+                      WHERE `;
     let agentParam: any[] = [];
     if (agentId) {
-      agentQuery += 'id = $1';
+      agentQuery += 'ap.id = $1';
       agentParam = [agentId];
     } else if (agentCode) {
-      agentQuery += 'agent_code = $1';
+      agentQuery += 'ap.agent_code = $1';
       agentParam = [agentCode.trim().toUpperCase()];
     } else {
       return res.status(400).json({ success: false, error: 'Agent ID or Unique Agent Code is required.' });
@@ -1734,6 +1742,7 @@ router.post('/deposit-via-agent', requireAuth, async (req: AuthenticatedRequest,
             requestId: newRequest.id,
             agentCode: agent.agent_code,
             agentDisplayName: `Sonic Agent #${agent.agent_code}`,
+            agentTelegramUsername: agent.telegram_username ? String(agent.telegram_username).trim().replace(/^@/, '') : null,
             status: 'approved',
             instant: true,
             newBalance: approveResult.newBalance
@@ -1769,6 +1778,7 @@ router.post('/deposit-via-agent', requireAuth, async (req: AuthenticatedRequest,
       requestId: newRequest.id,
       agentCode: agent.agent_code,
       agentDisplayName: `Sonic Agent #${agent.agent_code}`,
+      agentTelegramUsername: agent.telegram_username ? String(agent.telegram_username).trim().replace(/^@/, '') : null,
       status: 'pending',
       estimatedWaitMinutes: 2
     });
@@ -1788,9 +1798,10 @@ router.get('/my-agent-deposits', requireAuth, async (req: AuthenticatedRequest, 
     const requestsRes = await query(
       `SELECT req.id, req.amount, req.payment_method, req.transaction_code, req.status, 
               req.rejection_reason, req.created_at, req.resolved_at,
-              ap.agent_code, ap.telebirr_phone
+              ap.agent_code, ap.telebirr_phone, u.telegram_username
        FROM agent_deposit_requests req
        JOIN agent_profiles ap ON req.agent_id = ap.id
+       LEFT JOIN users u ON ap.user_id = u.id
        WHERE req.player_id = $1
        ORDER BY req.created_at DESC
        LIMIT 20`,
@@ -1809,7 +1820,8 @@ router.get('/my-agent-deposits', requireAuth, async (req: AuthenticatedRequest, 
         createdAt: r.created_at,
         resolvedAt: r.resolved_at,
         agentCode: r.agent_code,
-        agentDisplayName: `Sonic Agent #${r.agent_code}`
+        agentDisplayName: `Sonic Agent #${r.agent_code}`,
+        agentTelegramUsername: r.telegram_username ? String(r.telegram_username).trim().replace(/^@/, '') : null
       }))
     });
   } catch (error: any) {

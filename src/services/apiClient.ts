@@ -613,10 +613,11 @@ export const apiClient = {
       }>(res);
     },
 
-    async getAssignedAgent(excludeAgentId?: string, preferredAgentId?: string) {
+    async getAssignedAgent(excludeAgentId?: string, preferredAgentId?: string, rail?: string) {
       const params = new URLSearchParams();
       if (excludeAgentId) params.append('excludeAgentId', excludeAgentId);
       if (preferredAgentId) params.append('preferredAgentId', preferredAgentId);
+      if (rail) params.append('rail', rail);
       const queryStr = params.toString();
       const url = queryStr ? `${API_BASE}/wallet/agents/assigned?${queryStr}` : `${API_BASE}/wallet/agents/assigned`;
       const res = await fetch(url);
@@ -662,6 +663,7 @@ export const apiClient = {
         requestId: string;
         agentCode: string;
         agentDisplayName: string;
+        agentTelegramUsername?: string | null;
         status: string;
         estimatedWaitMinutes: number;
       }>(res);
@@ -684,6 +686,7 @@ export const apiClient = {
           resolvedAt?: string;
           agentCode: string;
           agentDisplayName: string;
+          agentTelegramUsername?: string | null;
         }>;
       }>(res);
     },
