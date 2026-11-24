@@ -8,6 +8,7 @@ import { LanguageDropdown } from '../components/common/LanguageDropdown.tsx';
 import { TransactionHistory } from '../components/wallet/TransactionHistory.tsx';
 import { apiClient } from '../services/apiClient.ts';
 import { socketService } from '../services/socketService.ts';
+import { extractTransactionIdFromMessage } from '../utils/extractSmsTxId.ts';
 import {
   SonicCrownLogo,
   GoldCoinsStackIcon,
@@ -546,12 +547,17 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
       return;
     }
 
-    // Smart extraction: if full SMS pasted, extract the transaction code if present
-    let cleanCode = agentTxRef.trim();
-    const smsMatch = cleanCode.match(/(?:txn|tx|id|reference|ref|code|ቁጥር)[:\s#]*([a-zA-Z0-9]{6,25})/i);
-    if (smsMatch && smsMatch[1]) {
-      cleanCode = smsMatch[1];
+    // Smart extraction: identify ONLY the Transaction ID from pasted confirmation SMS (ignoring links)
+    const extractedTxId = extractTransactionIdFromMessage(agentTxRef);
+    if (!extractedTxId) {
+      showToast(
+        lang === 'am'
+          ? '⚠️ ከመልእክቱ ውስጥ የግብይት መለያ ቁጥር ማግኘት አልተቻለም። እባክዎ የማረጋገጫ ኤስኤምኤስ ወይም መለያ ቁጥሩን ያስገቡ።'
+          : '⚠️ Could not detect a Transaction ID from the message. Please paste the full confirmation SMS or enter the ID.'
+      );
+      return;
     }
+    const cleanCode = extractedTxId;
 
     try {
       setIsSubmittingAgentDeposit(true);
@@ -1034,6 +1040,33 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                       required
                     />
                   </div>
+                  {agentTxRef.trim().length > 0 && (() => {
+                    const detectedTxId = extractTransactionIdFromMessage(agentTxRef);
+                    if (detectedTxId) {
+                      return (
+                        <div className="sonic-sms-detected-pill">
+                          <i className="fa-solid fa-circle-check"></i>
+                          <span>
+                            {lang === 'am' ? 'የተገኘው መለያ ቁጥር፡' : 'Detected ID:'}{' '}
+                            <strong>{detectedTxId}</strong>
+                          </span>
+                        </div>
+                      );
+                    }
+                    if (agentTxRef.trim().length >= 12) {
+                      return (
+                        <div className="sonic-sms-warning-pill">
+                          <i className="fa-solid fa-triangle-exclamation"></i>
+                          <span>
+                            {lang === 'am'
+                              ? 'የግብይት መለያ ቁጥር አልተገኘም — የማረጋገጫ ኤስኤምኤስ መልእክቱን (ሊንክ ሳይሆን) ይለጥፉ።'
+                              : 'No Transaction ID found yet — paste the confirmation SMS message (not just a link).'}
+                          </span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
 
                 {/* Field 5: Submit Deposit Button (Image 1 Exact Match) */}

@@ -2998,6 +2998,42 @@
   color: #dc2626;
 }
 
+/* Live Detected Transaction ID Preview Pills */
+.sonic-sms-detected-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #15803d;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.sonic-sms-detected-pill strong {
+  font-weight: 900;
+  letter-spacing: 0.3px;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.sonic-sms-warning-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #b45309;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
 .sonic-exact-method-input-row {
   display: flex;
   align-items: center;
