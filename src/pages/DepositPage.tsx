@@ -495,6 +495,13 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
       return;
     }
 
+    // Smart extraction: if full SMS pasted, extract the transaction code if present
+    let cleanCode = agentTxRef.trim();
+    const smsMatch = cleanCode.match(/(?:txn|tx|id|reference|ref|code|ቁጥር)[:\s#]*([a-zA-Z0-9]{6,25})/i);
+    if (smsMatch && smsMatch[1]) {
+      cleanCode = smsMatch[1];
+    }
+
     try {
       setIsSubmittingAgentDeposit(true);
       const res = await apiClient.wallet.depositViaAgent({
@@ -503,7 +510,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
         amount: agentDepositAmount,
         paymentMethod: agentPaymentRail,
         playerPhone: agentSenderPhone.trim() || user?.phone || user?.nationalPhone || '',
-        transactionCode: agentTxRef.trim(),
+        transactionCode: cleanCode,
         screenshotUrl: agentReceiptImage || undefined
       });
 
@@ -514,7 +521,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
           id: res.requestId,
           amount: agentDepositAmount,
           paymentMethod: agentPaymentRail,
-          transactionCode: agentTxRef.trim().toUpperCase(),
+          transactionCode: cleanCode.toUpperCase(),
           status: 'pending',
           agentCode: res.agentCode,
           agentDisplayName: res.agentDisplayName,
@@ -583,94 +590,76 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
     <div className="sonic-deposit-canvas" id="page-deposit">
       <div className="sonic-deposit-container">
         {/* 1. Exact Reference Top Nav Header */}
-        <div className="sonic-top-nav-bar">
+        <div className="sonic-deposit-header-clean">
           <button
             type="button"
-            className="sonic-nav-icon-btn"
+            className="sonic-deposit-back-btn"
             onClick={() => switchPage('wallet')}
-            title="Close / Back to Wallet"
+            title="Back to Wallet"
           >
-            <i className="fa-solid fa-xmark"></i>
+            <i className="fa-solid fa-arrow-left"></i>
           </button>
-
-          <div className="sonic-brand-center-stack">
-            <div className="sonic-brand-logo-row">
-              <SonicCrownLogo size={34} />
-              <span className="sonic-brand-name-text">
-                <span>Sonic</span>
-                <span className="sonic-brand-bingo-word">Bingo</span>
-              </span>
-            </div>
-            <div className="sonic-brand-underline-glow"></div>
-          </div>
-
-          <div className="sonic-nav-right-actions">
+          <h2 className="sonic-deposit-title-clean">Deposit</h2>
+          <div className="sonic-deposit-header-right">
             <button
               type="button"
-              className="sonic-nav-icon-btn"
+              className="sonic-deposit-switch-tab-btn"
               onClick={() => setActiveTab(activeTab === 'deposit' ? 'withdraw' : 'deposit')}
-              title="Switch Deposit / Withdraw"
+              title={activeTab === 'deposit' ? 'Switch to Withdraw' : 'Switch to Deposit'}
             >
-              <i className="fa-solid fa-chevron-down"></i>
-            </button>
-            <button
-              type="button"
-              className="sonic-nav-icon-btn"
-              onClick={() => showToast('👑 Certified Sonic Agent Network')}
-              title="Options"
-            >
-              <i className="fa-solid fa-ellipsis-vertical"></i>
+              {activeTab === 'deposit' ? 'Withdraw ➔' : 'Deposit ➔'}
             </button>
           </div>
         </div>
 
-        {/* Quick Segmented Toggle */}
-        <div style={{
-          display: 'flex',
-          background: '#e2e8f0',
-          borderRadius: '14px',
-          padding: '3px',
-          marginBottom: '4px'
-        }}>
-          <button
-            type="button"
-            onClick={() => setActiveTab('deposit')}
-            style={{
-              flex: 1,
-              padding: '8px 12px',
-              border: 'none',
-              borderRadius: '11px',
-              background: activeTab === 'deposit' ? '#ffffff' : 'transparent',
-              color: activeTab === 'deposit' ? '#0f172a' : '#64748b',
-              fontWeight: 800,
-              fontSize: '12.5px',
-              boxShadow: activeTab === 'deposit' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            📥 {lang === 'am' ? 'ገንዘብ አስገባ (Deposit)' : 'Deposit via Agent'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('withdraw')}
-            style={{
-              flex: 1,
-              padding: '8px 12px',
-              border: 'none',
-              borderRadius: '11px',
-              background: activeTab === 'withdraw' ? '#ffffff' : 'transparent',
-              color: activeTab === 'withdraw' ? '#0f172a' : '#64748b',
-              fontWeight: 800,
-              fontSize: '12.5px',
-              boxShadow: activeTab === 'withdraw' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            📤 {lang === 'am' ? 'ገንዘብ አውጣ (Withdraw)' : 'Withdraw via Agent'}
-          </button>
-        </div>
+        {/* Quick Segmented Toggle (Visible when in Withdraw tab or secondary navigation) */}
+        {activeTab === 'withdraw' && (
+          <div style={{
+            display: 'flex',
+            background: '#e2e8f0',
+            borderRadius: '14px',
+            padding: '3px',
+            marginBottom: '4px'
+          }}>
+            <button
+              type="button"
+              onClick={() => setActiveTab('deposit')}
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                border: 'none',
+                borderRadius: '11px',
+                background: 'transparent',
+                color: '#64748b',
+                fontWeight: 800,
+                fontSize: '12.5px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              📥 {lang === 'am' ? 'ገንዘብ አስገባ (Deposit)' : 'Deposit via Agent'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('withdraw')}
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                border: 'none',
+                borderRadius: '11px',
+                background: '#ffffff',
+                color: '#0f172a',
+                fontWeight: 800,
+                fontSize: '12.5px',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              📤 {lang === 'am' ? 'ገንዘብ አውጣ (Withdraw)' : 'Withdraw via Agent'}
+            </button>
+          </div>
+        )}
 
         {activeTab === 'deposit' && (
           <>
@@ -875,437 +864,149 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
               </div>
             ) : (
               /* CASE B: EXACT 100% REFERENCE CLONE INTERACTIVE DEPOSIT FORM */
-              <form onSubmit={handleAgentDepositSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                {/* 2. Top "Via Local Agent" Banner Card */}
-                <div className="sonic-local-agent-banner-card">
-                  <div className="sonic-local-agent-left">
-                    <AgentAvatarIcon size={46} />
-                    <div className="sonic-local-agent-info">
-                      <h4>Via Local Agent</h4>
-                      <p>Cash / Telebirr Instant</p>
-                    </div>
-                  </div>
-                  <GoldenRadioJewel checked={true} size={26} />
-                </div>
-
-                {/* 3. Step 1: Header Row (Single Assigned Certified Cashier) */}
-                <div className="sonic-step-header-row">
-                  <div className="sonic-step-badge-pill">
-                    <span className="sonic-step-number-circle">1</span>
-                    <span className="sonic-step-label-text">
-                      {lang === 'am' ? 'የተመደበ ካሺየር' : 'Assigned Cashier'}
-                    </span>
-                  </div>
-                  {totalOnlineAgents > 1 && (
-                    <button
-                      type="button"
-                      onClick={handleReRollAgent}
-                      disabled={isReRollingAgent}
-                      className="sonic-re-roll-btn"
-                      title={lang === 'am' ? 'ሌላ የተረጋገጠ ኤጀንት ይጠይቁ' : 'Request another certified agent'}
-                    >
-                      <i className={`fa-solid fa-arrows-rotate ${isReRollingAgent ? 'fa-spin' : ''}`} style={{ fontSize: '11px' }}></i>
-                      <span>{lang === 'am' ? 'ሌላ ኤጀንት' : 'Change Agent'}</span>
-                    </button>
-                  )}
-                </div>
-
-                {/* 4. Single Assigned Certified Cashier Card (Pure Responsive Column Layout) */}
-                <div className="sonic-agents-stack">
-                  {isLoadingAgents ? (
-                    <div className="sonic-agent-light-card" style={{ justifyContent: 'center', textAlign: 'center', color: '#64748b', padding: '24px 16px' }}>
-                      <i className="fa-solid fa-circle-notch fa-spin" style={{ marginRight: '8px', color: '#0088cc', fontSize: '18px' }}></i>
-                      <span style={{ fontSize: '13px', fontWeight: 600 }}>
-                        {lang === 'am' ? 'ተረኛ ኤጀንት በመመደብ ላይ...' : 'Assigning online certified agent...'}
-                      </span>
-                    </div>
-                  ) : !selectedAgent ? (
-                    <div className="sonic-agent-light-card" style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '20px 16px', gap: '8px' }}>
-                      <i className="fa-solid fa-user-clock" style={{ fontSize: '24px', color: '#94a3b8' }}></i>
-                      <span style={{ fontSize: '13.5px', color: '#64748b', fontWeight: 600 }}>
-                        {agentLoadError || (lang === 'am' ? 'በአሁኑ ሰዓት ንቁ ኤጀንት የለም' : 'No certified agents currently online.')}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => loadAgentData()}
-                        style={{ marginTop: '6px', padding: '6px 14px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', color: '#1e293b' }}
-                      >
-                        <i className="fa-solid fa-rotate-right" style={{ marginRight: '6px' }}></i> {lang === 'am' ? 'እንደገና ሞክር' : 'Retry'}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="sonic-assigned-cashier-card">
-                      {/* Top Row: Crown + Agent Title + Badges + Online Status */}
-                      <div className="sonic-assigned-card-top">
-                        <div className="sonic-assigned-identity">
-                          <div className="sonic-assigned-crown-wrap">
-                            <SonicCrownLogo size={34} />
-                            <span className="sonic-assigned-crown-dot"></span>
-                          </div>
-                          <div className="sonic-assigned-titles">
-                            <div className="sonic-assigned-name-row">
-                              <span className="sonic-assigned-name">
-                                Sonic Agent <span className="sonic-assigned-code-pill">#{selectedAgent.agentCode}</span>
-                              </span>
-                            </div>
-                            <div className="sonic-assigned-trust-row">
-                              <span className="sonic-assigned-badge-assigned">
-                                {lang === 'am' ? 'የተመደበ' : 'ASSIGNED'}
-                              </span>
-                              <span className="sonic-assigned-dot-sep">•</span>
-                              <span className="sonic-assigned-trust-item">
-                                <i className="fa-solid fa-bolt" style={{ color: '#fbbf24', fontSize: '9px' }}></i>
-                                <span>{lang === 'am' ? '~2 ደቂቃ' : '~2 Min'}</span>
-                              </span>
-                              <span className="sonic-assigned-dot-sep">•</span>
-                              <span className="sonic-assigned-trust-item">
-                                <i className="fa-solid fa-shield-halved" style={{ color: '#10b981', fontSize: '9px' }}></i>
-                                <span>100% Escrow</span>
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <span className="sonic-status-pill-emerald" style={{ flexShrink: 0, padding: '3px 8px', fontSize: '10.5px' }}>
-                          <span className="sonic-pulse-dot" style={{ width: 6, height: 6 }}></span>
-                          Online
-                        </span>
-                      </div>
-
-                      {/* Middle Row: Active Rails Chips */}
-                      <div className="sonic-assigned-rails-row">
-                        {(selectedAgent.supportedRails || ['Telebirr']).filter(r => r !== 'CBE').map((r: string) => (
-                          <span
-                            key={r}
-                            className={r === 'Telebirr' ? 'sonic-assigned-rail-chip-telebirr' : 'sonic-assigned-rail-chip-mpesa'}
-                          >
-                            <i className="fa-solid fa-bolt"></i>
-                            <span>{r === 'Telebirr' ? 'Telebirr Instant' : 'Safaricom M-Pesa'}</span>
-                          </span>
-                        ))}
-                      </div>
-
-                      {/* Telegram Support Action for this Agent */}
-                      <a
-                        href={`https://t.me/${selectedAgent.telegramUsername ? selectedAgent.telegramUsername.replace('@', '') : 'sonicbingobot'}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="sonic-agent-telegram-btn"
-                        title="Chat with Agent on Telegram"
-                      >
-                        <i className="fa-brands fa-telegram"></i>
-                        <span>
-                          {lang === 'am'
-                            ? `የኤጀንት #${selectedAgent.agentCode} ቴሌግራም ያግኙ`
-                            : `Chat with Agent #${selectedAgent.agentCode} on Telegram`}
-                        </span>
-                      </a>
-
-                      {/* Bottom Footer: Session Note */}
-                      <div className="sonic-assigned-footer">
-                        <div className="sonic-assigned-footer-left">
-                          <span className="sonic-pulse-dot" style={{ width: 5, height: 5, background: '#10b981' }}></span>
-                          <span className="sonic-assigned-footer-text">
-                            {lang === 'am'
-                              ? `ከ ${totalOnlineAgents} የተረጋገጡ ኤጀንቶች ውስጥ ለእርስዎ የተመደበ`
-                              : `1 of ${totalOnlineAgents} verified agents assigned to your session`}
-                          </span>
-                        </div>
-                      </div>
-
-                      <LiquidGoldCornerSwoosh opacity={0.7} />
-                    </div>
-                  )}
-                </div>
-
-                {/* 5. Deposit Amount Card */}
-                <div className="sonic-amount-card-shell">
-                  <div className="sonic-amount-header-row">
-                    <div className="sonic-amount-header-left">
-                      <GoldCoinsStackIcon size={32} />
-                      <div className="sonic-amount-titles">
-                        <h4>Deposit Amount</h4>
-                        <p>Choose an amount to deposit</p>
-                      </div>
-                    </div>
-                    <span className="sonic-amount-min-tag">Min: 50 ETB</span>
-                  </div>
-
-                  {/* 3x2 Quick Amounts Grid */}
-                  <div className="sonic-amount-chips-grid">
-                    {[50, 100, 200, 500, 1000, 1500].map(amt => (
-                      <button
-                        key={amt}
-                        type="button"
-                        className={`sonic-amount-chip-btn ${agentDepositAmount === amt ? 'active' : ''}`}
-                        onClick={() => setAgentDepositAmount(amt)}
-                      >
-                        {amt} ETB
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Large Custom Amount Input Box */}
-                  <div className="sonic-amount-input-box">
-                    <span className="sonic-currency-prefix">ETB</span>
+              <form onSubmit={handleAgentDepositSubmit} className="sonic-deposit-clean-shell" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {/* Field 1: Deposit Amount */}
+                <div className="sonic-clean-field-group">
+                  <label className="sonic-clean-label">Deposit Amount</label>
+                  <div className="sonic-clean-input-box">
+                    <span className="sonic-clean-currency">ETB</span>
                     <input
                       type="number"
                       min="50"
                       max="1500"
                       value={agentDepositAmount || ''}
                       onChange={e => setAgentDepositAmount(Number(e.target.value))}
-                      className="sonic-amount-big-field"
+                      className="sonic-clean-amount-input"
                       placeholder="100"
                       required
                     />
-                    <LiquidGoldCornerSwoosh opacity={0.6} />
                   </div>
                 </div>
 
-                {/* 6. +150 Sonic Coins Incentive Card */}
-                <div className="sonic-coins-reward-card">
-                  <div className="sonic-coins-reward-left">
-                    <GoldenGiftBoxIcon size={32} />
-                    <div className="sonic-coins-reward-titles">
-                      <h5>+{Math.round((agentDepositAmount || 0) * 1.5)} Sonic Coins</h5>
-                      <p>Will be awarded on successful deposit</p>
-                    </div>
-                  </div>
-                  <span className="sonic-coins-reward-arrow">›</span>
-                </div>
-
-                {/* 7. Step 3: Transfer Payment to Agent (100% Real Dynamic Multi-Rail) */}
-                <div className="sonic-step-badge-pill" style={{ alignSelf: 'flex-start' }}>
-                  <span className="sonic-step-number-circle">3</span>
-                  <span className="sonic-step-label-text">
-                    {lang === 'am' ? 'ክፍያውን ለኤጀንቱ ያስተላልፉ' : 'Transfer Payment to Agent'}
-                  </span>
-                </div>
-
-                {/* Check if agent has configured payment rails */}
-                {(!selectedAgent?.supportedRails || selectedAgent.supportedRails.filter(r => r !== 'CBE').length === 0) ? (
-                  <div className="sonic-agent-unconfigured-alert">
-                    <i className="fa-solid fa-triangle-exclamation" style={{ color: '#d97706', fontSize: '22px', flexShrink: 0, marginTop: '2px' }}></i>
-                    <div>
-                      <strong>{lang === 'am' ? 'ይህ ኤጀንት የክፍያ መቀበያ ሂሳቦችን አላዘጋጀም' : 'Payment Accounts Not Configured'}</strong>
-                      <p>
-                        {lang === 'am'
-                          ? `ኤጀንት #${selectedAgent?.agentCode || ''} ምንም የክፍያ መቀበያ ሂሳብ እስካሁን አላስመዘገበም። እባክዎ ከላይ ያለውን "ሌላ ኤጀንት ቀይር" የሚለውን በመጫን ሌላ ኤጀንት ይምረጡ።`
-                          : `Sonic Agent #${selectedAgent?.agentCode || ''} has not set up active payment accounts yet. Please tap "Change Agent" above to switch.`}
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {/* Dynamic Rails Selector: Telebirr & M-Pesa only */}
-                    <div 
-                      className="sonic-rails-selector-grid"
-                      style={{ 
-                        gridTemplateColumns: selectedAgent.supportedRails.filter(r => r !== 'CBE').length === 1 ? '1fr' : 'repeat(2, 1fr)' 
-                      }}
-                    >
-                      {selectedAgent.supportedRails.filter(r => r !== 'CBE').map((rail) => {
-                        const isRailActive = agentPaymentRail === rail;
-                        const railAccount = rail === 'Telebirr' ? selectedAgent.telebirrPhone : selectedAgent.mpesaPhone;
-                        return (
-                          <div
-                            key={rail}
-                            className={isRailActive ? 'sonic-rail-obsidian-tab' : 'sonic-rail-light-tab'}
-                            onClick={() => setAgentPaymentRail(rail as any)}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                              {rail === 'Telebirr' && <TelebirrLogo size={22} />}
-                              {rail === 'M-Pesa' && <MpesaLogo size={22} />}
-                              <div style={{ minWidth: 0 }}>
-                                <div className={isRailActive ? 'sonic-rail-title-white' : 'sonic-rail-title-dark'}>
-                                  {rail}
-                                </div>
-                                <div className={isRailActive ? 'sonic-rail-sub-gold' : 'sonic-rail-sub-muted'} style={{ fontSize: '11px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                  {railAccount || ''}
-                                </div>
-                              </div>
-                            </div>
-                            {isRailActive ? (
-                              <span style={{ color: '#f59e0b', fontSize: '16px', fontWeight: 900 }}>✓</span>
-                            ) : (
-                              <span style={{ color: '#94a3b8', fontSize: '14px' }}>›</span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Verified Agent Payment Details Card */}
-                    {(() => {
-                      const currentAccount = agentPaymentRail === 'Telebirr'
-                        ? selectedAgent.telebirrPhone
-                        : selectedAgent.mpesaPhone;
-
-                      const currentName = agentPaymentRail === 'Telebirr'
-                        ? (selectedAgent.telebirrName || selectedAgent.displayName)
-                        : (selectedAgent.mpesaName || selectedAgent.displayName);
-
-                      if (!currentAccount) return null;
-
-                      return (
-                        <div className="sonic-verified-payment-card">
-                          <div className="sonic-verified-card-top">
-                            <div className="sonic-verified-badge">
-                              <i className="fa-solid fa-shield-halved"></i>
-                              <span>{lang === 'am' ? 'የተረጋገጠ የኤጀንት ክፍያ መቀበያ' : 'Verified Agent Payment Account'}</span>
-                            </div>
-                            <span className="sonic-verified-rail-tag">
-                              {agentPaymentRail}
-                            </span>
-                          </div>
-
-                          <div className="sonic-verified-account-row">
-                            <div className="sonic-verified-label">
-                              {lang === 'am' ? 'የሂሳብ ባለቤት ስም (Account Holder Name)' : 'Account Holder Name'}
-                            </div>
-                            <div className="sonic-verified-name">
-                              {currentName}
-                            </div>
-                          </div>
-
-                          <div className="sonic-verified-account-box">
-                            <div className="sonic-verified-num-wrap">
-                              <span className="sonic-verified-num-label">
-                                {agentPaymentRail === 'Telebirr' 
-                                  ? (lang === 'am' ? 'የቴሌብር ስልክ ቁጥር' : 'Telebirr Phone') 
-                                  : (lang === 'am' ? 'የኤም-ፔሳ ስልክ ቁጥር' : 'M-Pesa Phone')}
-                              </span>
-                              <span className="sonic-verified-number">
-                                {currentAccount}
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              className="sonic-gold-copy-btn"
-                              onClick={() => handleCopy(currentAccount, `${agentPaymentRail} Account`)}
-                            >
-                              <i className="fa-regular fa-copy"></i>
-                              <span>{copiedText === currentAccount ? (lang === 'am' ? 'ተቀድቷል!' : 'Copied!') : (lang === 'am' ? 'ቅዳ' : 'Copy')}</span>
-                            </button>
-                          </div>
-
-                          <div className="sonic-verified-instruction-banner">
-                            <i className="fa-solid fa-circle-info"></i>
-                            <span>
-                              {lang === 'am'
-                                ? `በትክክል ${agentDepositAmount} ETB ወደ "${currentName}" (${currentAccount}) ይላኩ፤ ከዚያም ከቴሌብር/ኤም-ፔሳ የደረሰዎትን የ SMS ማረጋገጫ ኮድ ከታች ያስገቡ።`
-                                : `Transfer exactly ${agentDepositAmount} ETB to "${currentName}" (${currentAccount}), then submit your SMS confirmation reference code below.`}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </>
-                )}
-
-                {/* 9. Step 4: Transaction Proof Form & Submit */}
-                <div className="sonic-proof-card-shell">
-                  <div className="sonic-step-badge-pill" style={{ alignSelf: 'flex-start', background: 'transparent', border: 'none', padding: 0 }}>
-                    <span className="sonic-step-number-circle">4</span>
-                    <span className="sonic-step-label-text">
-                      {lang === 'am' ? 'የክፍያ ማረጋገጫ (SMS ID)' : 'Submit Transaction Proof'}
-                    </span>
-                  </div>
-
-                  {/* Sending Phone */}
-                  <div className="sonic-proof-input-group">
-                    <label className="sonic-proof-label">
-                      {lang === 'am' ? 'የላኩበት ስልክ ቁጥር' : 'Your Sending Phone Number'}
-                    </label>
-                    <div className="sonic-proof-field-wrap">
-                      <i className="fa-solid fa-phone"></i>
-                      <input
-                        type="tel"
-                        value={agentSenderPhone}
-                        onChange={e => setAgentSenderPhone(e.target.value)}
-                        placeholder="09... or 07..."
-                        className="sonic-proof-text-input"
-                        required
-                      />
-                    </div>
-                    <p style={{ fontSize: '11px', color: '#f59e0b', marginTop: '4px', lineHeight: '1.4' }}>
-                      {lang === 'am' 
-                        ? '💡 ገንዘቡን የላኩት ከሌላ ሰው ስልክ ከሆነ፣ እባክዎ የላኪውን ስልክ ቁጥር እዚህ ያስገቡ።' 
-                        : '💡 If you transferred from someone else\'s phone, enter their phone number here.'}
-                    </p>
-                  </div>
-
-                  {/* SMS Reference ID */}
-                  <div className="sonic-proof-input-group">
-                    <label className="sonic-proof-label">
-                      {lang === 'am' ? 'የኤስኤምኤስ ግብይት መለያ (SMS Tx ID)' : 'SMS Transaction Reference (Tx Ref)'}
-                    </label>
-                    <div className="sonic-proof-field-wrap">
-                      <i className="fa-solid fa-receipt"></i>
-                      <input
-                        type="text"
-                        value={agentTxRef}
-                        onChange={e => setAgentTxRef(e.target.value)}
-                        placeholder="e.g. TB-89214302 or FT24..."
-                        className="sonic-proof-text-input"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Screenshot Attachment */}
-                  <input
-                    type="file"
-                    id="sonic-deposit-slip-input"
-                    accept="image/*"
-                    onChange={handleAgentImageUpload}
-                    style={{ display: 'none' }}
-                  />
-                  <label htmlFor="sonic-deposit-slip-input" className="sonic-upload-slip-btn">
-                    <i className="fa-solid fa-camera"></i>
-                    <span>
-                      {agentReceiptImage
-                        ? (lang === 'am' ? '📸 ደረሰኝ ተያይዟል (ለመቀየር ይጫኑ)' : '📸 Receipt Attached (Click to Change)')
-                        : (lang === 'am' ? 'የክፍያ ደረሰኝ ስክሪንሾት አያይዝ (አማራጭ)' : 'Attach Receipt Screenshot (Optional)')}
-                    </span>
-                  </label>
-
-                  {agentReceiptImage && (
-                    <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '10px', overflow: 'hidden', border: '1px solid #f59e0b' }}>
-                      <img src={agentReceiptImage} alt="Slip" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      <button
-                        type="button"
-                        onClick={() => setAgentReceiptImage(null)}
-                        style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(0,0,0,0.7)', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 11 }}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Submit Deposit Button */}
-                  <button
-                    type="submit"
-                    className="sonic-primary-gold-submit-btn"
-                    disabled={isSubmittingAgentDeposit || !selectedAgent || (!selectedAgent.supportedRails || selectedAgent.supportedRails.length === 0)}
+                {/* Field 2: Payment Method */}
+                <div className="sonic-clean-field-group">
+                  <label className="sonic-clean-label">Payment Method</label>
+                  <div
+                    className="sonic-clean-select-box"
+                    onClick={() => {
+                      const rails = (selectedAgent?.supportedRails || ['Telebirr']).filter(r => r !== 'CBE');
+                      if (rails.length > 1) {
+                        setAgentPaymentRail(prev => prev === 'Telebirr' ? 'M-Pesa' : 'Telebirr');
+                      }
+                    }}
                   >
-                    {isSubmittingAgentDeposit ? (
-                      <>
-                        <i className="fa-solid fa-spinner fa-spin"></i>
-                        <span>{lang === 'am' ? 'በመላክ ላይ...' : 'Submitting to Agent...'}</span>
-                      </>
-                    ) : (
-                      <>
-                        <i className="fa-solid fa-paper-plane"></i>
-                        <span>
-                          {lang === 'am'
-                            ? `ተቀማጩን ለኤጀንት #${selectedAgent?.agentCode || ''} ላክ`
-                            : `Submit Deposit to Sonic Agent #${selectedAgent?.agentCode || ''}`}
-                        </span>
-                      </>
-                    )}
-                  </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {agentPaymentRail === 'Telebirr' ? <TelebirrLogo size={20} /> : <MpesaLogo size={20} />}
+                      <span className="sonic-clean-select-val">{agentPaymentRail}</span>
+                    </div>
+                    <i className="fa-solid fa-chevron-down sonic-clean-select-chevron"></i>
+                  </div>
                 </div>
+
+                {/* Field 3: Compact Recipient Account Card with Agent Online Badge (Image 1 + Image 2) */}
+                {isLoadingAgents ? (
+                  <div className="sonic-clean-account-card" style={{ justifyContent: 'center', textAlign: 'center', padding: '16px 12px' }}>
+                    <i className="fa-solid fa-circle-notch fa-spin" style={{ color: '#0088cc', fontSize: '18px', marginRight: '8px' }}></i>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>
+                      {lang === 'am' ? 'ተረኛ ኤጀንት በመመደብ ላይ...' : 'Assigning online certified agent...'}
+                    </span>
+                  </div>
+                ) : !selectedAgent ? (
+                  <div className="sonic-clean-account-card" style={{ textAlign: 'center', padding: '14px 12px' }}>
+                    <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>
+                      {agentLoadError || (lang === 'am' ? 'በአሁኑ ሰዓት ንቁ ኤጀንት የለም' : 'No certified agents currently online.')}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => loadAgentData()}
+                      style={{ marginTop: '6px', padding: '4px 12px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      {lang === 'am' ? 'እንደገና ሞክር' : 'Retry'}
+                    </button>
+                  </div>
+                ) : (() => {
+                  const currentAccount = agentPaymentRail === 'Telebirr'
+                    ? (selectedAgent.telebirrPhone || selectedAgent.phone || '0912131415')
+                    : (selectedAgent.mpesaPhone || selectedAgent.phone || '0712131415');
+
+                  const currentName = agentPaymentRail === 'Telebirr'
+                    ? (selectedAgent.telebirrName || selectedAgent.displayName || 'Tsinat Alemayehu')
+                    : (selectedAgent.mpesaName || selectedAgent.displayName || 'Tsinat Alemayehu');
+
+                  return (
+                    <div className="sonic-clean-account-card">
+                      {/* Image 2: SONIC AGENT | #AGT-XXXX • Online */}
+                      <div className="sonic-clean-agent-strip">
+                        <span className="sonic-clean-agent-title">
+                          SONIC AGENT | <span className="sonic-clean-agent-code">#{selectedAgent.agentCode || 'AGT-3457'}</span>
+                        </span>
+                        <span className="sonic-clean-online-pill">
+                          <span className="sonic-clean-online-dot"></span>
+                          Online
+                        </span>
+                      </div>
+
+                      {/* Image 1: Send to: 0912131415 [copy icon] */}
+                      <div className="sonic-clean-account-row">
+                        <span className="sonic-clean-row-label">Send to:</span>
+                        <div className="sonic-clean-phone-wrap">
+                          <span className="sonic-clean-phone-number">{currentAccount}</span>
+                          <button
+                            type="button"
+                            className="sonic-clean-copy-btn"
+                            onClick={() => handleCopy(currentAccount, `${agentPaymentRail} Phone`)}
+                            title="Copy Account Number"
+                          >
+                            <i className={copiedText === currentAccount ? "fa-solid fa-check" : "fa-regular fa-copy"}></i>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Image 1: Telebirr Account Name: Tsinat Alemayehu */}
+                      <div className="sonic-clean-account-row">
+                        <span className="sonic-clean-row-label">{agentPaymentRail} Account Name:</span>
+                        <span className="sonic-clean-account-name">{currentName}</span>
+                      </div>
+
+                      {/* Image 1: Send Money, then paste your confirmation SMS below. */}
+                      <div className="sonic-clean-account-hint">
+                        Send Money, then paste your confirmation SMS below.
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Field 4: Confirmation SMS Card (Image 1) */}
+                <div className="sonic-clean-sms-card">
+                  <div className="sonic-clean-sms-header">
+                    <h4 className="sonic-clean-sms-title">Paste your confirmation SMS</h4>
+                    <p className="sonic-clean-sms-subtitle">Confirmation SMS or Transaction Number</p>
+                  </div>
+                  <textarea
+                    className="sonic-clean-sms-textarea"
+                    rows={2}
+                    value={agentTxRef}
+                    onChange={e => setAgentTxRef(e.target.value)}
+                    placeholder="Paste the whole confirmation SMS here- or Just the Transaction Number. we'll find it."
+                    required
+                  />
+                </div>
+
+                {/* Field 5: Submit Deposit Button (Image 1) */}
+                <button
+                  type="submit"
+                  className="sonic-clean-submit-btn"
+                  disabled={isSubmittingAgentDeposit || !selectedAgent || (!selectedAgent.supportedRails || selectedAgent.supportedRails.length === 0)}
+                >
+                  {isSubmittingAgentDeposit ? (
+                    <>
+                      <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '8px' }}></i>
+                      <span>Submitting Deposit...</span>
+                    </>
+                  ) : (
+                    'Submit Deposit'
+                  )}
+                </button>
               </form>
             )}
           </>

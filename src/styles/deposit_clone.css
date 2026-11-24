@@ -6,22 +6,23 @@
 /* Canvas & Viewport Shell */
 .sonic-deposit-canvas {
   min-height: 100vh;
-  background: #f8f9fa;
-  background-image: radial-gradient(ellipse at 50% 0%, rgba(254, 240, 138, 0.28) 0%, rgba(248, 249, 250, 0) 65%);
-  padding: 12px 14px 125px;
-  padding-bottom: calc(120px + env(safe-area-inset-bottom, 24px));
+  background: #ffffff;
+  padding: 8px 14px 20px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 12px));
   font-family: -apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', 'Inter', Roboto, sans-serif;
   color: #0f172a;
   box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .sonic-deposit-container {
-  max-width: 480px;
+  max-width: 440px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding-bottom: 24px;
+  gap: 8px;
+  padding-bottom: 8px;
 }
 
 /* 1. Top App Bar */
@@ -1448,4 +1449,347 @@
   font-size: 13px;
   margin-top: 2px;
   flex-shrink: 0;
+}
+
+/* ==========================================================================
+   PHASE 1-4: COMPACT SINGLE-SCREEN (ZERO-SCROLL) DEPOSIT UI STYLES
+   ========================================================================== */
+
+.sonic-deposit-header-clean {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 2px 8px;
+}
+
+.sonic-deposit-back-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #0f172a;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.sonic-deposit-back-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.sonic-deposit-title-clean {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.sonic-deposit-header-right {
+  display: flex;
+  align-items: center;
+}
+
+.sonic-deposit-switch-tab-btn {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sonic-deposit-switch-tab-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+/* Field Groups */
+.sonic-clean-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sonic-clean-label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-left: 2px;
+}
+
+.sonic-clean-input-box {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0 12px;
+  height: 42px;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sonic-clean-input-box:focus-within {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+.sonic-clean-currency {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #64748b;
+  margin-right: 10px;
+  letter-spacing: 0.5px;
+}
+
+.sonic-clean-amount-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  padding: 0;
+}
+
+.sonic-clean-select-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0 12px;
+  height: 42px;
+  box-sizing: border-box;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.15s ease;
+}
+
+.sonic-clean-select-box:hover {
+  border-color: #cbd5e1;
+}
+
+.sonic-clean-select-val {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.sonic-clean-select-chevron {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* Clean Account Card (Image 1 + Image 2) */
+.sonic-clean-account-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.sonic-clean-agent-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 2px;
+}
+
+.sonic-clean-agent-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.sonic-clean-agent-code {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.sonic-clean-online-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0d9488;
+}
+
+.sonic-clean-online-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #0d9488;
+  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.2);
+}
+
+.sonic-clean-account-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+}
+
+.sonic-clean-row-label {
+  font-weight: 500;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.sonic-clean-phone-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sonic-clean-phone-number {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: 0.3px;
+}
+
+.sonic-clean-copy-btn {
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  color: #2563eb;
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.sonic-clean-copy-btn:hover {
+  background: #dbeafe;
+}
+
+.sonic-clean-account-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.sonic-clean-account-hint {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #0284c7;
+  margin-top: 2px;
+}
+
+/* Clean SMS Confirmation Card (Image 1) */
+.sonic-clean-sms-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.sonic-clean-sms-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sonic-clean-sms-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.sonic-clean-sms-subtitle {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+  margin: 0;
+}
+
+.sonic-clean-sms-textarea {
+  width: 100%;
+  height: 52px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #0f172a;
+  font-family: inherit;
+  resize: none;
+  box-sizing: border-box;
+  background: #f8fafc;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.sonic-clean-sms-textarea:focus {
+  border-color: #f59e0b;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+.sonic-clean-sms-textarea::placeholder {
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+/* Submit Button (Image 1) */
+.sonic-clean-submit-btn {
+  width: 100%;
+  height: 45px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 15.5px;
+  font-weight: 800;
+  letter-spacing: 0.1px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  margin-top: 2px;
+}
+
+.sonic-clean-submit-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.sonic-clean-submit-btn:active:not(:disabled) {
+  background: #f1f5f9;
+  transform: translateY(0);
+}
+
+.sonic-clean-submit-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: #f8fafc;
 }
