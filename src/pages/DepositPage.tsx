@@ -593,22 +593,41 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
         <div className="sonic-deposit-header-clean">
           <button
             type="button"
-            className="sonic-deposit-back-btn"
+            className={activeTab === 'withdraw' ? "sonic-withdraw-back-circle" : "sonic-deposit-back-btn"}
             onClick={() => switchPage('wallet')}
             title="Back to Wallet"
           >
             <i className="fa-solid fa-arrow-left"></i>
           </button>
-          <h2 className="sonic-deposit-title-clean">{activeTab === 'deposit' ? 'Deposit' : 'Withdraw'}</h2>
+          {activeTab === 'withdraw' ? (
+            <div className="sonic-withdraw-title-stack">
+              <h2 className="sonic-withdraw-main-title">Withdraw</h2>
+              <span className="sonic-withdraw-sub-title">Withdraw your winnings</span>
+            </div>
+          ) : (
+            <h2 className="sonic-deposit-title-clean">Deposit</h2>
+          )}
           <div className="sonic-deposit-header-right">
-            <button
-              type="button"
-              className="sonic-deposit-switch-tab-btn"
-              onClick={() => setActiveTab(activeTab === 'deposit' ? 'withdraw' : 'deposit')}
-              title={activeTab === 'deposit' ? 'Switch to Withdraw' : 'Switch to Deposit'}
-            >
-              {activeTab === 'deposit' ? 'Withdraw ➔' : 'Deposit ➔'}
-            </button>
+            {activeTab === 'withdraw' ? (
+              <button
+                type="button"
+                className="sonic-withdraw-history-pill"
+                onClick={() => switchPage('wallet')}
+                title="View Transaction History"
+              >
+                <i className="fa-solid fa-clock-rotate-left"></i>
+                <span>Transaction History</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="sonic-deposit-switch-tab-btn"
+                onClick={() => setActiveTab('withdraw')}
+                title="Switch to Withdraw"
+              >
+                Withdraw ➔
+              </button>
+            )}
           </div>
         </div>
 
@@ -965,27 +984,37 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
 
       {/* TAB 2: WITHDRAW FUNDS VIA DECENTRALIZED AGENT */}
           {activeTab === 'withdraw' && (
-            <div className="sonic-deposit-clean-shell" style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
-              {/* Card 1: Withdrawable Balance & Cashier Status Card (Image 1) */}
-              <div className="sonic-clean-balance-card">
-                <div className="sonic-clean-balance-top">
-                  <span className="sonic-clean-balance-label">Withdrawable Balance</span>
-                  <span className="sonic-clean-live-desk">
-                    <span className="sonic-clean-live-dot"></span>
-                    Live Desk
-                  </span>
-                </div>
-                <div className="sonic-clean-balance-val">
-                  {balance.toFixed(2)} <span className="sonic-clean-balance-curr">ETB</span>
-                </div>
-                <div className="sonic-clean-balance-bottom">
-                  <div className="sonic-clean-cashier-info">
-                    <span className="sonic-clean-cashier-title">Payout Cashier</span>
-                    <span className="sonic-clean-cashier-sub">Direct Payout to Telebirr & Safaricom M-Pesa</span>
+            <div className="sonic-deposit-clean-shell" style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              {/* Card 1: Luxury Crimson Hero Card (Image Exact Match) */}
+              <div className="sonic-crimson-hero-card">
+                <div className="sonic-crimson-top-row">
+                  <div className="sonic-crimson-left-group">
+                    <div className="sonic-crimson-wallet-icon">
+                      <i className="fa-solid fa-wallet"></i>
+                    </div>
+                    <div className="sonic-crimson-balance-stack">
+                      <span className="sonic-crimson-balance-label">Withdrawable Balance</span>
+                      <div className="sonic-crimson-balance-val">
+                        {balance.toFixed(2)} <span className="sonic-crimson-balance-curr">ETB</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="sonic-clean-cashier-meta">
-                    <span className="sonic-clean-fee-tag">0% Fee Free</span>
-                    <span className="sonic-clean-limit-tag">Max 2,000 ETB</span>
+                  <div className="sonic-crimson-live-desk">
+                    <span className="sonic-crimson-live-dot"></span>
+                    <span>Live Desk</span>
+                  </div>
+                </div>
+
+                <div className="sonic-crimson-divider"></div>
+
+                <div className="sonic-crimson-bottom-row">
+                  <div className="sonic-crimson-cashier-info">
+                    <span className="sonic-crimson-cashier-title">Payout Cashier</span>
+                    <span className="sonic-crimson-cashier-sub">Direct Payout to Telebirr & Safaricom M-Pesa</span>
+                  </div>
+                  <div className="sonic-crimson-cashier-meta">
+                    <span className="sonic-crimson-fee-tag">0% Fee Free</span>
+                    <span className="sonic-crimson-limit-tag">Max 2,000 ETB</span>
                   </div>
                 </div>
               </div>
@@ -1169,34 +1198,46 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                 </div>
               ) : (
                 /* CASE B: 100% DIRECT CENTRAL OFFICIAL CASHIER WITHDRAWAL FORM */
-                <form onSubmit={handleWithdrawSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
-                  {/* Card 2: Withdrawal Criteria Verified (Image 1) */}
-                  <div className="sonic-clean-criteria-card">
-                    <div className="sonic-clean-criteria-header">
-                      <span className="sonic-clean-criteria-title">
-                        {lang === 'am' ? 'የማውጣት መስፈርቶች ተረጋግጠዋል' : 'Withdrawal Criteria Verified'}
-                      </span>
-                      <span className={`sonic-clean-eligible-badge ${withdrawalEligibility && !withdrawalEligibility.eligible ? 'locked' : ''}`}>
+                <form onSubmit={handleWithdrawSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  {/* Card 2: Withdrawal Criteria (Image Exact Match) */}
+                  <div className="sonic-criteria-exact-card">
+                    <div className="sonic-criteria-top-row">
+                      <div className="sonic-criteria-title-group">
+                        <i className="fa-solid fa-circle-check sonic-criteria-check-icon"></i>
+                        <span className="sonic-criteria-title-text">
+                          {lang === 'am' ? 'የማውጣት መስፈርቶች' : 'Withdrawal Criteria'}
+                        </span>
+                      </div>
+                      <span className={`sonic-criteria-eligible-pill ${withdrawalEligibility && !withdrawalEligibility.eligible ? 'locked' : ''}`}>
                         {withdrawalEligibility && !withdrawalEligibility.eligible ? 'LOCKED' : 'ELIGIBLE'}
                       </span>
                     </div>
 
-                    <div className="sonic-clean-criteria-grid">
-                      <div className="sonic-clean-criteria-col">
-                        <span className="sonic-clean-criteria-label">
-                          {lang === 'am' ? 'የተጠናቀቁ ጨዋታዎች' : 'Competed Game'}
-                        </span>
-                        <span className="sonic-clean-criteria-val">
-                          {withdrawalEligibility?.completedGames ?? 20}/5
-                        </span>
+                    <div className="sonic-criteria-data-grid">
+                      <div className="sonic-criteria-stat-item">
+                        <i className="fa-solid fa-trophy sonic-criteria-trophy-icon"></i>
+                        <div className="sonic-criteria-stat-stack">
+                          <span className="sonic-criteria-stat-label">
+                            {lang === 'am' ? 'የተጠናቀቁ ጨዋታዎች' : 'Completed Games'}
+                          </span>
+                          <span className="sonic-criteria-stat-val-green">
+                            {withdrawalEligibility?.completedGames ?? 23}/5
+                          </span>
+                        </div>
                       </div>
-                      <div className="sonic-clean-criteria-col">
-                        <span className="sonic-clean-criteria-label">
-                          {lang === 'am' ? 'የዛሬ ወጪዎች' : "Today's Withdrawal"}
-                        </span>
-                        <span className="sonic-clean-criteria-val">
-                          {withdrawalEligibility?.todayWithdrawals ?? 0}/5
-                        </span>
+
+                      <div className="sonic-criteria-v-divider"></div>
+
+                      <div className="sonic-criteria-stat-item">
+                        <i className="fa-regular fa-calendar-days sonic-criteria-calendar-icon"></i>
+                        <div className="sonic-criteria-stat-stack">
+                          <span className="sonic-criteria-stat-label">
+                            {lang === 'am' ? 'የዛሬ ወጪዎች' : "Today's Withdrawal"}
+                          </span>
+                          <span className="sonic-criteria-stat-val-dark">
+                            {withdrawalEligibility?.todayWithdrawals ?? 0}/5
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -1213,83 +1254,109 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                     )}
                   </div>
 
-                  {/* Field 1: Payment Method Dropdown (Image 1) */}
-                  <div className="sonic-clean-field-group">
-                    <label className="sonic-clean-label">Payment Method</label>
-                    <div
-                      className="sonic-clean-select-box"
-                      onClick={() => setWithdrawMethod(withdrawMethod === 'Telebirr' ? 'M-Pesa' : 'Telebirr')}
-                      title="Click to toggle payment rail (Telebirr / M-Pesa)"
-                    >
-                      <span className="sonic-clean-select-val">
-                        {withdrawMethod === 'Telebirr' ? 'Telebirr' : 'Safaricom M-Pesa'}
+                  {/* Section 3: Payment Method Card (Exact Image Match) */}
+                  <div className="sonic-exact-section-group">
+                    <div className="sonic-exact-section-header">
+                      <i className="fa-solid fa-credit-card sonic-exact-header-icon"></i>
+                      <span className="sonic-exact-header-title">
+                        {lang === 'am' ? 'የክፍያ ዘዴ' : 'Payment Method'}
                       </span>
-                      <i className="fa-solid fa-chevron-down sonic-clean-select-chevron"></i>
+                    </div>
+                    <div className="sonic-exact-method-card">
+                      <div
+                        className="sonic-exact-method-top-row"
+                        onClick={() => setWithdrawMethod(withdrawMethod === 'Telebirr' ? 'M-Pesa' : 'Telebirr')}
+                        title="Click to toggle payment method (Telebirr / Safaricom M-Pesa)"
+                      >
+                        <div className="sonic-exact-method-left">
+                          {withdrawMethod === 'Telebirr' ? <TelebirrLogo size={24} /> : <MpesaLogo size={24} />}
+                          <span className="sonic-exact-method-name">
+                            {withdrawMethod === 'Telebirr' ? 'Telebirr' : 'Safaricom M-Pesa'}
+                          </span>
+                        </div>
+                        <div className="sonic-exact-method-check">
+                          <i className="fa-solid fa-check"></i>
+                        </div>
+                      </div>
+                      <div className="sonic-exact-method-input-row">
+                        <i className="fa-solid fa-phone sonic-exact-phone-icon"></i>
+                        <input
+                          type="tel"
+                          value={withdrawAccount}
+                          onChange={e => setWithdrawAccount(e.target.value)}
+                          placeholder="0983624574"
+                          className="sonic-exact-phone-field"
+                          required
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  {/* Field 2: Receiving Phone Number (Image 1) */}
-                  <div className="sonic-clean-field-group">
-                    <label className="sonic-clean-label">
-                      {withdrawMethod === 'Telebirr'
-                        ? (lang === 'am' ? 'ገንዘቡ የሚላክበት የቴሌብር ስልክ ቁጥር (09.../07...)' : 'Receiving Telebirr Phone Number (09.../07...)')
-                        : (lang === 'am' ? 'ገንዘቡ የሚላክበት የሳፋሪኮም ኤም-ፔሳ ስልክ ቁጥር (07...)' : 'Receiving Safaricom M-Pesa Phone Number (07...)')}
-                    </label>
-                    <div className="sonic-clean-input-box">
-                      <i className="fa-solid fa-phone sonic-clean-input-icon"></i>
-                      <input
-                        type="tel"
-                        value={withdrawAccount}
-                        onChange={e => setWithdrawAccount(e.target.value)}
-                        placeholder="09........"
-                        className="sonic-clean-text-input"
-                        required
-                      />
+                  {/* Section 4: Account Holder (Exact Image Match) */}
+                  <div className="sonic-exact-section-group">
+                    <div className="sonic-exact-section-header">
+                      <i className="fa-solid fa-user sonic-exact-header-icon"></i>
+                      <span className="sonic-exact-header-title">
+                        {lang === 'am' ? 'የሂሳብ ባለቤቱ ስም' : 'Account Holder'}
+                      </span>
                     </div>
-                  </div>
-
-                  {/* Field 3: Account Holder Full Name (Image 1) */}
-                  <div className="sonic-clean-field-group">
-                    <label className="sonic-clean-label">
-                      {lang === 'am' ? 'የሂሳብ ባለቤቱ ሙሉ ስም' : 'Account Holder Full Name'}
-                    </label>
-                    <div className="sonic-clean-input-box">
-                      <i className="fa-solid fa-user sonic-clean-input-icon"></i>
+                    <div className="sonic-exact-input-container">
+                      <i className="fa-solid fa-user sonic-exact-input-leading-icon"></i>
                       <input
                         type="text"
                         value={withdrawAccountName}
                         onChange={e => setWithdrawAccountName(e.target.value)}
-                        placeholder="Marta Eshetu"
-                        className="sonic-clean-text-input"
+                        placeholder="KIYA"
+                        className="sonic-exact-text-field"
                         required
                       />
                     </div>
                   </div>
 
-                  {/* Field 4: Withdrawal Amount (Image 1) */}
-                  <div className="sonic-clean-field-group">
-                    <label className="sonic-clean-label">
-                      {lang === 'am' ? 'የማውጣት መጠን' : 'Withdrawal Amount'}
-                    </label>
-                    <div className="sonic-clean-input-box">
-                      <span className="sonic-clean-currency">ETB</span>
+                  {/* Section 5: Withdrawal Amount (Exact Image Match) */}
+                  <div className="sonic-exact-section-group">
+                    <div className="sonic-exact-section-header">
+                      <i className="fa-solid fa-coins sonic-exact-header-icon"></i>
+                      <span className="sonic-exact-header-title">
+                        {lang === 'am' ? 'የማውጣት መጠን' : 'Withdrawal Amount'}
+                      </span>
+                    </div>
+                    <div className="sonic-exact-input-container">
+                      <div className="sonic-exact-amount-leading">
+                        <span className="sonic-exact-coin-badge">🪙</span>
+                        <span className="sonic-exact-currency-prefix">ETB</span>
+                      </div>
                       <input
                         type="number"
                         value={withdrawAmount || ''}
                         onChange={e => setWithdrawAmount(Number(e.target.value))}
-                        placeholder="100"
+                        placeholder="200"
                         min={50}
                         max={2000}
-                        className="sonic-clean-amount-input"
+                        className="sonic-exact-amount-field"
                         required
                       />
                     </div>
+
+                    {/* 4 Quick Amount Chips */}
+                    <div className="sonic-exact-chips-row">
+                      {[100, 200, 500, 1000].map(amt => (
+                        <button
+                          key={amt}
+                          type="button"
+                          className={`sonic-exact-chip-btn ${withdrawAmount === amt ? 'active' : ''}`}
+                          onClick={() => setWithdrawAmount(amt)}
+                        >
+                          {amt === 1000 ? '1,000' : amt}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Action Button 1: Request Payout (Image 1) */}
+                  {/* Action Button 1: Request Payout (Exact Image Match) */}
                   <button
                     type="submit"
-                    className="sonic-clean-submit-btn"
+                    className="sonic-exact-payout-btn"
                     disabled={
                       isSubmittingWithdraw ||
                       withdrawAmount < 50 ||
@@ -1304,16 +1371,21 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                         <span>{lang === 'am' ? 'በመላክ ላይ...' : 'Submitting Payout Request...'}</span>
                       </>
                     ) : (
-                      lang === 'am'
-                        ? `አሁን ${withdrawAmount > 0 ? `${withdrawAmount} ብር` : ''} ማውጣት ጠይቅ`
-                        : `Request ${withdrawAmount > 0 ? `${withdrawAmount} ETB` : '100 ETB'} Payout`
+                      <>
+                        <i className="fa-solid fa-paper-plane sonic-exact-payout-icon"></i>
+                        <span>
+                          {lang === 'am'
+                            ? `የ${withdrawAmount > 0 ? withdrawAmount : 200} ብር ወጪ ይጠይቁ`
+                            : `Request ${withdrawAmount > 0 ? withdrawAmount : 200} ETB Payout`}
+                        </span>
+                      </>
                     )}
                   </button>
 
-                  {/* Action Button 2: Need Support (Image 1) */}
+                  {/* Action Button 2: Need Support (Exact Image Match) */}
                   <button
                     type="button"
-                    className="sonic-clean-support-btn"
+                    className="sonic-exact-support-btn"
                     onClick={() => {
                       const tg = selectedWithdrawAgent?.telegramUsername || selectedAgent?.telegramUsername || 'SonicBingoSupport';
                       const cleanTg = tg.replace(/^@/, '');
@@ -1324,7 +1396,8 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                       }
                     }}
                   >
-                    {lang === 'am' ? 'እርዳታ ይፈልጋሉ (Support)' : 'Need Support'}
+                    <i className="fa-solid fa-headset sonic-exact-support-icon"></i>
+                    <span>{lang === 'am' ? 'እርዳታ ይፈልጋሉ (Support)' : 'Need Support'}</span>
                   </button>
                 </form>
               )}

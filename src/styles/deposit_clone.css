@@ -2020,3 +2020,612 @@
   background: #fee2e2;
   transform: translateY(0);
 }
+
+/* Subheader (Exact Image Match) */
+.sonic-withdraw-back-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fef3c7;
+  color: #78350f;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.sonic-withdraw-back-circle:hover {
+  background: #fde68a;
+  transform: scale(1.05);
+}
+
+.sonic-withdraw-title-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-left: 6px;
+  flex: 1;
+}
+
+.sonic-withdraw-main-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.sonic-withdraw-sub-title {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.sonic-withdraw-history-pill {
+  background: #fef3c7;
+  color: #78350f;
+  border: 1px solid #fde68a;
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.sonic-withdraw-history-pill:hover {
+  background: #fde68a;
+}
+
+/* Card 1: Luxury Crimson Hero Card (Image Exact Match) */
+.sonic-crimson-hero-card {
+  background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 55%, #1e0003 100%);
+  border-radius: 14px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 18px rgba(153, 27, 27, 0.35);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-sizing: border-box;
+}
+
+.sonic-crimson-top-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.sonic-crimson-left-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sonic-crimson-wallet-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.sonic-crimson-balance-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.sonic-crimson-balance-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.2;
+}
+
+.sonic-crimson-balance-val {
+  font-size: 24px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+}
+
+.sonic-crimson-balance-curr {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-left: 2px;
+}
+
+.sonic-crimson-live-desk {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #34d399;
+}
+
+.sonic-crimson-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.3);
+}
+
+.sonic-crimson-divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 2px 0;
+}
+
+.sonic-crimson-bottom-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.sonic-crimson-cashier-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sonic-crimson-cashier-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.sonic-crimson-cashier-sub {
+  font-size: 9px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.sonic-crimson-cashier-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.sonic-crimson-fee-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: #34d399;
+}
+
+.sonic-crimson-limit-tag {
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Card 2: Withdrawal Criteria (Image Exact Match) */
+.sonic-criteria-exact-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  box-sizing: border-box;
+}
+
+.sonic-criteria-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sonic-criteria-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sonic-criteria-check-icon {
+  color: #10b981;
+  font-size: 15px;
+}
+
+.sonic-criteria-title-text {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.sonic-criteria-eligible-pill {
+  background: #dcfce7;
+  color: #15803d;
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.sonic-criteria-eligible-pill.locked {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.sonic-criteria-data-grid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 2px;
+}
+
+.sonic-criteria-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.sonic-criteria-trophy-icon {
+  font-size: 20px;
+  color: #eab308;
+  filter: drop-shadow(0 1px 2px rgba(234, 179, 8, 0.25));
+}
+
+.sonic-criteria-calendar-icon {
+  font-size: 20px;
+  color: #991b1b;
+}
+
+.sonic-criteria-stat-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sonic-criteria-stat-label {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+.sonic-criteria-stat-val-green {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #16a34a;
+  line-height: 1.2;
+}
+
+.sonic-criteria-stat-val-dark {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.sonic-criteria-v-divider {
+  width: 1px;
+  height: 28px;
+  background: #e2e8f0;
+  margin: 0 10px;
+}
+
+/* Sections 3, 4, 5: Payment Method, Account Holder, Amount & Chips (Image Exact Match) */
+.sonic-exact-section-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.sonic-exact-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+.sonic-exact-header-icon {
+  font-size: 13px;
+  color: #7f1d1d;
+}
+
+.sonic-exact-header-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.1px;
+}
+
+.sonic-exact-method-card {
+  background: #ffffff;
+  border: 1.5px solid #ef4444;
+  border-radius: 14px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.06);
+  transition: border-color 0.15s ease;
+  box-sizing: border-box;
+}
+
+.sonic-exact-method-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sonic-exact-method-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sonic-exact-method-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.sonic-exact-method-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #dc2626;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.3);
+}
+
+.sonic-exact-method-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid #f8fafc;
+  padding-top: 4px;
+}
+
+.sonic-exact-phone-icon {
+  font-size: 13.5px;
+  color: #7f1d1d;
+}
+
+.sonic-exact-phone-field {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #0f172a;
+  padding: 0;
+  font-family: inherit;
+}
+
+.sonic-exact-phone-field::placeholder {
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.sonic-exact-input-container {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  height: 40px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sonic-exact-input-container:focus-within {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1);
+}
+
+.sonic-exact-input-leading-icon {
+  font-size: 13.5px;
+  color: #7f1d1d;
+}
+
+.sonic-exact-text-field {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  padding: 0;
+  font-family: inherit;
+}
+
+.sonic-exact-text-field::placeholder {
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.sonic-exact-amount-leading {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sonic-exact-coin-badge {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.sonic-exact-currency-prefix {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #64748b;
+  margin-right: 4px;
+}
+
+.sonic-exact-amount-field {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 16px;
+  font-weight: 900;
+  color: #0f172a;
+  padding: 0;
+  font-family: inherit;
+}
+
+.sonic-exact-amount-field::placeholder {
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.sonic-exact-chips-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.sonic-exact-chip-btn {
+  height: 32px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  padding: 0;
+  font-family: inherit;
+}
+
+.sonic-exact-chip-btn:hover {
+  border-color: #cbd5e1;
+}
+
+.sonic-exact-chip-btn.active {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.35);
+  font-weight: 900;
+}
+
+/* Action Buttons: Request Payout & Need Support (Image Exact Match) */
+.sonic-exact-payout-btn {
+  width: 100%;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #e50914 0%, #dc2626 50%, #b91c1c 100%);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);
+  font-family: inherit;
+  margin-top: 3px;
+  box-sizing: border-box;
+}
+
+.sonic-exact-payout-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f0141f 0%, #e50914 50%, #c61a1a 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.5);
+}
+
+.sonic-exact-payout-btn:active:not(:disabled) {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+}
+
+.sonic-exact-payout-btn:disabled {
+  background: #fca5a5;
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.sonic-exact-payout-icon {
+  font-size: 15px;
+  transform: rotate(-10deg);
+}
+
+.sonic-exact-support-btn {
+  width: 100%;
+  height: 40px;
+  border: 1.5px solid #fee2e2;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.1px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.04);
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.sonic-exact-support-btn:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.sonic-exact-support-btn:active {
+  background: #fee2e2;
+  transform: translateY(0);
+}
+
+.sonic-exact-support-icon {
+  font-size: 15px;
+  color: #dc2626;
+}
