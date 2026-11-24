@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext.tsx';
 import { useLanguage } from '../context/LanguageContext.tsx';
 import { TelebirrLogo, MpesaLogo } from '../components/wallet/PaymentLogos.tsx';
 import { LanguageDropdown } from '../components/common/LanguageDropdown.tsx';
+import { TransactionHistory } from '../components/wallet/TransactionHistory.tsx';
 import { apiClient } from '../services/apiClient.ts';
 import { socketService } from '../services/socketService.ts';
 import {
@@ -31,6 +32,8 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
   const { t, lang } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>(initialTab);
+  const [showTxHistory, setShowTxHistory] = useState<boolean>(false);
+  const [isWithdrawDropdownOpen, setIsWithdrawDropdownOpen] = useState<boolean>(false);
   const quickAmounts = [50, 100, 200, 500, 1000, 1500];
 
   // Active Authorized Agents for In-Person / Online Deposit & Cashout (Dynamic Multi-Rail)
@@ -586,6 +589,19 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
     }
   };
 
+  if (showTxHistory) {
+    return (
+      <div className="sonic-deposit-canvas" id="page-deposit">
+        <div className="sonic-deposit-container" style={{ padding: '8px 12px' }}>
+          <TransactionHistory
+            initialTab="withdrawals"
+            onBack={() => setShowTxHistory(false)}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="sonic-deposit-canvas" id="page-deposit">
       <div className="sonic-deposit-container">
@@ -593,7 +609,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
         <div className="sonic-deposit-header-clean">
           <button
             type="button"
-            className={activeTab === 'withdraw' ? "sonic-withdraw-back-circle" : "sonic-deposit-back-btn"}
+            className="sonic-withdraw-back-circle"
             onClick={() => switchPage('wallet')}
             title="Back to Wallet"
           >
@@ -612,8 +628,8 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
               <button
                 type="button"
                 className="sonic-withdraw-history-pill"
-                onClick={() => switchPage('wallet')}
-                title="View Transaction History"
+                onClick={() => setShowTxHistory(true)}
+                title="View Withdraw History"
               >
                 <i className="fa-solid fa-clock-rotate-left"></i>
                 <span>Transaction History</span>
@@ -625,7 +641,8 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                 onClick={() => setActiveTab('withdraw')}
                 title="Switch to Withdraw"
               >
-                Withdraw ➔
+                <span>Withdraw</span>
+                <i className="fa-solid fa-arrow-right" style={{ fontSize: '11px', marginLeft: '4px' }}></i>
               </button>
             )}
           </div>
@@ -835,45 +852,68 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
             ) : (
               /* CASE B: EXACT 100% REFERENCE CLONE INTERACTIVE DEPOSIT FORM */
               <form onSubmit={handleAgentDepositSubmit} className="sonic-deposit-clean-shell" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {/* Field 1: Deposit Amount */}
-                <div className="sonic-clean-field-group">
-                  <label className="sonic-clean-label">Deposit Amount</label>
-                  <div className="sonic-clean-input-box">
-                    <span className="sonic-clean-currency">ETB</span>
+                {/* Field 1: Deposit Amount (Image 1 Exact Match) */}
+                <div className="sonic-exact-section-group">
+                  <div className="sonic-exact-section-header">
+                    <div className="sonic-deposit-red-icon-badge">
+                      <i className="fa-solid fa-wallet"></i>
+                    </div>
+                    <span className="sonic-exact-header-title">
+                      {lang === 'am' ? 'የማስገቢያ መጠን' : 'Deposit Amount'}
+                    </span>
+                  </div>
+                  <div className="sonic-exact-amount-box-white">
+                    <span className="sonic-exact-currency-prefix">ETB</span>
                     <input
                       type="number"
                       min="50"
                       max="1500"
                       value={agentDepositAmount || ''}
                       onChange={e => setAgentDepositAmount(Number(e.target.value))}
-                      className="sonic-clean-amount-input"
+                      className="sonic-exact-amount-field"
                       placeholder="100"
                       required
                     />
                   </div>
                 </div>
 
-                {/* Field 2: Payment Method */}
-                <div className="sonic-clean-field-group">
-                  <label className="sonic-clean-label">Payment Method</label>
+                {/* Field 2: Payment Method (Image 1 Exact Match) */}
+                <div className="sonic-exact-section-group">
+                  <div className="sonic-exact-section-header">
+                    <div className="sonic-deposit-red-icon-badge">
+                      <i className="fa-solid fa-credit-card"></i>
+                    </div>
+                    <span className="sonic-exact-header-title">
+                      {lang === 'am' ? 'የክፍያ ዘዴ' : 'Payment Method'}
+                    </span>
+                  </div>
                   <div
-                    className="sonic-clean-select-box"
+                    className="sonic-exact-deposit-method-card"
                     onClick={() => {
                       const rails = (selectedAgent?.supportedRails || ['Telebirr']).filter(r => r !== 'CBE');
                       if (rails.length > 1) {
                         setAgentPaymentRail(prev => prev === 'Telebirr' ? 'M-Pesa' : 'Telebirr');
+                      } else {
+                        setAgentPaymentRail(prev => prev === 'Telebirr' ? 'M-Pesa' : 'Telebirr');
                       }
                     }}
+                    title="Click to toggle payment rail (Telebirr / Safaricom M-Pesa)"
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {agentPaymentRail === 'Telebirr' ? <TelebirrLogo size={20} /> : <MpesaLogo size={20} />}
-                      <span className="sonic-clean-select-val">{agentPaymentRail}</span>
+                    <div className="sonic-exact-method-left">
+                      {agentPaymentRail === 'Telebirr' ? <TelebirrLogo size={24} /> : <MpesaLogo size={24} />}
+                      <span className="sonic-exact-method-name">
+                        {agentPaymentRail === 'Telebirr' ? 'Telebirr' : 'Safaricom M-Pesa'}
+                      </span>
                     </div>
-                    <i className="fa-solid fa-chevron-down sonic-clean-select-chevron"></i>
+                    <div className="sonic-exact-method-right">
+                      <div className="sonic-exact-method-check">
+                        <i className="fa-solid fa-check"></i>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Field 3: Compact Recipient Account Card with Agent Online Badge (Image 1 + Image 2) */}
+                {/* Field 3: Compact Recipient Account Card with Agent Online Badge (Image 1 Exact Match) */}
                 {isLoadingAgents ? (
                   <div className="sonic-clean-account-card" style={{ justifyContent: 'center', textAlign: 'center', padding: '16px 12px' }}>
                     <i className="fa-solid fa-circle-notch fa-spin" style={{ color: '#0088cc', fontSize: '18px', marginRight: '8px' }}></i>
@@ -896,7 +936,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                   </div>
                 ) : (() => {
                   const currentAccount = agentPaymentRail === 'Telebirr'
-                    ? (selectedAgent.telebirrPhone || selectedAgent.phone || '0912131415')
+                    ? (selectedAgent.telebirrPhone || selectedAgent.phone || '0983998935')
                     : (selectedAgent.mpesaPhone || selectedAgent.phone || '0712131415');
 
                   const currentName = agentPaymentRail === 'Telebirr'
@@ -904,77 +944,94 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                     : (selectedAgent.mpesaName || selectedAgent.displayName || 'Tsinat Alemayehu');
 
                   return (
-                    <div className="sonic-clean-account-card">
-                      {/* Image 2: SONIC AGENT | #AGT-XXXX • Online */}
-                      <div className="sonic-clean-agent-strip">
-                        <span className="sonic-clean-agent-title">
-                          SONIC AGENT | <span className="sonic-clean-agent-code">#{selectedAgent.agentCode || 'AGT-3457'}</span>
-                        </span>
-                        <span className="sonic-clean-online-pill">
-                          <span className="sonic-clean-online-dot"></span>
-                          Online
-                        </span>
-                      </div>
+                    <div className="sonic-exact-agent-card">
+                      {/* Top section: Avatar + Divider + Info */}
+                      <div className="sonic-exact-agent-main">
+                        <div className="sonic-exact-agent-avatar-ring">
+                          <i className="fa-solid fa-user-tie sonic-exact-agent-avatar-icon"></i>
+                        </div>
+                        <div className="sonic-exact-agent-v-divider"></div>
+                        <div className="sonic-exact-agent-details">
+                          <div className="sonic-exact-agent-title-row">
+                            <span className="sonic-exact-agent-name-code">
+                              SONIC AGENT | <span className="code">#{selectedAgent.agentCode || 'AGT-3457'}</span>
+                            </span>
+                            <span className="sonic-exact-agent-online-pill">
+                              <span className="dot"></span>
+                              Online
+                            </span>
+                          </div>
 
-                      {/* Image 1: Send to: 0912131415 [copy icon] */}
-                      <div className="sonic-clean-account-row">
-                        <span className="sonic-clean-row-label">Send to:</span>
-                        <div className="sonic-clean-phone-wrap">
-                          <span className="sonic-clean-phone-number">{currentAccount}</span>
-                          <button
-                            type="button"
-                            className="sonic-clean-copy-btn"
-                            onClick={() => handleCopy(currentAccount, `${agentPaymentRail} Phone`)}
-                            title="Copy Account Number"
-                          >
-                            <i className={copiedText === currentAccount ? "fa-solid fa-check" : "fa-regular fa-copy"}></i>
-                          </button>
+                          <div className="sonic-exact-agent-phone-row">
+                            <span className="label">Send to:</span>
+                            <span className="number">{currentAccount}</span>
+                            <button
+                              type="button"
+                              className="sonic-exact-copy-icon-btn"
+                              onClick={() => handleCopy(currentAccount, `${agentPaymentRail} Phone`)}
+                              title="Copy Phone Number"
+                            >
+                              <i className={copiedText === currentAccount ? "fa-solid fa-check" : "fa-regular fa-copy"}></i>
+                            </button>
+                          </div>
+
+                          <div className="sonic-exact-agent-name-row">
+                            <span className="label">{agentPaymentRail} Account Name:</span>
+                            <span className="val">{currentName}</span>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Image 1: Telebirr Account Name: Tsinat Alemayehu */}
-                      <div className="sonic-clean-account-row">
-                        <span className="sonic-clean-row-label">{agentPaymentRail} Account Name:</span>
-                        <span className="sonic-clean-account-name">{currentName}</span>
-                      </div>
-
-                      {/* Image 1: Send Money, then paste your confirmation SMS below. */}
-                      <div className="sonic-clean-account-hint">
-                        Send Money, then paste your confirmation SMS below.
+                      {/* Bottom Banner: Send Money, then paste your confirmation SMS below */}
+                      <div className="sonic-exact-agent-disclaimer">
+                        <i className="fa-solid fa-circle-exclamation sonic-exact-disclaimer-icon"></i>
+                        <span>Send Money, then paste your confirmation SMS below.</span>
                       </div>
                     </div>
                   );
                 })()}
 
-                {/* Field 4: Confirmation SMS Card (Image 1) */}
-                <div className="sonic-clean-sms-card">
-                  <div className="sonic-clean-sms-header">
-                    <h4 className="sonic-clean-sms-title">Paste your confirmation SMS</h4>
-                    <p className="sonic-clean-sms-subtitle">Confirmation SMS or Transaction Number</p>
+                {/* Field 4: Confirmation SMS Card (Image 1 Exact Match) */}
+                <div className="sonic-exact-section-group">
+                  <div className="sonic-exact-section-header">
+                    <div className="sonic-deposit-red-icon-badge">
+                      <i className="fa-solid fa-comment-dots"></i>
+                    </div>
+                    <span className="sonic-exact-header-title">
+                      {lang === 'am' ? 'የማረጋገጫ መልእክት ይለጥፉ' : 'Paste your confirmation SMS'}
+                    </span>
                   </div>
-                  <textarea
-                    className="sonic-clean-sms-textarea"
-                    rows={2}
-                    value={agentTxRef}
-                    onChange={e => setAgentTxRef(e.target.value)}
-                    placeholder="Paste the whole confirmation SMS here- or Just the Transaction Number. we'll find it."
-                    required
-                  />
+                  <span className="sonic-exact-sms-subtext">
+                    {lang === 'am' ? 'የማረጋገጫ ኤስኤምኤስ ወይም የግብይት ቁጥር' : 'Confirmation SMS or Transaction Number'}
+                  </span>
+                  <div className="sonic-exact-sms-box">
+                    <textarea
+                      className="sonic-exact-sms-textarea"
+                      rows={2}
+                      value={agentTxRef}
+                      onChange={e => setAgentTxRef(e.target.value)}
+                      placeholder="Paste the whole confirmation SMS here- or Just the Transaction Number, we'll find it."
+                      required
+                    />
+                  </div>
                 </div>
 
-                {/* Field 5: Submit Deposit Button (Image 1) */}
+                {/* Field 5: Submit Deposit Button (Image 1 Exact Match) */}
                 <button
                   type="submit"
-                  className="sonic-clean-submit-btn"
+                  className="sonic-exact-payout-btn"
                   disabled={isSubmittingAgentDeposit || !selectedAgent || (!selectedAgent.supportedRails || selectedAgent.supportedRails.length === 0)}
                 >
                   {isSubmittingAgentDeposit ? (
                     <>
                       <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '8px' }}></i>
-                      <span>Submitting Deposit...</span>
+                      <span>{lang === 'am' ? 'በማስገባት ላይ...' : 'Submitting Deposit...'}</span>
                     </>
                   ) : (
-                    'Submit Deposit'
+                    <>
+                      <i className="fa-solid fa-paper-plane sonic-exact-payout-icon"></i>
+                      <span>{lang === 'am' ? 'ገንዘቡን አስገባ' : 'Submit Deposit'}</span>
+                    </>
                   )}
                 </button>
               </form>
@@ -1265,8 +1322,8 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                     <div className="sonic-exact-method-card">
                       <div
                         className="sonic-exact-method-top-row"
-                        onClick={() => setWithdrawMethod(withdrawMethod === 'Telebirr' ? 'M-Pesa' : 'Telebirr')}
-                        title="Click to toggle payment method (Telebirr / Safaricom M-Pesa)"
+                        onClick={() => setIsWithdrawDropdownOpen(!isWithdrawDropdownOpen)}
+                        title="Click to select payment method (Telebirr / Safaricom M-Pesa)"
                       >
                         <div className="sonic-exact-method-left">
                           {withdrawMethod === 'Telebirr' ? <TelebirrLogo size={24} /> : <MpesaLogo size={24} />}
@@ -1274,17 +1331,65 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                             {withdrawMethod === 'Telebirr' ? 'Telebirr' : 'Safaricom M-Pesa'}
                           </span>
                         </div>
-                        <div className="sonic-exact-method-check">
-                          <i className="fa-solid fa-check"></i>
+                        <div className="sonic-exact-method-right">
+                          <span className="sonic-exact-change-tag">
+                            {lang === 'am' ? 'ቀይር' : 'Change'}
+                          </span>
+                          <div className="sonic-exact-method-check">
+                            <i className="fa-solid fa-check"></i>
+                          </div>
+                          <i className={`fa-solid fa-chevron-down sonic-exact-chevron ${isWithdrawDropdownOpen ? 'open' : ''}`}></i>
                         </div>
                       </div>
+
+                      {/* Expandable Dropdown Rail Options */}
+                      {isWithdrawDropdownOpen && (
+                        <div className="sonic-exact-dropdown-list">
+                          <div
+                            className={`sonic-exact-dropdown-item ${withdrawMethod === 'Telebirr' ? 'active' : ''}`}
+                            onClick={() => {
+                              setWithdrawMethod('Telebirr');
+                              setIsWithdrawDropdownOpen(false);
+                            }}
+                          >
+                            <div className="sonic-exact-item-left">
+                              <TelebirrLogo size={22} />
+                              <span className="sonic-exact-item-title">Telebirr</span>
+                            </div>
+                            {withdrawMethod === 'Telebirr' ? (
+                              <div className="sonic-exact-item-check"><i className="fa-solid fa-check"></i></div>
+                            ) : (
+                              <div className="sonic-exact-item-radio"></div>
+                            )}
+                          </div>
+
+                          <div
+                            className={`sonic-exact-dropdown-item ${withdrawMethod === 'M-Pesa' ? 'active' : ''}`}
+                            onClick={() => {
+                              setWithdrawMethod('M-Pesa');
+                              setIsWithdrawDropdownOpen(false);
+                            }}
+                          >
+                            <div className="sonic-exact-item-left">
+                              <MpesaLogo size={22} />
+                              <span className="sonic-exact-item-title">Safaricom M-Pesa</span>
+                            </div>
+                            {withdrawMethod === 'M-Pesa' ? (
+                              <div className="sonic-exact-item-check"><i className="fa-solid fa-check"></i></div>
+                            ) : (
+                              <div className="sonic-exact-item-radio"></div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       <div className="sonic-exact-method-input-row">
                         <i className="fa-solid fa-phone sonic-exact-phone-icon"></i>
                         <input
                           type="tel"
                           value={withdrawAccount}
                           onChange={e => setWithdrawAccount(e.target.value)}
-                          placeholder="0983624574"
+                          placeholder={withdrawMethod === 'Telebirr' ? "0983624574" : "0712345678"}
                           className="sonic-exact-phone-field"
                           required
                         />

@@ -136,10 +136,13 @@ export const App: React.FC = () => {
     currentPage === 'login' ||
     currentPage === 'signup';
 
-  const isSubpage =
+  const isSubpageWithoutHeader =
     currentPage === 'account-info' ||
     currentPage === 'help' ||
-    currentPage === 'about' ||
+    currentPage === 'about';
+
+  const isSubpage =
+    isSubpageWithoutHeader ||
     currentPage === 'deposit' ||
     currentPage === 'withdraw';
 
@@ -148,10 +151,10 @@ export const App: React.FC = () => {
 
   return (
     <div className={`app-container${isDedicatedGamePage ? ' dedicated-game-view' : ''}${isDesktop ? ' is-desktop-platform' : ''}`}>
-      {/* Top Header for all main game & user views */}
-      {!isStandalonePage && !isSubpage && !isDedicatedGamePage && <TopHeader />}
+      {/* Top Header for all main game & user views (including Deposit & Withdraw) */}
+      {!isStandalonePage && !isSubpageWithoutHeader && !isDedicatedGamePage && <TopHeader />}
 
-      {/* Balance Bar for all main game & user views (Hidden on Wallet page to avoid duplicate balance card) */}
+      {/* Balance Bar for all main game & user views (Hidden on Wallet, Deposit, Withdraw to avoid duplicate balance card) */}
       {!isStandalonePage && !isSubpage && !isDedicatedGamePage && currentPage !== 'wallet' && <BalanceBar />}
 
       {/* Active Page View */}

@@ -2404,6 +2404,372 @@
   box-shadow: 0 1px 3px rgba(220, 38, 38, 0.3);
 }
 
+.sonic-exact-method-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sonic-exact-change-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  padding: 2px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.1px;
+  line-height: 1.2;
+}
+
+.sonic-exact-chevron {
+  font-size: 12px;
+  color: #64748b;
+  transition: transform 0.2s ease, color 0.15s ease;
+}
+
+.sonic-exact-chevron.open {
+  transform: rotate(180deg);
+  color: #dc2626;
+}
+
+.sonic-exact-dropdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: #fafafa;
+  border: 1.5px solid #fee2e2;
+  border-radius: 10px;
+  padding: 6px;
+  margin: 4px 0;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.08);
+}
+
+.sonic-exact-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  transition: all 0.15s ease;
+}
+
+.sonic-exact-dropdown-item:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.sonic-exact-dropdown-item.active {
+  background: #fff1f2;
+  border-color: #fca5a5;
+}
+
+.sonic-exact-item-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sonic-exact-item-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.sonic-exact-item-check {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #dc2626;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.sonic-exact-item-radio {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+}
+
+/* Red Icon Badge for Section Headers (Image 1 Exact Match) */
+.sonic-deposit-red-icon-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: #dc2626;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.25);
+}
+
+/* White Amount Input Box (Image 1 Exact Match) */
+.sonic-exact-amount-box-white {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  height: 44px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sonic-exact-amount-box-white:focus-within {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1);
+  background: #ffffff;
+}
+
+/* Luxury Agent Cashier Card (Image 1 Exact Match) */
+.sonic-exact-agent-card {
+  background: #ffffff;
+  border: 1.5px solid #fed7aa;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.sonic-exact-agent-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 44px;
+  height: 44px;
+  background: radial-gradient(circle at top left, #dc2626 0%, #1e1b4b 70%, transparent 72%);
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.sonic-exact-agent-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 44px;
+  height: 44px;
+  background: radial-gradient(circle at bottom right, #dc2626 0%, #1e1b4b 70%, transparent 72%);
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.sonic-exact-agent-main {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.sonic-exact-agent-avatar-ring {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid #fde047;
+  box-shadow: 0 0 10px rgba(253, 224, 71, 0.35);
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sonic-exact-agent-avatar-icon {
+  font-size: 26px;
+  color: #0f172a;
+}
+
+.sonic-exact-agent-v-divider {
+  width: 1.5px;
+  height: 48px;
+  background: #e2e8f0;
+  margin: 0 12px;
+  flex-shrink: 0;
+}
+
+.sonic-exact-agent-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.sonic-exact-agent-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sonic-exact-agent-name-code {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.sonic-exact-agent-name-code .code {
+  font-family: inherit;
+}
+
+.sonic-exact-agent-online-pill {
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1.2;
+}
+
+.sonic-exact-agent-online-pill .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.sonic-exact-agent-phone-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sonic-exact-agent-phone-row .label {
+  font-size: 12.5px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.sonic-exact-agent-phone-row .number {
+  font-size: 15.5px;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: 0.2px;
+}
+
+.sonic-exact-copy-icon-btn {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #dc2626;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.sonic-exact-copy-icon-btn:hover {
+  background: #ffe4e6;
+  transform: scale(1.05);
+}
+
+.sonic-exact-agent-name-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+}
+
+.sonic-exact-agent-name-row .label {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.sonic-exact-agent-name-row .val {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.sonic-exact-agent-disclaimer {
+  background: #fff1f2;
+  border-top: 1px dashed #fecdd3;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #dc2626;
+  position: relative;
+  z-index: 1;
+}
+
+.sonic-exact-disclaimer-icon {
+  font-size: 13px;
+  color: #dc2626;
+}
+
+/* SMS Box (Image 1 Exact Match) */
+.sonic-exact-sms-subtext {
+  font-size: 11.5px;
+  color: #64748b;
+  font-weight: 600;
+  margin-top: -2px;
+  margin-left: 2px;
+}
+
+.sonic-exact-sms-box {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sonic-exact-sms-box:focus-within {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1);
+  background: #ffffff;
+}
+
+.sonic-exact-sms-textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0f172a;
+  resize: none;
+  font-family: inherit;
+  line-height: 1.4;
+  box-sizing: border-box;
+}
+
+.sonic-exact-sms-textarea::placeholder {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
 .sonic-exact-method-input-row {
   display: flex;
   align-items: center;
