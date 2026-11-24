@@ -1494,20 +1494,21 @@
 }
 
 .sonic-deposit-switch-tab-btn {
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  background: rgba(229, 9, 20, 0.06);
+  border: 1px solid rgba(229, 9, 20, 0.25);
   border-radius: 12px;
   padding: 4px 10px;
   font-size: 11.5px;
   font-weight: 700;
-  color: #475569;
+  color: #dc2626;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .sonic-deposit-switch-tab-btn:hover {
-  background: #e2e8f0;
-  color: #0f172a;
+  background: rgba(229, 9, 20, 0.12);
+  border-color: #e50914;
+  color: #b91c1c;
 }
 
 /* Field Groups */
@@ -1537,8 +1538,8 @@
 }
 
 .sonic-clean-input-box:focus-within {
-  border-color: #f59e0b;
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+  border-color: #e50914;
+  box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.15);
 }
 
 .sonic-clean-currency {
@@ -1576,7 +1577,7 @@
 }
 
 .sonic-clean-select-box:hover {
-  border-color: #cbd5e1;
+  border-color: #f87171;
 }
 
 .sonic-clean-select-val {
@@ -1668,9 +1669,9 @@
 }
 
 .sonic-clean-copy-btn {
-  background: #eff6ff;
-  border: 1px solid #dbeafe;
-  color: #2563eb;
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  color: #dc2626;
   border-radius: 6px;
   padding: 3px 6px;
   font-size: 12px;
@@ -1682,7 +1683,9 @@
 }
 
 .sonic-clean-copy-btn:hover {
-  background: #dbeafe;
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
 }
 
 .sonic-clean-account-name {
@@ -1694,7 +1697,7 @@
 .sonic-clean-account-hint {
   font-size: 11.5px;
   font-weight: 600;
-  color: #0284c7;
+  color: #dc2626;
   margin-top: 2px;
 }
 
@@ -1747,9 +1750,9 @@
 }
 
 .sonic-clean-sms-textarea:focus {
-  border-color: #f59e0b;
+  border-color: #e50914;
   background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+  box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.15);
 }
 
 .sonic-clean-sms-textarea::placeholder {
@@ -1758,40 +1761,43 @@
   line-height: 1.35;
 }
 
-/* Submit Button (Image 1) */
+/* Submit Button (Brand Red Gradient) */
 .sonic-clean-submit-btn {
   width: 100%;
   height: 45px;
-  border: 1.5px solid #d1d5db;
+  border: none;
   border-radius: 12px;
-  background: #ffffff;
-  color: #0f172a;
+  background: linear-gradient(135deg, #e50914 0%, #dc2626 50%, #b91c1c 100%);
+  color: #ffffff;
   font-size: 15.5px;
   font-weight: 800;
-  letter-spacing: 0.1px;
+  letter-spacing: 0.2px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.15s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 14px rgba(229, 9, 20, 0.35);
   margin-top: 2px;
 }
 
 .sonic-clean-submit-btn:hover:not(:disabled) {
-  background: #f8fafc;
-  border-color: #94a3b8;
+  background: linear-gradient(135deg, #f0141f 0%, #e50914 50%, #c61a1a 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(229, 9, 20, 0.45);
 }
 
 .sonic-clean-submit-btn:active:not(:disabled) {
-  background: #f1f5f9;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
   transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(229, 9, 20, 0.3);
 }
 
 .sonic-clean-submit-btn:disabled {
-  opacity: 0.55;
+  background: #fca5a5;
+  opacity: 0.6;
   cursor: not-allowed;
-  background: #f8fafc;
+  box-shadow: none;
 }
 
 /* Card 1: Withdrawable Balance & Cashier Card (Withdraw Reference Image) */
@@ -1987,11 +1993,11 @@
 .sonic-clean-support-btn {
   width: 100%;
   height: 42px;
-  border: 1.5px solid #d1d5db;
+  border: 1.5px solid #fecaca;
   border-radius: 12px;
   background: #ffffff;
-  color: #0f172a;
-  font-size: 15px;
+  color: #dc2626;
+  font-size: 14.5px;
   font-weight: 800;
   letter-spacing: 0.1px;
   cursor: pointer;
@@ -1999,15 +2005,18 @@
   align-items: center;
   justify-content: center;
   transition: all 0.15s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.06);
   margin-top: 1px;
 }
 
 .sonic-clean-support-btn:hover {
-  background: #f8fafc;
-  border-color: #94a3b8;
+  background: #fef2f2;
+  border-color: #e50914;
+  color: #b91c1c;
+  transform: translateY(-1px);
 }
 
 .sonic-clean-support-btn:active {
-  background: #f1f5f9;
+  background: #fee2e2;
+  transform: translateY(0);
 }
