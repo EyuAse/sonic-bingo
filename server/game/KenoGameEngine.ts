@@ -76,6 +76,7 @@ export class KenoGameEngine extends EventEmitter {
   private isDrawing = false;
   private isInitialized = false;
   private isIdlePaused = true;
+  public isMaintenancePaused = false;
   private activeWatchersCount = 0;
 
   private constructor(private wallet: PostgresWalletAdapter = postgresWalletAdapter) {
@@ -106,6 +107,9 @@ export class KenoGameEngine extends EventEmitter {
   public async ensureActiveLoop(): Promise<void> {
     if (!this.isInitialized) {
       await this.initializeFromDatabase();
+    }
+    if (this.isMaintenancePaused) {
+      return;
     }
     if (this.isIdlePaused) {
       this.isIdlePaused = false;
@@ -207,7 +211,7 @@ export class KenoGameEngine extends EventEmitter {
       this.settlementTimer = null;
     }
 
-    if (this.activeWatchersCount === 0 && this.activeTickets.size === 0) {
+    if (this.isMaintenancePaused || (this.activeWatchersCount === 0 && this.activeTickets.size === 0)) {
       this.isIdlePaused = true;
       this.currentPhase = 'betting';
       this.phaseTimeRemaining = this.BETTING_SECONDS;
@@ -283,6 +287,10 @@ export class KenoGameEngine extends EventEmitter {
     betAmount: number,
     isBonus = false
   ): Promise<{ success: boolean; error?: string; ticket?: KenoTicket; balanceAfter?: number }> {
+    if (this.isMaintenancePaused) {
+      return { success: false, error: 'Fast Keno is temporarily paused for maintenance' };
+    }
+
     await this.ensureActiveLoop();
 
     if (this.currentPhase !== 'betting') {
@@ -591,6 +599,38 @@ export class KenoGameEngine extends EventEmitter {
       all.push(...tickets);
     }
     return all;
+  }
+
+  public pauseMaintenance(): void {
+    this.isMaintenancePaused = true;
+  }
+
+  public resumeMaintenance(): void {
+    this.isMaintenancePaused = false;
+    void this.ensureActiveLoop();
+  }
+
+  public getAdminLiveSnapshot() {
+    let activeTicketsCount = 0;
+    let activeStakedTotal = 0;
+    for (const tickets of this.activeTickets.values()) {
+      activeTicketsCount += tickets.length;
+      for (const t of tickets) {
+        activeStakedTotal += Number(t.betAmount || 0);
+      }
+    }
+
+    return {
+      roundNumber: this.currentRoundNumber,
+      phase: this.currentPhase,
+      timeRemaining: this.phaseTimeRemaining,
+      watchersCount: this.activeWatchersCount,
+      activeTicketsCount,
+      activeStakedTotal: Number(activeStakedTotal.toFixed(2)),
+      isMaintenancePaused: this.isMaintenancePaused,
+      isIdlePaused: this.isIdlePaused,
+      serverSeedHash: this.serverSeedHash
+    };
   }
 }
 

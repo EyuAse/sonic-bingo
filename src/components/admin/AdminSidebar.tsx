@@ -10,6 +10,8 @@ export type AdminTab =
   | 'bot-engine'
   | 'bot-players'
   | 'cartelas'
+  | 'keno-dashboard'
+  | 'keno-ledger'
   | 'telegram-bot'
   | 'agents'
   | 'agent-recharges'
@@ -117,6 +119,15 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       iconPath: IC.room,
       subItems: [
         { id: 'cartelas', label: 'Cartelas', statusTag: '600' }
+      ]
+    },
+    {
+      id: 'keno-game',
+      label: 'Keno Game',
+      iconPath: IC.jp,
+      subItems: [
+        { id: 'keno-dashboard', label: 'Keno Dashboard', statusTag: 'Live' },
+        { id: 'keno-ledger', label: 'Rounds & Tickets', statusTag: 'Audit' }
       ]
     },
     {

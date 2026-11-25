@@ -186,10 +186,19 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
     setIsLoadingAgents(true);
     setAgentLoadError(null);
 
-    // 1. Request assigned agent (respects preferred session agent or lottery exclusion)
+    // 1. Request assigned agent with isolated fallback to active agents list on transient failure
     try {
       const preferredId = !excludeAgentId ? (sessionStorage.getItem('sonic_assigned_agent_id') || undefined) : undefined;
-      const assignedRes = await apiClient.wallet.getAssignedAgent(excludeAgentId, preferredId, preferredRail);
+      let assignedRes: any = null;
+      let assignedErrored = false;
+
+      try {
+        assignedRes = await apiClient.wallet.getAssignedAgent(excludeAgentId, preferredId, preferredRail);
+      } catch (err) {
+        assignedErrored = true;
+        console.warn('Assigned agent lookup failed, trying active agents fallback:', err);
+      }
+
       if (assignedRes && assignedRes.success && assignedRes.agent) {
         const ag = assignedRes.agent;
         setTotalOnlineAgents(assignedRes.totalOnlineAgents || 1);
@@ -198,7 +207,7 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
         handleSelectDepositAgent(ag);
         handleSelectWithdrawAgent(ag);
       } else {
-        // Fallback to active agents list if assigned endpoint had 0 agents
+        // Fallback to active agents list if assigned returned empty OR threw an error
         const agentsRes = await apiClient.wallet.getActiveAgents();
         const matchingAgents = preferredRail && agentsRes?.agents
           ? agentsRes.agents.filter((a: any) => (a.supportedRails || []).includes(preferredRail))
@@ -210,6 +219,8 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
           sessionStorage.setItem('sonic_assigned_agent_id', matchingAgents[0].id);
           handleSelectDepositAgent(matchingAgents[0]);
           handleSelectWithdrawAgent(matchingAgents[0]);
+        } else if (assignedErrored && (!agentsRes || !agentsRes.success)) {
+          throw new Error('Failed to load active agents');
         } else {
           setSelectedAgent(null);
           setAgentLoadError(

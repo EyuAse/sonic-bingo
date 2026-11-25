@@ -49,14 +49,24 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return data as T;
 }
 
-async function fetchWithRetry(url: string, options?: RequestInit, retries = 3, delayMs = 1200): Promise<Response> {
+async function fetchWithRetry(
+  url: string,
+  options?: RequestInit,
+  retries = 3,
+  delayMs = 1200,
+  retryTransientStatuses = false
+): Promise<Response> {
   for (let i = 0; i < retries; i++) {
     try {
       const res = await fetch(url, options);
       if (res.status === 401 && typeof window !== 'undefined') {
         localStorage.removeItem('sonic_admin_token');
       }
-      // Never retry rate-limited responses — retrying makes it worse
+      if (retryTransientStatuses && (res.status === 429 || res.status === 502 || res.status === 503) && i < retries - 1) {
+        await new Promise(r => setTimeout(r, delayMs * Math.pow(2, i)));
+        continue;
+      }
+      // Never retry rate-limited responses on regular endpoints — retrying makes it worse
       if (res.status === 429) return res;
       return res;
     } catch (err) {
@@ -650,7 +660,7 @@ export const apiClient = {
     },
 
     async getActiveAgents() {
-      const res = await fetch(`${API_BASE}/wallet/agents/active`);
+      const res = await fetchWithRetry(`${API_BASE}/wallet/agents/active`, undefined, 3, 600, true);
       return handleResponse<{
         success: boolean;
         agents: Array<{
@@ -679,7 +689,7 @@ export const apiClient = {
       if (rail) params.append('rail', rail);
       const queryStr = params.toString();
       const url = queryStr ? `${API_BASE}/wallet/agents/assigned?${queryStr}` : `${API_BASE}/wallet/agents/assigned`;
-      const res = await fetch(url);
+      const res = await fetchWithRetry(url, undefined, 3, 600, true);
       return handleResponse<{
         success: boolean;
         agent: {
@@ -1886,6 +1896,109 @@ export const apiClient = {
       return handleResponse<{
         success: boolean;
         balanceSheet: any;
+      }>(res);
+    },
+
+    async getKenoOverview(period: string = 'today') {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/keno/overview?period=${encodeURIComponent(period)}`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{
+        success: boolean;
+        periodLabel: string;
+        snapshot: {
+          roundNumber: number;
+          phase: string;
+          timeRemaining: number;
+          watchersCount: number;
+          activeTicketsCount: number;
+          activeStakedTotal: number;
+          isMaintenancePaused: boolean;
+          isIdlePaused: boolean;
+          serverSeedHash: string;
+        };
+        kpis: {
+          uniquePlayersCount: number;
+          roundsSettled: number;
+          ticketsCount: number;
+          wonTicketsCount: number;
+          lostTicketsCount: number;
+          activeTicketsCount: number;
+          cashTicketsCount: number;
+          bonusTicketsCount: number;
+          cashTurnover: number;
+          bonusTurnover: number;
+          totalTurnover: number;
+          totalPayouts: number;
+          netProfitLoss: number;
+          actualRtpPercent: number;
+          holdPercent: number;
+        };
+        recentRounds: Array<{
+          roundNumber: number;
+          status: string;
+          ticketsCount: number;
+          uniquePlayers: number;
+          totalWagered: number;
+          totalPayout: number;
+          profitLoss: number;
+          serverSeedHash: string;
+          settledAt: string;
+        }>;
+      }>(res);
+    },
+
+    async getKenoRounds(params?: { page?: number; limit?: number; search?: string }) {
+      const q = new URLSearchParams();
+      if (params?.page) q.set('page', String(params.page));
+      if (params?.limit) q.set('limit', String(params.limit));
+      if (params?.search) q.set('search', params.search);
+      const queryStr = q.toString() ? `?${q.toString()}` : '';
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/keno/rounds${queryStr}`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{
+        success: boolean;
+        rounds: any[];
+        totalCount: number;
+        page: number;
+        totalPages: number;
+      }>(res);
+    },
+
+    async getKenoTickets(params?: { page?: number; limit?: number; status?: string; funding?: string; search?: string }) {
+      const q = new URLSearchParams();
+      if (params?.page) q.set('page', String(params.page));
+      if (params?.limit) q.set('limit', String(params.limit));
+      if (params?.status) q.set('status', params.status);
+      if (params?.funding) q.set('funding', params.funding);
+      if (params?.search) q.set('search', params.search);
+      const queryStr = q.toString() ? `?${q.toString()}` : '';
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/keno/tickets${queryStr}`, {
+        headers: { ...adminHeaders }
+      });
+      return handleResponse<{
+        success: boolean;
+        tickets: any[];
+        totalCount: number;
+        page: number;
+        totalPages: number;
+      }>(res);
+    },
+
+    async toggleKenoPause(paused?: boolean) {
+      const adminHeaders = await getAdminAuthHeader();
+      const res = await fetch(`${API_BASE}/admin/keno/toggle-pause`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...adminHeaders },
+        body: JSON.stringify(typeof paused === 'boolean' ? { paused } : {})
+      });
+      return handleResponse<{
+        success: boolean;
+        snapshot: any;
       }>(res);
     }
   },

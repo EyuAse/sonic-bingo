@@ -1374,12 +1374,47 @@ router.get('/agent-voucher/active', requireAuth, async (req: AuthenticatedReques
   }
 });
 
-/**
- * GET /api/wallet/agents/active (and /api/wallet/agents/available)
- * Get Active Authorized Agents for Player Counter Deposits & Cash-Outs
- * STRICT PRIVACY: Agent real names are REDACTED. Only Unique Agent Codes and payment rails are returned.
- */
-router.get(['/agents/active', '/agents/available'], async (_req, res) => {
+// Stale-on-error fallback cache for active online agents (never delays live DB reads during normal operation)
+let lastKnownOnlineAgentsSnapshot: Array<any> = [];
+
+function formatOnlineAgentRecord(a: any) {
+  const activeList = (a.active_rails || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+  const supportedRails: string[] = [];
+
+  const cleanTelebirr = a.telebirr_phone ? String(a.telebirr_phone).trim() : '';
+  if (activeList.includes('Telebirr') && cleanTelebirr.length >= 8) {
+    supportedRails.push('Telebirr');
+  }
+
+  const cleanMpesa = a.mpesa_phone ? String(a.mpesa_phone).trim() : '';
+  if (activeList.includes('M-Pesa') && cleanMpesa.length >= 8) {
+    supportedRails.push('M-Pesa');
+  }
+
+  const effectiveTelebirrName = (a.telebirr_name && a.telebirr_name.trim()) || a.full_name || 'Sonic Agent';
+  const effectiveMpesaName = (a.mpesa_name && a.mpesa_name.trim()) || a.full_name || 'Sonic Agent';
+  const rawBalance = Math.max(0, parseFloat(a.wallet_balance || '0'));
+
+  return {
+    id: a.id,
+    agentCode: a.agent_code,
+    displayName: `Sonic Agent #${a.agent_code}`,
+    phone: cleanTelebirr || cleanMpesa || a.user_phone || null,
+    telebirrPhone: cleanTelebirr || null,
+    telebirrName: effectiveTelebirrName,
+    mpesaPhone: cleanMpesa || null,
+    mpesaName: effectiveMpesaName,
+    telegramUsername: a.telegram_username ? String(a.telegram_username).trim().replace('@', '') : null,
+    supportedRails,
+    hasConfiguredRails: supportedRails.length > 0,
+    isOnline: a.is_online !== false,
+    avgApprovalMinutes: 2,
+    walletBalance: rawBalance,
+    weight: 100 + Math.floor(Math.sqrt(rawBalance))
+  };
+}
+
+async function fetchLiveOnlineAgentsWithFallback() {
   try {
     const agentsRes = await query(
       `SELECT ap.id, ap.agent_code, ap.status, 
@@ -1402,39 +1437,27 @@ router.get(['/agents/active', '/agents/available'], async (_req, res) => {
        LIMIT 30`
     );
 
-    const formattedAgents = agentsRes.rows.map(a => {
-      const activeList = (a.active_rails || '').split(',').map((s: string) => s.trim()).filter(Boolean);
-      const supportedRails: string[] = [];
-      
-      const cleanTelebirr = a.telebirr_phone ? String(a.telebirr_phone).trim() : '';
-      if (activeList.includes('Telebirr') && cleanTelebirr.length >= 8) {
-        supportedRails.push('Telebirr');
-      }
+    const formatted = agentsRes.rows.map(formatOnlineAgentRecord);
+    lastKnownOnlineAgentsSnapshot = formatted;
+    return formatted;
+  } catch (err) {
+    if (lastKnownOnlineAgentsSnapshot.length > 0) {
+      console.warn('⚠️ [Wallet Agents] Live DB query failed, serving stale-on-error agent snapshot');
+      return lastKnownOnlineAgentsSnapshot;
+    }
+    throw err;
+  }
+}
 
-      const cleanMpesa = a.mpesa_phone ? String(a.mpesa_phone).trim() : '';
-      if (activeList.includes('M-Pesa') && cleanMpesa.length >= 8) {
-        supportedRails.push('M-Pesa');
-      }
-
-      const effectiveTelebirrName = (a.telebirr_name && a.telebirr_name.trim()) || a.full_name || 'Sonic Agent';
-      const effectiveMpesaName = (a.mpesa_name && a.mpesa_name.trim()) || a.full_name || 'Sonic Agent';
-
-      return {
-        id: a.id,
-        agentCode: a.agent_code,
-        displayName: `Sonic Agent #${a.agent_code}`,
-        phone: cleanTelebirr || cleanMpesa || a.user_phone || null,
-        telebirrPhone: cleanTelebirr || null,
-        telebirrName: effectiveTelebirrName,
-        mpesaPhone: cleanMpesa || null,
-        mpesaName: effectiveMpesaName,
-        telegramUsername: a.telegram_username ? String(a.telegram_username).trim().replace('@', '') : null,
-        supportedRails,
-        hasConfiguredRails: supportedRails.length > 0,
-        isOnline: a.is_online !== false,
-        avgApprovalMinutes: 2
-      };
-    });
+/**
+ * GET /api/wallet/agents/active (and /api/wallet/agents/available)
+ * Get Active Authorized Agents for Player Counter Deposits & Cash-Outs
+ * STRICT PRIVACY: Agent real names are REDACTED. Only Unique Agent Codes and payment rails are returned.
+ */
+router.get(['/agents/active', '/agents/available'], async (_req, res) => {
+  try {
+    const liveAgents = await fetchLiveOnlineAgentsWithFallback();
+    const formattedAgents = liveAgents.map(({ weight, walletBalance, ...sanitized }) => sanitized);
 
     return res.json({
       success: true,
@@ -1461,65 +1484,10 @@ router.get('/agents/assigned', async (req, res) => {
     const preferredAgentId = req.query.preferredAgentId ? String(req.query.preferredAgentId).trim() : null;
     const requestedRail = req.query.rail ? String(req.query.rail).trim() : null;
 
-    const agentsRes = await query(
-      `SELECT ap.id, ap.agent_code, ap.status, 
-              ap.telebirr_phone, 
-              ap.telebirr_name, 
-              ap.mpesa_phone, 
-              ap.mpesa_name,
-              ap.active_rails, 
-              COALESCE(ap.is_online, true) as is_online, 
-              ap.wallet_balance,
-              u.full_name, u.phone as user_phone, u.telegram_username
-       FROM agent_profiles ap
-       JOIN users u ON ap.user_id = u.id
-       WHERE ap.status = 'active'
-         AND COALESCE(ap.is_online, true) = true
-         AND ap.wallet_balance >= 50.00
-       ORDER BY ap.wallet_balance DESC, ap.created_at ASC`
-    );
+    const liveAgents = await fetchLiveOnlineAgentsWithFallback();
 
-    // Format & filter agents who have configured active rails (Telebirr or M-Pesa)
-    const eligibleAgents = agentsRes.rows
-      .map(a => {
-        const activeList = (a.active_rails || '').split(',').map((s: string) => s.trim()).filter(Boolean);
-        const supportedRails: string[] = [];
-
-        const cleanTelebirr = a.telebirr_phone ? String(a.telebirr_phone).trim() : '';
-        if (activeList.includes('Telebirr') && cleanTelebirr.length >= 8) {
-          supportedRails.push('Telebirr');
-        }
-
-        const cleanMpesa = a.mpesa_phone ? String(a.mpesa_phone).trim() : '';
-        if (activeList.includes('M-Pesa') && cleanMpesa.length >= 8) {
-          supportedRails.push('M-Pesa');
-        }
-
-        const effectiveTelebirrName = (a.telebirr_name && a.telebirr_name.trim()) || a.full_name || 'Sonic Agent';
-        const effectiveMpesaName = (a.mpesa_name && a.mpesa_name.trim()) || a.full_name || 'Sonic Agent';
-
-        const rawBalance = Math.max(0, parseFloat(a.wallet_balance || '0'));
-        // Damped weighted tickets: Base 100 + floor(sqrt(balance))
-        const weight = 100 + Math.floor(Math.sqrt(rawBalance));
-
-        return {
-          id: a.id,
-          agentCode: a.agent_code,
-          displayName: `Sonic Agent #${a.agent_code}`,
-          phone: cleanTelebirr || cleanMpesa || a.user_phone || null,
-          telebirrPhone: cleanTelebirr || null,
-          telebirrName: effectiveTelebirrName,
-          mpesaPhone: cleanMpesa || null,
-          mpesaName: effectiveMpesaName,
-          telegramUsername: a.telegram_username ? String(a.telegram_username).trim().replace('@', '') : null,
-          supportedRails,
-          hasConfiguredRails: supportedRails.length > 0,
-          isOnline: a.is_online !== false,
-          avgApprovalMinutes: 2,
-          walletBalance: rawBalance,
-          weight
-        };
-      })
+    // Filter agents who have configured active rails matching optional requestedRail
+    const eligibleAgents = liveAgents
       .filter(a => a.hasConfiguredRails && (!requestedRail || a.supportedRails.includes(requestedRail)));
 
     if (eligibleAgents.length === 0) {

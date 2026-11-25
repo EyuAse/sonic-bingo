@@ -29,9 +29,33 @@ interface PlayerSummary {
   bonus: number;
   coins: number;
   games: number;
+  bingoGames?: number;
+  kenoGames?: number;
   source: string;
   joinedAt: string;
   lastActive: string;
+}
+
+interface GameStatsBreakdown {
+  gamesCount: number;
+  winsCount: number;
+  totalStaked: number;
+  totalWon: number;
+  netResult: number;
+}
+
+interface PlayerGameHistoryItem {
+  id: string;
+  gameType: 'Bingo' | 'Keno';
+  date: string;
+  createdAtMs: number;
+  roomOrRound: string;
+  stake: number;
+  entryDetail: string;
+  resultLabel: string;
+  payoutAmount: number;
+  status: string;
+  isBonus?: boolean;
 }
 
 interface PlayerDetails {
@@ -59,9 +83,12 @@ interface PlayerDetails {
   netResult: number;
   gamesCount: number;
   winsCount: number;
+  bingoStats?: GameStatsBreakdown;
+  kenoStats?: GameStatsBreakdown;
   notes: Array<{ id: string; note: string; createdBy: string; createdAt: string }>;
   txs: Array<[string, string, string, string, string]>;
   gms: Array<[string, string, string, string, string]>;
+  gameHistory?: PlayerGameHistoryItem[];
   logs: Array<{ id: string; t: string; a: string; d: string }>;
 }
 
@@ -107,6 +134,7 @@ export const PlayerAccountsDesk: React.FC = () => {
 
   // Detail Tab
   const [activeTab, setActiveTab] = useState<'ov' | 'tx' | 'gm' | 'lg'>('ov');
+  const [gameTypeFilter, setGameTypeFilter] = useState<'all' | 'Bingo' | 'Keno'>('all');
 
   // Internal Note input
   const [newNoteInput, setNewNoteInput] = useState<string>('');
@@ -608,7 +636,14 @@ export const PlayerAccountsDesk: React.FC = () => {
                         </td>
                         <td>{fmt(p.wallet)} ETB</td>
                         <td>{fmt(p.bonus)} ETB</td>
-                        <td>{fmt(p.games)}</td>
+                        <td>
+                          <div>{fmt(p.games)}</div>
+                          {((p.bingoGames || 0) > 0 || (p.kenoGames || 0) > 0) && (
+                            <div className="tr" style={{ fontSize: '11px' }}>
+                              B:{fmt(p.bingoGames || 0)} · K:{fmt(p.kenoGames || 0)}
+                            </div>
+                          )}
+                        </td>
                         <td>{p.lastActive}</td>
                         <td>
                           <button
@@ -805,6 +840,20 @@ export const PlayerAccountsDesk: React.FC = () => {
                   <div className="lg"><span style={{ color: 'var(--mute)' }}>Total staked</span><b>ETB {fmt(selectedDetails.totalStaked)}</b></div>
                   <div className="lg"><span style={{ color: 'var(--mute)' }}>Total won</span><b>ETB {fmt(selectedDetails.totalWon)}</b></div>
                   <div className="lg"><span style={{ color: 'var(--mute)' }}>Games / wins</span><b>{fmt(selectedDetails.gamesCount)} / {selectedDetails.winsCount}</b></div>
+                  <div className="lg">
+                    <span style={{ color: 'var(--mute)' }}>Bingo played</span>
+                    <b>
+                      {fmt(selectedDetails.bingoStats?.gamesCount ?? selectedDetails.gamesCount)} games ·{' '}
+                      {selectedDetails.bingoStats?.winsCount ?? 0} wins · Staked ETB {fmt(selectedDetails.bingoStats?.totalStaked ?? 0)}
+                    </b>
+                  </div>
+                  <div className="lg">
+                    <span style={{ color: 'var(--mute)' }}>Keno played</span>
+                    <b>
+                      {fmt(selectedDetails.kenoStats?.gamesCount ?? 0)} tickets ·{' '}
+                      {selectedDetails.kenoStats?.winsCount ?? 0} wins · Staked ETB {fmt(selectedDetails.kenoStats?.totalStaked ?? 0)}
+                    </b>
+                  </div>
 
                   {/* Internal Notes Section */}
                   <div className="sec" style={{ marginTop: '14px', paddingTop: '10px' }}>
@@ -888,41 +937,99 @@ export const PlayerAccountsDesk: React.FC = () => {
                 </table>
               )}
 
-              {/* TAB 3: GAMES */}
-              {activeTab === 'gm' && (
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Room</th>
-                      <th>Stake</th>
-                      <th>Cartelas</th>
-                      <th>Result</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedDetails.gms.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} style={{ color: 'var(--mute)', textAlign: 'center', padding: '16px' }}>
-                          No games played yet.
-                        </td>
-                      </tr>
-                    ) : (
-                      selectedDetails.gms.map((g, idx) => (
-                        <tr key={idx}>
-                          <td>{g[0]}</td>
-                          <td>{g[1]}</td>
-                          <td>{g[2]}</td>
-                          <td>{g[3]}</td>
-                          <td style={{ color: g[4] === 'Won' ? '#2e9e4f' : 'inherit', fontWeight: 700 }}>
-                            {g[4]}
-                          </td>
+              {/* TAB 3: GAMES (Separated Bingo vs Keno Identification) */}
+              {activeTab === 'gm' && (() => {
+                const rawHistory: PlayerGameHistoryItem[] = selectedDetails.gameHistory || selectedDetails.gms.map((g, i) => ({
+                  id: `legacy-bingo-${i}`,
+                  gameType: 'Bingo' as const,
+                  date: g[0],
+                  createdAtMs: 0,
+                  roomOrRound: g[1],
+                  stake: parseFloat(String(g[2]).replace(/[^0-9.]/g, '')) || 0,
+                  entryDetail: g[3],
+                  resultLabel: g[4],
+                  payoutAmount: 0,
+                  status: g[4].toLowerCase(),
+                  isBonus: false
+                }));
+                const filteredGames = gameTypeFilter === 'all'
+                  ? rawHistory
+                  : rawHistory.filter(item => item.gameType === gameTypeFilter);
+
+                return (
+                  <div>
+                    <div className="tabs" style={{ marginBottom: '10px', gap: '6px' }}>
+                      {(['all', 'Bingo', 'Keno'] as const).map(fKey => (
+                        <button
+                          key={fKey}
+                          type="button"
+                          className={gameTypeFilter === fKey ? 'on' : ''}
+                          onClick={() => setGameTypeFilter(fKey)}
+                        >
+                          {fKey === 'all'
+                            ? `All (${rawHistory.length})`
+                            : fKey === 'Bingo'
+                              ? `Bingo (${rawHistory.filter(i => i.gameType === 'Bingo').length})`
+                              : `Keno (${rawHistory.filter(i => i.gameType === 'Keno').length})`}
+                        </button>
+                      ))}
+                    </div>
+
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Game</th>
+                          <th>Date</th>
+                          <th>Room / Round</th>
+                          <th>Stake</th>
+                          <th>Entry</th>
+                          <th>Result</th>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              )}
+                      </thead>
+                      <tbody>
+                        {filteredGames.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} style={{ color: 'var(--mute)', textAlign: 'center', padding: '16px' }}>
+                              No {gameTypeFilter === 'all' ? '' : `${gameTypeFilter} `}games played yet.
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredGames.map(item => (
+                            <tr key={item.id}>
+                              <td>
+                                <span
+                                  className="b"
+                                  style={{
+                                    fontSize: '11px',
+                                    background: item.gameType === 'Keno' ? '#dcfce7' : '#dbeafe',
+                                    color: item.gameType === 'Keno' ? '#166534' : '#1e40af'
+                                  }}
+                                >
+                                  {item.gameType.toUpperCase()}
+                                </span>
+                              </td>
+                              <td>{item.date}</td>
+                              <td>{item.roomOrRound}</td>
+                              <td>
+                                ETB {fmt(item.stake)}
+                                {item.isBonus && (
+                                  <span style={{ fontSize: '10.5px', color: '#b45309', marginLeft: '4px', fontWeight: 700 }}>
+                                    (BONUS)
+                                  </span>
+                                )}
+                              </td>
+                              <td>{item.entryDetail}</td>
+                              <td style={{ color: item.status === 'won' ? '#2e9e4f' : 'inherit', fontWeight: 700 }}>
+                                {item.resultLabel}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
 
               {/* TAB 4: AUDIT LOG */}
               {activeTab === 'lg' && (

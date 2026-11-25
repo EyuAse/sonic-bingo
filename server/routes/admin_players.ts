@@ -170,7 +170,12 @@ adminPlayersRouter.get('/', requireAdmin, async (req: AuthenticatedRequest, res:
         COALESCE(cw.balance, 0) as coins,
         u.created_at as joined_at,
         COALESCE(u.last_login_at, u.created_at) as last_active_at,
-        COALESCE((SELECT COUNT(*) FROM game_tickets WHERE user_id = u.id), 0) as "gamesCount",
+        (
+          COALESCE((SELECT COUNT(*) FROM game_tickets WHERE user_id = u.id), 0) +
+          COALESCE((SELECT COUNT(*) FROM keno_tickets WHERE user_id = u.id), 0)
+        ) as "gamesCount",
+        COALESCE((SELECT COUNT(*) FROM game_tickets WHERE user_id = u.id), 0) as "bingoGamesCount",
+        COALESCE((SELECT COUNT(*) FROM keno_tickets WHERE user_id = u.id), 0) as "kenoGamesCount",
         CASE 
           WHEN u.agent_id IS NOT NULL THEN CONCAT('Agent: ', COALESCE(ap.agent_code, 'Partner'))
           WHEN u.referred_by IS NOT NULL THEN 'Referral'
@@ -204,6 +209,8 @@ adminPlayersRouter.get('/', requireAdmin, async (req: AuthenticatedRequest, res:
         bonus: parseFloat(p.bonus || '0'),
         coins: parseInt(p.coins || '0', 10),
         games: parseInt(p.gamesCount || '0', 10),
+        bingoGames: parseInt(p.bingoGamesCount || '0', 10),
+        kenoGames: parseInt(p.kenoGamesCount || '0', 10),
         source: p.source,
         joinedAt: new Date(p.joined_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
         lastActive: formatRelativeTime(p.last_active_at)
@@ -266,8 +273,8 @@ adminPlayersRouter.get('/:id/details', requireAdmin, async (req: AuthenticatedRe
     }
     const user = userRes.rows[0];
 
-    // 2. Financial Aggregates
-    const [depRes, wdRes, stakeRes, winRes, notesRes, logsRes, txsRes, gamesRes, refCountRes] = await Promise.all([
+    // 2. Financial Aggregates (Separated Bingo vs Keno)
+    const [depRes, wdRes, stakeRes, bingoWinRes, kenoStatsRes, notesRes, logsRes, txsRes, gamesRes, kenoGamesRes, refCountRes] = await Promise.all([
       // Total approved deposits (Direct + P2P)
       query(`
         SELECT COALESCE(SUM(amount), 0) as total_dep
@@ -286,17 +293,30 @@ adminPlayersRouter.get('/:id/details', requireAdmin, async (req: AuthenticatedRe
           SELECT amount FROM agent_withdrawal_requests WHERE player_id = $1 AND status = 'approved'
         ) w
       `, [id]),
-      // Total staked & count
+      // Total Bingo staked & count
       query(`
-        SELECT COALESCE(SUM(bet_amount), 0) as total_stk, COUNT(*) as games_count
+        SELECT
+          COALESCE(SUM(bet_amount), 0) as total_stk,
+          COUNT(*) as games_count,
+          COUNT(*) FILTER (WHERE status = 'won') as bingo_ticket_wins
         FROM game_tickets
         WHERE user_id = $1
       `, [id]),
-      // Total won & wins count
+      // Total Bingo won & wins count (exclude KENO_WIN_ ledger credits)
       query(`
         SELECT COALESCE(SUM(amount), 0) as total_won, COUNT(*) as wins_count
         FROM wallet_transactions
-        WHERE user_id = $1 AND type = 'win'
+        WHERE user_id = $1 AND type = 'win' AND COALESCE(reference_code, '') NOT LIKE 'KENO_WIN_%'
+      `, [id]),
+      // Total Keno staked, won & counts
+      query(`
+        SELECT
+          COALESCE(SUM(bet_amount), 0) as keno_stk,
+          COALESCE(SUM(payout_amount), 0) as keno_won,
+          COUNT(*) as keno_count,
+          COUNT(*) FILTER (WHERE status = 'won') as keno_wins
+        FROM keno_tickets
+        WHERE user_id = $1
       `, [id]),
       // Notes
       query(`
@@ -327,9 +347,10 @@ adminPlayersRouter.get('/:id/details', requireAdmin, async (req: AuthenticatedRe
         ORDER BY created_at DESC
         LIMIT 10
       `, [id]),
-      // Recent Games
+      // Recent Bingo Games
       query(`
         SELECT 
+          gt.id,
           gt.created_at,
           COALESCE(gr.room_id, 'room-10') as room_id,
           gt.bet_amount as stake,
@@ -339,7 +360,26 @@ adminPlayersRouter.get('/:id/details', requireAdmin, async (req: AuthenticatedRe
         LEFT JOIN game_rounds gr ON gt.round_id = gr.id
         WHERE gt.user_id = $1
         ORDER BY gt.created_at DESC
-        LIMIT 10
+        LIMIT 15
+      `, [id]),
+      // Recent Keno Tickets
+      query(`
+        SELECT
+          id,
+          created_at,
+          round_number,
+          selected_numbers,
+          spot_count,
+          bet_amount,
+          is_bonus,
+          hit_count,
+          multiplier,
+          payout_amount,
+          status
+        FROM keno_tickets
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+        LIMIT 15
       `, [id]),
       // Referral count
       query(`SELECT COUNT(*) as refs FROM referrals WHERE referrer_id = $1`, [id])
@@ -347,11 +387,25 @@ adminPlayersRouter.get('/:id/details', requireAdmin, async (req: AuthenticatedRe
 
     const totalDep = parseFloat(depRes.rows[0]?.total_dep || '0');
     const totalWd = parseFloat(wdRes.rows[0]?.total_wd || '0');
-    const totalStk = parseFloat(stakeRes.rows[0]?.total_stk || '0');
-    const totalWon = parseFloat(winRes.rows[0]?.total_won || '0');
-    const gamesCount = parseInt(stakeRes.rows[0]?.games_count || '0', 10);
-    const winsCount = parseInt(winRes.rows[0]?.wins_count || '0', 10);
-    const netResult = totalWon - totalStk;
+
+    const bingoTotalStk = parseFloat(stakeRes.rows[0]?.total_stk || '0');
+    const bingoTotalWon = parseFloat(bingoWinRes.rows[0]?.total_won || '0');
+    const bingoGamesCount = parseInt(stakeRes.rows[0]?.games_count || '0', 10);
+    const bingoWinsCount = Math.max(
+      parseInt(bingoWinRes.rows[0]?.wins_count || '0', 10),
+      parseInt(stakeRes.rows[0]?.bingo_ticket_wins || '0', 10)
+    );
+
+    const kenoTotalStk = parseFloat(kenoStatsRes.rows[0]?.keno_stk || '0');
+    const kenoTotalWon = parseFloat(kenoStatsRes.rows[0]?.keno_won || '0');
+    const kenoGamesCount = parseInt(kenoStatsRes.rows[0]?.keno_count || '0', 10);
+    const kenoWinsCount = parseInt(kenoStatsRes.rows[0]?.keno_wins || '0', 10);
+
+    const totalStk = Number((bingoTotalStk + kenoTotalStk).toFixed(2));
+    const totalWon = Number((bingoTotalWon + kenoTotalWon).toFixed(2));
+    const gamesCount = bingoGamesCount + kenoGamesCount;
+    const winsCount = bingoWinsCount + kenoWinsCount;
+    const netResult = Number((totalWon - totalStk).toFixed(2));
     const refCount = parseInt(refCountRes.rows[0]?.refs || '0', 10);
 
     const formattedTxs = txsRes.rows.map(tx => {
@@ -377,6 +431,49 @@ adminPlayersRouter.get('/:id/details', requireAdmin, async (req: AuthenticatedRe
         g.status === 'won' ? 'Won' : 'Lost'
       ];
     });
+
+    const unifiedGameHistory = [
+      ...gamesRes.rows.map(g => {
+        const d = new Date(g.created_at);
+        const roomLabel = g.room_id.replace('room-', 'Room ');
+        return {
+          id: `bingo-${g.id}`,
+          gameType: 'Bingo' as const,
+          date: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+          createdAtMs: d.getTime(),
+          roomOrRound: roomLabel,
+          stake: parseFloat(g.stake || '0'),
+          entryDetail: `Cartela #${g.cartela_id}`,
+          resultLabel: g.status === 'won' ? 'Won' : 'Lost',
+          payoutAmount: 0,
+          status: g.status === 'won' ? 'won' : 'lost',
+          isBonus: false
+        };
+      }),
+      ...kenoGamesRes.rows.map(k => {
+        const d = new Date(k.created_at);
+        const payout = parseFloat(k.payout_amount || '0');
+        const mult = parseFloat(k.multiplier || '0');
+        const spots = parseInt(k.spot_count || '0', 10);
+        const hits = parseInt(k.hit_count || '0', 10);
+        const statusStr = k.status === 'won' ? 'Won' : (k.status === 'active' ? 'Live' : 'Lost');
+        return {
+          id: `keno-${k.id}`,
+          gameType: 'Keno' as const,
+          date: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+          createdAtMs: d.getTime(),
+          roomOrRound: `Round #${k.round_number}`,
+          stake: parseFloat(k.bet_amount || '0'),
+          entryDetail: `${spots} picks · ${hits} hits${mult > 0 ? ` (${mult}x)` : ''}`,
+          resultLabel: k.status === 'won' ? `Won +${payout.toFixed(0)}` : statusStr,
+          payoutAmount: payout,
+          status: k.status,
+          isBonus: Boolean(k.is_bonus)
+        };
+      })
+    ]
+      .sort((a, b) => b.createdAtMs - a.createdAtMs)
+      .slice(0, 20);
 
     const formattedLogs = logsRes.rows.map(l => {
       const d = new Date(l.created_at);
@@ -421,6 +518,20 @@ adminPlayersRouter.get('/:id/details', requireAdmin, async (req: AuthenticatedRe
         netResult,
         gamesCount,
         winsCount,
+        bingoStats: {
+          gamesCount: bingoGamesCount,
+          winsCount: bingoWinsCount,
+          totalStaked: bingoTotalStk,
+          totalWon: bingoTotalWon,
+          netResult: Number((bingoTotalWon - bingoTotalStk).toFixed(2))
+        },
+        kenoStats: {
+          gamesCount: kenoGamesCount,
+          winsCount: kenoWinsCount,
+          totalStaked: kenoTotalStk,
+          totalWon: kenoTotalWon,
+          netResult: Number((kenoTotalWon - kenoTotalStk).toFixed(2))
+        },
         notes: notesRes.rows.map(n => ({
           id: n.id,
           note: n.note,
@@ -429,6 +540,7 @@ adminPlayersRouter.get('/:id/details', requireAdmin, async (req: AuthenticatedRe
         })),
         txs: formattedTxs,
         gms: formattedGames,
+        gameHistory: unifiedGameHistory,
         logs: formattedLogs
       }
     });

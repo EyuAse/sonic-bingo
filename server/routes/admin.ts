@@ -10,6 +10,7 @@ import { coinService } from '../services/coinService.ts';
 import { adminPlayersRouter } from './admin_players.ts';
 import { adminRewardsRouter } from './admin_rewards.ts';
 import { adminCashflowRouter } from './admin_cashflow.ts';
+import { adminKenoRouter } from './admin_keno.ts';
 
 const router = Router();
 
@@ -21,6 +22,9 @@ router.use('/rewards', adminRewardsRouter);
 
 // Mount Dedicated Cashflow & Treasury Router
 router.use('/cashflow', adminCashflowRouter);
+
+// Mount Dedicated Fast Keno Admin Router
+router.use('/keno', adminKenoRouter);
 
 /**
  * Get All Real Users from Neon DB

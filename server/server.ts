@@ -27,7 +27,7 @@ import { setupKenoSockets } from './sockets/kenoSocket.ts';
 import kenoRouter from './routes/keno.ts';
 import { telegramBotService } from './services/telegramBotService.ts';
 
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 
 dotenv.config();
 
@@ -267,6 +267,14 @@ app.post('/api/rooms/reset', (req, res) => {
   res.json({ success: true, message: 'Rooms reset to synchronized lobby.' });
 });
 
+const resolveRateLimitIp = (req: express.Request): string => {
+  const cfIp = req.headers['cf-connecting-ip'];
+  const raw = Array.isArray(cfIp) ? cfIp[0] : cfIp;
+  const candidate = (raw || req.ip || req.socket?.remoteAddress || '127.0.0.1').split(',')[0].trim();
+  // Strip optional IPv4 :port suffix while preserving IPv6 literals
+  return /^\d+\.\d+\.\d+\.\d+:\d+$/.test(candidate) ? candidate.split(':')[0] : candidate;
+};
+
 // Rate Limiters for DoS and Brute-Force Hardening
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -281,11 +289,23 @@ const walletLimiter = rateLimit({
   limit: 120, // Account for fallback polling during socket disconnection
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  keyGenerator: (req) => ipKeyGenerator(resolveRateLimitIp(req)),
+  skip: (req) => req.method === 'GET' && req.path.startsWith('/agents/'),
   message: { success: false, error: 'Too many requests. Please slow down.' }
+});
+
+const agentDiscoveryLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  limit: 300, // Generous limit for read-only Deposit/Withdraw agent lookup
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  keyGenerator: (req) => ipKeyGenerator(resolveRateLimitIp(req)),
+  message: { success: false, error: 'Too many agent lookup requests. Please wait a moment and retry.' }
 });
 
 // Mount Routes with Rate Limiting
 app.use('/api/auth', authLimiter, authRouter);
+app.use('/api/wallet/agents', agentDiscoveryLimiter);
 app.use('/api/wallet', walletLimiter, walletRouter);
 app.use('/api/agent', agentRouter);
 app.use('/api/admin/jackpots', adminJackpotsRouter);

@@ -8,6 +8,7 @@ import { CashflowDesk } from '../components/admin/CashflowDesk.tsx';
 import { CashierDesk } from '../components/admin/CashierDesk.tsx';
 import { PlayerAccountsDesk } from '../components/admin/PlayerAccountsDesk.tsx';
 import { CartelasDesk } from '../components/admin/CartelasDesk.tsx';
+import { KenoAdminDesk } from '../components/admin/KenoAdminDesk.tsx';
 import { TelegramBotDesk } from '../components/admin/TelegramBotDesk.tsx';
 import { BotEngineControllerDesk } from '../components/admin/BotEngineControllerDesk.tsx';
 import { AgentsDesk } from '../components/admin/AgentsDesk.tsx';
@@ -32,6 +33,8 @@ const TAB_TITLES: Record<AdminTab, string> = {
   'bot-engine': '🎚️ Bot Engine (0-50)',
   'bot-players': '🤖 Bot Player Accounts',
   cartelas: '🗂️ 600 Cards',
+  'keno-dashboard': '🎱 Keno Dashboard',
+  'keno-ledger': '🎟️ Keno Rounds & Tickets',
   'telegram-bot': '📢 Telegram Bot',
   agents: '🤝 Agents',
   'agent-recharges': '⚡ Recharges',
@@ -61,6 +64,8 @@ export const AdminPage: React.FC = () => {
     activeTab === 'agent-payouts' ||
     activeTab === 'jackpots' ||
     activeTab === 'cartelas' ||
+    activeTab === 'keno-dashboard' ||
+    activeTab === 'keno-ledger' ||
     activeTab === 'bot-engine' ||
     activeTab === 'bot-players' ||
     activeTab === 'settings' ||
@@ -274,6 +279,14 @@ export const AdminPage: React.FC = () => {
 
           {/* TAB 6: 600 SERIAL CARTELA CARDS LIBRARY */}
           {activeTab === 'cartelas' && <CartelasDesk />}
+
+          {/* TAB 6b: FAST KENO ADMIN DASHBOARD & LEDGER */}
+          {activeTab === 'keno-dashboard' && (
+            <KenoAdminDesk view="dashboard" onNavigateView={setActiveTab} />
+          )}
+          {activeTab === 'keno-ledger' && (
+            <KenoAdminDesk view="ledger" onNavigateView={setActiveTab} />
+          )}
 
           {/* TAB 7: TELEGRAM BOT & ADS BROADCAST CENTER */}
           {activeTab === 'telegram-bot' && <TelegramBotDesk />}
