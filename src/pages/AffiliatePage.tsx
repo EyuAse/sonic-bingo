@@ -7,7 +7,7 @@ import { useAdmin } from '../context/AdminContext.tsx';
 import { useBingo } from '../context/BingoContext.tsx';
 import { telegramService } from '../services/telegramService.ts';
 import { apiClient } from '../services/apiClient.ts';
-import { GrandJackpotModal } from '../components/jackpot/GrandJackpotModal.tsx';
+import { GrandJackpotContent } from '../components/jackpot/GrandJackpotModal.tsx';
 
 interface ReferredFriend {
   id: string;
@@ -35,7 +35,6 @@ export const AffiliatePage: React.FC = () => {
   const effectiveJackpot = (typeof jackpotPool === 'number' && jackpotPool > 0) ? jackpotPool : 480;
 
   const [isRedeemingCoins, setIsRedeemingCoins] = useState(false);
-  const [showJackpotModal, setShowJackpotModal] = useState(false);
   const [activeRewardTab, setActiveRewardTab] = useState<'reward' | 'jackpot' | 'invite'>('reward');
 
   const [referralData, setReferralData] = useState<{
@@ -187,161 +186,187 @@ export const AffiliatePage: React.FC = () => {
           boxSizing: 'border-box'
         }}
       >
-        {/* PAGE 1: REWARD TAB (Existing 3-Wallet & Loyalty Coins UI untouched) */}
+        {/* PAGE 1: REWARD TAB (Upgraded Spacious Rewards Hub) */}
         {activeRewardTab === 'reward' && (
-        <div style={{
-          background: '#ffffff',
-          borderRadius: '20px',
-          padding: '16px',
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.04)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <i className="fa-solid fa-wallet" style={{ color: '#d97706' }}></i>
-              {lang === 'am' ? 'የእርስዎ ቦርሳዎችና የሳንቲም ማዕከል' : 'Your Wallets & Rewards'}
-            </span>
+        <div className="rewards-hub-stack">
+          {/* 1. Hero Balance & Quick Top-Up Card */}
+          <div className="rewards-hub-hero-card">
+            <div className="rewards-hub-hero-top">
+              <span className="rewards-hub-badge">
+                <i className="fa-solid fa-gift"></i>
+                {lang === 'am' ? 'የሽልማት እና የቦርሳ ማዕከል' : 'REWARDS & WALLET HUB'}
+              </span>
+              <button
+                type="button"
+                className="rewards-hub-link-btn"
+                onClick={() => switchPage('wallet')}
+              >
+                {lang === 'am' ? 'ቦርሳ ክፈት →' : 'Wallet Hub →'}
+              </button>
+            </div>
+
+            <div className="rewards-hub-total-lbl">
+              {lang === 'am' ? 'ጠቅላላ መጫወቻ ሂሳብ' : 'Total Playable Balance'}
+            </div>
+            <div className="rewards-hub-total-val">
+              {(balance + bonus).toFixed(0)} <span>ETB</span>
+            </div>
+
+            <div className="rewards-hub-action-row">
+              <button
+                type="button"
+                className="rewards-hub-btn-deposit"
+                onClick={() => {
+                  telegramService.triggerHaptic('light');
+                  switchPage('deposit');
+                }}
+              >
+                <i className="fa-solid fa-circle-plus"></i>
+                <span>{lang === 'am' ? 'ሂሳብ አስገባ' : '+ Add Balance'}</span>
+              </button>
+              <button
+                type="button"
+                className="rewards-hub-btn-play"
+                onClick={() => {
+                  telegramService.triggerHaptic('light');
+                  switchPage('games');
+                }}
+              >
+                <i className="fa-solid fa-play"></i>
+                <span>{lang === 'am' ? 'አሁን ተጫወት' : 'Play Bingo'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 2. Prominent 2-Column Cash & Bonus Wallets */}
+          <div className="rewards-hub-wallet-grid">
+            <div className="rewards-hub-wallet-card cash">
+              <div className="rh-wallet-hdr">
+                <span className="rh-wallet-icon cash">💵</span>
+                <span className="rh-wallet-label">{lang === 'am' ? 'ዋና ሂሳብ' : 'Withdrawable Cash'}</span>
+              </div>
+              <div className="rh-wallet-amount">{balance.toFixed(0)} <small>ETB</small></div>
+              <div className="rh-wallet-sub">{lang === 'am' ? 'ወዲያውኑ ማውጣት የሚቻል' : 'Instant Telebirr payout ready'}</div>
+            </div>
+
+            <div className="rewards-hub-wallet-card bonus">
+              <div className="rh-wallet-hdr">
+                <span className="rh-wallet-icon bonus">🎁</span>
+                <span className="rh-wallet-label">{lang === 'am' ? 'የጨዋታ ቦነስ' : 'Game Bonus'}</span>
+              </div>
+              <div className="rh-wallet-amount bonus">{bonus.toFixed(0)} <small>ETB</small></div>
+              <div className="rh-wallet-sub">{lang === 'am' ? 'ለቢንጎ ጨዋታ የሚውል' : 'Use for tickets, win real cash'}</div>
+            </div>
+          </div>
+
+          {/* 3. Large Loyalty Coins & Milestone Redemption Card */}
+          <div className="rewards-hub-coins-card">
+            <div className="rh-coins-top-row">
+              <div>
+                <div className="rh-coins-kicker">
+                  {lang === 'am' ? 'የታማኝነት ሳንቲሞች' : 'LOYALTY COINS VAULT'}
+                </div>
+                <div className="rh-coins-balance">
+                  {coins.toLocaleString()} <span>🪙</span>
+                </div>
+              </div>
+              <div className="rh-coins-rate-pill">
+                1,000 🪙 = 20 ETB
+              </div>
+            </div>
+
+            <div className="rh-coins-progress-meta">
+              <span>
+                {coins >= 1000
+                  ? (lang === 'am' ? '✅ ለመቀየር ዝግጁ ነው!' : '✅ Milestone reached — ready to claim!')
+                  : (lang === 'am'
+                      ? `ለቀጣይ 20 ብር ቦነስ ${1000 - (coins % 1000)} ሳንቲሞች ቀርተዋል`
+                      : `${1000 - (coins % 1000)} coins left to next 20 ETB bonus`)}
+              </span>
+              <strong>{coins >= 1000 ? '1,000+ / 1,000' : `${coins % 1000} / 1,000`}</strong>
+            </div>
+
+            <div className="rh-coins-progress-track">
+              <div
+                className="rh-coins-progress-fill"
+                style={{ width: `${coins >= 1000 ? 100 : Math.min(100, ((coins % 1000) / 1000) * 100)}%` }}
+              ></div>
+            </div>
+
             <button
               type="button"
-              onClick={() => switchPage('wallet')}
-              style={{ background: 'transparent', border: 'none', color: '#d97706', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+              className={`rh-coins-redeem-btn ${coins >= 1000 ? 'ready' : ''}`}
+              disabled={coins < 1000 || isRedeemingCoins}
+              onClick={handleRedeemCoins}
             >
-              {lang === 'am' ? 'ዝርዝር ይመልከቱ →' : 'Wallet Hub →'}
+              <i className={isRedeemingCoins ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-coins'}></i>
+              <span>
+                {isRedeemingCoins
+                  ? (lang === 'am' ? 'በመቀየር ላይ...' : 'Redeeming Bonus...')
+                  : coins >= 1000
+                    ? (lang === 'am' ? '1,000 ሳንቲም ወደ 20 ብር ቀይር' : 'Redeem 1,000 Coins → 20 ETB Bonus')
+                    : (lang === 'am' ? `${1000 - coins} ሳንቲም ሲሞላ 20 ብር ይውሰዱ` : `Play Bingo to Earn ${1000 - coins} More Coins`)}
+              </span>
             </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-            {/* Wallet 1: Withdrawable Cash */}
-            <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '10px 8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
-              <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 700 }}>{lang === 'am' ? 'ዋና ሂሳብ' : 'Cash'}</div>
-              <div style={{ fontSize: '14px', fontWeight: 900, color: '#0f172a', margin: '3px 0' }}>{balance.toFixed(0)} <span style={{ fontSize: '10px' }}>ETB</span></div>
-              <button
-                type="button"
-                onClick={() => switchPage('deposit')}
-                style={{ width: '100%', background: '#059669', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '4px 0', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}
-              >
-                {lang === 'am' ? '+ አስገባ' : '+ Deposit'}
-              </button>
-            </div>
+          {/* 4. Quick Reward Pathways (Jump to Full Jackpot Page or Invite Friends) */}
+          <div className="rewards-hub-shortcuts">
+            <button
+              type="button"
+              className="rewards-shortcut-card jackpot"
+              onClick={() => {
+                telegramService.triggerHaptic('light');
+                setActiveRewardTab('jackpot');
+              }}
+            >
+              <div className="shortcut-left">
+                <div className="shortcut-icon jackpot">👑</div>
+                <div>
+                  <div className="shortcut-title">{lang === 'am' ? '500 ብር ግራንድ ጃክፖት' : '500 ETB Grand Jackpot'}</div>
+                  <div className="shortcut-sub">
+                    {lang === 'am'
+                      ? `ካዝና: ${Math.floor(effectiveJackpot)} / 500 ብር · ሙሉ ገጹን ይክፈቱ`
+                      : `Vault: ${Math.floor(effectiveJackpot)} / 500 ETB · Open full Jackpot page`}
+                  </div>
+                </div>
+              </div>
+              <i className="fa-solid fa-chevron-right shortcut-arrow"></i>
+            </button>
 
-            {/* Wallet 2: Game Bonus */}
-            <div style={{ background: '#ecfdf5', borderRadius: '14px', padding: '10px 8px', border: '1px solid #a7f3d0', textAlign: 'center' }}>
-              <div style={{ fontSize: '10px', color: '#065f46', fontWeight: 700 }}>{lang === 'am' ? 'ቦነስ' : 'Bonus'}</div>
-              <div style={{ fontSize: '14px', fontWeight: 900, color: '#059669', margin: '3px 0' }}>{bonus.toFixed(0)} <span style={{ fontSize: '10px' }}>ETB</span></div>
-              <button
-                type="button"
-                onClick={() => switchPage('games')}
-                style={{ width: '100%', background: '#047857', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '4px 0', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}
-              >
-                {lang === 'am' ? 'ተጫወት' : 'Play'}
-              </button>
-            </div>
-
-            {/* Wallet 3: Loyalty Coins */}
-            <div style={{ background: '#fffbeb', borderRadius: '14px', padding: '10px 8px', border: '1px solid #fde68a', textAlign: 'center' }}>
-              <div style={{ fontSize: '10px', color: '#92400e', fontWeight: 700 }}>{lang === 'am' ? 'ሳንቲሞች' : 'Coins'}</div>
-              <div style={{ fontSize: '14px', fontWeight: 900, color: '#d97706', margin: '3px 0' }}>{coins.toLocaleString()} <span style={{ fontSize: '11px' }}>🪙</span></div>
-              <button
-                type="button"
-                disabled={coins < 1000 || isRedeemingCoins}
-                onClick={handleRedeemCoins}
-                style={{
-                  width: '100%',
-                  background: coins >= 1000 ? '#d97706' : '#fcd34d',
-                  color: coins >= 1000 ? '#ffffff' : '#78350f',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '4px 0',
-                  fontSize: '9.5px',
-                  fontWeight: 800,
-                  cursor: coins >= 1000 ? 'pointer' : 'default'
-                }}
-              >
-                {isRedeemingCoins ? '...' : coins >= 1000 ? (lang === 'am' ? '20 ብር ቅያሬ' : 'Redeem 20') : `${coins}/1000`}
-              </button>
-            </div>
-          </div>
-
-          {/* Coin Progress Bar toward 1,000 Coin reward */}
-          <div style={{ marginTop: '10px', background: '#f1f5f9', borderRadius: '999px', height: '6px', overflow: 'hidden' }}>
-            <div style={{
-              width: `${Math.min(100, ((coins % 1000) / 1000) * 100)}%`,
-              height: '100%',
-              background: 'linear-gradient(90deg, #f59e0b, #10b981)',
-              borderRadius: '999px',
-              transition: 'width 0.3s ease'
-            }}></div>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#64748b', marginTop: '4px' }}>
-            <span>{lang === 'am' ? '💡 1,000 ሳንቲም = 20 ብር የጨዋታ ቦነስ' : '💡 1,000 coins = 20 ETB game bonus'}</span>
-            <span style={{ fontWeight: 700, color: '#d97706' }}>{coins % 1000} / 1000 🪙</span>
+            <button
+              type="button"
+              className="rewards-shortcut-card invite"
+              onClick={() => {
+                telegramService.triggerHaptic('light');
+                setActiveRewardTab('invite');
+              }}
+            >
+              <div className="shortcut-left">
+                <div className="shortcut-icon invite">🎁</div>
+                <div>
+                  <div className="shortcut-title">
+                    {lang === 'am' ? `ጓደኞችን ይጋብዙ (${referralBonusRate}% ቦነስ)` : `Invite Friends & Earn ${referralBonusRate}% Bonus`}
+                  </div>
+                  <div className="shortcut-sub">
+                    {lang === 'am'
+                      ? `${totalInvited} ተጋብዘዋል · ${totalEarned.toFixed(0)} ብር አግኝተዋል`
+                      : `${totalInvited} friends joined · ${totalEarned.toFixed(0)} ETB earned`}
+                  </div>
+                </div>
+              </div>
+              <i className="fa-solid fa-chevron-right shortcut-arrow"></i>
+            </button>
           </div>
         </div>
         )}
 
-        {/* PAGE 2: JACKPOT TAB (Existing 500 ETB Jackpot Card UI untouched) */}
+        {/* PAGE 2: FULL JACKPOT PAGE VIEW (Rendered directly inline without popup step) */}
         {activeRewardTab === 'jackpot' && (
-        <div className="rewards-jackpot-showcase-card">
-          <div className="rewards-jackpot-badge-tag">
-            <i className="fa-solid fa-crown"></i>
-            <span>{lang === 'am' ? '500 ብር ግራንድ ጃክፖት' : '500 ETB PROGRESSIVE VAULT'}</span>
+          <div className="grand-jackpot-page-container">
+            <GrandJackpotContent active={activeRewardTab === 'jackpot'} mode="page" />
           </div>
-
-          <div className="rewards-jackpot-row">
-            <div>
-              <div className="rewards-jackpot-title">
-                {lang === 'am' ? 'ግራንድ ጃክፖት ካዝና' : 'Grand Jackpot Vault'}
-              </div>
-              <div className="rewards-jackpot-val">
-                {Math.floor(effectiveJackpot)} <span className="rewards-jackpot-val-max">/ 500 ETB</span>
-              </div>
-            </div>
-
-            <div className="rewards-jackpot-thumb">
-              <img
-                src="/images/hit_the_jackpot.jpg"
-                alt="500 ETB Jackpot"
-              />
-            </div>
-          </div>
-
-          {/* Mini Progress Bar */}
-          <div style={{ marginTop: '12px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '999px', height: '8px', overflow: 'hidden' }}>
-            <div style={{
-              width: `${Math.min(100, Math.max(0, (effectiveJackpot / 500) * 100))}%`,
-              height: '100%',
-              background: 'linear-gradient(90deg, #f59e0b, #10b981)',
-              borderRadius: '999px',
-              transition: 'width 0.4s ease'
-            }}></div>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#cbd5e1', marginTop: '6px' }}>
-            <span>{lang === 'am' ? '🎯 500 ብር ሲሞላ በዚህ ዙር አሸናፊው ይወስዳል' : '🎯 Drops when vault reaches 500 ETB'}</span>
-            <span style={{ fontWeight: 800, color: '#fbbf24' }}>
-              {Math.max(0, 500 - Math.floor(effectiveJackpot))} ETB {lang === 'am' ? 'ቀርቷል' : 'left'}
-            </span>
-          </div>
-
-          <button
-            type="button"
-            className="rewards-jackpot-open-btn"
-            onClick={() => {
-              telegramService.triggerHaptic('light');
-              setShowJackpotModal(true);
-            }}
-          >
-            <i className="fa-solid fa-trophy"></i>
-            <span>{lang === 'am' ? 'የጃክፖት ዝርዝርና ደንቦችን ይመልከቱ' : 'Open Jackpot Vault & Rules'}</span>
-          </button>
-        </div>
         )}
-
-        {/* Grand Jackpot Modal View */}
-        <GrandJackpotModal
-          isOpen={showJackpotModal}
-          onClose={() => setShowJackpotModal(false)}
-        />
 
         {/* PAGE 3: INVITE FRIENDS TAB (Existing Referral Suite UI untouched) */}
         {activeRewardTab === 'invite' && (

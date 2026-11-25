@@ -464,3 +464,37 @@
   transform: scale(0.98);
 }
 
+/* ==========================================================================
+   FULL-PAGE INLINE JACKPOT CONTAINER (Inside Jackpot Navbar Tab)
+   ========================================================================== */
+
+.grand-jackpot-page-container {
+  width: 100%;
+  background: linear-gradient(180deg, #13172e 0%, #0d111f 100%);
+  border: 1.5px solid #f59e0b;
+  border-radius: 22px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.28), 0 0 28px rgba(245, 158, 11, 0.16);
+  color: #ffffff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.grand-jackpot-header.is-page-mode {
+  position: relative;
+  top: auto;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+}
+
+.grand-jackpot-live-tag {
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid #10b981;
+  color: #34d399;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+

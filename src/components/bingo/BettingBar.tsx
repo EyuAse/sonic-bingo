@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useBingo } from '../../context/BingoContext.tsx';
 import { useWallet } from '../../context/WalletContext.tsx';
+import { useApp } from '../../context/AppContext.tsx';
 import { useLanguage } from '../../context/LanguageContext.tsx';
+import { telegramService } from '../../services/telegramService.ts';
 import { RoomSwitchModal } from './RoomSwitchModal.tsx';
 import { StakeRoomSelectorModal } from '../games/StakeRoomSelectorModal.tsx';
 
@@ -28,6 +30,7 @@ export const BettingBar: React.FC = () => {
     hasSelectedCartelas
   } = useBingo();
   const { balance, bonus, isBalanceVisible } = useWallet();
+  const { switchPage } = useApp();
   const { t, lang } = useLanguage();
 
   const [showStakeModal, setShowStakeModal] = useState<boolean>(false);
@@ -200,6 +203,29 @@ export const BettingBar: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* ── Lower Quick Balance & Add Balance Action Strip ── */}
+      <div className="bingo-lower-balance-bar">
+        <div className="lower-balance-info">
+          <i className="fa-solid fa-wallet lower-balance-icon"></i>
+          <span className="lower-balance-label">{lang === 'am' ? 'ቀሪ ሂሳብ:' : 'Balance:'}</span>
+          <span className="lower-balance-value">
+            {isBalanceVisible ? `${(balance + bonus).toFixed(0)} ETB` : '••••'}
+          </span>
+        </div>
+        <button
+          type="button"
+          className="btn-lower-add-balance"
+          onClick={() => {
+            telegramService.triggerHaptic('light');
+            switchPage('deposit');
+          }}
+          title="Add funds to your wallet"
+        >
+          <i className="fa-solid fa-circle-plus"></i>
+          <span>{lang === 'am' ? 'ሂሳብ አስገባ' : 'Add Balance'}</span>
+        </button>
+      </div>
 
       {/* ── Safe In-Lobby Cancel Bet Confirmation Modal ── */}
       {showCancelModal && (

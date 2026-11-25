@@ -48,15 +48,20 @@ export const BingoPage: React.FC = () => {
 
       <div className={`bingo-page-content-wrapper ${isDesktop ? 'is-desktop-view' : ''}`}>
 
-        {/* 1. Ultra-Slim Top Action Bar matching Image */}
+        {/* 1. Top Action Bar with High-Visibility Back Button */}
         <div className="bingo-top-action-bar">
           <button
             type="button"
             className="btn-bingo-mini-back"
-            onClick={handleBackClick}
+            onClick={() => {
+              telegramService.triggerHaptic('light');
+              handleBackClick();
+            }}
+            aria-label="Back to Games"
             title="Back to Games"
           >
-            <i className="fa-solid fa-chevron-left"></i>
+            <i className="fa-solid fa-arrow-left"></i>
+            <span>Back</span>
           </button>
           <StatsStrip />
         </div>
@@ -110,6 +115,19 @@ export const BingoPage: React.FC = () => {
             >
               <i className="fa-solid fa-arrow-right-from-bracket"></i>
               <span>Leave Game</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn-in-game-add-balance"
+              onClick={() => {
+                telegramService.triggerHaptic('light');
+                switchPage('deposit');
+              }}
+              title="Deposit funds to your wallet"
+            >
+              <i className="fa-solid fa-circle-plus"></i>
+              <span>Add Balance</span>
             </button>
 
             {!autoPlay && (

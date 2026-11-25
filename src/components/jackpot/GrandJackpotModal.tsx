@@ -6,6 +6,12 @@ import { telegramService } from '../../services/telegramService.ts';
 import { apiClient } from '../../services/apiClient.ts';
 import '../../styles/grand_jackpot.css';
 
+interface GrandJackpotContentProps {
+  active?: boolean;
+  mode?: 'modal' | 'page';
+  onClose?: () => void;
+}
+
 interface GrandJackpotModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -19,7 +25,11 @@ interface JackpotWinnerRecord {
   wonAt: string;
 }
 
-export const GrandJackpotModal: React.FC<GrandJackpotModalProps> = ({ isOpen, onClose }) => {
+export const GrandJackpotContent: React.FC<GrandJackpotContentProps> = ({
+  active = true,
+  mode = 'modal',
+  onClose
+}) => {
   const { jackpotPool, setJackpotPool, setBetAmount } = useBingo();
   const { switchPage } = useApp();
   const { lang } = useLanguage();
@@ -35,9 +45,9 @@ export const GrandJackpotModal: React.FC<GrandJackpotModalProps> = ({ isOpen, on
     }
   }, [jackpotPool]);
 
-  // Fetch live jackpot details & recent champions on modal open
+  // Fetch live jackpot details & recent champions when active/visible
   useEffect(() => {
-    if (!isOpen) return;
+    if (!active) return;
 
     let isMounted = true;
     const fetchDetails = async () => {
@@ -64,9 +74,7 @@ export const GrandJackpotModal: React.FC<GrandJackpotModalProps> = ({ isOpen, on
     return () => {
       isMounted = false;
     };
-  }, [isOpen]);
-
-  if (!isOpen) return null;
+  }, [active, setJackpotPool]);
 
   const currentPool = Math.max(poolAmount, jackpotPool ?? 0);
   const targetThreshold = 500;
@@ -78,26 +86,23 @@ export const GrandJackpotModal: React.FC<GrandJackpotModalProps> = ({ isOpen, on
     telegramService.triggerHaptic('medium');
     setBetAmount(10);
     switchPage('bingo');
-    onClose();
+    onClose?.();
   };
 
   const handleClose = () => {
     telegramService.triggerHaptic('light');
-    onClose();
+    onClose?.();
   };
 
   return (
-    <div className="grand-jackpot-modal-overlay" onClick={handleClose}>
-      <div
-        className="grand-jackpot-modal-container"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Top Sticky Header */}
-        <div className="grand-jackpot-header">
-          <div className="grand-jackpot-header-title">
-            <span>👑</span>
-            <span>{lang === 'am' ? 'ግራንድ ጃክፖት 500' : 'GRAND JACKPOT 500'}</span>
-          </div>
+    <>
+      {/* Top Header */}
+      <div className={`grand-jackpot-header ${mode === 'page' ? 'is-page-mode' : ''}`}>
+        <div className="grand-jackpot-header-title">
+          <span>👑</span>
+          <span>{lang === 'am' ? 'ግራንድ ጃክፖት 500' : 'GRAND JACKPOT 500'}</span>
+        </div>
+        {mode === 'modal' && onClose ? (
           <button
             type="button"
             className="grand-jackpot-close-btn"
@@ -106,10 +111,15 @@ export const GrandJackpotModal: React.FC<GrandJackpotModalProps> = ({ isOpen, on
           >
             ✕
           </button>
-        </div>
+        ) : (
+          <span className="grand-jackpot-live-tag">
+            {lang === 'am' ? 'ቀጥታ ካዝና' : 'LIVE VAULT'}
+          </span>
+        )}
+      </div>
 
-        {/* Modal Scrollable Body */}
-        <div className="grand-jackpot-body">
+      {/* Scrollable Body / Inline Page Content */}
+      <div className="grand-jackpot-body">
           {/* 1. 3D Banner Graphic */}
           <div className="grand-jackpot-hero-graphic">
             <img
@@ -278,6 +288,25 @@ export const GrandJackpotModal: React.FC<GrandJackpotModalProps> = ({ isOpen, on
             )}
           </div>
         </div>
+    </>
+  );
+};
+
+export const GrandJackpotModal: React.FC<GrandJackpotModalProps> = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+
+  const handleOverlayClose = () => {
+    telegramService.triggerHaptic('light');
+    onClose();
+  };
+
+  return (
+    <div className="grand-jackpot-modal-overlay" onClick={handleOverlayClose}>
+      <div
+        className="grand-jackpot-modal-container"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <GrandJackpotContent active={isOpen} mode="modal" onClose={onClose} />
       </div>
     </div>
   );
