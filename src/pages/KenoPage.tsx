@@ -59,6 +59,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
     activeTickets,
     allRoomTickets,
     balance,
+    bonus,
     userId,
     userDisplayId,
     hotNumbers,
@@ -78,6 +79,8 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
     switchRulesTab,
     refreshStats
   } = useKeno();
+
+  const playableBalance = Number((balance + bonus).toFixed(2));
 
   // Tab State
   const [tab, setTab] = useState<'game' | 'history' | 'results' | 'stats' | 'leaders'>('game');
@@ -311,8 +314,8 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
       showToast('Please pick 1 to 10 numbers');
       return;
     }
-    if (balance < stake) {
-      showToast(`Not enough credits (${balance.toFixed(2)} < ${stake.toFixed(2)} ETB). Opening Deposit...`);
+    if (playableBalance < stake) {
+      showToast(`Not enough credits (${playableBalance.toFixed(2)} < ${stake.toFixed(2)} ETB). Opening Deposit...`);
       openDeposit();
       return;
     }
@@ -852,7 +855,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
         <aside className="side" id="left">
           <div className="lp">
             <span className="fb" onClick={openDeposit} style={{ cursor: 'pointer' }} title="Deposit Funds">
-              <span id="bal2">{balance.toFixed(2)}</span> ETB
+              <span id="bal2">{playableBalance.toFixed(2)}</span> ETB
             </span>
             <span className="lid">
               <span id="uid2">{formattedUid}</span>
@@ -899,7 +902,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
             {/* Live Balance Pill (Opens Deposit modal on tap) */}
             <div className="pill" onClick={openDeposit} style={{ cursor: 'pointer' }} title="Tap to Deposit">
               <span className="b">
-                <span id="bal">{balance.toFixed(2)}</span>
+                <span id="bal">{playableBalance.toFixed(2)}</span>
                 <sup>ETB</sup>
               </span>
               <span className="id">

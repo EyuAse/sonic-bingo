@@ -103,7 +103,7 @@ const KenoContext = createContext<KenoContextValue | null>(null);
 
 export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
-  const { balance: walletBalance, bonus: walletBonus, deductBalance, addBalance, refreshBalance } = useWallet();
+  const { balance: walletBalance, bonus: walletBonus, deductBalance, deductBonus, addBalance, refreshBalance } = useWallet();
   const { currentPage, switchPage, showToast } = useApp();
 
   const isKenoActive = currentPage === 'keno';
@@ -353,8 +353,9 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const maxStake = useCallback(() => {
-    setStakeState(() => Math.max(1, Math.min(500, Math.max(1, Math.floor(walletBalance)))));
-  }, [walletBalance]);
+    const totalPlayable = walletBalance + walletBonus;
+    setStakeState(() => Math.max(1, Math.min(500, Math.max(1, Math.floor(totalPlayable)))));
+  }, [walletBalance, walletBonus]);
 
   const openDeposit = useCallback(() => {
     switchPage('deposit');
@@ -367,8 +368,9 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (selectedNumbers.size === 0) {
       return { success: false, error: 'Please select 1 to 10 numbers' };
     }
-    if (walletBalance < stake) {
-      showToast(`Not enough credits (${walletBalance.toFixed(2)} < ${stake.toFixed(2)} ETB). Opening Deposit...`);
+    const totalPlayable = Number((walletBalance + walletBonus).toFixed(2));
+    if (totalPlayable < stake) {
+      showToast(`Not enough credits (${totalPlayable.toFixed(2)} < ${stake.toFixed(2)} ETB). Opening Deposit...`);
       switchPage('deposit');
       return { success: false, error: 'Not enough credits' };
     }
@@ -396,7 +398,10 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 return [resp.ticket, ...prev];
               });
             }
-            deductBalance(stake);
+            const deductFromBonus = Math.min(walletBonus, stake);
+            const deductFromReal = Number((stake - deductFromBonus).toFixed(2));
+            if (deductFromBonus > 0) deductBonus(deductFromBonus);
+            if (deductFromReal > 0) deductBalance(deductFromReal);
             refreshBalance();
             setSelectedNumbers(new Set());
             resolve({ success: true, ticket: resp.ticket });
@@ -406,7 +411,7 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       );
     });
-  }, [phase, selectedNumbers, stake, walletBalance, userId, deductBalance, refreshBalance, switchPage, showToast]);
+  }, [phase, selectedNumbers, stake, walletBalance, walletBonus, userId, deductBalance, deductBonus, refreshBalance, switchPage, showToast]);
 
   const openRulesModal = useCallback((tab: 'rules' | 'fairness' = 'rules') => {
     setRulesModalTab(tab);

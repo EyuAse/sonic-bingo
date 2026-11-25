@@ -329,6 +329,7 @@ export class KenoGameEngine extends EventEmitter {
     }
 
     const sortedNumbers = [...selectedNumbers].sort((a, b) => a - b);
+    const effectiveIsBonus = Boolean(isBonus || debit.usedBonus);
     let ticketDbId = '';
 
     try {
@@ -345,7 +346,7 @@ export class KenoGameEngine extends EventEmitter {
           sortedNumbers,
           spots,
           betAmount,
-          isBonus
+          effectiveIsBonus
         ]
       );
       ticketDbId = ticketInsertRes.rows[0]?.id || '';
@@ -361,7 +362,7 @@ export class KenoGameEngine extends EventEmitter {
       selectedNumbers: sortedNumbers,
       spotCount: spots,
       betAmount,
-      isBonus,
+      isBonus: effectiveIsBonus,
       hitNumbers: [],
       hitCount: 0,
       multiplier: 0,

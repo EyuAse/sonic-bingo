@@ -12,22 +12,6 @@ interface GameCardItem {
 
 const gameList: GameCardItem[] = [
   {
-    id: 'lucky-mines',
-    title: 'Lucky Mines',
-    subtitle: 'Diamond Multiplier',
-    img: '/assets/images/lucky-mines.jpg',
-    playerCount: '1,024',
-    tag: 'SOON'
-  },
-  {
-    id: 'fast-keno',
-    title: 'Fast Keno',
-    subtitle: 'Instant Win',
-    img: '/assets/images/fast-keno.jpg',
-    playerCount: '543',
-    tag: 'LIVE'
-  },
-  {
     id: 'aviator',
     title: 'Aviator',
     subtitle: 'Crash Multiplier',
@@ -46,13 +30,9 @@ const gameList: GameCardItem[] = [
 ];
 
 export const MoreGamesGrid: React.FC = () => {
-  const { switchPage, showToast } = useApp();
+  const { showToast } = useApp();
 
   const handleGameClick = (game: GameCardItem) => {
-    if (game.id === 'fast-keno') {
-      switchPage('keno');
-      return;
-    }
     showToast(`🚀 ${game.title} is coming soon! Instant Play will be unlocked in the next release.`);
   };
 

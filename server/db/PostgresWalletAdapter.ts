@@ -19,6 +19,7 @@ export interface DebitResult {
   balanceAfter: number;
   bonusAfter: number;
   referenceCode: string;
+  usedBonus?: boolean;
 }
 
 export interface CreditResult {
@@ -135,20 +136,24 @@ export class PostgresWalletAdapter implements IWalletAdapter {
 
       const currentBalance = parseFloat(walletRes.rows[0].balance || '0.00');
       const currentBonus = parseFloat(walletRes.rows[0].bonus || '0.00');
-      const targetFund = isBonus ? currentBonus : currentBalance;
+      const totalFunds = Number((currentBalance + currentBonus).toFixed(2));
 
-      if (targetFund < parsedAmount) {
+      if (totalFunds < parsedAmount) {
         return {
           success: false,
-          error: `Insufficient ${isBonus ? 'bonus' : 'cash'} balance (${targetFund.toFixed(2)} < ${parsedAmount.toFixed(2)} ETB)`,
+          error: `Insufficient funds (${totalFunds.toFixed(2)} < ${parsedAmount.toFixed(2)} ETB)`,
           balanceAfter: currentBalance,
           bonusAfter: currentBonus,
-          referenceCode: ''
+          referenceCode: '',
+          usedBonus: false
         };
       }
 
-      const newBalance = isBonus ? currentBalance : Number((currentBalance - parsedAmount).toFixed(2));
-      const newBonus = isBonus ? Number((currentBonus - parsedAmount).toFixed(2)) : currentBonus;
+      const deductFromBonus = Math.min(currentBonus, parsedAmount);
+      const deductFromReal = Number((parsedAmount - deductFromBonus).toFixed(2));
+
+      const newBalance = Number((currentBalance - deductFromReal).toFixed(2));
+      const newBonus = Number((currentBonus - deductFromBonus).toFixed(2));
 
       await client.query(
         `UPDATE wallets SET balance = $1, bonus = $2, updated_at = CURRENT_TIMESTAMP WHERE user_id = $3`,
@@ -165,14 +170,15 @@ export class PostgresWalletAdapter implements IWalletAdapter {
         `INSERT INTO wallet_transactions (
           user_id, type, amount, balance_after, reference_code, status, description
         ) VALUES ($1, 'bet', $2, $3, $4, 'completed', $5)`,
-        [resolvedId, parsedAmount, newBalance, ref, desc]
+        [resolvedId, parsedAmount, Number((newBalance + newBonus).toFixed(2)), ref, desc]
       );
 
       return {
         success: true,
         balanceAfter: newBalance,
         bonusAfter: newBonus,
-        referenceCode: ref
+        referenceCode: ref,
+        usedBonus: deductFromBonus > 0
       };
     });
   }
