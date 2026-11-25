@@ -132,17 +132,20 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       const parsedAmount = data?.amount !== undefined && data?.amount !== null ? parseFloat(data.amount) : null;
       const parsedBonus = data?.bonus !== undefined && data?.bonus !== null ? parseFloat(data.bonus) : null;
 
-      if (parsedNewBal !== null && !isNaN(parsedNewBal)) {
-        setBalance(parsedNewBal);
-        localStorage.setItem('sonic_live_balance', parsedNewBal.toFixed(2));
-        window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: { balance: parsedNewBal } }));
-      } else if (parsedAmount !== null && !isNaN(parsedAmount)) {
-        setBalance(prev => {
-          const next = prev + parsedAmount;
-          localStorage.setItem('sonic_live_balance', next.toFixed(2));
-          window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: { balance: next } }));
-          return next;
-        });
+      // Guard: bonus_reward events emit combined (cash + bonus) as newBalance; keep withdrawable cash unchanged
+      if (data?.type !== 'bonus_reward') {
+        if (parsedNewBal !== null && !isNaN(parsedNewBal)) {
+          setBalance(parsedNewBal);
+          localStorage.setItem('sonic_live_balance', parsedNewBal.toFixed(2));
+          window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: { balance: parsedNewBal } }));
+        } else if (parsedAmount !== null && !isNaN(parsedAmount)) {
+          setBalance(prev => {
+            const next = prev + parsedAmount;
+            localStorage.setItem('sonic_live_balance', next.toFixed(2));
+            window.dispatchEvent(new CustomEvent('lb_wallet_updated', { detail: { balance: next } }));
+            return next;
+          });
+        }
       }
 
       if (parsedBonus !== null && !isNaN(parsedBonus)) {
@@ -154,12 +157,26 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       fetchLiveBalance();
     };
 
+    const handleCoinsEvent = (data: any) => {
+      if (data && data.userId && user?.id && String(data.userId).toLowerCase() !== String(user.id).toLowerCase()) {
+        return;
+      }
+      const rawCoins = data?.newBalance ?? data?.coins;
+      const parsedCoins = rawCoins !== undefined && rawCoins !== null ? parseInt(rawCoins, 10) : null;
+      if (parsedCoins !== null && !isNaN(parsedCoins)) {
+        setCoins(parsedCoins);
+        localStorage.setItem('sonic_live_coins', String(parsedCoins));
+      }
+    };
+
     // Use persistent socketService.on listeners (preserves callbacks across reconnects)
     const unsubGlobalBalance = socketService.on('user_balance_updated', handleBalanceEvent);
+    const unsubGlobalCoins = socketService.on('user_coins_updated', handleCoinsEvent);
     const unsubDepStatus = socketService.on('deposit_status_updated', () => fetchLiveBalance());
     const unsubWithStatus = socketService.on('withdrawal_status_updated', () => fetchLiveBalance());
 
     let unsubUserBalance: (() => void) | null = null;
+    let unsubUserCoins: (() => void) | null = null;
     let unsubUserTgBalance: (() => void) | null = null;
     let unsubUserDepositApproved: (() => void) | null = null;
     let unsubUserWithdrawalApproved: (() => void) | null = null;
@@ -168,6 +185,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     if (user?.id) {
       socketService.setAuthenticatedUser(user.id, user.fullName);
       unsubUserBalance = socketService.on(`user_${user.id}_balance`, handleBalanceEvent);
+      unsubUserCoins = socketService.on(`user_${user.id}_coins`, handleCoinsEvent);
       if (user.telegramId) {
         unsubUserTgBalance = socketService.on(`user_${user.telegramId}_balance`, handleBalanceEvent);
       }
@@ -215,9 +233,11 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       window.removeEventListener('lb_wallet_updated' as any, handleWalletUpdated);
       window.removeEventListener('storage', handleStorage);
       unsubGlobalBalance();
+      unsubGlobalCoins();
       unsubDepStatus();
       unsubWithStatus();
       if (unsubUserBalance) unsubUserBalance();
+      if (unsubUserCoins) unsubUserCoins();
       if (unsubUserTgBalance) unsubUserTgBalance();
       if (unsubUserDepositApproved) unsubUserDepositApproved();
       if (unsubUserWithdrawalApproved) unsubUserWithdrawalApproved();
@@ -263,27 +283,32 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const redeemCoins = async (): Promise<{ success: boolean; message: string; coins?: number; bonusAdded?: number }> => {
     try {
-      const token = localStorage.getItem('sonic_auth_token') || localStorage.getItem('auth_token');
-      const res = await fetch('/api/wallet/redeem-coins', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        }
-      });
-      const data = await res.json();
+      const data = await apiClient.wallet.redeemCoins(1000);
       if (data && data.success) {
-        if (typeof data.coins === 'number') setCoins(data.coins);
-        if (typeof data.bonus === 'number') setBonus(data.bonus);
-        else if (typeof data.bonusAdded === 'number') setBonus(prev => prev + data.bonusAdded);
+        const nextCoins = typeof data.newCoinBalance === 'number'
+          ? data.newCoinBalance
+          : (typeof (data as any).coins === 'number' ? (data as any).coins : undefined);
+        if (typeof nextCoins === 'number') setCoins(nextCoins);
+
+        const nextBonus = typeof data.newBonusBalance === 'number'
+          ? data.newBonusBalance
+          : (typeof (data as any).bonus === 'number' ? (data as any).bonus : undefined);
+        const bonusAdded = data.bonusAwarded ?? (data as any).bonusAdded;
+
+        if (typeof nextBonus === 'number') setBonus(nextBonus);
+        else if (typeof bonusAdded === 'number') setBonus(prev => prev + bonusAdded);
+
+        // Sync full wallet & coin state from backend
+        void fetchLiveBalance();
+
         return {
           success: true,
           message: data.message || 'Successfully redeemed 1,000 coins for 20 ETB bonus!',
-          coins: data.coins,
-          bonusAdded: data.bonusAdded
+          coins: nextCoins,
+          bonusAdded
         };
       }
-      return { success: false, message: data?.error || 'Failed to redeem coins' };
+      return { success: false, message: (data as any)?.error || 'Failed to redeem coins' };
     } catch (err: any) {
       return { success: false, message: err.message || 'Network error while redeeming coins' };
     }

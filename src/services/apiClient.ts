@@ -13,6 +13,24 @@ function getAuthHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+async function safeParseJson<T = any>(res: Response): Promise<T> {
+  const rawText = await res.text();
+  if (!rawText || !rawText.trim()) {
+    if (!res.ok) {
+      throw new Error(`Server returned HTTP ${res.status} with an empty response.`);
+    }
+    throw new Error('Server returned an empty response. Please retry in a moment.');
+  }
+  try {
+    return JSON.parse(rawText) as T;
+  } catch {
+    if (!res.ok) {
+      throw new Error(`Server returned HTTP ${res.status}. Please retry in a moment.`);
+    }
+    throw new Error('Invalid response from server. Please retry in a moment.');
+  }
+}
+
 async function handleResponse<T>(res: Response): Promise<T> {
   if (res.status === 401 && typeof window !== 'undefined') {
     localStorage.removeItem('sonic_admin_token');
@@ -24,7 +42,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
     }
     throw new Error('Connecting to server. Please retry in a moment.');
   }
-  const data = await res.json();
+  const data = await safeParseJson<any>(res);
   if (!res.ok || data.success === false) {
     throw new Error(data.error || `HTTP ${res.status}: Request failed`);
   }
@@ -59,7 +77,7 @@ export async function getAdminAuthHeader(): Promise<Record<string, string>> {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pin: '1234' })
       });
-      const data = await res.json();
+      const data = await safeParseJson<any>(res);
       if (data.token) {
         token = data.token;
         localStorage.setItem('sonic_admin_token', data.token);
@@ -266,11 +284,11 @@ export const apiClient = {
         const res = await fetch(`${API_BASE}/auth/status${queryParam}`, { headers });
         if (!res.ok) {
           try {
-            return await res.json();
+            return await safeParseJson(res);
           } catch {}
           return { success: false, error: `HTTP ${res.status}` };
         }
-        return await res.json();
+        return await safeParseJson(res);
       } catch (err: any) {
         return { success: false, error: err.message };
       }
@@ -534,6 +552,25 @@ export const apiClient = {
         total: number;
         limit: number;
         offset: number;
+      }>(res);
+    },
+
+    async redeemCoins(coins: number = 1000) {
+      const res = await fetch(`${API_BASE}/wallet/redeem-coins`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader()
+        },
+        body: JSON.stringify({ coins })
+      });
+      return handleResponse<{
+        success: boolean;
+        message?: string;
+        coinsRedeemed?: number;
+        bonusAwarded?: number;
+        newCoinBalance?: number;
+        newBonusBalance?: number;
       }>(res);
     },
 
