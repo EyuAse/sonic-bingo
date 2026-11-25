@@ -22,6 +22,9 @@ import withdrawalsAdminRouter from './routes/withdrawalsAdmin.ts';
 import { webhooksRouter } from './routes/webhooks.ts';
 import { setupGameSockets } from './sockets/gameSocket.ts';
 import { gameEngine } from './game/BingoGameEngine.ts';
+import { kenoEngine } from './game/KenoGameEngine.ts';
+import { setupKenoSockets } from './sockets/kenoSocket.ts';
+import kenoRouter from './routes/keno.ts';
 import { telegramBotService } from './services/telegramBotService.ts';
 
 import rateLimit from 'express-rate-limit';
@@ -48,6 +51,9 @@ initSocketIO(server, CORS_ORIGIN);
 
 // Setup Multiplayer Game Socket Handlers
 setupGameSockets(io);
+
+// Setup Fast Keno Socket Handlers (Strictly room-scoped 'keno_room', zero Bingo overlap)
+setupKenoSockets(io, kenoEngine);
 
 // Security & Body Parsers
 app.use(helmet({
@@ -365,6 +371,9 @@ app.get('/api/public/jackpot-details', async (_req, res) => {
   }
 });
 
+// Fast Keno REST Endpoints (Isolated /api/keno/*)
+app.use('/api/keno', kenoRouter);
+
 // Public Inbound Telegram Webhook aliases (accepts /api/telegram-webhook, /api/telegram/webhook, /telegram-webhook)
 app.post(['/api/telegram-webhook', '/api/telegram/webhook', '/telegram-webhook'], async (req, res) => {
   try {
@@ -465,6 +474,9 @@ if (process.env.NODE_ENV !== 'test') {
     });
     telegramBotService.setWebhook().catch(err => {
       console.warn('⚠️ [TelegramBotService] Auto-sync webhook deferred:', err.message || err);
+    });
+    kenoEngine.initializeFromDatabase().catch(err => {
+      console.warn('⚠️ [Fast Keno Engine] DB initialization deferred:', err.message || err);
     });
   });
 }

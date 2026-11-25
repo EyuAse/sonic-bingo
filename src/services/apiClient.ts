@@ -141,6 +141,28 @@ export const apiClient = {
     }
   },
 
+  // Fast Keno Isolated Endpoints (Cloudflare -> Render safe)
+  keno: {
+    async getHistory(userId: string) {
+      const res = await fetch(`${API_BASE}/keno/history?userId=${encodeURIComponent(userId)}`, {
+        headers: { ...getAuthHeader() }
+      });
+      return handleResponse<{ success: boolean; history: any[] }>(res);
+    },
+    async getResults() {
+      const res = await fetch(`${API_BASE}/keno/results`);
+      return handleResponse<{ success: boolean; results: any[] }>(res);
+    },
+    async getLeaderboard() {
+      const res = await fetch(`${API_BASE}/keno/leaderboard`);
+      return handleResponse<{ success: boolean; leaders: Array<{ id: string; b: number; w: number }> }>(res);
+    },
+    async getStats() {
+      const res = await fetch(`${API_BASE}/keno/stats`);
+      return handleResponse<{ success: boolean; stats: any }>(res);
+    }
+  },
+
   // 1. Authentication Endpoints
   auth: {
     async adminLogin(pin: string) {

@@ -23,6 +23,7 @@ import { WithdrawPage } from './pages/WithdrawPage.tsx';
 import { HistoryPage } from './pages/HistoryPage.tsx';
 import { ProfilePage } from './pages/ProfilePage.tsx';
 import { BingoPage } from './pages/BingoPage.tsx';
+import { KenoPage } from './pages/KenoPage.tsx';
 import { AffiliatePage } from './pages/AffiliatePage.tsx';
 import { telegramService } from './services/telegramService.ts';
 import { AccountInfoPage } from './pages/AccountInfoPage.tsx';
@@ -75,7 +76,7 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (concurrentSessionNotice && currentPage !== 'landing' && currentPage !== 'login') {
       switchPage('landing');
-    } else if (!isAuthenticated && (currentPage === 'bingo' || currentPage === 'wallet' || currentPage === 'deposit' || currentPage === 'withdraw')) {
+    } else if (!isAuthenticated && (currentPage === 'bingo' || currentPage === 'keno' || currentPage === 'wallet' || currentPage === 'deposit' || currentPage === 'withdraw')) {
       switchPage('landing');
     }
   }, [concurrentSessionNotice, isAuthenticated, currentPage, switchPage]);
@@ -146,11 +147,11 @@ export const App: React.FC = () => {
     currentPage === 'deposit' ||
     currentPage === 'withdraw';
 
-  const isDedicatedGamePage = currentPage === 'bingo';
+  const isDedicatedGamePage = currentPage === 'bingo' || currentPage === 'keno';
   const isDesktop = telegramService.isDesktopPlatform();
 
   return (
-    <div className={`app-container${isDedicatedGamePage ? ' dedicated-game-view' : ''}${isDesktop ? ' is-desktop-platform' : ''}`}>
+    <div className={`app-container${isDedicatedGamePage ? ' dedicated-game-view' : ''}${currentPage === 'keno' ? ' is-keno-view' : ''}${isDesktop ? ' is-desktop-platform' : ''}`}>
       {/* Top Header for all main game & user views (including Deposit & Withdraw) */}
       {!isStandalonePage && !isSubpageWithoutHeader && !isDedicatedGamePage && <TopHeader />}
 
@@ -168,6 +169,7 @@ export const App: React.FC = () => {
       {currentPage === 'history' && <HistoryPage />}
       {currentPage === 'profile' && <ProfilePage />}
       {currentPage === 'bingo' && <BingoPage />}
+      {currentPage === 'keno' && <KenoPage onBackToLobby={() => switchPage('games')} />}
       {currentPage === 'affiliate' && <AffiliatePage />}
       {currentPage === 'account-info' && <AccountInfoPage />}
       {currentPage === 'help' && <HelpCenterPage />}

@@ -11,6 +11,7 @@ export type PageId =
   | 'history'
   | 'profile'
   | 'bingo'
+  | 'keno'
   | 'affiliate'
   | 'account-info'
   | 'help'
