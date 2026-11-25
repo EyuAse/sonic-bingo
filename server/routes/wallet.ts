@@ -189,15 +189,24 @@ router.post('/deposit', requireAuth, async (req: AuthenticatedRequest, res) => {
  * - Must complete at least 5 games before becoming eligible
  */
 async function verifyWithdrawalEligibility(userId: string) {
-  // 1. Check completed games count (player must have played and completed at least 5 games)
-  const gamesRes = await query(`
-    SELECT COUNT(DISTINCT gt.round_id) as completed_games
-    FROM game_tickets gt
-    JOIN game_rounds gr ON gt.round_id = gr.id
-    WHERE gt.user_id = $1 AND (gr.phase IN ('winner', 'ended') OR gt.status IN ('won', 'lost'))
-  `, [userId]);
+  // 1. Check completed games count across BOTH Bingo and Fast Keno (player must complete at least 5 games)
+  const [bingoGamesRes, kenoGamesRes] = await Promise.all([
+    query(`
+      SELECT COUNT(DISTINCT gt.round_id) as completed_games
+      FROM game_tickets gt
+      JOIN game_rounds gr ON gt.round_id = gr.id
+      WHERE gt.user_id = $1 AND (gr.phase IN ('winner', 'ended') OR gt.status IN ('won', 'lost'))
+    `, [userId]),
+    query(`
+      SELECT COUNT(DISTINCT kt.round_number) as completed_keno
+      FROM keno_tickets kt
+      WHERE kt.user_id = $1 AND kt.status IN ('won', 'lost')
+    `, [userId]).catch(() => ({ rows: [{ completed_keno: '0' }] }))
+  ]);
 
-  const completedGames = parseInt(gamesRes.rows[0]?.completed_games || '0', 10);
+  const completedBingo = parseInt(bingoGamesRes.rows[0]?.completed_games || '0', 10);
+  const completedKeno = parseInt(kenoGamesRes.rows[0]?.completed_keno || '0', 10);
+  const completedGames = completedBingo + completedKeno;
   const requiredGames = 5;
 
   // 2. Check today's withdrawal count across central & agent requests

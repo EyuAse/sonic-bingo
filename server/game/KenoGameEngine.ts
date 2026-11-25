@@ -54,6 +54,9 @@ export class KenoGameEngine extends EventEmitter {
   public readonly BETTING_SECONDS = 30;
   public readonly DRAW_BALL_INTERVAL_MS = 1200;
   public readonly SETTLEMENT_SECONDS = 6;
+  public readonly MIN_BET = 2.00;
+  public readonly MAX_TICKET_BET = 500.00;
+  public readonly MAX_ROUND_BET = 1000.00;
 
   public currentRoundNumber = 1;
   public currentRoundDbId = '';
@@ -211,6 +214,9 @@ export class KenoGameEngine extends EventEmitter {
       this.settlementTimer = null;
     }
 
+    // Clear previous round's tickets here (after the full 6s settlement window completes)
+    this.activeTickets.clear();
+
     if (this.isMaintenancePaused || (this.activeWatchersCount === 0 && this.activeTickets.size === 0)) {
       this.isIdlePaused = true;
       this.currentPhase = 'betting';
@@ -316,13 +322,22 @@ export class KenoGameEngine extends EventEmitter {
       return { success: false, error: 'All numbers must be integers between 1 and 80' };
     }
 
-    if (betAmount < 1.00 || betAmount > 500.00) {
-      return { success: false, error: 'Stake must be between 1.00 and 500.00 ETB' };
+    if (!Number.isFinite(betAmount) || betAmount < this.MIN_BET || betAmount > this.MAX_TICKET_BET) {
+      return { success: false, error: `Stake must be between ${this.MIN_BET.toFixed(2)} and ${this.MAX_TICKET_BET.toFixed(2)} ETB` };
     }
 
     const userActive = this.activeTickets.get(userId) || [];
     if (userActive.length >= 10) {
       return { success: false, error: 'Maximum 10 tickets per round reached' };
+    }
+
+    const currentUserRoundStake = userActive.reduce((sum, t) => sum + Number(t.betAmount || 0), 0);
+    if (currentUserRoundStake + betAmount > this.MAX_ROUND_BET) {
+      const remaining = Math.max(0, this.MAX_ROUND_BET - currentUserRoundStake);
+      return {
+        success: false,
+        error: `Max ${this.MAX_ROUND_BET.toFixed(0)} ETB total per round reached (Remaining: ${remaining.toFixed(2)} ETB)`
+      };
     }
 
     const debit = await this.wallet.deductBet(
@@ -432,6 +447,9 @@ export class KenoGameEngine extends EventEmitter {
         await new Promise(res => setTimeout(res, this.DRAW_BALL_INTERVAL_MS));
       }
     }
+
+    // Allow ball 20 to complete its emergence & flight animation before revealing win/loss banner
+    await new Promise(res => setTimeout(res, 900));
 
     await this.settleRound();
   }
@@ -543,8 +561,6 @@ export class KenoGameEngine extends EventEmitter {
       totalPayout: totalRoundPayout,
       settledTicketsCount: settledTickets.length
     });
-
-    this.activeTickets.clear();
 
     this.settlementTimer = setTimeout(() => {
       this.currentRoundNumber++;

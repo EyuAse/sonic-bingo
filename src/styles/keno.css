@@ -452,7 +452,18 @@
             margin-right: auto !important;
         }
 
-        .keno-fullscreen-view .drawn .ball,
+        .keno-fullscreen-view .drawn .ball {
+            width: 100% !important;
+            max-width: 35px !important;
+            height: auto !important;
+            aspect-ratio: 1 !important;
+            margin: 0 auto !important;
+            display: grid !important;
+            place-items: center !important;
+            position: relative !important;
+            animation: slotLandPop 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
         .keno-fullscreen-view .drawn .ball-slot {
             width: 100% !important;
             max-width: 35px !important;
@@ -462,6 +473,18 @@
             display: grid !important;
             place-items: center !important;
             position: relative !important;
+        }
+
+        @keyframes slotLandPop {
+            0% {
+                transform: scale(1.22);
+            }
+            65% {
+                transform: scale(0.94);
+            }
+            100% {
+                transform: scale(1);
+            }
         }
 
         .keno-fullscreen-view .drawn .ball-slot {
@@ -590,10 +613,25 @@
             font-family: inherit
         }
 
-        .keno-fullscreen-view .amt b {
+        .keno-fullscreen-view .amt b,
+        .keno-fullscreen-view .amt .stake-input-field {
             font-size: 22px;
             color: #fff;
-            font-weight: 700
+            font-weight: 700;
+            background: transparent;
+            border: 0;
+            text-align: center;
+            width: 72px;
+            outline: none;
+            font-family: inherit;
+            appearance: textfield;
+            -moz-appearance: textfield;
+        }
+
+        .keno-fullscreen-view .amt .stake-input-field::-webkit-outer-spin-button,
+        .keno-fullscreen-view .amt .stake-input-field::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
 
         .keno-fullscreen-view .sm {

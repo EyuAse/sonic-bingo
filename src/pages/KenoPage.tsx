@@ -6,7 +6,13 @@
  */
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useKeno, KenoTicket } from '../context/KenoContext.tsx';
+import {
+  useKeno,
+  KenoTicket,
+  KENO_MIN_BET,
+  KENO_MAX_TICKET_BET,
+  KENO_MAX_ROUND_BET
+} from '../context/KenoContext.tsx';
 import { socketService } from '../services/socketService.ts';
 import { apiClient } from '../services/apiClient.ts';
 import '../styles/keno.css';
@@ -69,6 +75,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
     isRulesModalOpen,
     rulesModalTab,
     toggleNumber,
+    setStake,
     adjustStake,
     doubleStake,
     maxStake,
@@ -94,7 +101,12 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
   const [sortStats, setSortStats] = useState<boolean>(false);
   const [slideIndex, setSlideIndex] = useState<number>(0);
   const [landedBalls, setLandedBalls] = useState<number[]>([]);
+  const [stakeInput, setStakeInput] = useState<string>(String(stake));
   const lastAnimatedBallRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    setStakeInput(String(stake));
+  }, [stake]);
 
   const kenoContainerRef = useRef<HTMLDivElement>(null);
   const slidesRef = useRef<HTMLDivElement>(null);
@@ -173,23 +185,39 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
 
   const effectiveWin = lastWinAmount > 0 ? lastWinAmount : roundTotalWin;
 
-  // Trigger flight animation and slot docking on currentDrawnBall
+  // Refs for uninterrupted ball-flight animations even when phase transitions to settlement
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+  const drawnBallsRef = useRef(drawnBalls);
+  drawnBallsRef.current = drawnBalls;
+  const ticketNumbersRef = useRef(ticketNumbers);
+  ticketNumbersRef.current = ticketNumbers;
+  const playPopRef = useRef(playPopSound);
+  playPopRef.current = playPopSound;
+  const playHitChimeRef = useRef(playHitChime);
+  playHitChimeRef.current = playHitChime;
+  const playToneRef = useRef(playTone);
+  playToneRef.current = playTone;
+
+  // Trigger flight animation and slot docking on currentDrawnBall without aborting on phase change
   useEffect(() => {
-    if (!currentDrawnBall || phase !== 'drawing') return;
+    if (!currentDrawnBall) return;
+    if (phaseRef.current === 'betting') return;
     if (lastAnimatedBallRef.current === currentDrawnBall) return;
     lastAnimatedBallRef.current = currentDrawnBall;
 
+    const currentBallsList = drawnBallsRef.current;
     // Catch up any prior drawn balls into landedBalls
-    const callIndex = drawnBalls.indexOf(currentDrawnBall);
+    const callIndex = currentBallsList.indexOf(currentDrawnBall);
     if (callIndex > 0) {
-      const prior = drawnBalls.slice(0, callIndex);
+      const prior = currentBallsList.slice(0, callIndex);
       setLandedBalls(prev => {
         const missing = prior.filter(p => !prev.includes(p));
         return missing.length > 0 ? [...prev, ...missing] : prev;
       });
     }
 
-    const isHit = ticketNumbers.has(currentDrawnBall);
+    const isHit = ticketNumbersRef.current.has(currentDrawnBall);
     const big = bigRef.current;
     const drawnContainer = drawnRef.current;
 
@@ -203,11 +231,11 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
       else big.classList.remove('hit');
     }
 
-    playPopSound();
+    playPopRef.current();
     if (isHit) {
-      playHitChime();
+      playHitChimeRef.current();
     } else {
-      playTone(280, 0.08, 'sine', 0.05);
+      playToneRef.current(280, 0.08, 'sine', 0.05);
     }
 
     if (callIndex < 0 || callIndex >= 20 || !big || !drawnContainer) return;
@@ -237,6 +265,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
         margin: '0',
         zIndex: '50',
         pointerEvents: 'none',
+        willChange: 'transform, width, height',
         transition: 'transform .45s cubic-bezier(.22,.8,.36,1), width .45s, height .45s, opacity .45s'
       });
       (kenoContainerRef.current || document.body).appendChild(fl);
@@ -257,7 +286,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
           if (flNum) flNum.style.fontSize = '13px';
           fl.style.left = from.left + (from.width - to.width) / 2 + 'px';
           fl.style.top = from.top + (from.height - to.height) / 2 + 'px';
-          fl.style.transform = `translate(${dx}px, ${dy}px)`;
+          fl.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
         });
       });
 
@@ -266,7 +295,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
           flyingEl.remove();
           flyingEl = null;
         }
-        playTone(560, 0.05, 'sine', 0.08); // Authentic 560Hz landing tone
+        playToneRef.current(560, 0.05, 'sine', 0.08);
         setLandedBalls(prev => (prev.includes(currentDrawnBall) ? prev : [...prev, currentDrawnBall]));
       }, 450);
     }, 350);
@@ -276,7 +305,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
       if (flightTimeout) clearTimeout(flightTimeout);
       if (flyingEl) flyingEl.remove();
     };
-  }, [currentDrawnBall, phase, ticketNumbers, playPopSound, playHitChime, playTone, drawnBalls]);
+  }, [currentDrawnBall]);
 
   // Win fanfare on settlement
   useEffect(() => {
@@ -314,9 +343,27 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
       showToast('Please pick 1 to 10 numbers');
       return;
     }
+
+    const parsedInput = parseFloat(stakeInput);
+    if (!Number.isFinite(parsedInput) || parsedInput < KENO_MIN_BET || parsedInput > KENO_MAX_TICKET_BET) {
+      showToast(`Stake must be between ${KENO_MIN_BET} and ${KENO_MAX_TICKET_BET} ETB`);
+      const clamped = Number.isFinite(parsedInput)
+        ? Math.max(KENO_MIN_BET, Math.min(KENO_MAX_TICKET_BET, Number(parsedInput.toFixed(2))))
+        : KENO_MIN_BET;
+      setStake(clamped);
+      setStakeInput(String(clamped));
+      return;
+    }
+
+    const currentRoundStaked = activeTickets.reduce((sum, t) => sum + Number(t.betAmount || 0), 0);
+    if (currentRoundStaked + stake > KENO_MAX_ROUND_BET) {
+      const remaining = Math.max(0, KENO_MAX_ROUND_BET - currentRoundStaked);
+      showToast(`Max ${KENO_MAX_ROUND_BET} ETB per round reached (Remaining: ${remaining.toFixed(2)} ETB)`);
+      return;
+    }
+
     if (playableBalance < stake) {
-      showToast(`Not enough credits (${playableBalance.toFixed(2)} < ${stake.toFixed(2)} ETB). Opening Deposit...`);
-      openDeposit();
+      showToast(`Insufficient balance (${playableBalance.toFixed(2)} < ${stake.toFixed(2)} ETB)`);
       return;
     }
 
@@ -1173,7 +1220,33 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
                 <button type="button" id="m" onClick={() => adjustStake(-1)}>
                   −
                 </button>
-                <b id="a">{stake}</b>
+                <input
+                  id="a"
+                  type="number"
+                  inputMode="decimal"
+                  min={KENO_MIN_BET}
+                  max={KENO_MAX_TICKET_BET}
+                  step="any"
+                  aria-label="Bet stake amount in ETB"
+                  className="stake-input-field"
+                  value={stakeInput}
+                  onChange={e => {
+                    const raw = e.target.value;
+                    setStakeInput(raw);
+                    const parsed = parseFloat(raw);
+                    if (Number.isFinite(parsed) && parsed >= KENO_MIN_BET && parsed <= KENO_MAX_TICKET_BET) {
+                      setStake(parsed);
+                    }
+                  }}
+                  onBlur={() => {
+                    const parsed = parseFloat(stakeInput);
+                    const clamped = Number.isFinite(parsed)
+                      ? Math.max(KENO_MIN_BET, Math.min(KENO_MAX_TICKET_BET, Number(parsed.toFixed(2))))
+                      : KENO_MIN_BET;
+                    setStake(clamped);
+                    setStakeInput(String(clamped));
+                  }}
+                />
                 <button type="button" id="p" onClick={() => adjustStake(1)}>
                   +
                 </button>
@@ -1528,6 +1601,10 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
                     </tbody>
                   </table>
                 </div>
+
+                <p className="rules-sub-txt">
+                  Bet limits: Minimum {KENO_MIN_BET} ETB · Maximum {KENO_MAX_TICKET_BET} ETB per ticket · Recommended maximum {KENO_MAX_ROUND_BET.toLocaleString('en-US')} ETB per round.
+                </p>
 
                 <p className="rules-policy-txt">
                   Disconnection policy: If a disconnection occurs after an active game round and your bets were accepted by the server, the game will proceed as normal and any winnings will be processed according to the game result regardless of the disconnection.

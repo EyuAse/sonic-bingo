@@ -24,6 +24,10 @@ import { useApp } from './AppContext.tsx';
 
 export type KenoPhase = 'betting' | 'drawing' | 'settling' | 'settlement';
 
+export const KENO_MIN_BET = 2;
+export const KENO_MAX_TICKET_BET = 500;
+export const KENO_MAX_ROUND_BET = 1000;
+
 export interface KenoTicket {
   ticketDbId?: string;
   id?: string;
@@ -105,6 +109,11 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const { user, isAuthenticated } = useAuth();
   const { balance: walletBalance, bonus: walletBonus, deductBalance, deductBonus, addBalance, refreshBalance } = useWallet();
   const { currentPage, switchPage, showToast } = useApp();
+
+  const refreshBalanceRef = useRef(refreshBalance);
+  refreshBalanceRef.current = refreshBalance;
+  const addBalanceRef = useRef(addBalance);
+  addBalanceRef.current = addBalance;
 
   const isKenoActive = currentPage === 'keno';
 
@@ -258,7 +267,7 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setColdNumbers(data.hotCold.coldNumbers || []);
         setFrequencyMap(data.hotCold.frequencyMap || {});
       }
-      refreshBalance();
+      refreshBalanceRef.current();
     };
 
     const onPlayerSettled = (data: any) => {
@@ -266,8 +275,8 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setLastWinAmount(data.userTotalWin || 0);
         if (data.userTotalWin > 0) {
           kenoAudio.playWinFanfare();
-          addBalance(data.userTotalWin);
-          refreshBalance();
+          addBalanceRef.current(data.userTotalWin);
+          refreshBalanceRef.current();
         }
         if (data.tickets) {
           setActiveTickets(data.tickets);
@@ -305,7 +314,7 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       socket.off('keno:round_settled', onRoundSettled);
       socket.off('keno:player_settled', onPlayerSettled);
     };
-  }, [isKenoActive, userId, refreshBalance, addBalance]);
+  }, [isKenoActive, userId]);
 
   const toggleNumber = useCallback((num: number) => {
     if (phase !== 'betting') return;
@@ -341,21 +350,29 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [phase]);
 
   const setStake = useCallback((amt: number) => {
-    setStakeState(Math.max(1, Math.min(500, Math.round(amt))));
+    const parsed = Number(amt);
+    if (!Number.isFinite(parsed)) return;
+    const rounded = Number(parsed.toFixed(2));
+    setStakeState(Math.max(KENO_MIN_BET, Math.min(KENO_MAX_TICKET_BET, rounded)));
   }, []);
 
   const adjustStake = useCallback((delta: number) => {
-    setStakeState(prev => Math.max(1, Math.min(500, prev + delta)));
+    setStakeState(prev => Math.max(KENO_MIN_BET, Math.min(KENO_MAX_TICKET_BET, Number((prev + delta).toFixed(2)))));
   }, []);
 
   const doubleStake = useCallback(() => {
-    setStakeState(prev => Math.max(1, Math.min(500, prev * 2)));
+    setStakeState(prev => Math.max(KENO_MIN_BET, Math.min(KENO_MAX_TICKET_BET, Number((prev * 2).toFixed(2)))));
   }, []);
 
   const maxStake = useCallback(() => {
     const totalPlayable = walletBalance + walletBonus;
-    setStakeState(() => Math.max(1, Math.min(500, Math.max(1, Math.floor(totalPlayable)))));
-  }, [walletBalance, walletBonus]);
+    const currentRoundStaked = activeTickets.reduce((sum, t) => sum + Number(t.betAmount || 0), 0);
+    const remainingRoundAllowance = Math.max(0, KENO_MAX_ROUND_BET - currentRoundStaked);
+    const effectiveCap = remainingRoundAllowance > 0
+      ? Math.min(KENO_MAX_TICKET_BET, totalPlayable, remainingRoundAllowance)
+      : Math.min(KENO_MAX_TICKET_BET, totalPlayable);
+    setStakeState(() => Math.max(KENO_MIN_BET, Math.min(KENO_MAX_TICKET_BET, Math.floor(effectiveCap))));
+  }, [walletBalance, walletBonus, activeTickets]);
 
   const openDeposit = useCallback(() => {
     switchPage('deposit');
@@ -368,11 +385,23 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (selectedNumbers.size === 0) {
       return { success: false, error: 'Please select 1 to 10 numbers' };
     }
+    if (!Number.isFinite(stake) || stake < KENO_MIN_BET || stake > KENO_MAX_TICKET_BET) {
+      return { success: false, error: `Stake must be between ${KENO_MIN_BET} and ${KENO_MAX_TICKET_BET} ETB` };
+    }
+
+    const currentRoundStaked = activeTickets.reduce((sum, t) => sum + Number(t.betAmount || 0), 0);
+    if (currentRoundStaked + stake > KENO_MAX_ROUND_BET) {
+      const remaining = Math.max(0, KENO_MAX_ROUND_BET - currentRoundStaked);
+      return {
+        success: false,
+        error: `Max ${KENO_MAX_ROUND_BET} ETB per round reached (Remaining: ${remaining.toFixed(2)} ETB)`
+      };
+    }
+
     const totalPlayable = Number((walletBalance + walletBonus).toFixed(2));
     if (totalPlayable < stake) {
-      showToast(`Not enough credits (${totalPlayable.toFixed(2)} < ${stake.toFixed(2)} ETB). Opening Deposit...`);
-      switchPage('deposit');
-      return { success: false, error: 'Not enough credits' };
+      showToast(`Insufficient balance (${totalPlayable.toFixed(2)} < ${stake.toFixed(2)} ETB)`);
+      return { success: false, error: 'Insufficient balance' };
     }
 
     const socket = socketService.getSocket();
@@ -402,7 +431,7 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const deductFromReal = Number((stake - deductFromBonus).toFixed(2));
             if (deductFromBonus > 0) deductBonus(deductFromBonus);
             if (deductFromReal > 0) deductBalance(deductFromReal);
-            refreshBalance();
+            refreshBalanceRef.current();
             setSelectedNumbers(new Set());
             resolve({ success: true, ticket: resp.ticket });
           } else {
@@ -411,7 +440,7 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       );
     });
-  }, [phase, selectedNumbers, stake, walletBalance, walletBonus, userId, deductBalance, deductBonus, refreshBalance, switchPage, showToast]);
+  }, [phase, selectedNumbers, stake, activeTickets, walletBalance, walletBonus, userId, deductBalance, deductBonus, showToast]);
 
   const openRulesModal = useCallback((tab: 'rules' | 'fairness' = 'rules') => {
     setRulesModalTab(tab);
