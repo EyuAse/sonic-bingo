@@ -107,19 +107,19 @@ router.get('/leaderboard', async (_req, res) => {
          t.bet_amount,
          t.payout_amount,
          t.round_number,
-         COALESCE(u.phone, u.username, u.first_name, 'Player') as player_identifier
+         COALESCE(u.public_id::text, u.telegram_id::text, u.phone, u.id::text, '600001') as player_identifier
        FROM keno_tickets t
        LEFT JOIN users u ON t.user_id = u.id
        WHERE t.payout_amount > 0 AND t.status = 'won'
-       ORDER BY t.payout_amount DESC
-       LIMIT 20`
+       ORDER BY t.created_at DESC
+       LIMIT 10`
     );
 
     const leaders = dbRes.rows.map(r => {
-      const rawId = String(r.player_identifier || 'Player');
-      const maskedId = rawId.length >= 6
-        ? `${rawId.slice(0, 3)}****${rawId.slice(-2)}`
-        : rawId;
+      const rawId = String(r.player_identifier || '600001').replace(/\D/g, '') || String(r.player_identifier || '600001');
+      const maskedId = rawId.length >= 2
+        ? `${rawId.slice(0, 1)}***${rawId.slice(-1)}`
+        : `${rawId}***`;
       return {
         id: maskedId,
         b: parseFloat(r.bet_amount || '0'),

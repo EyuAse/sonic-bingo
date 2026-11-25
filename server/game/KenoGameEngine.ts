@@ -122,6 +122,14 @@ export class KenoGameEngine extends EventEmitter {
     try {
       console.log('🎰 [Fast Keno Engine] Bootstrapping history from Neon PostgreSQL...');
 
+      // Clean up any stale interrupted rounds left in 'betting' or 'drawing' across restarts
+      await query(
+        `UPDATE keno_rounds
+         SET status = 'cancelled'
+         WHERE status IN ('betting', 'drawing')
+           AND started_at < NOW() - INTERVAL '5 minutes'`
+      ).catch(() => {});
+
       const seqRes = await query<{ max_round: string }>(
         `SELECT COALESCE(MAX(round_number), 0) as max_round FROM keno_rounds`
       );

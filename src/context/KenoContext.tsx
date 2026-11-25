@@ -16,6 +16,7 @@ import React, {
 } from 'react';
 import { Socket } from 'socket.io-client';
 import { socketService } from '../services/socketService.ts';
+import { apiClient } from '../services/apiClient.ts';
 import { kenoAudio } from '../components/keno/WebAudioEngine.ts';
 import { useWallet } from './WalletContext.tsx';
 import { useAuth } from './AuthContext.tsx';
@@ -88,6 +89,7 @@ export interface KenoContextValue {
   openRulesModal: (tab?: 'rules' | 'fairness') => void;
   closeRulesModal: () => void;
   switchRulesTab: (tab: 'rules' | 'fairness') => void;
+  refreshStats: () => Promise<void>;
   verifyRound: (payload: {
     serverSeed: string;
     expectedHash: string;
@@ -107,7 +109,13 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const isKenoActive = currentPage === 'keno';
 
   const userId = user?.id || (typeof window !== 'undefined' ? localStorage.getItem('sonic_user_id') : '') || '';
-  const userDisplayId = user?.phone ? user.phone : (user?.id ? user.id.slice(0, 8) : '886122631');
+  const userDisplayId = user?.publicId
+    ? String(user.publicId)
+    : user?.telegramId
+      ? String(user.telegramId).slice(-6)
+      : user?.phone
+        ? user.phone
+        : (user?.id ? user.id.slice(0, 8) : '600001');
 
   const [roundNumber, setRoundNumber] = useState<number>(1);
   const [phase, setPhase] = useState<KenoPhase>('betting');
@@ -135,12 +143,26 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isRulesModalOpen, setIsRulesModalOpen] = useState<boolean>(false);
   const [rulesModalTab, setRulesModalTab] = useState<'rules' | 'fairness'>('rules');
 
-  // Refresh wallet balance only when player enters the Keno screen (zero boot overhead for Bingo)
+  const refreshStats = useCallback(async () => {
+    try {
+      const res = await apiClient.keno.getStats();
+      if (res?.success && res.stats) {
+        setHotNumbers(res.stats.hotNumbers || []);
+        setColdNumbers(res.stats.coldNumbers || []);
+        setFrequencyMap(res.stats.frequencyMap || {});
+      }
+    } catch {
+      // Socket init_state / round_settled fallback handles updates
+    }
+  }, []);
+
+  // Refresh wallet balance & initial hot/cold statistics when player enters the Keno screen
   useEffect(() => {
     if (isKenoActive) {
       refreshBalance();
+      void refreshStats();
     }
-  }, [isKenoActive, refreshBalance]);
+  }, [isKenoActive, refreshBalance, refreshStats]);
 
   // Connect & join 'keno_room' ONLY when currentPage === 'keno'; leave cleanly on exit
   useEffect(() => {
@@ -456,6 +478,7 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     openRulesModal,
     closeRulesModal,
     switchRulesTab,
+    refreshStats,
     verifyRound
   };
 

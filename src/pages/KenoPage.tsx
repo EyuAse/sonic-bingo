@@ -36,7 +36,14 @@ interface KenoPageProps {
   onBackToLobby?: () => void;
 }
 
-const fmt = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+const fmt = (n: number) => {
+  const num = Number(n) || 0;
+  if (num % 1 !== 0) {
+    const [intPart, decPart] = num.toFixed(2).split('.');
+    return `${intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}.${decPart}`;
+  }
+  return String(Math.round(num)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+};
 const pad = (n: number) => String(n).padStart(2, '0');
 
 export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
@@ -68,7 +75,8 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
     openDeposit,
     openRulesModal,
     closeRulesModal,
-    switchRulesTab
+    switchRulesTab,
+    refreshStats
   } = useKeno();
 
   // Tab State
@@ -457,20 +465,29 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
   useEffect(() => {
     fetchRecentResults();
     fetchLeaderboard();
+    void refreshStats();
     if (userId) fetchPlayerHistory();
-  }, [fetchRecentResults, fetchLeaderboard, fetchPlayerHistory, userId]);
+  }, [fetchRecentResults, fetchLeaderboard, refreshStats, fetchPlayerHistory, userId]);
 
   // Dynamic tab re-fetch
   useEffect(() => {
     if (tab === 'history' || ltab === 'history') fetchPlayerHistory();
     if (tab === 'results' || rtab === 'results') fetchRecentResults();
+    if (tab === 'stats' || rtab === 'stats') void refreshStats();
     if (tab === 'leaders' || rtab === 'leaders') fetchLeaderboard();
-  }, [tab, ltab, rtab, fetchPlayerHistory, fetchRecentResults, fetchLeaderboard]);
+  }, [tab, ltab, rtab, fetchPlayerHistory, fetchRecentResults, refreshStats, fetchLeaderboard]);
 
-  // Live socket event listeners for instant settlement sync
+  // Live socket event listeners for instant settlement & connect sync
   useEffect(() => {
     const sock = socketService.getSocket();
     if (!sock) return;
+
+    const onSocketConnect = () => {
+      fetchRecentResults();
+      fetchLeaderboard();
+      void refreshStats();
+      if (userId) fetchPlayerHistory();
+    };
 
     const onRecentResultsUpdated = (data: any) => {
       if (data?.recentHistory && Array.isArray(data.recentHistory)) {
@@ -502,6 +519,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
       }
     };
 
+    sock.on('connect', onSocketConnect);
     sock.on('keno:recent_results_updated', onRecentResultsUpdated);
     sock.on('keno:round_settled', onRoundSettled);
     sock.on('keno:player_history', onPlayerHistory);
@@ -509,13 +527,14 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
     sock.on('keno:leaderboard', onLeaderboard);
 
     return () => {
+      sock.off('connect', onSocketConnect);
       sock.off('keno:recent_results_updated', onRecentResultsUpdated);
       sock.off('keno:round_settled', onRoundSettled);
       sock.off('keno:player_history', onPlayerHistory);
       sock.off('keno:recent_results', onRecentResults);
       sock.off('keno:leaderboard', onLeaderboard);
     };
-  }, [fetchRecentResults, fetchLeaderboard, fetchPlayerHistory, userId]);
+  }, [fetchRecentResults, fetchLeaderboard, refreshStats, fetchPlayerHistory, userId]);
 
   // Helper to render a ticket card (.tk)
   const renderTicketCard = (t: KenoTicket, idx: number, isMine = true) => {
@@ -803,11 +822,11 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
               No top winners recorded yet.
             </div>
           ) : (
-            leadersList.map((item, idx) => (
+            leadersList.slice(0, 10).map((item, idx) => (
               <div key={idx} className={`lr${idx < 3 ? ' top' : ''}`}>
                 <b>{idx + 1}</b>
                 <span>{item.id}</span>
-                <span>{item.b}</span>
+                <span>{fmt(item.b)}</span>
                 <em>{fmt(item.w)} ETB</em>
               </div>
             ))
@@ -1242,7 +1261,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
           </nav>
 
           {/* Tab Content Area */}
-          <div id="tab">{renderTabContent(tab)}</div>
+          <div id="tab" key={tab}>{renderTabContent(tab)}</div>
 
           <div className="pay">Real money gaming with instant Telebirr & Chapa payouts.</div>
         </div>
@@ -1281,7 +1300,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
               LEADERS
             </button>
           </div>
-          <div className="sbody" id="rbody">
+          <div className="sbody" id="rbody" key={rtab}>
             {renderTabContent(rtab)}
           </div>
         </aside>

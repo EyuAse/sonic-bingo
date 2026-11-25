@@ -702,7 +702,19 @@
             color: #3ddc97 !important;
         }
         .keno-fullscreen-view #tab {
-            padding: 0 6px
+            padding: 0 6px;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
+            box-sizing: border-box;
+        }
+
+        .keno-fullscreen-view .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .keno-fullscreen-view .pw {
@@ -794,8 +806,17 @@
         }
 
         .keno-fullscreen-view .fair {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             text-align: center;
-            margin: 0 0 8px
+            margin: 18px 0 12px;
+        }
+
+        .keno-fullscreen-view .fair img {
+            display: block;
+            margin: 0 auto;
         }
 
         .keno-fullscreen-view .fair h3 {
@@ -897,10 +918,14 @@
             display: flex;
             align-items: center;
             gap: 6px;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
             background: #222c2b;
             border-radius: 8px;
             padding: 8px 6px;
-            margin-bottom: 8px
+            margin-bottom: 8px;
+            box-sizing: border-box;
         }
 
         .keno-fullscreen-view .rs {
@@ -909,21 +934,23 @@
         }
 
         .keno-fullscreen-view .rid {
-            width: 90px;
+            width: clamp(64px, 20vw, 90px);
             flex: none;
             color: #4fdb9a;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
-            line-height: 1.4
+            line-height: 1.35;
+            min-width: 0;
         }
 
         .keno-fullscreen-view .rid small {
             display: block;
-            font-size: 14px
+            font-size: 12px
         }
 
         .keno-fullscreen-view .wait {
             flex: 1;
+            min-width: 0;
             background: #2f3a3c;
             border-radius: 4px;
             text-align: center;
@@ -935,8 +962,9 @@
 
         .keno-fullscreen-view .comb {
             flex: 1;
+            min-width: 0;
             display: grid;
-            grid-template-columns: repeat(10, 1fr);
+            grid-template-columns: repeat(10, minmax(0, 1fr));
             gap: 3px
         }
 
@@ -944,7 +972,7 @@
             background: #313d3f;
             border-radius: 3px;
             text-align: center;
-            font-size: 12.5px;
+            font-size: clamp(10.5px, 3vw, 12.5px);
             padding: 5px 0;
             color: #d3dcda;
             font-weight: 500

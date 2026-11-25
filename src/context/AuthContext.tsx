@@ -434,6 +434,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             const mappedUser: User = {
               id: apiResult.user.id,
+              publicId: apiResult.user.publicId,
               telegramId: apiResult.user.telegramId || effectiveTgUser?.id,
               telegramUsername: apiResult.user.telegramUsername || effectiveTgUser?.username,
               fullName: apiResult.user.fullName || effectiveTgUser?.first_name || (rawPhone ? `Player ${rawPhone.slice(-4)}` : 'Sonic Player'),
@@ -511,6 +512,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
               const mappedUser: User = {
                 id: u.id,
+                publicId: u.publicId,
                 telegramId: u.telegramId,
                 telegramUsername: u.telegramUsername,
                 fullName: u.fullName,
@@ -629,6 +631,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const u = apiResult.user;
       const mappedUser: User = {
         id: u.id,
+        publicId: u.publicId,
         telegramId: u.telegramId,
         telegramUsername: u.telegramUsername,
         fullName: u.fullName,
@@ -696,6 +699,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       const mappedUser: User = {
         id: apiResult.user.id,
+        publicId: apiResult.user.publicId,
         telegramId: apiResult.user.telegramId || tgUser?.id,
         telegramUsername: apiResult.user.telegramUsername || tgUser?.username,
         fullName: apiResult.user.fullName || (tgUser ? `${tgUser.first_name || ''} ${tgUser.last_name || ''}`.trim() : (finalPhone ? `Player ${finalPhone.slice(-4)}` : 'Sonic Player')),

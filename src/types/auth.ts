@@ -11,6 +11,7 @@ export interface AttachedAccount {
 
 export interface User {
   id: string;
+  publicId?: number;
   telegramId?: number;
   phone: string;              // Canonical e.g. "+251911234567"
   nationalPhone: string;      // National e.g. "0911234567"

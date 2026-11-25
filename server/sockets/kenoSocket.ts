@@ -289,7 +289,7 @@ export function setupKenoSockets(io: SocketIOServer, engine: KenoGameEngine): vo
       }
     });
 
-    // 6. Fetch Global Leaderboard Top Payouts
+    // 6. Fetch Global Leaderboard (Latest 10 Winning Bets)
     socket.on('keno:get_leaderboard', async (_data, callback) => {
       try {
         const res = await query<any>(
@@ -298,19 +298,19 @@ export function setupKenoSockets(io: SocketIOServer, engine: KenoGameEngine): vo
              t.bet_amount,
              t.payout_amount,
              t.round_number,
-             COALESCE(u.phone, u.username, u.first_name, 'Player') as player_identifier
+             COALESCE(u.public_id::text, u.telegram_id::text, u.phone, u.id::text, '600001') as player_identifier
            FROM keno_tickets t
            LEFT JOIN users u ON t.user_id = u.id
            WHERE t.payout_amount > 0 AND t.status = 'won'
-           ORDER BY t.payout_amount DESC
-           LIMIT 20`
+           ORDER BY t.created_at DESC
+           LIMIT 10`
         );
 
         const leaders = res.rows.map(r => {
-          const rawId = String(r.player_identifier || 'Player');
-          const maskedId = rawId.length >= 6
-            ? `${rawId.slice(0, 3)}****${rawId.slice(-2)}`
-            : rawId;
+          const rawId = String(r.player_identifier || '600001').replace(/\D/g, '') || String(r.player_identifier || '600001');
+          const maskedId = rawId.length >= 2
+            ? `${rawId.slice(0, 1)}***${rawId.slice(-1)}`
+            : `${rawId}***`;
           return {
             id: maskedId,
             b: parseFloat(r.bet_amount || '0'),
@@ -325,6 +325,13 @@ export function setupKenoSockets(io: SocketIOServer, engine: KenoGameEngine): vo
         if (callback) callback({ success: false, leaders: [] });
         socket.emit('keno:leaderboard', { success: false, leaders: [] });
       }
+    });
+
+    // 7. Fetch Hot/Cold Statistics
+    socket.on('keno:get_stats', (_data, callback) => {
+      const stats = engine.getHotColdStats();
+      if (callback) callback({ success: true, stats });
+      socket.emit('keno:stats', { success: true, stats });
     });
   });
 }

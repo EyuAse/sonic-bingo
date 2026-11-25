@@ -379,6 +379,7 @@ async function handleTelegramOrPhoneAuth(req: any, res: any) {
       isNewUser,
       user: {
         id: userRow.id,
+        publicId: userRow.public_id ? Number(userRow.public_id) : undefined,
         telegramId: userRow.telegram_id,
         telegramUsername: userRow.telegram_username,
         fullName: userRow.full_name,
@@ -554,6 +555,7 @@ router.post('/register', async (req, res) => {
       token,
       user: {
         id: result.user.id,
+        publicId: result.user.public_id ? Number(result.user.public_id) : undefined,
         phone: result.user.phone,
         fullName: result.user.full_name,
         role: result.user.role,
@@ -618,6 +620,7 @@ router.post('/login', async (req, res) => {
       token,
       user: {
         id: userRow.id,
+        publicId: userRow.public_id ? Number(userRow.public_id) : undefined,
         telegramId: userRow.telegram_id,
         telegramUsername: userRow.telegram_username,
         fullName: userRow.full_name,
@@ -722,6 +725,7 @@ router.get('/me', requireAuth, async (req: AuthenticatedRequest, res) => {
       success: true,
       user: {
         id: userRow.id,
+        publicId: userRow.public_id ? Number(userRow.public_id) : undefined,
         telegramId: userRow.telegram_id,
         telegramUsername: userRow.telegram_username,
         fullName: userRow.full_name,
@@ -806,6 +810,7 @@ router.put('/profile', requireAuth, async (req: AuthenticatedRequest, res) => {
       message: 'Profile updated successfully',
       user: {
         id: userRow.id,
+        publicId: userRow.public_id ? Number(userRow.public_id) : undefined,
         telegramId: userRow.telegram_id,
         telegramUsername: userRow.telegram_username,
         fullName: userRow.full_name,
