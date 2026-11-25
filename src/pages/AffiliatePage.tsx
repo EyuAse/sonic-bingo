@@ -36,6 +36,7 @@ export const AffiliatePage: React.FC = () => {
 
   const [isRedeemingCoins, setIsRedeemingCoins] = useState(false);
   const [showJackpotModal, setShowJackpotModal] = useState(false);
+  const [activeRewardTab, setActiveRewardTab] = useState<'reward' | 'jackpot' | 'invite'>('reward');
 
   const [referralData, setReferralData] = useState<{
     referralCode: string;
@@ -135,50 +136,59 @@ export const AffiliatePage: React.FC = () => {
   };
 
   return (
-    <div className="page active page-affiliate-fresh" id="page-affiliate" style={{ background: '#fffdf8', minHeight: '100dvh' }}>
-      {/* 1. Top Navigation Bar */}
-      <div
-        className="affiliate-top-navbar"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '14px 16px',
-          background: '#ffffff',
-          borderBottom: '1px solid #f1f5f9',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)'
-        }}
-      >
+    <div className="page active page-affiliate-fresh" id="page-affiliate" style={{ background: '#fffdf8', minHeight: '100dvh', padding: 0 }}>
+      {/* 1. Dedicated 3-Tab Navigation Bar: Reward | Jackpot | Invite friends */}
+      <nav className="rewards-subnav-bar" aria-label="Rewards Sections">
         <button
           type="button"
-          className="btn-affiliate-back"
-          onClick={() => switchPage('games')}
-          style={{ color: '#0f172a', background: 'transparent', border: 'none', fontSize: '14px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+          className={`rewards-subnav-tab ${activeRewardTab === 'reward' ? 'active' : ''}`}
+          onClick={() => {
+            telegramService.triggerHaptic('light');
+            setActiveRewardTab('reward');
+          }}
         >
-          <i className="fa-solid fa-arrow-left"></i>
-          <span>{lang === 'am' ? 'ጨዋታዎች' : 'Games'}</span>
+          {lang === 'am' ? 'ሽልማት' : 'Reward'}
         </button>
 
-        <h2 className="affiliate-page-title" style={{ fontSize: '16px', fontWeight: '900', color: '#0f172a', margin: 0 }}>
-          {lang === 'am' ? '🎁 ሽልማቶችና ግብዣ' : '🎁 Rewards & Invites'}
-        </h2>
+        <button
+          type="button"
+          className={`rewards-subnav-tab ${activeRewardTab === 'jackpot' ? 'active' : ''}`}
+          onClick={() => {
+            telegramService.triggerHaptic('light');
+            setActiveRewardTab('jackpot');
+          }}
+        >
+          {lang === 'am' ? 'ጃክፖት' : 'Jackpot'}
+        </button>
 
-        <div style={{ width: '32px' }}></div>
-      </div>
+        <button
+          type="button"
+          className={`rewards-subnav-tab ${activeRewardTab === 'invite' ? 'active' : ''}`}
+          onClick={() => {
+            telegramService.triggerHaptic('light');
+            setActiveRewardTab('invite');
+          }}
+        >
+          {lang === 'am' ? 'ጓደኞችን ይጋብዙ' : 'Invite friends'}
+        </button>
+      </nav>
 
       {/* Main Content Scroll */}
       <div
         className="affiliate-content-scroll"
         style={{
-          padding: '14px 14px 28px 14px',
+          padding: '14px 14px 100px 14px',
           display: 'flex',
           flexDirection: 'column',
           gap: '14px',
           maxWidth: '430px',
-          margin: '0 auto'
+          width: '100%',
+          margin: '0 auto',
+          boxSizing: 'border-box'
         }}
       >
-        {/* 1b. Executive 3-Wallet Suite (Cash, Play Bonus, Loyalty Coins) */}
+        {/* PAGE 1: REWARD TAB (Existing 3-Wallet & Loyalty Coins UI untouched) */}
+        {activeRewardTab === 'reward' && (
         <div style={{
           background: '#ffffff',
           borderRadius: '20px',
@@ -267,8 +277,10 @@ export const AffiliatePage: React.FC = () => {
             <span style={{ fontWeight: 700, color: '#d97706' }}>{coins % 1000} / 1000 🪙</span>
           </div>
         </div>
+        )}
 
-        {/* 1c. 500 ETB Progressive Grand Jackpot Showcase Card */}
+        {/* PAGE 2: JACKPOT TAB (Existing 500 ETB Jackpot Card UI untouched) */}
+        {activeRewardTab === 'jackpot' && (
         <div className="rewards-jackpot-showcase-card">
           <div className="rewards-jackpot-badge-tag">
             <i className="fa-solid fa-crown"></i>
@@ -323,6 +335,7 @@ export const AffiliatePage: React.FC = () => {
             <span>{lang === 'am' ? 'የጃክፖት ዝርዝርና ደንቦችን ይመልከቱ' : 'Open Jackpot Vault & Rules'}</span>
           </button>
         </div>
+        )}
 
         {/* Grand Jackpot Modal View */}
         <GrandJackpotModal
@@ -330,6 +343,9 @@ export const AffiliatePage: React.FC = () => {
           onClose={() => setShowJackpotModal(false)}
         />
 
+        {/* PAGE 3: INVITE FRIENDS TAB (Existing Referral Suite UI untouched) */}
+        {activeRewardTab === 'invite' && (
+        <>
         {/* 2. Top Hero Card: Warm Creamy Lemon Background with 3D Treasure Chest */}
         <div
           style={{
@@ -873,6 +889,8 @@ export const AffiliatePage: React.FC = () => {
             </div>
           )}
         </div>
+        </>
+        )}
       </div>
     </div>
   );

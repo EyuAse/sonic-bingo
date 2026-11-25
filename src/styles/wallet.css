@@ -4436,3 +4436,37 @@
   transform: scale(1.1);
   box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
 }
+
+/* Rewards Page 3-Tab Sub-Navbar (Reward | Jackpot | Invite friends) */
+.rewards-subnav-bar {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: #d1d5db;
+  border-bottom: 1px solid #cbd5e1;
+  box-sizing: border-box;
+}
+
+.rewards-subnav-tab {
+  border: none;
+  background: transparent;
+  color: #0f172a;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 11px 6px;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  font-family: inherit;
+}
+
+.rewards-subnav-tab.active {
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.rewards-subnav-tab:not(.active):hover {
+  background: rgba(255, 255, 255, 0.45);
+}
