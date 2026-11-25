@@ -9,6 +9,15 @@ import { executeAgentDepositApproval, executeDirectDepositApproval } from '../se
 
 const router = Router();
 
+function normalizeDepositPhoneInput(raw?: string): string {
+  return String(raw || '').replace(/[\s\-()]/g, '').trim();
+}
+
+function extractPhoneLast4(raw?: string): string {
+  const digits = String(raw || '').replace(/\D/g, '');
+  return digits.length >= 4 ? digits.slice(-4) : '';
+}
+
 /**
  * Get User Live Wallet Balance from Neon DB
  */
@@ -58,7 +67,8 @@ router.post('/deposit', requireAuth, async (req: AuthenticatedRequest, res) => {
       return res.status(400).json({ success: false, error: 'Payment method must be Telebirr, CBE, or M-Pesa.' });
     }
 
-    if (!playerPhone || playerPhone.trim().length < 8) {
+    const normalizedPhone = normalizeDepositPhoneInput(playerPhone);
+    if (!normalizedPhone || normalizedPhone.length < 8) {
       return res.status(400).json({ success: false, error: 'Valid phone number is required.' });
     }
 
@@ -78,14 +88,14 @@ router.post('/deposit', requireAuth, async (req: AuthenticatedRequest, res) => {
       `INSERT INTO deposit_requests (user_id, amount, payment_method, player_phone, transaction_ref, receipt_image, status)
        VALUES ($1, $2, $3, $4, $5, $6, 'pending')
        RETURNING id, amount, payment_method, player_phone, transaction_ref, status, created_at`,
-      [userId, numAmount, paymentMethod, playerPhone.trim(), cleanRef, receiptImage || null]
+      [userId, numAmount, paymentMethod, normalizedPhone, cleanRef, receiptImage || null]
     );
 
     const deposit = insertRes.rows[0];
 
     // 🛡️ SECURITY HARDENING: Check if matching Telebirr SMS already arrived in telebirr_sms_logs
     if (paymentMethod === 'Telebirr') {
-      const phoneLast4 = playerPhone.trim().length >= 4 ? playerPhone.trim().slice(-4) : '';
+      const phoneLast4 = extractPhoneLast4(normalizedPhone);
       const smsMatchRes = await query(
         `SELECT id, transaction_ref, amount, payer_phone FROM telebirr_sms_logs 
          WHERE transaction_ref ILIKE $1
@@ -116,9 +126,7 @@ router.post('/deposit', requireAuth, async (req: AuthenticatedRequest, res) => {
         }
 
         // 🛡️ SECURITY PILLAR 3: Phone Number Last-4 Bi-Directional Match
-        const smsPayerPhone = matchedSms.payer_phone || '';
-        const smsLast4Match = smsPayerPhone.match(/(\d{4})\)?$/);
-        const smsLast4 = smsLast4Match ? smsLast4Match[1] : undefined;
+        const smsLast4 = extractPhoneLast4(matchedSms.payer_phone);
 
         if (smsLast4 && phoneLast4 && smsLast4 !== phoneLast4) {
           console.warn(`⚠️ [SECURITY PHONE MISMATCH Cashier] Tx ${cleanRef} sender is ***${smsLast4}, player phone is ***${phoneLast4}`);
@@ -1582,7 +1590,7 @@ router.post('/deposit-via-agent', requireAuth, async (req: AuthenticatedRequest,
       return res.status(400).json({ success: false, error: 'Valid SMS Transaction Reference Code is required.' });
     }
 
-    const cleanPhone = (playerPhone || '').trim();
+    const cleanPhone = normalizeDepositPhoneInput(playerPhone);
     if (!cleanPhone || cleanPhone.length < 8) {
       return res.status(400).json({ success: false, error: 'Valid player phone number is required.' });
     }
@@ -1663,7 +1671,7 @@ router.post('/deposit-via-agent', requireAuth, async (req: AuthenticatedRequest,
 
     // 3b. TWO-WAY AUTO-APPROVAL: Check if matching Telebirr SMS already arrived in telebirr_sms_logs
     if (paymentMethod === 'Telebirr') {
-      const phoneLast4 = cleanPhone.length >= 4 ? cleanPhone.slice(-4) : '';
+      const phoneLast4 = extractPhoneLast4(cleanPhone);
       const smsMatchRes = await query(
         `SELECT id, transaction_ref, amount, payer_phone FROM telebirr_sms_logs 
          WHERE transaction_ref ILIKE $1
@@ -1695,9 +1703,7 @@ router.post('/deposit-via-agent', requireAuth, async (req: AuthenticatedRequest,
         }
 
         // 🛡️ SECURITY PILLAR 3: Phone Number Last-4 Bi-Directional Match
-        const smsPayerPhone = matchedSms.payer_phone || '';
-        const smsLast4Match = smsPayerPhone.match(/(\d{4})\)?$/);
-        const smsLast4 = smsLast4Match ? smsLast4Match[1] : undefined;
+        const smsLast4 = extractPhoneLast4(matchedSms.payer_phone);
 
         if (smsLast4 && phoneLast4 && smsLast4 !== phoneLast4) {
           console.warn(`⚠️ [SECURITY PHONE MISMATCH] Tx ${cleanTxCode} sender is ***${smsLast4}, player phone is ***${phoneLast4}`);

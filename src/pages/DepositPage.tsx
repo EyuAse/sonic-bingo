@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useWallet } from '../context/WalletContext.tsx';
 import { useApp } from '../context/AppContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
@@ -76,7 +76,9 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
   const [agentDepositAmount, setAgentDepositAmount] = useState<number>(100);
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [agentPaymentRail, setAgentPaymentRail] = useState<'Telebirr' | 'M-Pesa'>('Telebirr');
-  const [agentSenderPhone, setAgentSenderPhone] = useState<string>(() => user?.phone || user?.nationalPhone || '');
+  const [agentSenderPhone, setAgentSenderPhone] = useState<string>(() => user?.nationalPhone || user?.phone || '');
+  const [senderPhoneHighlight, setSenderPhoneHighlight] = useState<string | null>(null);
+  const senderPhoneInputRef = useRef<HTMLInputElement>(null);
   const [agentTxRef, setAgentTxRef] = useState<string>('');
   const [agentReceiptImage, setAgentReceiptImage] = useState<string | null>(null);
   const [isSubmittingAgentDeposit, setIsSubmittingAgentDeposit] = useState<boolean>(false);
@@ -363,6 +365,12 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
     loadAgentData();
   }, []);
 
+  useEffect(() => {
+    if (!agentSenderPhone && (user?.nationalPhone || user?.phone)) {
+      setAgentSenderPhone(user.nationalPhone || user.phone || '');
+    }
+  }, [user?.nationalPhone, user?.phone]);
+
   // Active 3-second heartbeat polling while an agent deposit or withdrawal request is pending
   // Guarantees real-time 0-3 second instant balance & status update without reopening the app
   useEffect(() => {
@@ -553,6 +561,20 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
       showToast(lang === 'am' ? '⚠️ የተቀማጭ መጠን ከ 50 እስከ 1,500 ብር መሆን አለበት' : '⚠️ Deposit amount must be between 50 and 1,500 ETB');
       return;
     }
+    const cleanSenderPhone = (agentSenderPhone || user?.nationalPhone || user?.phone || '')
+      .replace(/[\s\-()]/g, '')
+      .trim();
+    const senderDigits = cleanSenderPhone.replace(/\D/g, '');
+    if (senderDigits.length < 9) {
+      const msg = lang === 'am'
+        ? '⚠️ እባክዎ ገንዘቡን የላኩበትን ትክክለኛ ስልክ ቁጥር ያስገቡ (ለምሳሌ 0911223344)'
+        : '⚠️ Please enter the sending account phone number (e.g. 0911223344)';
+      setSenderPhoneHighlight(msg);
+      senderPhoneInputRef.current?.focus();
+      showToast(msg);
+      return;
+    }
+
     if (!agentTxRef.trim() || agentTxRef.trim().length < 4) {
       showToast(lang === 'am' ? '⚠️ እባክዎ የግብይት መለያ ቁጥር (SMS Code) ያስገቡ' : '⚠️ Please enter the SMS transaction reference code');
       return;
@@ -571,13 +593,14 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
     const cleanCode = extractedTxId;
 
     try {
+      setSenderPhoneHighlight(null);
       setIsSubmittingAgentDeposit(true);
       const res = await apiClient.wallet.depositViaAgent({
         agentId: selectedAgent.id,
         agentCode: selectedAgent.agentCode,
         amount: agentDepositAmount,
         paymentMethod: agentPaymentRail,
-        playerPhone: agentSenderPhone.trim() || user?.phone || user?.nationalPhone || '',
+        playerPhone: cleanSenderPhone,
         transactionCode: cleanCode,
         screenshotUrl: agentReceiptImage || undefined
       });
@@ -598,7 +621,17 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
         });
       }
     } catch (err: any) {
-      showToast(`❌ ${err.message || (lang === 'am' ? 'የተቀማጭ ጥያቄ አልተሳካም' : 'Failed to submit deposit request')}`);
+      const errMsg = String(err?.message || (lang === 'am' ? 'የተቀማጭ ጥያቄ አልተሳካም' : 'Failed to submit deposit request'));
+      if (
+        errMsg.includes('Phone mismatch') ||
+        errMsg.includes('Sending Phone Number') ||
+        errMsg.includes('ስልክ ቁጥር ልዩነት')
+      ) {
+        setSenderPhoneHighlight(errMsg);
+        senderPhoneInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        senderPhoneInputRef.current?.focus();
+      }
+      showToast(`❌ ${errMsg}`);
     } finally {
       setIsSubmittingAgentDeposit(false);
     }
@@ -1027,6 +1060,52 @@ export const DepositPage: React.FC<DepositPageProps> = ({ initialTab = 'deposit'
                     </div>
                   );
                 })()}
+
+                {/* Field 3b: Sending Account Phone Number (Prevents Phone Mismatch when paying from another phone) */}
+                <div className="sonic-exact-section-group">
+                  <div className="sonic-exact-section-header">
+                    <div className="sonic-deposit-red-icon-badge">
+                      <i className="fa-solid fa-phone"></i>
+                    </div>
+                    <span className="sonic-exact-header-title">
+                      {lang === 'am' ? 'ገንዘብ የላኩበት ስልክ ቁጥር' : 'Sending Account Phone Number'}
+                    </span>
+                  </div>
+                  <span className="sonic-exact-sms-subtext">
+                    {lang === 'am'
+                      ? 'ገንዘቡ የተላከበት ስልክ ቁጥር (በሌላ ስልክ ከላኩ ይህን ይቀይሩ)'
+                      : 'Phone number used to send the money (edit if paying from another phone)'}
+                  </span>
+                  <div
+                    className="sonic-exact-amount-box-white"
+                    style={
+                      senderPhoneHighlight
+                        ? { borderColor: '#dc2626', boxShadow: '0 0 0 2px rgba(220, 38, 38, 0.14)', background: '#fff' }
+                        : undefined
+                    }
+                  >
+                    <input
+                      ref={senderPhoneInputRef}
+                      type="tel"
+                      inputMode="tel"
+                      value={agentSenderPhone}
+                      onChange={e => {
+                        setAgentSenderPhone(e.target.value);
+                        if (senderPhoneHighlight) setSenderPhoneHighlight(null);
+                      }}
+                      className="sonic-exact-amount-field"
+                      style={{ fontSize: '15px', fontWeight: 700 }}
+                      placeholder={lang === 'am' ? 'ለምሳሌ 0911223344' : 'e.g. 0911223344'}
+                      required
+                    />
+                  </div>
+                  {senderPhoneHighlight && (
+                    <div className="sonic-sms-warning-pill" style={{ marginTop: '4px' }}>
+                      <i className="fa-solid fa-triangle-exclamation"></i>
+                      <span>{senderPhoneHighlight}</span>
+                    </div>
+                  )}
+                </div>
 
                 {/* Field 4: Confirmation SMS Card (Image 1 Exact Match) */}
                 <div className="sonic-exact-section-group">
