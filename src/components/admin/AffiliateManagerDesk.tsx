@@ -100,7 +100,9 @@ export const AffiliateManagerDesk: React.FC<AffiliateManagerDeskProps> = ({ view
   const [reportAffiliateId, setReportAffiliateId] = useState('');
   const [reportData, setReportData] = useState<any>(null);
   const [reportSubTab, setReportSubTab] = useState<'ledger' | 'leaderboard' | 'withdrawals'>('ledger');
+  const [chartSeries, setChartSeries] = useState<'commissions' | 'deposits' | 'combined' | 'players'>('commissions');
   const [hoveredBucketIdx, setHoveredBucketIdx] = useState<number | null>(null);
+  const [hoveredRuleType, setHoveredRuleType] = useState<string | null>(null);
   const [commSearch, setCommSearch] = useState('');
   const [commPage, setCommPage] = useState(1);
   const [commTotalPages, setCommTotalPages] = useState(1);
@@ -1434,122 +1436,253 @@ export const AffiliateManagerDesk: React.FC<AffiliateManagerDeskProps> = ({ view
               </div>
             </div>
 
-            {/* 3. Visual Analytics Row: Trend Chart + 6-Type Breakdown */}
+            {/* 3. Dashboard-Matched Visual Analytics Row: Enqu Striped Pillar Chart + Conic Donut */}
             <div className="aff-grid aff-g2">
-              <div className="aff-card">
-                <div className="aff-chart-head">
-                  <div>
-                    <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 800 }}>
-                      Deposits vs. Commissions Velocity ({reportGranularity.charAt(0).toUpperCase() + reportGranularity.slice(1)})
-                    </h3>
-                    <div className="aff-lab" style={{ marginTop: '2px' }}>
-                      Hover bars to inspect exact deposits, commissions &amp; player signups per bucket
+              {(() => {
+                const chartMetricMax =
+                  chartSeries === 'players'
+                    ? Math.max(10, ...buckets.map(b => Number(b.registrations || 0)))
+                    : chartSeries === 'deposits'
+                      ? Math.max(100, ...buckets.map(b => Number(b.deposits || 0)))
+                      : chartSeries === 'commissions'
+                        ? Math.max(100, ...buckets.map(b => Number(b.commissions || 0)))
+                        : maxChartVal;
+
+                const activeIdx =
+                  hoveredBucketIdx !== null && hoveredBucketIdx < buckets.length
+                    ? hoveredBucketIdx
+                    : Math.max(0, buckets.length - 1);
+                const activeBucket = buckets[activeIdx] || null;
+
+                return (
+                  <div className="aff-card">
+                    <div className="aff-chart-head">
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 800 }}>
+                          Affiliate Performance ({reportGranularity.charAt(0).toUpperCase() + reportGranularity.slice(1)})
+                        </h3>
+                        <div className="aff-lab" style={{ marginTop: '2px' }}>
+                          Enqu velocity pillars · hover any bar to inspect exact period metrics
+                        </div>
+                      </div>
+
+                      <div className="aff-seg-group" role="group" aria-label="Chart metric mode">
+                        {(
+                          [
+                            ['commissions', 'Commissions'],
+                            ['deposits', 'Deposits'],
+                            ['combined', 'Dual View'],
+                            ['players', 'Signups']
+                          ] as Array<[typeof chartSeries, string]>
+                        ).map(([mode, label]) => (
+                          <button
+                            key={mode}
+                            type="button"
+                            className={`aff-seg-btn ${chartSeries === mode ? 'active' : ''}`}
+                            onClick={() => setChartSeries(mode)}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  <div className="aff-legend">
-                    <span>
-                      <span className="aff-legend-dot" style={{ background: '#10b981' }} />
-                      Player Deposits
-                    </span>
-                    <span>
-                      <span className="aff-legend-dot" style={{ background: '#1c1e1d' }} />
-                      Commissions
-                    </span>
-                  </div>
-                </div>
 
-                {buckets.length === 0 ? (
-                  <div style={{ padding: '48px 16px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
-                    No chart buckets available for this date range.
+                    {/* Non-clipped Live Bucket Inspection Readout Strip */}
+                    {activeBucket && (
+                      <div className={`aff-bucket-readout ${hoveredBucketIdx !== null ? 'is-active' : ''}`}>
+                        <div>
+                          <b>{activeBucket.label}</b>{' '}
+                          {activeBucket.subLabel && <span style={{ opacity: 0.72 }}>({activeBucket.subLabel})</span>}
+                        </div>
+                        <div className="aff-bucket-metrics">
+                          <span>Commissions: ETB {fmtETB(activeBucket.commissions || 0)}</span>
+                          <span>Deposits: ETB {fmtETB(activeBucket.deposits || 0)}</span>
+                          <span>Signups: {fmtInt(activeBucket.registrations || 0)}</span>
+                          <span>Payouts: ETB {fmtETB(activeBucket.withdrawals || 0)}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {buckets.length === 0 ? (
+                      <div style={{ padding: '48px 16px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
+                        No chart buckets available for this date range.
+                      </div>
+                    ) : (
+                      <div className="aff-chart-scroll">
+                        <div
+                          className="aff-enqu-bars"
+                          style={{ minWidth: buckets.length > 18 ? `${buckets.length * 40}px` : '100%' }}
+                        >
+                          {[1, 0.75, 0.5, 0.25, 0].map((frac, i) => (
+                            <React.Fragment key={i}>
+                              <div className="aff-gridline" style={{ bottom: `${30 + frac * 162}px` }} />
+                              <div className="aff-ylabel" style={{ bottom: `${30 + frac * 162}px` }}>
+                                {fmtCompactAxis(chartMetricMax * frac)}
+                              </div>
+                            </React.Fragment>
+                          ))}
+
+                          {buckets.map((b, idx) => {
+                            const depVal = Number(b.deposits || 0);
+                            const comVal = Number(b.commissions || 0);
+                            const regVal = Number(b.registrations || 0);
+                            const isHighlight = idx === activeIdx;
+                            const showEvery =
+                              buckets.length > 22 ? Math.ceil(buckets.length / 10) : buckets.length > 14 ? 2 : 1;
+
+                            const comH = comVal > 0 ? Math.max(12, Math.round((comVal / chartMetricMax) * 158)) : 8;
+                            const depH = depVal > 0 ? Math.max(12, Math.round((depVal / chartMetricMax) * 158)) : 8;
+                            const regH = regVal > 0 ? Math.max(12, Math.round((regVal / chartMetricMax) * 158)) : 8;
+
+                            const primaryVal =
+                              chartSeries === 'deposits'
+                                ? depVal
+                                : chartSeries === 'players'
+                                  ? regVal
+                                  : comVal;
+
+                            return (
+                              <div
+                                key={b.bucketKey || idx}
+                                className={`aff-enqu-col ${isHighlight ? 'is-highlight' : ''}`}
+                                onMouseEnter={() => setHoveredBucketIdx(idx)}
+                                onMouseLeave={() => setHoveredBucketIdx(null)}
+                              >
+                                <div className="aff-enqu-bar-wrap">
+                                  {chartSeries === 'combined' ? (
+                                    <>
+                                      <div
+                                        className={`aff-enqu-pillar is-dual is-dep ${depVal === 0 ? 'is-zero' : ''}`}
+                                        style={{ height: `${depH}px` }}
+                                        title={`${b.label} Deposits: ETB ${fmtETB(depVal)}`}
+                                      />
+                                      <div
+                                        className={`aff-enqu-pillar is-dual ${comVal === 0 ? 'is-zero' : ''}`}
+                                        style={{ height: `${comH}px` }}
+                                        title={`${b.label} Commissions: ETB ${fmtETB(comVal)}`}
+                                      />
+                                    </>
+                                  ) : (
+                                    <div
+                                      className={`aff-enqu-pillar ${
+                                        chartSeries === 'deposits'
+                                          ? 'is-dep'
+                                          : chartSeries === 'players'
+                                            ? 'is-players'
+                                            : ''
+                                      } ${primaryVal === 0 ? 'is-zero' : ''}`}
+                                      style={{
+                                        height: `${
+                                          chartSeries === 'deposits'
+                                            ? depH
+                                            : chartSeries === 'players'
+                                              ? regH
+                                              : comH
+                                        }px`
+                                      }}
+                                    >
+                                      {primaryVal > 0 && (
+                                        <span className="aff-bar-valtag">{fmtCompactAxis(primaryVal)}</span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                                {idx % showEvery === 0 && <div className="aff-bar-xlabel">{b.label}</div>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="aff-chart-scroll">
-                    <div
-                      className="aff-chart-canvas"
-                      style={{ minWidth: buckets.length > 16 ? `${buckets.length * 42}px` : '100%' }}
-                    >
-                      {[0, 0.33, 0.66, 1].map((frac, idx) => (
-                        <React.Fragment key={idx}>
-                          <div className="aff-gridline" style={{ bottom: `${26 + frac * 165}px` }} />
-                          <div className="aff-ylabel" style={{ bottom: `${26 + frac * 165}px` }}>
-                            {fmtCompactAxis(maxChartVal * frac)}
-                          </div>
-                        </React.Fragment>
-                      ))}
+                );
+              })()}
 
-                      {buckets.map((b, idx) => {
-                        const depVal = Number(b.deposits || 0);
-                        const comVal = Number(b.commissions || 0);
-                        const depPct = depVal > 0 ? Math.max(3, (depVal / maxChartVal) * 100) : 0;
-                        const comPct = comVal > 0 ? Math.max(3, (comVal / maxChartVal) * 100) : 0;
-                        const showEvery = buckets.length > 22 ? Math.ceil(buckets.length / 10) : buckets.length > 12 ? 2 : 1;
+              {/* Right Card: Dashboard-Matched Conic-Gradient Donut (6 Commission Types) */}
+              {(() => {
+                const rawTotal = breakdown.reduce((acc, row) => acc + Number(row.totalAmt || 0), 0);
+                let cursorPct = 0;
+                const slices: string[] = [];
+                if (rawTotal > 0) {
+                  breakdown.forEach(item => {
+                    const val = Number(item.totalAmt || 0);
+                    if (val <= 0) return;
+                    const theme = RULE_THEMES[item.commissionType] || { fg: '#1c1e1d' };
+                    const spanPct = (val / rawTotal) * 100;
+                    const nextPct = Math.min(100, cursorPct + spanPct);
+                    slices.push(`${theme.fg} ${cursorPct.toFixed(2)}% ${nextPct.toFixed(2)}%`);
+                    cursorPct = nextPct;
+                  });
+                }
+                const donutBg =
+                  slices.length > 0
+                    ? `conic-gradient(${slices.join(', ')})`
+                    : 'conic-gradient(#1c1e1d 0% 16%, #e4e4e7 16% 100%)';
 
+                const focusedItem = hoveredRuleType
+                  ? breakdown.find(b => b.commissionType === hoveredRuleType)
+                  : null;
+
+                return (
+                  <div className="aff-card">
+                    <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 800 }}>Commission Allocation</h3>
+                        <div className="aff-lab" style={{ marginTop: '2px' }}>
+                          6 rule share in selected range
+                        </div>
+                      </div>
+                      <span className="aff-chip">6 Rules</span>
+                    </div>
+
+                    <div className="aff-donut-wrap">
+                      <div className="aff-donut" style={{ background: donutBg }}>
+                        <div className="aff-donut-inner">
+                          <span style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                            {focusedItem ? focusedItem.label : 'Total Mix'}
+                          </span>
+                          <b style={{ fontSize: '14px', fontWeight: 800, color: '#1b1b1b', marginTop: '2px' }}>
+                            ETB {fmtCompactAxis(focusedItem ? Number(focusedItem.totalAmt || 0) : rawTotal)}
+                          </b>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="aff-donut-legend">
+                      {breakdown.map(item => {
+                        const theme = RULE_THEMES[item.commissionType] || { fg: '#334155', icon: '⚡' };
+                        const pct = rawTotal > 0 ? Math.round((Number(item.totalAmt || 0) / totalBreakdownAmt) * 100) : 0;
                         return (
                           <div
-                            key={b.bucketKey || idx}
-                            className="aff-bar-col"
-                            onMouseEnter={() => setHoveredBucketIdx(idx)}
-                            onMouseLeave={() => setHoveredBucketIdx(null)}
+                            key={item.commissionType}
+                            className={`aff-donut-row ${hoveredRuleType === item.commissionType ? 'active' : ''}`}
+                            onMouseEnter={() => setHoveredRuleType(item.commissionType)}
+                            onMouseLeave={() => setHoveredRuleType(null)}
                           >
-                            {hoveredBucketIdx === idx && (
-                              <div className="aff-chart-tooltip">
-                                <div style={{ fontWeight: 800, marginBottom: '2px' }}>
-                                  {b.label} {b.subLabel ? `(${b.subLabel})` : ''}
-                                </div>
-                                <div>Deposits: ETB {fmtETB(depVal)}</div>
-                                <div>Commissions: ETB {fmtETB(comVal)}</div>
-                                <div>New Players: {fmtInt(b.registrations || 0)}</div>
-                                <div>Payouts: ETB {fmtETB(b.withdrawals || 0)}</div>
-                              </div>
-                            )}
-
-                            <div className="aff-dual-bars">
-                              <div className="aff-bar-dep" style={{ height: `${depPct}%` }} />
-                              <div className="aff-bar-com" style={{ height: `${comPct}%` }} />
-                            </div>
-                            {idx % showEvery === 0 && <div className="aff-bar-xlabel">{b.label}</div>}
+                            <span className="aff-donut-label">
+                              <span
+                                style={{
+                                  width: '9px',
+                                  height: '9px',
+                                  borderRadius: '50%',
+                                  background: theme.fg,
+                                  display: 'inline-block'
+                                }}
+                              />
+                              <span>{item.label}</span>
+                              <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>({fmtInt(item.count)})</span>
+                            </span>
+                            <span style={{ fontWeight: 700 }}>
+                              ETB {fmtETB(item.totalAmt)}{' '}
+                              <span style={{ fontSize: '11px', color: '#64748b' }}>({pct}%)</span>
+                            </span>
                           </div>
                         );
                       })}
                     </div>
                   </div>
-                )}
-              </div>
-
-              <div className="aff-card">
-                <div style={{ marginBottom: '12px' }}>
-                  <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 800 }}>6 Commission Types Breakdown</h3>
-                  <div className="aff-lab" style={{ marginTop: '2px' }}>
-                    Approved + Pending earnings mix in selected range
-                  </div>
-                </div>
-                <div className="aff-mix-list">
-                  {breakdown.map(item => {
-                    const theme = RULE_THEMES[item.commissionType] || { bg: '#f1f5f9', fg: '#334155', icon: '⚡' };
-                    const pct = Math.min(100, Math.round((Number(item.totalAmt || 0) / totalBreakdownAmt) * 100));
-                    return (
-                      <div key={item.commissionType} className="aff-mix-item">
-                        <div className="aff-mix-top">
-                          <span style={{ fontWeight: 700 }}>
-                            {theme.icon} {item.label}{' '}
-                            <span style={{ color: '#94a3b8', fontWeight: 600 }}>({fmtInt(item.count)})</span>
-                          </span>
-                          <b>ETB {fmtETB(item.totalAmt)}</b>
-                        </div>
-                        <div className="aff-mix-track">
-                          <div
-                            className="aff-mix-fill"
-                            style={{
-                              width: `${Number(item.totalAmt || 0) > 0 ? Math.max(4, pct) : 0}%`,
-                              background: theme.fg
-                            }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+                );
+              })()}
             </div>
 
             {/* 4. Sub-Tabs + Ledger / Leaderboard / Withdrawals Report */}

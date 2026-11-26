@@ -507,14 +507,42 @@
   background: #ffffff;
 }
 
-/* Trend Velocity Chart */
+/* Enqu Dashboard-Matched Velocity Pillar Chart & Donut */
 .affiliate-enqu-root .aff-chart-head {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
+}
+
+.affiliate-enqu-root .aff-bucket-readout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 9px 14px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 12.5px;
+  margin-bottom: 10px;
+}
+
+.affiliate-enqu-root .aff-bucket-readout.is-active {
+  background: #1c1e1d;
+  border-color: #1c1e1d;
+  color: #ffffff;
+}
+
+.affiliate-enqu-root .aff-bucket-metrics {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-weight: 700;
 }
 
 .affiliate-enqu-root .aff-legend {
@@ -538,43 +566,45 @@
 .affiliate-enqu-root .aff-chart-scroll {
   width: 100%;
   overflow-x: auto;
-  padding-top: 12px;
+  overflow-y: visible;
 }
 
-.affiliate-enqu-root .aff-chart-canvas {
+.affiliate-enqu-root .aff-enqu-bars {
   position: relative;
-  height: 205px;
-  padding: 0 10px 26px 50px;
+  height: 224px;
+  padding: 24px 10px 30px 46px;
   display: flex;
   align-items: flex-end;
-  gap: 10px;
+  gap: 12px;
   min-width: 100%;
-  border-bottom: 1.5px solid #e2e8f0;
+  border-bottom: 1.5px solid #e5e7eb;
 }
 
 .affiliate-enqu-root .aff-gridline {
   position: absolute;
-  left: 50px;
+  left: 46px;
   right: 8px;
-  border-top: 1px dashed #e2e8f0;
+  border-top: 1px dashed #eceef2;
   pointer-events: none;
 }
 
 .affiliate-enqu-root .aff-ylabel {
   position: absolute;
   left: 0;
-  width: 44px;
+  width: 40px;
   text-align: right;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   color: #94a3b8;
   transform: translateY(-50%);
   pointer-events: none;
 }
 
-.affiliate-enqu-root .aff-bar-col {
+.affiliate-enqu-root .aff-enqu-col {
   flex: 1;
-  min-width: 26px;
+  min-width: 30px;
+  max-width: 72px;
+  margin: 0 auto;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -584,35 +614,63 @@
   cursor: pointer;
 }
 
-.affiliate-enqu-root .aff-dual-bars {
+.affiliate-enqu-root .aff-enqu-bar-wrap {
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 3px;
+  gap: 5px;
+}
+
+.affiliate-enqu-root .aff-enqu-pillar {
   width: 100%;
-  height: calc(100% - 2px);
+  max-width: 42px;
+  min-height: 8px;
+  border-radius: 10px 10px 4px 4px;
+  background: repeating-linear-gradient(115deg, #1c1e1d 0 12px, #2b2f2d 12px 24px);
+  transition: height 0.25s ease, transform 0.15s ease, filter 0.15s ease;
+  position: relative;
 }
 
-.affiliate-enqu-root .aff-bar-dep {
-  width: clamp(8px, 1.5vw, 15px);
-  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
-  border-radius: 5px 5px 0 0;
-  transition: height 0.25s ease;
+.affiliate-enqu-root .aff-enqu-pillar.is-zero {
+  background: #e4e4e7;
 }
 
-.affiliate-enqu-root .aff-bar-com {
-  width: clamp(8px, 1.5vw, 15px);
-  background: linear-gradient(180deg, #1c1e1d 0%, #3f3f46 100%);
-  border-radius: 5px 5px 0 0;
-  transition: height 0.25s ease;
+.affiliate-enqu-root .aff-enqu-pillar.is-dep {
+  background: linear-gradient(180deg, #10b981 0%, #047857 100%);
 }
 
-.affiliate-enqu-root .aff-bar-col:hover .aff-bar-dep {
+.affiliate-enqu-root .aff-enqu-pillar.is-players {
+  background: linear-gradient(180deg, #4f46e5 0%, #3730a3 100%);
+}
+
+.affiliate-enqu-root .aff-enqu-pillar.is-dual {
+  max-width: 20px;
+}
+
+.affiliate-enqu-root .aff-enqu-col.is-highlight .aff-enqu-pillar:not(.is-zero),
+.affiliate-enqu-root .aff-enqu-col:hover .aff-enqu-pillar:not(.is-zero) {
+  transform: translateY(-2px);
   filter: brightness(1.08);
+  box-shadow: 0 6px 14px rgba(28, 30, 29, 0.2);
 }
 
-.affiliate-enqu-root .aff-bar-col:hover .aff-bar-com {
-  background: linear-gradient(180deg, #6366f1 0%, #4338ca 100%);
+.affiliate-enqu-root .aff-enqu-col.is-highlight .aff-enqu-pillar.is-zero,
+.affiliate-enqu-root .aff-enqu-col:hover .aff-enqu-pillar.is-zero {
+  background: #cbd5e1;
+}
+
+.affiliate-enqu-root .aff-bar-valtag {
+  position: absolute;
+  top: -19px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 800;
+  color: #1c1e1d;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .affiliate-enqu-root .aff-bar-xlabel {
@@ -620,63 +678,79 @@
   bottom: -24px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 10px;
-  font-weight: 700;
-  color: #64748b;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-.affiliate-enqu-root .aff-chart-tooltip {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: #0f172a;
-  color: #ffffff;
-  padding: 8px 11px;
-  border-radius: 10px;
   font-size: 11px;
-  line-height: 1.45;
+  font-weight: 700;
+  color: #71717a;
   white-space: nowrap;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.28);
-  z-index: 40;
   pointer-events: none;
 }
 
-/* 6-Rule Mix Breakdown */
-.affiliate-enqu-root .aff-mix-list {
-  display: flex;
-  flex-direction: column;
-  gap: 11px;
+.affiliate-enqu-root .aff-enqu-col.is-highlight .aff-bar-xlabel {
+  color: #1c1e1d;
+  font-weight: 800;
 }
 
-.affiliate-enqu-root .aff-mix-item {
+/* Dashboard-Matched Conic-Gradient Donut Card */
+.affiliate-enqu-root .aff-donut-wrap {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-}
-
-.affiliate-enqu-root .aff-mix-top {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  font-size: 12.5px;
+  margin: 4px 0 14px;
+}
+
+.affiliate-enqu-root .aff-donut {
+  width: 146px;
+  height: 146px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.04);
+  transition: transform 0.2s ease;
+}
+
+.affiliate-enqu-root .aff-donut-inner {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.affiliate-enqu-root .aff-donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.affiliate-enqu-root .aff-donut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
+  padding: 5px 8px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  transition: background 0.15s ease;
+  cursor: default;
 }
 
-.affiliate-enqu-root .aff-mix-track {
-  width: 100%;
-  height: 7px;
-  border-radius: 9999px;
-  background: #f1f5f9;
-  overflow: hidden;
+.affiliate-enqu-root .aff-donut-row:hover,
+.affiliate-enqu-root .aff-donut-row.active {
+  background: #f8fafc;
 }
 
-.affiliate-enqu-root .aff-mix-fill {
-  height: 100%;
-  border-radius: 9999px;
-  transition: width 0.25s ease;
+.affiliate-enqu-root .aff-donut-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 700;
+  color: #1b1b1b;
 }
 
 /* Report Subtabs & Pagination */
