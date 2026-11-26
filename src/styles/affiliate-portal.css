@@ -10,7 +10,7 @@
   font-family: Urbanist, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #1b1b1b;
   font-size: 15px;
-  padding: 20px 20px 64px;
+  padding: 0;
   box-sizing: border-box;
 }
 
@@ -18,14 +18,10 @@
   box-sizing: border-box;
 }
 
-.aff-portal-wrap {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
 /* Login Shell */
 .aff-portal-login-shell {
-  min-height: calc(100vh - 80px);
+  min-height: 100vh;
+  padding: 20px 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -41,60 +37,201 @@
   border: 1px solid rgba(15, 23, 42, 0.05);
 }
 
-/* Top Navbar */
-.aff-portal-nav {
+/* Enqu Admin-Matched Sidebar + Main Shell */
+.aff-portal-shell {
+  display: grid;
+  grid-template-columns: 272px 1fr;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background: #e8e6e9;
+  transition: grid-template-columns 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.aff-portal-shell.collapsed {
+  grid-template-columns: 68px 1fr;
+}
+
+.aff-portal-aside {
+  background: #ffffff;
+  border-right: 1px solid #d9d9db;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 14px;
+  height: 100vh;
+  overflow: hidden;
+  min-width: 0;
+  z-index: 30;
+}
+
+.aff-portal-aside-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  background: #ffffff;
-  border-radius: 20px;
-  padding: 12px 18px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
-  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 4px 14px;
 }
 
-.aff-portal-brand {
+.aff-portal-logo {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.7px;
+  color: #1b1b1b;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.aff-portal-collapse-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.aff-portal-collapse-btn:hover {
+  background: #f1f5f9;
+  color: #1b1b1b;
+}
+
+.aff-portal-partner-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 12px 13px;
+  margin-bottom: 14px;
 }
 
 .aff-portal-badge {
-  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
   border-radius: 9999px;
   background: #1c1e1d;
   color: #86efac;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.4px;
 }
 
-.aff-portal-tabs {
+.aff-portal-side-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.aff-portal-side-link {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 11px;
+  width: 100%;
+  padding: 11px 12px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: #475569;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.aff-portal-side-link:hover {
+  background: #f1f5f9;
+  color: #1b1b1b;
+}
+
+.aff-portal-side-link.active {
+  background: #1c1e1d;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(28, 30, 29, 0.16);
+}
+
+.aff-portal-side-svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.aff-portal-aside-foot {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 10px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.aff-portal-side-link.logout:hover {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.aff-portal-main {
+  height: 100vh;
+  overflow-y: auto;
+  padding: 22px 26px 64px;
+  min-width: 0;
+}
+
+.aff-portal-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
   flex-wrap: wrap;
 }
 
-.aff-portal-tab {
-  border: none;
-  background: #f1f5f9;
-  color: #475569;
-  font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 700;
-  padding: 8px 14px;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.15s ease;
+.aff-portal-top-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.aff-portal-tab.active {
-  background: #1c1e1d;
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(28, 30, 29, 0.18);
+.aff-portal-top h1 {
+  margin: 0;
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: #1b1b1b;
+}
+
+.aff-portal-mobile-btn {
+  display: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid #d9d9db;
+  background: #ffffff;
+  color: #1b1b1b;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.aff-portal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 25;
 }
 
 .aff-portal-support-banner {
@@ -358,7 +495,28 @@
   vertical-align: middle;
 }
 
-@media (max-width: 1020px) {
+@media (max-width: 960px) {
+  .aff-portal-shell,
+  .aff-portal-shell.collapsed {
+    grid-template-columns: 1fr;
+  }
+  .aff-portal-aside {
+    position: fixed;
+    left: -285px;
+    top: 0;
+    width: 272px;
+    transition: left 0.22s ease;
+    box-shadow: 12px 0 32px rgba(0, 0, 0, 0.14);
+  }
+  .aff-portal-aside.mobile-open {
+    left: 0;
+  }
+  .aff-portal-mobile-btn {
+    display: flex;
+  }
+  .aff-portal-main {
+    padding: 16px 16px 56px;
+  }
   .aff-portal-g4 {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -368,7 +526,7 @@
 }
 
 @media (max-width: 640px) {
-  .aff-portal-root {
+  .aff-portal-main {
     padding: 14px 12px 48px;
   }
   .aff-portal-g4,

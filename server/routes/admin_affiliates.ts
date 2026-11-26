@@ -1398,6 +1398,8 @@ adminAffiliatesRouter.post('/:id/approve-registration', requireAdmin, async (req
     const { id } = req.params;
     const { decision, reason } = req.body;
     const isApprove = decision === 'approve';
+    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const adminUuid = req.user?.id && uuidRe.test(req.user.id) ? req.user.id : null;
 
     const upRes = await query(
       `UPDATE affiliates
@@ -1405,15 +1407,16 @@ adminAffiliatesRouter.post('/:id/approve-registration', requireAdmin, async (req
            status = $2,
            rejection_reason = $3,
            approved_by = $4,
-           approved_at = CASE WHEN $1 = 'approved' THEN NOW() ELSE approved_at END,
+           approved_at = COALESCE($5, approved_at),
            updated_at = NOW()
-       WHERE id = $5
+       WHERE id = $6
        RETURNING *`,
       [
         isApprove ? 'approved' : 'rejected',
         isApprove ? 'active' : 'inactive',
         isApprove ? null : (String(reason || '').trim() || 'Application declined by Admin'),
-        req.user?.id || null,
+        adminUuid,
+        isApprove ? new Date() : null,
         id
       ]
     );
@@ -1421,7 +1424,7 @@ adminAffiliatesRouter.post('/:id/approve-registration', requireAdmin, async (req
 
     await logAffiliateAudit(
       query,
-      { id: req.user?.id, fullName: req.user?.fullName },
+      { id: adminUuid || undefined, fullName: req.user?.fullName },
       isApprove ? 'AFFILIATE_APPROVED' : 'AFFILIATE_REJECTED',
       'affiliate',
       id,
@@ -1432,7 +1435,8 @@ adminAffiliatesRouter.post('/:id/approve-registration', requireAdmin, async (req
 
     return res.json({ success: true, affiliate: upRes.rows[0] });
   } catch (err: any) {
-    return res.status(500).json({ success: false, error: 'Failed to review affiliate application' });
+    console.error('❌ [Review Affiliate Application Error]:', err);
+    return res.status(500).json({ success: false, error: err?.message || 'Failed to review affiliate application' });
   }
 });
 

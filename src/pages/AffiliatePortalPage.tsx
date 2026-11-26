@@ -27,13 +27,15 @@ const fmtDate = (iso?: string | null) => {
 };
 
 export const AffiliatePortalPage: React.FC = () => {
-  const { showToast, switchPage } = useApp();
+  const { showToast } = useApp();
   const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const [token, setToken] = useState<string | null>(() =>
     typeof window !== 'undefined' ? localStorage.getItem('sonic_affiliate_token') : null
   );
   const [activeTab, setActiveTab] = useState<PortalTab>('overview');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [overview, setOverview] = useState<any>(null);
   const [isLoading, setIsLoading] = useState<boolean>(Boolean(token));
   const [authError, setAuthError] = useState<string | null>(null);
@@ -323,11 +325,8 @@ export const AffiliatePortalPage: React.FC = () => {
       <div className="aff-portal-root">
         <div className="aff-portal-login-shell">
           <form className="aff-portal-login-card" onSubmit={handleLoginSubmit}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ marginBottom: '12px' }}>
               <span className="aff-portal-badge">AFFILIATE PARTNER PORTAL</span>
-              <button type="button" className="aff-portal-btn-ghost" onClick={() => switchPage('landing')}>
-                Home
-              </button>
             </div>
             <h1 style={{ margin: '0 0 6px', fontSize: '25px', fontWeight: 800 }}>Partner Sign In</h1>
             <p style={{ margin: '0 0 18px', fontSize: '13.5px', color: '#64748b' }}>
@@ -377,88 +376,146 @@ export const AffiliatePortalPage: React.FC = () => {
             <button type="submit" className="aff-portal-btn-dark" style={{ width: '100%', padding: '12px' }} disabled={isLoggingIn}>
               {isLoggingIn ? 'Signing In…' : 'Sign In to Partner Dashboard'}
             </button>
-
-            <div style={{ marginTop: '16px', textAlign: 'center', fontSize: '13px', color: '#64748b' }}>
-              Have an Admin invite token?{' '}
-              <button
-                type="button"
-                onClick={() => switchPage('affiliate-register')}
-                style={{ background: 'none', border: 'none', color: '#1b1b1b', fontWeight: 800, cursor: 'pointer', textDecoration: 'underline' }}
-              >
-                Apply as an Affiliate
-              </button>
-            </div>
           </form>
         </div>
       </div>
     );
   }
 
+  const NAV_ITEMS: Array<{ id: PortalTab; label: string; icon: string }> = [
+    { id: 'overview', label: 'Overview', icon: 'M13 2L3 14h9l-1 8 10-12h-9l1-8z' },
+    { id: 'players', label: 'Players', icon: 'M12 4a4 4 0 100 8 4 4 0 000-8zM4 20c0-4 4-6 8-6s8 2 8 6' },
+    { id: 'commissions', label: 'Commissions', icon: 'M3 3v18h18M7 16l4-4 4 4 6-6M17 6h4v4' },
+    { id: 'wallet', label: 'Wallet', icon: 'M4 6h16v12H4zM4 10h16M8 15h3' },
+    { id: 'profile', label: 'Profile', icon: 'M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z' }
+  ];
+
+  const PAGE_TITLES: Record<PortalTab, string> = {
+    overview: 'Dashboard Overview',
+    players: 'Referred Players',
+    commissions: 'Commission History',
+    wallet: 'Wallet & Withdrawals',
+    profile: 'Partner Profile'
+  };
+
   return (
     <div className="aff-portal-root">
-      <div className="aff-portal-wrap">
-        {overview?.impersonatedByAdmin && (
-          <div className="aff-portal-support-banner">
-            <span>🛡️ Admin Support Inspection Session ({overview.affiliateCode} · {overview.fullName})</span>
-            <button type="button" className="aff-portal-btn-ghost" onClick={handleLogout}>
-              End Support Session
-            </button>
-          </div>
-        )}
+      {isMobileSidebarOpen && (
+        <div className="aff-portal-backdrop" onClick={() => setIsMobileSidebarOpen(false)} />
+      )}
 
-        {/* Portal Top Bar */}
-        <div className="aff-portal-nav">
-          <div className="aff-portal-brand">
-            <div>
-              <div style={{ fontWeight: 800, fontSize: '17px' }}>
-                {overview?.fullName || 'Affiliate Partner'}
-              </div>
-              <div style={{ fontSize: '12px', color: '#64748b' }}>
-                <span className="aff-portal-badge">{affiliateCode || 'AFF-PARTNER'}</span> · {overview?.phone || ''}
-              </div>
-            </div>
-          </div>
-
-          <div className="aff-portal-tabs" role="tablist">
-            {(
-              [
-                ['overview', 'Overview'],
-                ['players', 'Players'],
-                ['commissions', 'Commissions'],
-                ['wallet', 'Wallet'],
-                ['profile', 'Profile']
-              ] as Array<[PortalTab, string]>
-            ).map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                className={`aff-portal-tab ${activeTab === key ? 'active' : ''}`}
-                onClick={() => setActiveTab(key)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ display: 'flex', gap: '8px' }}>
+      <div className={`aff-portal-shell ${isSidebarCollapsed ? 'collapsed' : ''}`}>
+        {/* Enqu Left Sidebar matching Admin Panel */}
+        <aside className={`aff-portal-aside ${isMobileSidebarOpen ? 'mobile-open' : ''}`}>
+          <div className="aff-portal-aside-top">
+            {!isSidebarCollapsed && <div className="aff-portal-logo">Lomi Partner</div>}
             <button
               type="button"
-              className="aff-portal-btn-ghost"
+              className="aff-portal-collapse-btn"
+              onClick={() => setIsSidebarCollapsed(c => !c)}
+              title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <line x1="9" y1="3" x2="9" y2="21" />
+              </svg>
+            </button>
+          </div>
+
+          {!isSidebarCollapsed && (
+            <div className="aff-portal-partner-box">
+              <div style={{ fontWeight: 800, fontSize: '15px', marginBottom: '4px' }}>
+                {overview?.fullName || 'Affiliate Partner'}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                <span className="aff-portal-badge">{affiliateCode || 'AFF-PARTNER'}</span>
+                <span style={{ fontSize: '12px', color: '#64748b' }}>{overview?.phone || ''}</span>
+              </div>
+            </div>
+          )}
+
+          <nav className="aff-portal-side-nav" role="tablist">
+            {NAV_ITEMS.map(item => (
+              <button
+                key={item.id}
+                type="button"
+                title={isSidebarCollapsed ? item.label : undefined}
+                className={`aff-portal-side-link ${activeTab === item.id ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveTab(item.id);
+                  setIsMobileSidebarOpen(false);
+                }}
+              >
+                <svg viewBox="0 0 24 24" className="aff-portal-side-svg">
+                  <path d={item.icon} />
+                </svg>
+                {!isSidebarCollapsed && <span>{item.label}</span>}
+              </button>
+            ))}
+          </nav>
+
+          <div className="aff-portal-aside-foot">
+            <button
+              type="button"
+              title={isSidebarCollapsed ? 'Refresh' : undefined}
+              className="aff-portal-side-link"
+              disabled={isLoading}
               onClick={() => {
                 loadOverview();
                 if (activeTab === 'players') loadPlayers();
                 if (activeTab === 'commissions') loadCommissions();
                 if (activeTab === 'wallet') loadWallet();
               }}
-              disabled={isLoading}
             >
-              {isLoading ? 'Syncing…' : '↻ Refresh'}
+              <svg viewBox="0 0 24 24" className="aff-portal-side-svg">
+                <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+              </svg>
+              {!isSidebarCollapsed && <span>{isLoading ? 'Syncing…' : 'Refresh'}</span>}
             </button>
-            <button type="button" className="aff-portal-btn-ghost" onClick={handleLogout}>
-              Sign Out
+
+            <button
+              type="button"
+              title={isSidebarCollapsed ? 'Sign Out' : undefined}
+              className="aff-portal-side-link logout"
+              onClick={handleLogout}
+            >
+              <svg viewBox="0 0 24 24" className="aff-portal-side-svg">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
+              </svg>
+              {!isSidebarCollapsed && <span>Sign Out</span>}
             </button>
           </div>
-        </div>
+        </aside>
+
+        {/* Main Content Panel */}
+        <main className="aff-portal-main">
+          {overview?.impersonatedByAdmin && (
+            <div className="aff-portal-support-banner">
+              <span>🛡️ Admin Support Inspection Session ({overview.affiliateCode} · {overview.fullName})</span>
+              <button type="button" className="aff-portal-btn-ghost" onClick={handleLogout}>
+                End Support Session
+              </button>
+            </div>
+          )}
+
+          <div className="aff-portal-top">
+            <div className="aff-portal-top-left">
+              <button
+                type="button"
+                className="aff-portal-mobile-btn"
+                onClick={() => setIsMobileSidebarOpen(true)}
+                title="Open Menu"
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+              </button>
+              <h1>{PAGE_TITLES[activeTab]}</h1>
+            </div>
+            <span className="aff-portal-badge">{affiliateCode || 'AFF-PARTNER'}</span>
+          </div>
 
         {/* =================================================================
             TAB 1: DASHBOARD OVERVIEW + QR
@@ -1245,6 +1302,7 @@ export const AffiliatePortalPage: React.FC = () => {
             </div>
           </div>
         )}
+        </main>
       </div>
     </div>
   );
