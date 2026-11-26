@@ -2000,6 +2000,233 @@ export const apiClient = {
         success: boolean;
         snapshot: any;
       }>(res);
+    },
+
+    affiliates: {
+      async getOverview() {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/overview`, { headers: { ...adminHeaders } });
+        return handleResponse<{ success: boolean; overview: any }>(res);
+      },
+      async list(params?: { search?: string; status?: string; approval?: string }) {
+        const q = new URLSearchParams();
+        if (params?.search) q.set('search', params.search);
+        if (params?.status) q.set('status', params.status);
+        if (params?.approval) q.set('approval', params.approval);
+        const qs = q.toString() ? `?${q.toString()}` : '';
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates${qs}`, { headers: { ...adminHeaders } });
+        return handleResponse<{ success: boolean; affiliates: any[] }>(res);
+      },
+      async getDetails(id: string) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/${id}`, { headers: { ...adminHeaders } });
+        return handleResponse<{
+          success: boolean;
+          affiliate: any;
+          players: any[];
+          transactions: any[];
+          commissions: any[];
+          withdrawals: any[];
+        }>(res);
+      },
+      async create(payload: {
+        fullName: string;
+        phone: string;
+        password?: string;
+        payoutMethod?: string;
+        payoutAccount?: string;
+        payoutAccountName?: string;
+        monthlyTargetOverride?: number | null;
+      }) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders },
+          body: JSON.stringify(payload)
+        });
+        return handleResponse<{ success: boolean; affiliate: any }>(res);
+      },
+      async update(id: string, payload: any) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders },
+          body: JSON.stringify(payload)
+        });
+        return handleResponse<{ success: boolean; affiliate: any }>(res);
+      },
+      async setStatus(id: string, status: 'active' | 'inactive' | 'suspended', reason?: string) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/${id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders },
+          body: JSON.stringify({ status, reason })
+        });
+        return handleResponse<{ success: boolean; affiliate: any }>(res);
+      },
+      async reviewRegistration(id: string, decision: 'approve' | 'reject', reason?: string) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/${id}/approve-registration`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders },
+          body: JSON.stringify({ decision, reason })
+        });
+        return handleResponse<{ success: boolean; affiliate: any }>(res);
+      },
+      async adjustWallet(id: string, payload: { mode: 'recharge' | 'credit' | 'debit'; amount: number; reason: string }) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/${id}/wallet-adjust`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders },
+          body: JSON.stringify(payload)
+        });
+        return handleResponse<{ success: boolean; newBalance: number }>(res);
+      },
+      async impersonate(id: string) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/${id}/impersonate`, {
+          method: 'POST',
+          headers: { ...adminHeaders }
+        });
+        return handleResponse<{ success: boolean; token: string; affiliate: any }>(res);
+      },
+      async listLinks() {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/links/list`, { headers: { ...adminHeaders } });
+        return handleResponse<{ success: boolean; links: any[] }>(res);
+      },
+      async createLink(payload: { label?: string; maxUses?: number | null; requiresApproval?: boolean }) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/links`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders },
+          body: JSON.stringify(payload)
+        });
+        return handleResponse<{ success: boolean; link: any }>(res);
+      },
+      async toggleLink(lid: string, isActive: boolean) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/links/${lid}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders },
+          body: JSON.stringify({ isActive })
+        });
+        return handleResponse<{ success: boolean; link: any }>(res);
+      },
+      async getRules() {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/rules`, { headers: { ...adminHeaders } });
+        return handleResponse<{ success: boolean; rules: any[] }>(res);
+      },
+      async updateRule(type: string, payload: any) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/rules/${type}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders },
+          body: JSON.stringify(payload)
+        });
+        return handleResponse<{ success: boolean; rule: any }>(res);
+      },
+      async getPayoutSettings() {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/payout-settings`, { headers: { ...adminHeaders } });
+        return handleResponse<{ success: boolean; settings: any }>(res);
+      },
+      async updatePayoutSettings(payload: { minWithdrawalAmount?: number; payoutScheduleMode?: string; payoutWindowDays?: number }) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/payout-settings`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders },
+          body: JSON.stringify(payload)
+        });
+        return handleResponse<{ success: boolean; settings: any }>(res);
+      },
+      async listCommissions(params?: { status?: string; type?: string; affiliateId?: string; page?: number; limit?: number }) {
+        const q = new URLSearchParams();
+        if (params?.status) q.set('status', params.status);
+        if (params?.type) q.set('type', params.type);
+        if (params?.affiliateId) q.set('affiliateId', params.affiliateId);
+        if (params?.page) q.set('page', String(params.page));
+        if (params?.limit) q.set('limit', String(params.limit));
+        const qs = q.toString() ? `?${q.toString()}` : '';
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/commissions${qs}`, { headers: { ...adminHeaders } });
+        return handleResponse<{ success: boolean; commissions: any[]; totalCount: number; page: number; totalPages: number }>(res);
+      },
+      async approveCommission(cid: string, note?: string) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/commissions/${cid}/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders },
+          body: JSON.stringify({ note })
+        });
+        return handleResponse<{ success: boolean }>(res);
+      },
+      async rejectCommission(cid: string, reason: string) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/commissions/${cid}/reject`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders },
+          body: JSON.stringify({ reason })
+        });
+        return handleResponse<{ success: boolean }>(res);
+      },
+      async reverseCommission(cid: string, reason: string) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/commissions/${cid}/reverse`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders },
+          body: JSON.stringify({ reason })
+        });
+        return handleResponse<{ success: boolean }>(res);
+      },
+      async runPeriodicCommissions(periodMonth?: string) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/run-periodic`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders },
+          body: JSON.stringify({ periodMonth })
+        });
+        return handleResponse<{ success: boolean; periodMonth: string; createdCount: number; totalAmount: number }>(res);
+      },
+      async listWithdrawals(status?: string) {
+        const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/withdrawals${qs}`, { headers: { ...adminHeaders } });
+        return handleResponse<{ success: boolean; withdrawals: any[] }>(res);
+      },
+      async approveWithdrawal(wid: string) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/withdrawals/${wid}/approve`, {
+          method: 'POST',
+          headers: { ...adminHeaders }
+        });
+        return handleResponse<{ success: boolean }>(res);
+      },
+      async markWithdrawalPaid(wid: string, paymentReference?: string) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/withdrawals/${wid}/mark-paid`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders },
+          body: JSON.stringify({ paymentReference })
+        });
+        return handleResponse<{ success: boolean }>(res);
+      },
+      async rejectWithdrawal(wid: string, reason: string) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/withdrawals/${wid}/reject`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders },
+          body: JSON.stringify({ reason })
+        });
+        return handleResponse<{ success: boolean }>(res);
+      },
+      async getAuditLogs() {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/audit-logs`, { headers: { ...adminHeaders } });
+        return handleResponse<{ success: boolean; logs: any[] }>(res);
+      }
     }
   },
 

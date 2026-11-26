@@ -12,6 +12,7 @@ import { KenoAdminDesk } from '../components/admin/KenoAdminDesk.tsx';
 import { TelegramBotDesk } from '../components/admin/TelegramBotDesk.tsx';
 import { BotEngineControllerDesk } from '../components/admin/BotEngineControllerDesk.tsx';
 import { AgentsDesk } from '../components/admin/AgentsDesk.tsx';
+import { AffiliateManagerDesk } from '../components/admin/AffiliateManagerDesk.tsx';
 import { AgentRechargesDesk } from '../components/admin/AgentRechargesDesk.tsx';
 import { AgentPayoutsDesk } from '../components/admin/AgentPayoutsDesk.tsx';
 import { JackpotDesk } from '../components/admin/JackpotDesk.tsx';
@@ -24,6 +25,7 @@ import '../styles/admin-jackpot.css';
 import '../styles/admin-cartelas.css';
 import '../styles/admin-bot-engine.css';
 import '../styles/admin-official-accounts.css';
+import '../styles/admin-affiliates.css';
 
 const TAB_TITLES: Record<AdminTab, string> = {
   overview: '📊 Dashboard',
@@ -37,6 +39,10 @@ const TAB_TITLES: Record<AdminTab, string> = {
   'keno-ledger': '🎟️ Keno Rounds & Tickets',
   'telegram-bot': '📢 Telegram Bot',
   agents: '🤝 Agents',
+  'affiliates-dir': '💼 Affiliate Manager',
+  'affiliates-wallets': '💳 Affiliate Wallets',
+  'affiliates-rules': '⚡ Commission Setup',
+  'affiliates-reports': '📊 Affiliate Reports',
   'agent-recharges': '⚡ Recharges',
   'agent-payouts': '💸 Payouts',
   'official-accounts': '🏛️ Official Accounts',
@@ -58,6 +64,10 @@ export const AdminPage: React.FC = () => {
     activeTab === 'cashier' ||
     activeTab === 'telegram-bot' ||
     activeTab === 'agents' ||
+    activeTab === 'affiliates-dir' ||
+    activeTab === 'affiliates-wallets' ||
+    activeTab === 'affiliates-rules' ||
+    activeTab === 'affiliates-reports' ||
     activeTab === 'users' ||
     activeTab === 'coins' ||
     activeTab === 'agent-recharges' ||
@@ -293,6 +303,20 @@ export const AdminPage: React.FC = () => {
 
           {/* TAB 8: AGENTS DIRECTORY */}
           {activeTab === 'agents' && <AgentsDesk />}
+
+          {/* TAB 8b: AFFILIATE AGENT SYSTEM MANAGER */}
+          {activeTab === 'affiliates-dir' && (
+            <AffiliateManagerDesk view="directory" onNavigateView={setActiveTab} />
+          )}
+          {activeTab === 'affiliates-wallets' && (
+            <AffiliateManagerDesk view="wallets" onNavigateView={setActiveTab} />
+          )}
+          {activeTab === 'affiliates-rules' && (
+            <AffiliateManagerDesk view="rules" onNavigateView={setActiveTab} />
+          )}
+          {activeTab === 'affiliates-reports' && (
+            <AffiliateManagerDesk view="reports" onNavigateView={setActiveTab} />
+          )}
 
           {/* TAB 9: AGENT RECHARGES */}
           {activeTab === 'agent-recharges' && <AgentRechargesDesk />}

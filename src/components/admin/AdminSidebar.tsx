@@ -16,6 +16,10 @@ export type AdminTab =
   | 'agents'
   | 'agent-recharges'
   | 'agent-payouts'
+  | 'affiliates-dir'
+  | 'affiliates-wallets'
+  | 'affiliates-rules'
+  | 'affiliates-reports'
   | 'official-accounts'
   | 'jackpots'
   | 'coins'
@@ -147,6 +151,17 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         { id: 'agents', label: 'Agents Directory', statusTag: 'Portal' },
         { id: 'agent-recharges', label: 'Agent Recharges', statusTag: 'Float' },
         { id: 'agent-payouts', label: 'Agent Payouts', statusTag: 'Cashout' }
+      ]
+    },
+    {
+      id: 'affiliate-manager',
+      label: 'Affiliate Manager',
+      iconPath: IC.p2p,
+      subItems: [
+        { id: 'affiliates-dir', label: 'Affiliates & Links', statusTag: 'Live' },
+        { id: 'affiliates-wallets', label: 'Wallets & Payouts', statusTag: 'Month' },
+        { id: 'affiliates-rules', label: 'Commission Setup', statusTag: '6 Rules' },
+        { id: 'affiliates-reports', label: 'Reports & Ledger', statusTag: 'Audit' }
       ]
     },
     {
