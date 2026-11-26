@@ -1,0 +1,379 @@
+/**
+ * Enqu Luxury Affiliate User Portal Stylesheet
+ * Strictly scoped under .aff-portal-root (Zero CSS bleed into games, agent, or admin portals)
+ */
+
+.aff-portal-root {
+  min-height: 100vh;
+  width: 100%;
+  background: #e8e6e9;
+  font-family: Urbanist, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1b1b1b;
+  font-size: 15px;
+  padding: 20px 20px 64px;
+  box-sizing: border-box;
+}
+
+.aff-portal-root * {
+  box-sizing: border-box;
+}
+
+.aff-portal-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Login Shell */
+.aff-portal-login-shell {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.aff-portal-login-card {
+  width: 100%;
+  max-width: 440px;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 30px 28px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+/* Top Navbar */
+.aff-portal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 12px 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  flex-wrap: wrap;
+}
+
+.aff-portal-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.aff-portal-badge {
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: #1c1e1d;
+  color: #86efac;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+
+.aff-portal-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.aff-portal-tab {
+  border: none;
+  background: #f1f5f9;
+  color: #475569;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.aff-portal-tab.active {
+  background: #1c1e1d;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(28, 30, 29, 0.18);
+}
+
+.aff-portal-support-banner {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  padding: 10px 16px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Enqu Grids & Cards */
+.aff-portal-grid {
+  display: grid;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.aff-portal-g4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.aff-portal-g3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.aff-portal-g2 {
+  grid-template-columns: 1.45fr 1fr;
+}
+
+.aff-portal-g2-eq {
+  grid-template-columns: 1fr 1fr;
+}
+
+.aff-portal-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 20px 22px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.045);
+  min-width: 0;
+}
+
+.aff-portal-card.dark-hero {
+  background: linear-gradient(135deg, #171a18 0%, #242926 58%, #131614 100%);
+  color: #ffffff;
+  box-shadow: 0 12px 28px rgba(20, 22, 21, 0.22);
+}
+
+.aff-portal-lab {
+  font-size: 13px;
+  color: #707070;
+  font-weight: 600;
+}
+
+.aff-portal-card.dark-hero .aff-portal-lab {
+  color: #d4d4d8;
+}
+
+.aff-portal-val {
+  font-size: 25px;
+  font-weight: 800;
+  margin-top: 6px;
+  letter-spacing: -0.4px;
+}
+
+.aff-portal-sub {
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: #707070;
+}
+
+.aff-portal-card.dark-hero .aff-portal-sub {
+  color: #a1a1aa;
+}
+
+/* Progress Bar */
+.aff-portal-progress-track {
+  width: 100%;
+  height: 11px;
+  border-radius: 9999px;
+  background: #f1f5f9;
+  overflow: hidden;
+  margin: 12px 0 8px;
+}
+
+.aff-portal-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #16a34a, #22c55e);
+  transition: width 0.3s ease;
+}
+
+/* QR Card */
+.aff-portal-qr-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 16px;
+  margin: 12px 0;
+}
+
+.aff-portal-qr-box canvas {
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.aff-portal-link-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  margin-bottom: 8px;
+}
+
+.aff-portal-link-row code {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #1e293b;
+}
+
+/* Buttons, Inputs, Chips & Tables */
+.aff-portal-btn-dark {
+  background: #1c1e1d;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 9px 16px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.aff-portal-btn-dark:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.aff-portal-btn-ghost {
+  background: #ffffff;
+  color: #1b1b1b;
+  border: 1px solid #d9d9db;
+  border-radius: 12px;
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.aff-portal-input {
+  width: 100%;
+  padding: 10px 13px;
+  border-radius: 12px;
+  border: 1px solid #d9d9db;
+  background: #f8fafc;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1b1b1b;
+  outline: none;
+}
+
+.aff-portal-input:focus {
+  border-color: #1c1e1d;
+  background: #ffffff;
+}
+
+.aff-portal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.aff-portal-field label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.aff-portal-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.aff-portal-chip.green {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.aff-portal-chip.amber {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.aff-portal-chip.red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.aff-portal-chip.blue {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.aff-portal-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.aff-portal-root table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.aff-portal-root th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  color: #707070;
+  padding: 10px 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.aff-portal-root td {
+  padding: 11px 8px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+@media (max-width: 1020px) {
+  .aff-portal-g4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .aff-portal-g2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .aff-portal-root {
+    padding: 14px 12px 48px;
+  }
+  .aff-portal-g4,
+  .aff-portal-g3,
+  .aff-portal-g2-eq {
+    grid-template-columns: 1fr;
+  }
+}

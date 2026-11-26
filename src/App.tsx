@@ -34,6 +34,8 @@ import { AgentPortalPage } from './pages/AgentPortalPage.tsx';
 import { WithdrawalsAdminPage } from './pages/WithdrawalsAdminPage.tsx';
 import { AffiliateRegisterPage } from './pages/AffiliateRegisterPage.tsx';
 import './styles/affiliate-register.css';
+import { AffiliatePortalPage } from './pages/AffiliatePortalPage.tsx';
+import './styles/affiliate-portal.css';
 import { apiClient } from './services/apiClient.ts';
 import { AppSplashScreen } from './components/common/AppSplashScreen.tsx';
 
@@ -143,6 +145,16 @@ export const App: React.FC = () => {
     return (
       <>
         <AffiliateRegisterPage />
+        <Toast />
+      </>
+    );
+  }
+
+  // If on Affiliate User Portal, render full-screen bypassing 480px app-container
+  if (currentPage === 'affiliate-portal') {
+    return (
+      <>
+        <AffiliatePortalPage />
         <Toast />
       </>
     );

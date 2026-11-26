@@ -345,7 +345,10 @@ export const AffiliateManagerDesk: React.FC<AffiliateManagerDeskProps> = ({ view
       if (res.success && res.token) {
         localStorage.setItem('sonic_affiliate_token', res.token);
         localStorage.setItem('sonic_affiliate_user', JSON.stringify(res.affiliate));
-        showToast(`🔑 Support session ready for ${aff.affiliateCode}. Affiliate Portal UI unlocks in Milestone 3.`);
+        showToast(`🔑 Support session ready for ${aff.affiliateCode}`);
+        if (typeof window !== 'undefined') {
+          window.open(`${window.location.origin}/#/affiliate-portal`, '_blank', 'noopener');
+        }
       }
     } catch (err: any) {
       showToast(`❌ ${err?.message || 'Support access failed'}`);

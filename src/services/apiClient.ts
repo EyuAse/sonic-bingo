@@ -13,6 +13,13 @@ function getAuthHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+function getAffiliateAuthHeader(): Record<string, string> {
+  const token = typeof window !== 'undefined'
+    ? localStorage.getItem('sonic_affiliate_token')
+    : null;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function safeParseJson<T = any>(res: Response): Promise<T> {
   const rawText = await res.text();
   if (!rawText || !rawText.trim()) {
@@ -3342,6 +3349,93 @@ export const apiClient = {
         alreadyAttributed?: boolean;
         affiliateCode?: string;
       }>(res);
+    }
+  },
+
+  // Affiliate User Portal API (Milestone 3 - Strictly separated via sonic_affiliate_token)
+  affiliatePortal: {
+    async login(phone: string, password: string) {
+      const res = await fetch(`${API_BASE}/affiliate-portal/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, password })
+      });
+      return handleResponse<{ success: boolean; token: string; affiliate: any }>(res);
+    },
+    async getOverview() {
+      const res = await fetch(`${API_BASE}/affiliate-portal/overview`, {
+        headers: { ...getAffiliateAuthHeader() }
+      });
+      return handleResponse<{ success: boolean; overview: any }>(res);
+    },
+    async getPlayers(params?: { filter?: string; search?: string; page?: number; limit?: number }) {
+      const q = new URLSearchParams();
+      if (params?.filter) q.set('filter', params.filter);
+      if (params?.search) q.set('search', params.search);
+      if (params?.page) q.set('page', String(params.page));
+      if (params?.limit) q.set('limit', String(params.limit));
+      const qs = q.toString() ? `?${q.toString()}` : '';
+      const res = await fetch(`${API_BASE}/affiliate-portal/players${qs}`, {
+        headers: { ...getAffiliateAuthHeader() }
+      });
+      return handleResponse<{ success: boolean; players: any[]; totalCount: number; page: number; totalPages: number }>(res);
+    },
+    async getPlayerDeposits(playerId: string) {
+      const res = await fetch(`${API_BASE}/affiliate-portal/players/${playerId}/deposits`, {
+        headers: { ...getAffiliateAuthHeader() }
+      });
+      return handleResponse<{ success: boolean; player: any; deposits: any[] }>(res);
+    },
+    async getCommissions(params?: { type?: string; status?: string; from?: string; to?: string; page?: number; limit?: number }) {
+      const q = new URLSearchParams();
+      if (params?.type) q.set('type', params.type);
+      if (params?.status) q.set('status', params.status);
+      if (params?.from) q.set('from', params.from);
+      if (params?.to) q.set('to', params.to);
+      if (params?.page) q.set('page', String(params.page));
+      if (params?.limit) q.set('limit', String(params.limit));
+      const qs = q.toString() ? `?${q.toString()}` : '';
+      const res = await fetch(`${API_BASE}/affiliate-portal/commissions${qs}`, {
+        headers: { ...getAffiliateAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        commissions: any[];
+        breakdown: any[];
+        totalCount: number;
+        page: number;
+        totalPages: number;
+      }>(res);
+    },
+    async getWallet() {
+      const res = await fetch(`${API_BASE}/affiliate-portal/wallet`, {
+        headers: { ...getAffiliateAuthHeader() }
+      });
+      return handleResponse<{ success: boolean; wallet: any }>(res);
+    },
+    async requestWithdrawal(payload: { amount: number; payoutMethod?: string; payoutAccount?: string; payoutAccountName?: string }) {
+      const res = await fetch(`${API_BASE}/affiliate-portal/withdrawals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAffiliateAuthHeader() },
+        body: JSON.stringify(payload)
+      });
+      return handleResponse<{ success: boolean; withdrawal: any; walletBalance: number }>(res);
+    },
+    async updateProfile(payload: {
+      fullName?: string;
+      phone?: string;
+      payoutMethod?: string;
+      payoutAccount?: string;
+      payoutAccountName?: string;
+      currentPassword?: string;
+      newPassword?: string;
+    }) {
+      const res = await fetch(`${API_BASE}/affiliate-portal/profile`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAffiliateAuthHeader() },
+        body: JSON.stringify(payload)
+      });
+      return handleResponse<{ success: boolean; affiliate: any }>(res);
     }
   }
 };
