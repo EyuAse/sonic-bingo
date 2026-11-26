@@ -20,6 +20,9 @@ export interface DebitResult {
   bonusAfter: number;
   referenceCode: string;
   usedBonus?: boolean;
+  realDeducted?: number;
+  bonusDeducted?: number;
+  alreadyProcessed?: boolean;
 }
 
 export interface CreditResult {
@@ -36,8 +39,17 @@ export interface IWalletAdapter {
     amount: number,
     roundId: string,
     isBonus: boolean,
-    roundNumber?: number
+    roundNumber?: number,
+    idempotencyKey?: string
   ): Promise<DebitResult>;
+  refundBet(
+    userId: string,
+    realAmount: number,
+    bonusAmount: number,
+    roundId: string,
+    referenceCode: string,
+    roundNumber?: number
+  ): Promise<CreditResult>;
   creditWin(
     userId: string,
     amount: number,
@@ -103,10 +115,12 @@ export class PostgresWalletAdapter implements IWalletAdapter {
     amount: number,
     roundId: string,
     isBonus: boolean,
-    roundNumber: number = 0
+    roundNumber: number = 0,
+    idempotencyKey?: string
   ): Promise<DebitResult> {
     const resolvedId = await this.resolveUserId(userId);
     const parsedAmount = Number(amount.toFixed(2));
+    const safeKey = idempotencyKey ? idempotencyKey.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60) : '';
 
     if (parsedAmount <= 0) {
       return {
@@ -136,6 +150,30 @@ export class PostgresWalletAdapter implements IWalletAdapter {
 
       const currentBalance = parseFloat(walletRes.rows[0].balance || '0.00');
       const currentBonus = parseFloat(walletRes.rows[0].bonus || '0.00');
+
+      const roundTag = roundNumber > 0 ? `R${roundNumber}` : roundId.slice(0, 8);
+      const ref = safeKey
+        ? `KENO_BET_${safeKey}`.slice(0, 95)
+        : `KENO_BET_${roundTag}_${Date.now()}_${Math.floor(Math.random() * 1000)}`.slice(0, 95);
+
+      if (safeKey) {
+        const existingTx = await client.query(
+          `SELECT 1 FROM wallet_transactions WHERE reference_code = $1 LIMIT 1`,
+          [ref]
+        );
+        if (existingTx.rows.length > 0) {
+          return {
+            success: true,
+            alreadyProcessed: true,
+            balanceAfter: currentBalance,
+            bonusAfter: currentBonus,
+            referenceCode: ref,
+            realDeducted: 0,
+            bonusDeducted: 0
+          };
+        }
+      }
+
       const totalFunds = Number((currentBalance + currentBonus).toFixed(2));
 
       if (totalFunds < parsedAmount) {
@@ -160,8 +198,6 @@ export class PostgresWalletAdapter implements IWalletAdapter {
         [newBalance, newBonus, resolvedId]
       );
 
-      const roundTag = roundNumber > 0 ? `R${roundNumber}` : roundId.slice(0, 8);
-      const ref = `KENO_BET_${roundTag}_${Date.now()}`;
       const desc = roundNumber > 0
         ? `Fast Keno Round #${roundNumber} Ticket Bet`
         : `Fast Keno Ticket Bet (${roundTag})`;
@@ -178,13 +214,102 @@ export class PostgresWalletAdapter implements IWalletAdapter {
         balanceAfter: newBalance,
         bonusAfter: newBonus,
         referenceCode: ref,
-        usedBonus: deductFromBonus > 0
+        usedBonus: deductFromBonus > 0,
+        realDeducted: deductFromReal,
+        bonusDeducted: deductFromBonus
+      };
+    });
+  }
+
+  /**
+   * Atomically refunds an unplayed or interrupted Keno bet back to real cash and bonus wallets.
+   * Idempotent via deterministic reference_code so retries never double-refund.
+   */
+  async refundBet(
+    userId: string,
+    realAmount: number,
+    bonusAmount: number,
+    roundId: string,
+    referenceCode: string,
+    roundNumber: number = 0
+  ): Promise<CreditResult> {
+    const resolvedId = await this.resolveUserId(userId);
+    const parsedReal = Math.max(0, Number((realAmount || 0).toFixed(2)));
+    const parsedBonus = Math.max(0, Number((bonusAmount || 0).toFixed(2)));
+    const totalRefund = Number((parsedReal + parsedBonus).toFixed(2));
+
+    if (totalRefund <= 0) {
+      return {
+        success: true,
+        balanceAfter: (await this.getBalance(userId)).balance,
+        referenceCode
+      };
+    }
+
+    const roundTag = roundNumber > 0 ? `R${roundNumber}` : roundId.slice(0, 8);
+    const cleanRef = String(referenceCode || `${roundTag}_${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '');
+    const refundRef = (cleanRef.startsWith('KENO_REFUND_') ? cleanRef : `KENO_REFUND_${cleanRef}`).slice(0, 95);
+
+    return await withTransaction(async (client) => {
+      const walletRes = await client.query(
+        `SELECT balance, bonus FROM wallets WHERE user_id = $1 FOR UPDATE`,
+        [resolvedId]
+      );
+
+      if (walletRes.rows.length === 0) {
+        return {
+          success: false,
+          error: `Wallet not found for user ${userId}`,
+          balanceAfter: 0,
+          referenceCode: ''
+        };
+      }
+
+      const existingRefund = await client.query(
+        `SELECT balance_after FROM wallet_transactions WHERE reference_code = $1 LIMIT 1`,
+        [refundRef]
+      );
+      const currentBalance = parseFloat(walletRes.rows[0].balance || '0.00');
+      const currentBonus = parseFloat(walletRes.rows[0].bonus || '0.00');
+
+      if (existingRefund.rows.length > 0) {
+        return {
+          success: true,
+          balanceAfter: currentBalance,
+          referenceCode: refundRef
+        };
+      }
+
+      const newBalance = Number((currentBalance + parsedReal).toFixed(2));
+      const newBonus = Number((currentBonus + parsedBonus).toFixed(2));
+
+      await client.query(
+        `UPDATE wallets SET balance = $1, bonus = $2, updated_at = CURRENT_TIMESTAMP WHERE user_id = $3`,
+        [newBalance, newBonus, resolvedId]
+      );
+
+      const desc = roundNumber > 0
+        ? `Fast Keno Round #${roundNumber} Auto-Refund (Interrupted Round)`
+        : `Fast Keno Auto-Refund (${roundTag})`;
+
+      await client.query(
+        `INSERT INTO wallet_transactions (
+          user_id, type, amount, balance_after, reference_code, status, description
+        ) VALUES ($1, 'refund', $2, $3, $4, 'completed', $5)`,
+        [resolvedId, totalRefund, Number((newBalance + newBonus).toFixed(2)), refundRef, desc]
+      );
+
+      return {
+        success: true,
+        balanceAfter: newBalance,
+        referenceCode: refundRef
       };
     });
   }
 
   /**
    * Atomically credits winning payout using row-level locking (FOR UPDATE).
+   * Deterministic reference_code prevents duplicate payout credits across retries.
    */
   async creditWin(
     userId: string,
@@ -204,6 +329,12 @@ export class PostgresWalletAdapter implements IWalletAdapter {
       };
     }
 
+    const roundTag = roundNumber > 0 ? `R${roundNumber}` : roundId.slice(0, 8);
+    const cleanRef = referenceCode ? referenceCode.replace(/[^a-zA-Z0-9_-]/g, '') : '';
+    const winRef = cleanRef
+      ? (cleanRef.startsWith('KENO_WIN_') ? cleanRef : `KENO_WIN_${cleanRef}`).slice(0, 95)
+      : `KENO_WIN_${roundTag}_${Date.now()}`.slice(0, 95);
+
     return await withTransaction(async (client) => {
       const walletRes = await client.query(
         `SELECT balance FROM wallets WHERE user_id = $1 FOR UPDATE`,
@@ -220,6 +351,19 @@ export class PostgresWalletAdapter implements IWalletAdapter {
       }
 
       const currentBalance = parseFloat(walletRes.rows[0].balance || '0.00');
+
+      const existingWin = await client.query(
+        `SELECT balance_after FROM wallet_transactions WHERE reference_code = $1 LIMIT 1`,
+        [winRef]
+      );
+      if (existingWin.rows.length > 0) {
+        return {
+          success: true,
+          balanceAfter: currentBalance,
+          referenceCode: winRef
+        };
+      }
+
       const newBalance = Number((currentBalance + parsedAmount).toFixed(2));
 
       await client.query(
@@ -227,10 +371,6 @@ export class PostgresWalletAdapter implements IWalletAdapter {
         [newBalance, resolvedId]
       );
 
-      const roundTag = roundNumber > 0 ? `R${roundNumber}` : roundId.slice(0, 8);
-      const winRef = referenceCode
-        ? (referenceCode.startsWith('KENO_WIN_') ? referenceCode : `KENO_WIN_${referenceCode}_${Date.now()}`)
-        : `KENO_WIN_${roundTag}_${Date.now()}`;
       const desc = roundNumber > 0
         ? `Fast Keno Round #${roundNumber} Winning Payout`
         : `Fast Keno Winning Payout (${roundTag})`;

@@ -48,6 +48,14 @@ export function setupKenoSockets(io: SocketIOServer, engine: KenoGameEngine): vo
 
   engine.on('player:settled', (data) => {
     io.to(`user:${data.userId}`).emit('keno:player_settled', data);
+    if (typeof data.balanceAfter === 'number') {
+      io.to(`user_${data.userId}`).emit(`user_${data.userId}_balance`, {
+        userId: data.userId,
+        balance: data.balanceAfter,
+        bonus: data.bonusAfter,
+        type: data.userTotalWin > 0 ? 'keno_win' : 'keno_settled'
+      });
+    }
   });
 
   engine.on('ticket:placed', (data: { ticket: any; balanceAfter?: number }) => {
@@ -94,11 +102,13 @@ export function setupKenoSockets(io: SocketIOServer, engine: KenoGameEngine): vo
       const state = engine.getCurrentState();
       const userTickets = currentUserId ? engine.getUserTickets(currentUserId) : [];
       const allActiveTickets = engine.getAllActiveTickets();
+      const recentAwaySettlement = currentUserId ? engine.consumeRecentUserSettlement(currentUserId) : null;
 
       socket.emit('keno:init_state', {
         ...state,
         userTickets,
-        allActiveTickets
+        allActiveTickets,
+        recentAwaySettlement
       });
     });
 
@@ -122,7 +132,7 @@ export function setupKenoSockets(io: SocketIOServer, engine: KenoGameEngine): vo
       }
     });
 
-    // 2. Place Ticket Bet (Atomic Neon Deduction)
+    // 2. Place Ticket Bet (Atomic Neon Deduction + Idempotency Key)
     socket.on(
       'keno:place_ticket',
       async (
@@ -131,6 +141,7 @@ export function setupKenoSockets(io: SocketIOServer, engine: KenoGameEngine): vo
           betAmount: number;
           isBonus?: boolean;
           userId?: string;
+          idempotencyKey?: string;
         },
         callback?: (response: any) => void
       ) => {
@@ -147,7 +158,8 @@ export function setupKenoSockets(io: SocketIOServer, engine: KenoGameEngine): vo
             targetUserId,
             payload.selectedNumbers,
             payload.betAmount,
-            Boolean(payload.isBonus)
+            Boolean(payload.isBonus),
+            payload.idempotencyKey
           );
 
           if (callback) {

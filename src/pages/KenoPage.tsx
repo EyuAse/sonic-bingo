@@ -80,6 +80,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
     doubleStake,
     maxStake,
     placeBet,
+    isPlacingBet,
     openDeposit,
     openRulesModal,
     closeRulesModal,
@@ -338,7 +339,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
 
   // Handle Bet Click
   const handleBetClick = async () => {
-    if (phase !== 'betting' || isBetAcceptedFlash) return;
+    if (phase !== 'betting' || isBetAcceptedFlash || isPlacingBet) return;
     if (selectedNumbers.size === 0) {
       showToast('Please pick 1 to 10 numbers');
       return;
@@ -1147,16 +1148,20 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
                   {(phase === 'settlement' || phase === 'settling' || landedBalls.length >= 20) && (
                     (effectiveWin > 0 || activeTickets.length > 0) ? (
                       <div
-                        className="win-stage-banner"
+                        className={`win-stage-banner${effectiveWin > 0 ? '' : ' loss'}`}
                         id="winStageBanner"
                         style={{ display: 'flex' }}
                       >
                         <div className="win-stage-title">
                           {effectiveWin > 0 ? 'YOU WIN' : 'TRY AGAIN'}
                         </div>
-                        {effectiveWin > 0 && (
+                        {effectiveWin > 0 ? (
                           <div className="win-stage-val" id="winStageVal">
                             {effectiveWin % 1 === 0 ? effectiveWin : effectiveWin.toFixed(2)}
+                          </div>
+                        ) : (
+                          <div className="win-stage-val loss" id="winStageVal">
+                            0.00
                           </div>
                         )}
                       </div>
@@ -1266,7 +1271,7 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
               type="button"
               className={`bet${isBetAcceptedFlash ? ' accepted' : ''}`}
               id="bet"
-              disabled={phase !== 'betting' || selectedNumbers.size === 0 || isBetAcceptedFlash}
+              disabled={phase !== 'betting' || selectedNumbers.size === 0 || isBetAcceptedFlash || isPlacingBet}
               onClick={handleBetClick}
             >
               {isBetAcceptedFlash ? (
@@ -1276,6 +1281,8 @@ export const KenoPage: React.FC<KenoPageProps> = ({ onBackToLobby }) => {
                   </svg>
                   BET ACCEPTED
                 </>
+              ) : isPlacingBet ? (
+                'PLACING...'
               ) : (
                 'BET'
               )}

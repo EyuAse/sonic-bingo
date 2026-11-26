@@ -138,4 +138,30 @@ router.get('/stats', (_req, res) => {
   res.json({ success: true, stats: kenoEngine.getHotColdStats() });
 });
 
+router.get('/state', async (req, res) => {
+  try {
+    const userId = typeof req.query.userId === 'string' ? req.query.userId.trim() : '';
+    if (req.query.active === '1') {
+      await kenoEngine.ensureActiveLoop();
+    }
+    const state = kenoEngine.getCurrentState();
+    const userTickets = userId ? kenoEngine.getUserTickets(userId) : [];
+    const allActiveTickets = kenoEngine.getAllActiveTickets();
+    const recentAwaySettlement = userId ? kenoEngine.consumeRecentUserSettlement(userId) : null;
+
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return res.json({
+      success: true,
+      ...state,
+      userTickets,
+      allActiveTickets,
+      recentAwaySettlement,
+      serverTime: Date.now()
+    });
+  } catch (err: any) {
+    console.error('⚠️ [API] Failed to fetch keno state:', err?.message || err);
+    return res.status(500).json({ success: false, error: 'Failed to sync Keno state' });
+  }
+});
+
 export default router;

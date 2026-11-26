@@ -77,6 +77,7 @@ export interface KenoContextValue {
 
   lastSettlement: any | null;
   lastWinAmount: number;
+  isPlacingBet: boolean;
 
   isRulesModalOpen: boolean;
   rulesModalTab: 'rules' | 'fairness';
@@ -148,6 +149,17 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const [lastSettlement, setLastSettlement] = useState<any | null>(null);
   const [lastWinAmount, setLastWinAmount] = useState<number>(0);
+  const [isPlacingBet, setIsPlacingBet] = useState<boolean>(false);
+  const [connStatus, setConnStatus] = useState<string>('connected');
+
+  const isPlacingBetRef = useRef<boolean>(false);
+  const lastEventAtRef = useRef<number>(Date.now());
+  const zeroTickSinceRef = useRef<number>(0);
+  const shownAwayRoundRef = useRef<number>(0);
+  const phaseRef = useRef<KenoPhase>('betting');
+  phaseRef.current = phase;
+  const timeRemainingRef = useRef<number>(30);
+  timeRemainingRef.current = timeRemaining;
 
   const [isRulesModalOpen, setIsRulesModalOpen] = useState<boolean>(false);
   const [rulesModalTab, setRulesModalTab] = useState<'rules' | 'fairness'>('rules');
@@ -173,6 +185,68 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [isKenoActive, refreshBalance, refreshStats]);
 
+  const applyKenoSnapshot = useCallback((data: any) => {
+    if (!data) return;
+    lastEventAtRef.current = Date.now();
+    if (data.roundNumber) setRoundNumber(data.roundNumber);
+    if (data.phase) {
+      const normalizedPhase: KenoPhase = data.phase === 'settling' ? 'settlement' : data.phase;
+      setPhase(normalizedPhase);
+      if (normalizedPhase !== 'betting') {
+        zeroTickSinceRef.current = 0;
+      }
+    }
+    if (typeof data.timeRemaining === 'number') {
+      setTimeRemaining(data.timeRemaining);
+      if (data.timeRemaining > 0) zeroTickSinceRef.current = 0;
+    }
+    if (data.serverSeedHash) setServerSeedHash(data.serverSeedHash);
+    if (Array.isArray(data.drawnBalls)) {
+      setDrawnBalls(data.drawnBalls);
+      if (data.drawnBalls.length > 0) {
+        setCurrentDrawnBall(data.drawnBalls[data.drawnBalls.length - 1]);
+      } else {
+        setCurrentDrawnBall(null);
+      }
+    }
+    if (data.hotCold) {
+      setHotNumbers(data.hotCold.hotNumbers || []);
+      setColdNumbers(data.hotCold.coldNumbers || []);
+      setFrequencyMap(data.hotCold.frequencyMap || {});
+    }
+    if (Array.isArray(data.userTickets)) {
+      setActiveTickets(data.userTickets);
+      const settledWin = data.userTickets.reduce((sum: number, t: any) => sum + Number(t.payoutAmount || 0), 0);
+      if (settledWin > 0) {
+        setLastWinAmount(settledWin);
+      }
+    }
+    if (Array.isArray(data.allActiveTickets)) {
+      setAllRoomTickets(data.allActiveTickets);
+    }
+    if (data.recentAwaySettlement && data.recentAwaySettlement.roundNumber !== shownAwayRoundRef.current) {
+      const away = data.recentAwaySettlement;
+      shownAwayRoundRef.current = away.roundNumber;
+      if (away.totalWin > 0) {
+        showToast(`🎉 Keno Round #${away.roundNumber} won while away: +${away.totalWin.toFixed(2)} ETB!`);
+      } else {
+        showToast(`🎰 Keno Round #${away.roundNumber} finished while away — Try Again!`);
+      }
+      refreshBalanceRef.current();
+    }
+  }, [showToast]);
+
+  const syncFromHttp = useCallback(async (wakeActive = false) => {
+    try {
+      const res = await apiClient.keno.getState(userId || undefined, wakeActive);
+      if (res?.success) {
+        applyKenoSnapshot(res);
+      }
+    } catch {
+      // Transient HTTP error ignored; next socket tick or retry recovers
+    }
+  }, [userId, applyKenoSnapshot]);
+
   // Connect & join 'keno_room' ONLY when currentPage === 'keno'; leave cleanly on exit
   useEffect(() => {
     if (!isKenoActive) return;
@@ -180,35 +254,31 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const socket: Socket = socketService.connect();
 
     const handleConnect = () => {
+      lastEventAtRef.current = Date.now();
       socket.emit('keno:join', { userId });
     };
 
+    // Always attach 'connect' listener even when already connected so mobile reconnects never lose 'keno_room'
+    socket.on('connect', handleConnect);
     if (socket.connected) {
       handleConnect();
-    } else {
-      socket.on('connect', handleConnect);
     }
 
+    const unsubForeground = socketService.onForegroundResume(() => {
+      handleConnect();
+      void syncFromHttp(true);
+    });
+    const unsubStatus = socketService.onConnectionStatusChange((status) => {
+      setConnStatus(status);
+    });
+
     const onInitState = (data: any) => {
-      if (data.roundNumber) setRoundNumber(data.roundNumber);
-      if (data.phase) setPhase(data.phase === 'settling' ? 'settlement' : data.phase);
-      if (typeof data.timeRemaining === 'number') setTimeRemaining(data.timeRemaining);
-      if (data.serverSeedHash) setServerSeedHash(data.serverSeedHash);
-      if (data.drawnBalls) setDrawnBalls(data.drawnBalls);
-      if (data.hotCold) {
-        setHotNumbers(data.hotCold.hotNumbers || []);
-        setColdNumbers(data.hotCold.coldNumbers || []);
-        setFrequencyMap(data.hotCold.frequencyMap || {});
-      }
-      if (data.userTickets) {
-        setActiveTickets(data.userTickets);
-      }
-      if (data.allActiveTickets && Array.isArray(data.allActiveTickets)) {
-        setAllRoomTickets(data.allActiveTickets);
-      }
+      applyKenoSnapshot(data);
     };
 
     const onRoundStarted = (data: any) => {
+      lastEventAtRef.current = Date.now();
+      zeroTickSinceRef.current = 0;
       setRoundNumber(data.roundNumber);
       setPhase('betting');
       setTimeRemaining(data.timeRemaining || 30);
@@ -224,10 +294,16 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const onTick = (data: any) => {
+      lastEventAtRef.current = Date.now();
       if (data.roundNumber) setRoundNumber(data.roundNumber);
       if (data.phase) setPhase(data.phase === 'settling' ? 'settlement' : data.phase);
       if (typeof data.timeRemaining === 'number') {
         setTimeRemaining(data.timeRemaining);
+        if (data.timeRemaining <= 0) {
+          if (!zeroTickSinceRef.current) zeroTickSinceRef.current = Date.now();
+        } else {
+          zeroTickSinceRef.current = 0;
+        }
         if (data.phase === 'betting' && data.timeRemaining <= 3 && data.timeRemaining > 0) {
           kenoAudio.playTick();
         }
@@ -235,6 +311,8 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const onDrawStarted = (data: any) => {
+      lastEventAtRef.current = Date.now();
+      zeroTickSinceRef.current = 0;
       if (data.roundNumber) setRoundNumber(data.roundNumber);
       setPhase('drawing');
       setDrawnBalls([]);
@@ -243,6 +321,7 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const onBallDrawn = (data: any) => {
+      lastEventAtRef.current = Date.now();
       const ball = data.ball ?? data.ballNumber;
       if (typeof ball === 'number') {
         setCurrentDrawnBall(ball);
@@ -259,6 +338,8 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const onRoundSettled = (data: any) => {
+      lastEventAtRef.current = Date.now();
+      zeroTickSinceRef.current = 0;
       setPhase('settlement');
       if (data.drawnNumbers) setDrawnBalls(data.drawnNumbers);
       setLastSettlement(data);
@@ -302,7 +383,28 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     socket.on('keno:round_settled', onRoundSettled);
     socket.on('keno:player_settled', onPlayerSettled);
 
+    // Client-side stall watchdog: auto-recovers via HTTP /api/keno/state if a round phase hangs
+    const stallWatchdog = setInterval(() => {
+      const now = Date.now();
+      if (phaseRef.current === 'betting' && timeRemainingRef.current <= 0) {
+        if (!zeroTickSinceRef.current) zeroTickSinceRef.current = now;
+        if (now - zeroTickSinceRef.current > 3000) {
+          zeroTickSinceRef.current = now;
+          void syncFromHttp(true);
+        }
+      } else if (phaseRef.current === 'drawing' && now - lastEventAtRef.current > 4000) {
+        lastEventAtRef.current = now;
+        void syncFromHttp(true);
+      } else if (phaseRef.current === 'settlement' && now - lastEventAtRef.current > 8500) {
+        lastEventAtRef.current = now;
+        void syncFromHttp(true);
+      }
+    }, 1500);
+
     return () => {
+      clearInterval(stallWatchdog);
+      unsubForeground();
+      unsubStatus();
       socket.emit('keno:leave');
       socket.off('connect', handleConnect);
       socket.off('keno:init_state', onInitState);
@@ -314,7 +416,20 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       socket.off('keno:round_settled', onRoundSettled);
       socket.off('keno:player_settled', onPlayerSettled);
     };
-  }, [isKenoActive, userId]);
+  }, [isKenoActive, userId, applyKenoSnapshot, syncFromHttp]);
+
+  // Dual-engine HTTP fallback polling strictly while socket is reconnecting/degraded/polling
+  useEffect(() => {
+    if (!isKenoActive) return;
+    if (connStatus !== 'reconnecting' && connStatus !== 'degraded' && connStatus !== 'polling') {
+      return;
+    }
+    void syncFromHttp(true);
+    const poll = setInterval(() => {
+      void syncFromHttp(true);
+    }, 2500);
+    return () => clearInterval(poll);
+  }, [isKenoActive, connStatus, syncFromHttp]);
 
   const toggleNumber = useCallback((num: number) => {
     if (phase !== 'betting') return;
@@ -404,24 +519,53 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return { success: false, error: 'Insufficient balance' };
     }
 
+    if (isPlacingBetRef.current) {
+      return { success: false, error: 'Bet is already confirming, please wait...' };
+    }
+
     const socket = socketService.getSocket();
     if (!socket || !socket.connected) {
       return { success: false, error: 'Connection to game server offline' };
     }
 
+    isPlacingBetRef.current = true;
+    setIsPlacingBet(true);
+    const idempotencyKey = `K_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+
     return new Promise(resolve => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        isPlacingBetRef.current = false;
+        setIsPlacingBet(false);
+        void syncFromHttp(true);
+        refreshBalanceRef.current();
+        resolve({ success: false, error: 'Network timeout — checking round & wallet status...' });
+      }, 8000);
+
       socket.emit(
         'keno:place_ticket',
         {
           selectedNumbers: Array.from(selectedNumbers),
           betAmount: stake,
           isBonus: false,
-          userId
+          userId,
+          idempotencyKey
         },
         (resp: any) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          isPlacingBetRef.current = false;
+          setIsPlacingBet(false);
+
           if (resp && resp.success) {
             if (resp.ticket) {
-              setActiveTickets(prev => [...prev, resp.ticket]);
+              setActiveTickets(prev => {
+                if (prev.some(t => t.ticketId === resp.ticket.ticketId)) return prev;
+                return [...prev, resp.ticket];
+              });
               setAllRoomTickets(prev => {
                 if (prev.some(t => t.ticketId === resp.ticket.ticketId)) return prev;
                 return [resp.ticket, ...prev];
@@ -435,12 +579,13 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setSelectedNumbers(new Set());
             resolve({ success: true, ticket: resp.ticket });
           } else {
+            refreshBalanceRef.current();
             resolve({ success: false, error: resp?.error || 'Failed to place ticket' });
           }
         }
       );
     });
-  }, [phase, selectedNumbers, stake, activeTickets, walletBalance, walletBonus, userId, deductBalance, deductBonus, showToast]);
+  }, [phase, selectedNumbers, stake, activeTickets, walletBalance, walletBonus, userId, deductBalance, deductBonus, showToast, syncFromHttp]);
 
   const openRulesModal = useCallback((tab: 'rules' | 'fairness' = 'rules') => {
     setRulesModalTab(tab);
@@ -498,6 +643,7 @@ export const KenoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     frequencyMap,
     lastSettlement,
     lastWinAmount,
+    isPlacingBet,
     isRulesModalOpen,
     rulesModalTab,
     toggleNumber,

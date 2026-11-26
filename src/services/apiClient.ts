@@ -177,6 +177,33 @@ export const apiClient = {
     async getStats() {
       const res = await fetch(`${API_BASE}/keno/stats`);
       return handleResponse<{ success: boolean; stats: any }>(res);
+    },
+    async getState(userId?: string, active = false) {
+      const qs = new URLSearchParams();
+      if (userId) qs.set('userId', userId);
+      if (active) qs.set('active', '1');
+      const queryStr = qs.toString();
+      const res = await fetch(`${API_BASE}/keno/state${queryStr ? `?${queryStr}` : ''}`, {
+        headers: { ...getAuthHeader() }
+      });
+      return handleResponse<{
+        success: boolean;
+        roundNumber: number;
+        phase: string;
+        timeRemaining: number;
+        serverSeedHash: string;
+        drawnBalls: number[];
+        hotCold?: any;
+        userTickets?: any[];
+        allActiveTickets?: any[];
+        recentAwaySettlement?: {
+          roundNumber: number;
+          totalBet: number;
+          totalWin: number;
+          ticketsCount: number;
+          settledAt: number;
+        } | null;
+      }>(res);
     }
   },
 
