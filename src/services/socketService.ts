@@ -32,6 +32,8 @@ class SocketService {
   private pingInterval: any = null;
   private silenceCheckInterval: any = null;
   private lastMessageTime: number = Date.now();
+  private lastForegroundSyncAt: number = 0;
+  private identifiedSocketKey: string | null = null;
 
   // Persistent Event Subscriber Registry: Event Name -> Set of Subscriber Callbacks
   // GUARANTEES ZERO LISTENER LOSS ACROSS RECONNECTS, NETWORK LOSS, OR HARD REFRESHES
@@ -64,12 +66,21 @@ class SocketService {
   private initLifecycleListeners() {
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
-    const handleForeground = () => {
+    const handleForeground = (forceSync = false) => {
       // If user session has been terminated or no active user/room, do not auto-reconnect
       if (!this.currentUserId && !this.currentRoomId) return;
 
+      const now = Date.now();
+      const socketConnected = Boolean(this.socket?.connected);
+
+      // Cooldown burst lifecycle events (visibilitychange/focus/pageshow) when socket is already connected
+      if (!forceSync && socketConnected && (now - this.lastForegroundSyncAt) < 3500) {
+        return;
+      }
+      this.lastForegroundSyncAt = now;
+
       console.log('📱 [SocketService] Foreground / Resume triggered. Re-verifying socket connection & state.');
-      if (!this.socket || !this.socket.connected) {
+      if (!this.socket || !socketConnected) {
         this.connect();
       } else {
         if (this.currentRoomId) {
@@ -93,25 +104,30 @@ class SocketService {
 
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
-        handleForeground();
+        handleForeground(false);
       }
     });
-    window.addEventListener('focus', handleForeground);
-    window.addEventListener('pageshow', handleForeground);
+    window.addEventListener('focus', () => handleForeground(false));
+    window.addEventListener('pageshow', () => handleForeground(false));
     window.addEventListener('online', () => {
       console.log('🌐 [SocketService] Network connection restored (online).');
-      handleForeground();
+      handleForeground(true);
     });
 
-    // Telegram WebApp specific lifecycle hook
+    // Telegram WebApp viewport hook: ignore noisy resize/scroll bursts while socket is healthy
     telegramService.onViewportChanged(() => {
-      handleForeground();
+      const isHealthyActive = Boolean(this.socket?.connected) && (Date.now() - this.lastMessageTime) <= 12000;
+      if (isHealthyActive) return;
+      handleForeground(false);
     });
   }
 
   public setAuthenticatedUser(userId: string | null, userName?: string | null) {
     this.currentUserId = userId;
     this.currentUserName = userName || 'Sonic Player';
+    if (!userId) {
+      this.identifiedSocketKey = null;
+    }
 
     if (this.socket) {
       (this.socket as any).auth = {
@@ -120,20 +136,28 @@ class SocketService {
       };
 
       if (this.socket.connected && userId) {
-        this.socket.emit('identify_user', {
-          userId,
-          userName: this.currentUserName
-        });
-        console.log('🔌 [SocketService] Identified user to active socket:', userId);
+        const key = `${this.socket.id || 'sock'}:${userId}`;
+        if (this.identifiedSocketKey !== key) {
+          this.identifiedSocketKey = key;
+          this.socket.emit('identify_user', {
+            userId,
+            userName: this.currentUserName
+          });
+          console.log('🔌 [SocketService] Identified user to active socket:', userId);
+        }
       } else if (userId) {
-        // Ensure identify_user is dispatched as soon as socket connects
+        // Ensure identify_user is dispatched once as soon as socket connects
         this.socket.once('connect', () => {
-          if (this.currentUserId === userId) {
-            this.socket?.emit('identify_user', {
-              userId,
-              userName: this.currentUserName
-            });
-            console.log('🔌 [SocketService] Identified user on newly connected socket:', userId);
+          if (this.currentUserId === userId && this.socket?.connected) {
+            const key = `${this.socket.id || 'sock'}:${userId}`;
+            if (this.identifiedSocketKey !== key) {
+              this.identifiedSocketKey = key;
+              this.socket.emit('identify_user', {
+                userId,
+                userName: this.currentUserName
+              });
+              console.log('🔌 [SocketService] Identified user on newly connected socket:', userId);
+            }
           }
         });
       }
@@ -242,10 +266,14 @@ class SocketService {
       this.measurePing();
 
       if (this.currentUserId) {
-        this.socket?.emit('identify_user', {
-          userId: this.currentUserId,
-          userName: this.currentUserName
-        });
+        const key = `${this.socket?.id || 'sock'}:${this.currentUserId}`;
+        if (this.identifiedSocketKey !== key) {
+          this.identifiedSocketKey = key;
+          this.socket?.emit('identify_user', {
+            userId: this.currentUserId,
+            userName: this.currentUserName
+          });
+        }
       }
 
       if (this.currentRoomId) {
@@ -269,6 +297,7 @@ class SocketService {
 
     this.socket.on('disconnect', (reason) => {
       console.warn('⚠️ [Socket.IO] Disconnected:', reason);
+      this.identifiedSocketKey = null;
       this.updateStatus('reconnecting');
     });
 
@@ -338,6 +367,7 @@ class SocketService {
       this.socket = null;
     }
     this.attachedSocketEvents.clear();
+    this.identifiedSocketKey = null;
     this.status = 'reconnecting';
     this.updateStatus('reconnecting');
 
@@ -584,6 +614,7 @@ class SocketService {
       this.socket = null;
     }
     this.attachedSocketEvents.clear();
+    this.identifiedSocketKey = null;
     this.currentRoomId = null;
     this.currentUserId = null;
     this.currentUserName = null;

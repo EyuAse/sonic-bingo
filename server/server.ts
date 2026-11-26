@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import dotenv from 'dotenv';
 import { checkDbConnection, query } from './db.ts';
 
@@ -67,6 +68,15 @@ app.use(helmet({
 app.use(cors({
   origin: CORS_ORIGIN,
   credentials: true
+}));
+
+// Origin HTTP Gzip Compression for JSON/API responses (> 512 bytes) before Render meters egress
+app.use(compression({
+  threshold: 512,
+  filter: (req, res) => {
+    if (req.path.startsWith('/socket.io')) return false;
+    return compression.filter(req, res);
+  }
 }));
 
 app.use(express.json({ limit: '10mb' }));

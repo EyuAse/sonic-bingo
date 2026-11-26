@@ -31,7 +31,18 @@ export function initSocketIO(httpServer: HttpServer, corsOrigin: string = '*'): 
     },
     pingInterval: 10000,
     pingTimeout: 15000,
-    transports: ['websocket', 'polling']
+    transports: ['websocket', 'polling'],
+    perMessageDeflate: {
+      threshold: 512,
+      zlibDeflateOptions: {
+        chunkSize: 1024,
+        memLevel: 6,
+        windowBits: 13
+      },
+      zlibInflateOptions: {
+        windowBits: 13
+      }
+    }
   });
   return ioInstance;
 }
