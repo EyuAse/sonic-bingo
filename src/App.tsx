@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from './context/AppContext.tsx';
 import { useAuth } from './context/AuthContext.tsx';
 import { useAdmin } from './context/AdminContext.tsx';
@@ -50,10 +50,19 @@ export const App: React.FC = () => {
     if (isAuthenticated && (currentPage === 'landing' || currentPage === 'login' || currentPage === 'signup')) {
       const rawHash = typeof window !== 'undefined' ? (window.location.hash || '').toLowerCase() : '';
       const routeHash = rawHash.startsWith('#tgwebappdata') ? '' : rawHash;
+      const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search || '') : null;
+      const refCandidate = (
+        searchParams?.get('ref') ||
+        searchParams?.get('startapp') ||
+        searchParams?.get('tgWebAppStartParam') ||
+        ''
+      ).trim();
+      const hasAffiliateRefParam = /^(aff[_-]?|AFF-)/i.test(refCandidate);
+
       const isAgentRoute = typeof window !== 'undefined' && (
         routeHash.startsWith('#/agent') ||
         window.location.pathname.toLowerCase().startsWith('/agent') ||
-        (localStorage.getItem('sonic_active_portal') === 'agent' && !rawHash.startsWith('#tgwebappdata'))
+        (!hasAffiliateRefParam && localStorage.getItem('sonic_active_portal') === 'agent' && !rawHash.startsWith('#tgwebappdata'))
       );
       if (isAgentRoute) {
         switchPage('agent');
@@ -102,7 +111,21 @@ export const App: React.FC = () => {
     }
   }, [isFirstTimeTelegramUser, user, addUser, registerBonus]);
 
-  // Standalone Affiliate Referral Capture & Post-Auth Attribution (Zero Auth Edits)
+  // Standalone Affiliate Referral Capture & Signup-Only Attribution (Zero Auth Edits)
+  const sawUnauthenticatedRef = useRef<boolean>(false);
+  const visitedLoginPageRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      sawUnauthenticatedRef.current = true;
+    }
+    if (currentPage === 'login') {
+      visitedLoginPageRef.current = true;
+    } else if (currentPage === 'signup') {
+      visitedLoginPageRef.current = false;
+    }
+  }, [isLoading, isAuthenticated, currentPage]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const rawParam = (telegramService.getStartParam() || '').trim();
@@ -112,13 +135,19 @@ export const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!isAuthenticated || !user?.id) return;
+    if (isLoading || !isAuthenticated || !user?.id) return;
     const pendingAff = typeof window !== 'undefined' ? sessionStorage.getItem('sonic_aff_ref') : null;
     if (!pendingAff) return;
 
     sessionStorage.removeItem('sonic_aff_ref');
+
+    // Never attribute existing sessions (already signed in on arrival) or existing-account Login flows
+    if (visitedLoginPageRef.current || (!sawUnauthenticatedRef.current && !isFirstTimeTelegramUser)) {
+      return;
+    }
+
     apiClient.affiliatesPublic.attributePlayer(pendingAff).catch(() => {});
-  }, [isAuthenticated, user?.id]);
+  }, [isLoading, isAuthenticated, user?.id, isFirstTimeTelegramUser]);
 
   // If on Admin portal route, render full-screen bypassing 480px app-container
   if (currentPage === 'admin') {

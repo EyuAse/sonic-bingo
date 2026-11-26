@@ -39,6 +39,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const search = (window.location.search || '').toLowerCase();
       const savedPortal = localStorage.getItem('sonic_active_portal');
 
+      // Detect incoming affiliate referral links (?ref=aff_... / startapp=aff_...)
+      const urlParams = new URLSearchParams(window.location.search || '');
+      const refCandidate = (
+        urlParams.get('ref') ||
+        urlParams.get('startapp') ||
+        urlParams.get('tgWebAppStartParam') ||
+        ''
+      ).trim();
+      const isAffiliateReferralVisit = /^(aff[_-]?|AFF-)/i.test(refCandidate);
+
       // Detect if running inside Telegram Mini App
       const isTelegram =
         search.includes('tg_id') ||
@@ -95,6 +105,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
       if (isAdminRoute && !isTelegram) {
         return 'admin';
+      }
+
+      // Affiliate player referral links MUST open player arena, never Agent/Withdrawals portal
+      if (isAffiliateReferralVisit) {
+        localStorage.removeItem('sonic_active_portal');
+        return 'landing';
       }
 
       if (isStandalone && (savedPortal === 'agent' || !routeHash || routeHash === '#' || routeHash === '#/')) {

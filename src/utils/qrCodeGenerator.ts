@@ -309,3 +309,153 @@ export function downloadQrPng(text: string, filename: string): void {
   link.download = filename;
   link.click();
 }
+
+function drawRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+): void {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+/**
+ * Generates and downloads an eye-catching dark-gold Sonic Bingo VIP Promo Ad Poster PNG
+ * embedding the affiliate's referral QR code and partner invite code.
+ */
+export async function downloadPromoPosterPng(
+  text: string,
+  affiliateCode: string,
+  filename: string
+): Promise<void> {
+  const width = 900;
+  const height = 1180;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  // Deep luxury background gradient
+  const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+  bgGrad.addColorStop(0, '#071710');
+  bgGrad.addColorStop(0.5, '#0b2219');
+  bgGrad.addColorStop(1, '#090d16');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, width, height);
+
+  // Subtle radial gold/emerald glow accents
+  const goldGlow = ctx.createRadialGradient(width * 0.5, 220, 20, width * 0.5, 220, 420);
+  goldGlow.addColorStop(0, 'rgba(250, 204, 21, 0.22)');
+  goldGlow.addColorStop(1, 'rgba(250, 204, 21, 0)');
+  ctx.fillStyle = goldGlow;
+  ctx.fillRect(0, 0, width, 620);
+
+  // Try loading hero artwork banner cleanly
+  const heroImg = await new Promise<HTMLImageElement | null>((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = '/assets/images/sonic-hero-75-vip.jpg';
+  });
+
+  if (heroImg) {
+    ctx.save();
+    drawRoundedRect(ctx, 48, 42, width - 96, 260, 28);
+    ctx.clip();
+    const scale = Math.max((width - 96) / heroImg.width, 260 / heroImg.height);
+    const drawW = heroImg.width * scale;
+    const drawH = heroImg.height * scale;
+    ctx.drawImage(heroImg, (width - drawW) / 2, 42 + (260 - drawH) / 2, drawW, drawH);
+    const overlay = ctx.createLinearGradient(0, 42, 0, 302);
+    overlay.addColorStop(0, 'rgba(7, 23, 16, 0.2)');
+    overlay.addColorStop(1, 'rgba(7, 23, 16, 0.88)');
+    ctx.fillStyle = overlay;
+    ctx.fillRect(48, 42, width - 96, 260);
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(250, 204, 21, 0.45)';
+    ctx.lineWidth = 2;
+    drawRoundedRect(ctx, 48, 42, width - 96, 260, 28);
+    ctx.stroke();
+  }
+
+  // Top VIP badge
+  ctx.fillStyle = '#facc15';
+  drawRoundedRect(ctx, width / 2 - 155, 274, 310, 44, 22);
+  ctx.fill();
+  ctx.fillStyle = '#090d16';
+  ctx.font = '800 18px Urbanist, system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('OFFICIAL SONIC PARTNER', width / 2, 302);
+
+  // Headline & subheadline
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '800 56px Urbanist, system-ui, sans-serif';
+  ctx.fillText('SONIC BINGO VIP', width / 2, 386);
+
+  ctx.fillStyle = '#a7f3d0';
+  ctx.font = '700 25px Urbanist, system-ui, sans-serif';
+  ctx.fillText('Play Live 75-Ball & Win Real ETB Instantly!', width / 2, 430);
+
+  // Feature chips row
+  const chips = ['10-100 ETB Rooms', 'Instant Telebirr', '24/7 Live Draws'];
+  const chipW = 240;
+  const chipGap = 24;
+  const startX = (width - (chips.length * chipW + (chips.length - 1) * chipGap)) / 2;
+  chips.forEach((label, idx) => {
+    const cx = startX + idx * (chipW + chipGap);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+    drawRoundedRect(ctx, cx, 464, chipW, 48, 14);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(167, 243, 208, 0.3)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = '700 18px Urbanist, system-ui, sans-serif';
+    ctx.fillText(label, cx + chipW / 2, 494);
+  });
+
+  // White QR container card
+  const qrBoxSize = 470;
+  const qrBoxX = (width - qrBoxSize) / 2;
+  const qrBoxY = 550;
+  ctx.fillStyle = '#ffffff';
+  drawRoundedRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 32);
+  ctx.fill();
+
+  const qrCanvas = document.createElement('canvas');
+  renderQrToCanvas(qrCanvas, text, 420);
+  ctx.drawImage(qrCanvas, (width - qrCanvas.width) / 2, qrBoxY + (qrBoxSize - qrCanvas.height) / 2);
+
+  // Partner invite code pill & CTA footer
+  ctx.fillStyle = 'rgba(250, 204, 21, 0.14)';
+  drawRoundedRect(ctx, width / 2 - 200, 1054, 400, 54, 27);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(250, 204, 21, 0.55)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.fillStyle = '#fde047';
+  ctx.font = '800 22px monospace';
+  ctx.fillText(`PARTNER CODE: ${affiliateCode}`, width / 2, 1088);
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '600 19px Urbanist, system-ui, sans-serif';
+  ctx.fillText('Scan QR Code with your camera or Telegram to join Sonic Bingo', width / 2, 1144);
+
+  const pngUrl = canvas.toDataURL('image/png');
+  const link = document.createElement('a');
+  link.href = pngUrl;
+  link.download = filename;
+  link.click();
+}

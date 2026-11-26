@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '../services/apiClient.ts';
 import { useApp } from '../context/AppContext.tsx';
-import { renderQrToCanvas, downloadQrPng } from '../utils/qrCodeGenerator.ts';
+import { renderQrToCanvas, downloadQrPng, downloadPromoPosterPng } from '../utils/qrCodeGenerator.ts';
 
 type PortalTab = 'overview' | 'players' | 'commissions' | 'wallet' | 'profile';
 
@@ -408,7 +408,7 @@ export const AffiliatePortalPage: React.FC = () => {
         {/* Enqu Left Sidebar matching Admin Panel */}
         <aside className={`aff-portal-aside ${isMobileSidebarOpen ? 'mobile-open' : ''}`}>
           <div className="aff-portal-aside-top">
-            {!isSidebarCollapsed && <div className="aff-portal-logo">Lomi Partner</div>}
+            {!isSidebarCollapsed && <div className="aff-portal-logo">Sonic Partner</div>}
             <button
               type="button"
               className="aff-portal-collapse-btn"
@@ -626,15 +626,36 @@ export const AffiliatePortalPage: React.FC = () => {
               </div>
 
               <div className="aff-portal-card">
-                <h3 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: 800 }}>Your Referral Link &amp; QR Code</h3>
+                <h3 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: 800 }}>VIP Promo Card, QR &amp; Links</h3>
                 <div className="aff-portal-lab">
-                  Every player signing up via your link or QR is locked exclusively under your account.
+                  Share this eye-catching Sonic Bingo card or link — every new player who registers is locked exclusively under your account.
                 </div>
 
-                <div className="aff-portal-qr-box">
-                  <canvas ref={qrCanvasRef} />
-                  <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 700, color: '#475569' }}>
-                    Scan to join Lomi Bingo ({affiliateCode})
+                <div className="aff-promo-ad-card">
+                  <div className="aff-promo-ad-hero">
+                    <img src="/assets/images/sonic-hero-75-vip.jpg" alt="Sonic Bingo VIP Arena" />
+                    <div className="aff-promo-ad-hero-overlay">
+                      <span className="aff-promo-vip-pill">Official Sonic VIP</span>
+                      <span className="aff-promo-code-pill">{affiliateCode || 'SONIC'}</span>
+                    </div>
+                  </div>
+                  <div className="aff-promo-ad-body">
+                    <div className="aff-promo-qr-frame">
+                      <canvas ref={qrCanvasRef} />
+                    </div>
+                    <div className="aff-promo-ad-copy">
+                      <div style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', lineHeight: 1.25 }}>
+                        Play Live Sonic Bingo &amp; Win Real ETB!
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '4px', lineHeight: 1.4 }}>
+                        ሶኒክ ቢንጎን ይቀላቀሉ! 75-Ball &amp; Keno Rooms · Fast Telebirr Payouts.
+                      </div>
+                      <div className="aff-promo-perks">
+                        <span className="aff-promo-perk">10–100 ETB Rooms</span>
+                        <span className="aff-promo-perk">Instant Telebirr</span>
+                        <span className="aff-promo-perk">24/7 Live</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -660,12 +681,45 @@ export const AffiliatePortalPage: React.FC = () => {
                   style={{ width: '100%', marginTop: '8px' }}
                   disabled={!webReferralUrl}
                   onClick={() => {
-                    downloadQrPng(webReferralUrl, `lomi-bingo-${affiliateCode}-qr.png`);
-                    showToast('📥 Downloaded referral QR code PNG');
+                    const promoText = [
+                      '🔥 SONIC BINGO VIP • LIVE 75-BALL & KENO ARENA 🔥',
+                      '🎯 ሶኒክ ቢንጎን ዛሬውኑ ይቀላቀሉ — በየጨዋታው እውነተኛ ETB ያሸንፉ!',
+                      '✅ 10–100 ETB Rooms | ⚡ Instant Telebirr Payouts',
+                      `👉 Play Now: ${webReferralUrl}`,
+                      `📱 Telegram App: ${tgReferralUrl}`,
+                    ].join('\n');
+                    handleCopy(promoText, 'Promo Ad Post + Link');
                   }}
                 >
-                  ↓ Download QR Code (PNG)
+                  ✨ Copy Eye-Catching Promo Post + Link
                 </button>
+
+                <div className="aff-promo-actions">
+                  <button
+                    type="button"
+                    className="aff-portal-btn-ghost"
+                    style={{ width: '100%', fontWeight: 700 }}
+                    disabled={!webReferralUrl}
+                    onClick={() => {
+                      downloadPromoPosterPng(webReferralUrl, affiliateCode, `sonic-bingo-${affiliateCode}-poster.png`);
+                      showToast('🎨 Downloading VIP Promo Ad Poster PNG');
+                    }}
+                  >
+                    🎨 Download Ad Poster (PNG)
+                  </button>
+                  <button
+                    type="button"
+                    className="aff-portal-btn-ghost"
+                    style={{ width: '100%', fontWeight: 700 }}
+                    disabled={!webReferralUrl}
+                    onClick={() => {
+                      downloadQrPng(webReferralUrl, `sonic-bingo-${affiliateCode}-qr.png`);
+                      showToast('📥 Downloaded referral QR code PNG');
+                    }}
+                  >
+                    ↓ Download QR Only (PNG)
+                  </button>
+                </div>
               </div>
             </div>
           </>
@@ -1282,8 +1336,19 @@ export const AffiliatePortalPage: React.FC = () => {
 
             <div className="aff-portal-card">
               <h3 style={{ margin: '0 0 6px', fontSize: '17px', fontWeight: 800 }}>Personal Referral QR &amp; Link</h3>
-              <div className="aff-portal-qr-box">
-                <canvas ref={qrCanvasRef} />
+              <div className="aff-promo-ad-card">
+                <div className="aff-promo-ad-hero">
+                  <img src="/assets/images/sonic-hero-75-vip.jpg" alt="Sonic Bingo VIP" />
+                  <div className="aff-promo-ad-hero-overlay">
+                    <span className="aff-promo-vip-pill">Official Sonic VIP</span>
+                    <span className="aff-promo-code-pill">{affiliateCode || 'SONIC'}</span>
+                  </div>
+                </div>
+                <div className="aff-promo-ad-body" style={{ justifyContent: 'center' }}>
+                  <div className="aff-promo-qr-frame">
+                    <canvas ref={qrCanvasRef} />
+                  </div>
+                </div>
               </div>
               <div className="aff-portal-link-row">
                 <code>{webReferralUrl}</code>
@@ -1291,14 +1356,26 @@ export const AffiliatePortalPage: React.FC = () => {
                   Copy
                 </button>
               </div>
-              <button
-                type="button"
-                className="aff-portal-btn-dark"
-                style={{ width: '100%' }}
-                onClick={() => downloadQrPng(webReferralUrl, `lomi-bingo-${affiliateCode}-qr.png`)}
-              >
-                ↓ Download QR Code (PNG)
-              </button>
+              <div className="aff-promo-actions">
+                <button
+                  type="button"
+                  className="aff-portal-btn-dark"
+                  style={{ width: '100%' }}
+                  disabled={!webReferralUrl}
+                  onClick={() => downloadPromoPosterPng(webReferralUrl, affiliateCode, `sonic-bingo-${affiliateCode}-poster.png`)}
+                >
+                  🎨 Ad Poster PNG
+                </button>
+                <button
+                  type="button"
+                  className="aff-portal-btn-ghost"
+                  style={{ width: '100%', fontWeight: 700 }}
+                  disabled={!webReferralUrl}
+                  onClick={() => downloadQrPng(webReferralUrl, `sonic-bingo-${affiliateCode}-qr.png`)}
+                >
+                  ↓ QR Only PNG
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { query, withTransaction } from '../db.ts';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.ts';
 import { logAffiliateAudit, triggerRegistrationCommission } from '../services/affiliateCommissionService.ts';
+import { consumeVerifiedNewSignup } from '../services/affiliateEventObserver.ts';
 
 export const publicAffiliatesRouter = Router();
 
@@ -222,7 +223,9 @@ publicAffiliatesRouter.post('/attribute-player', requireAuth, async (req: Authen
 
     const result = await withTransaction(async (client) => {
       const userRes = await client.query(
-        `SELECT id, phone, affiliate_id, created_at FROM users WHERE id = $1 FOR UPDATE`,
+        `SELECT id, phone, affiliate_id, created_at, last_login_at,
+                (last_login_at > created_at + INTERVAL '2 seconds') AS has_repeat_login
+         FROM users WHERE id = $1 FOR UPDATE`,
         [userId]
       );
       if (userRes.rows.length === 0) {
@@ -234,9 +237,26 @@ publicAffiliatesRouter.post('/attribute-player', requireAuth, async (req: Authen
         return { attributed: false, alreadyAttributed: true };
       }
 
-      // Only attribute newly registered accounts (prevents poaching existing players)
-      const ageMs = Date.now() - new Date(u.created_at).getTime();
-      if (ageMs > 30 * 60 * 1000) {
+      // Industry-standard signup-only attribution: require fresh brand-new signup signal & zero prior history
+      const isFreshSignupEvent = consumeVerifiedNewSignup(userId);
+      const isRestartFallback =
+        !isFreshSignupEvent &&
+        process.uptime() < 30 &&
+        Date.now() - new Date(u.created_at).getTime() <= 30 * 1000;
+
+      if ((!isFreshSignupEvent && !isRestartFallback) || u.has_repeat_login) {
+        return { attributed: false, reason: 'existing_account' };
+      }
+
+      const historyRes = await client.query(
+        `SELECT
+           EXISTS(SELECT 1 FROM deposit_requests WHERE user_id = $1) AS has_deposits,
+           EXISTS(SELECT 1 FROM game_tickets WHERE user_id = $1) AS has_tickets,
+           EXISTS(SELECT 1 FROM wallet_transactions WHERE user_id = $1 AND type <> 'bonus') AS has_non_bonus_tx`,
+        [userId]
+      );
+      const history = historyRes.rows[0];
+      if (history?.has_deposits || history?.has_tickets || history?.has_non_bonus_tx) {
         return { attributed: false, reason: 'existing_account' };
       }
 
