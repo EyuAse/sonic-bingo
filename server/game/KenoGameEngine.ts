@@ -813,10 +813,6 @@ export class KenoGameEngine extends EventEmitter {
         }
       }
 
-      for (const n of this.drawnBallsThisRound) {
-        this.numberFrequencyLast100.set(n, (this.numberFrequencyLast100.get(n) || 0) + 1);
-      }
-
       if (this.currentRoundDbId) {
         query(
           `UPDATE keno_rounds 
@@ -852,8 +848,17 @@ export class KenoGameEngine extends EventEmitter {
       };
 
       this.roundHistory.unshift(completedRound);
+      for (const n of this.drawnBallsThisRound) {
+        this.numberFrequencyLast100.set(n, (this.numberFrequencyLast100.get(n) || 0) + 1);
+      }
       if (this.roundHistory.length > 100) {
-        this.roundHistory.pop();
+        const dropped = this.roundHistory.pop();
+        if (dropped) {
+          for (const n of dropped.drawnNumbers) {
+            const cur = this.numberFrequencyLast100.get(n) || 0;
+            this.numberFrequencyLast100.set(n, Math.max(0, cur - 1));
+          }
+        }
       }
 
       this.emit('round:settled', {

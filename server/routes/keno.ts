@@ -110,8 +110,8 @@ router.get('/leaderboard', async (_req, res) => {
          COALESCE(u.public_id::text, u.telegram_id::text, u.phone, u.id::text, '600001') as player_identifier
        FROM keno_tickets t
        LEFT JOIN users u ON t.user_id = u.id
-       WHERE t.payout_amount > 0 AND t.status = 'won'
-       ORDER BY t.created_at DESC
+       WHERE t.payout_amount > t.bet_amount AND t.status = 'won'
+       ORDER BY t.payout_amount DESC, t.created_at DESC
        LIMIT 10`
     );
 

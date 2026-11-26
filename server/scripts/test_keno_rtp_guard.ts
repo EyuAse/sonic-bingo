@@ -72,6 +72,11 @@ async function main() {
     assert.ok(small1xWins > 0, 'Players must still hit 1x (10 ETB) small wins');
     assert.ok(actualRtp >= 0.80 && actualRtp <= 0.96, `Simulated RTP ${(actualRtp * 100).toFixed(2)}% should converge near 90% target`);
 
+    // 3. Verify Last-100 sliding frequency window stays exact (total sum = 100 rounds * 20 balls = 2000)
+    const statsAfter1000 = engine.getHotColdStats();
+    const totalFreqSum = Object.values(statsAfter1000.frequencyMap as Record<number, number>).reduce((a, b) => a + b, 0);
+    assert.equal(totalFreqSum, 2000, `Last-100 frequency sum must equal 2000 balls, got ${totalFreqSum}`);
+
     console.log('ALL KENO RTP GUARD CHECKS PASSED');
     process.exit(0);
 }
