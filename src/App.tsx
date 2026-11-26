@@ -32,6 +32,9 @@ import { AboutSonicPage } from './pages/AboutSonicPage.tsx';
 import { AdminPage } from './pages/AdminPage.tsx';
 import { AgentPortalPage } from './pages/AgentPortalPage.tsx';
 import { WithdrawalsAdminPage } from './pages/WithdrawalsAdminPage.tsx';
+import { AffiliateRegisterPage } from './pages/AffiliateRegisterPage.tsx';
+import './styles/affiliate-register.css';
+import { apiClient } from './services/apiClient.ts';
 import { AppSplashScreen } from './components/common/AppSplashScreen.tsx';
 
 export const App: React.FC = () => {
@@ -97,6 +100,24 @@ export const App: React.FC = () => {
     }
   }, [isFirstTimeTelegramUser, user, addUser, registerBonus]);
 
+  // Standalone Affiliate Referral Capture & Post-Auth Attribution (Zero Auth Edits)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const rawParam = (telegramService.getStartParam() || '').trim();
+    if (/^(aff[_-]?|AFF-)/i.test(rawParam)) {
+      sessionStorage.setItem('sonic_aff_ref', rawParam);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
+    const pendingAff = typeof window !== 'undefined' ? sessionStorage.getItem('sonic_aff_ref') : null;
+    if (!pendingAff) return;
+
+    sessionStorage.removeItem('sonic_aff_ref');
+    apiClient.affiliatesPublic.attributePlayer(pendingAff).catch(() => {});
+  }, [isAuthenticated, user?.id]);
+
   // If on Admin portal route, render full-screen bypassing 480px app-container
   if (currentPage === 'admin') {
     return (
@@ -114,6 +135,16 @@ export const App: React.FC = () => {
         <WithdrawalsAdminPage />
         <Toast />
       </div>
+    );
+  }
+
+  // If on Public Affiliate Registration Portal, render full-screen bypassing 480px app-container
+  if (currentPage === 'affiliate-register') {
+    return (
+      <>
+        <AffiliateRegisterPage />
+        <Toast />
+      </>
     );
   }
 

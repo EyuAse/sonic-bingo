@@ -3264,18 +3264,83 @@ export const apiClient = {
       }>(res);
     },
 
-    async changePin(currentPin: string, newPin: string) {
-      const res = await fetch(`${API_BASE}/withdrawals-admin/change-pin`, {
+      async changePin(currentPin: string, newPin: string) {
+        const res = await fetch(`${API_BASE}/withdrawals-admin/change-pin`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getWithdrawalsAdminAuthHeader()
+          },
+          body: JSON.stringify({ currentPin, newPin })
+        });
+        return handleResponse<{
+          success: boolean;
+          message: string;
+        }>(res);
+      }
+    },
+
+  // Public Affiliate Invite Validation & Registration (Milestone 2)
+  affiliatesPublic: {
+    async validateInvite(token: string) {
+      const res = await fetch(`${API_BASE}/affiliates/invite/${encodeURIComponent(token)}`);
+      return handleResponse<{
+        success: boolean;
+        invite: {
+          token: string;
+          label: string;
+          requiresApproval: boolean;
+          maxUses: number | null;
+          usesCount: number;
+          expiresAt: string | null;
+        };
+      }>(res);
+    },
+    async register(payload: {
+      inviteToken: string;
+      fullName: string;
+      phone: string;
+      password: string;
+      payoutMethod: string;
+      payoutAccount?: string;
+      payoutAccountName?: string;
+      applicationNotes?: string;
+    }) {
+      const res = await fetch(`${API_BASE}/affiliates/register`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getWithdrawalsAdminAuthHeader()
-        },
-        body: JSON.stringify({ currentPin, newPin })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
       return handleResponse<{
         success: boolean;
-        message: string;
+        requiresApproval: boolean;
+        affiliate: {
+          id: string;
+          affiliateCode: string;
+          fullName: string;
+          phone: string;
+          payoutMethod: string;
+          payoutAccount: string;
+          status: string;
+          approvalStatus: string;
+        createdAt: string;
+        };
+      }>(res);
+    },
+    async attributePlayer(affiliateCode: string) {
+      const res = await fetch(`${API_BASE}/affiliates/attribute-player`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader()
+        },
+        body: JSON.stringify({ affiliateCode })
+      });
+      return handleResponse<{
+        success: boolean;
+        attributed: boolean;
+        alreadyAttributed?: boolean;
+        affiliateCode?: string;
       }>(res);
     }
   }

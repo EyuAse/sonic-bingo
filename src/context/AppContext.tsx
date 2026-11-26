@@ -18,7 +18,8 @@ export type PageId =
   | 'about'
   | 'admin'
   | 'agent'
-  | 'withdrawals';
+  | 'withdrawals'
+  | 'affiliate-register';
 
 interface AppContextType {
   currentPage: PageId;
@@ -57,6 +58,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         routeHash.startsWith('#/withdrawals') ||
         path.startsWith('/withdrawals');
 
+      const isAffiliateRegisterRoute =
+        routeHash.startsWith('#/affiliate-register') ||
+        path.startsWith('/affiliate-register');
+
       const isAdminRoute =
         routeHash.startsWith('#/sonic-admin') ||
         routeHash === '#/admin' ||
@@ -71,6 +76,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         (window.navigator as any).standalone === true ||
         document.referrer.includes('android-app://');
 
+      if (isAffiliateRegisterRoute) {
+        return 'affiliate-register';
+      }
       if (isAgentRoute) {
         return 'agent';
       }
@@ -112,7 +120,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (rawHash.startsWith('#tgwebappdata')) return;
 
       // 1. Explicit Hash/Path routing ALWAYS has highest priority!
-      if (rawHash.startsWith('#/agent') || path.startsWith('/agent')) {
+      if (rawHash.startsWith('#/affiliate-register') || path.startsWith('/affiliate-register')) {
+        setCurrentPage('affiliate-register');
+      } else if (rawHash.startsWith('#/agent') || path.startsWith('/agent')) {
         setCurrentPage('agent');
         localStorage.setItem('sonic_active_portal', 'agent');
       } else if (rawHash.startsWith('#/withdrawals') || path.startsWith('/withdrawals')) {

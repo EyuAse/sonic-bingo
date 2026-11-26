@@ -17,6 +17,7 @@ import adminRechargesRouter from './routes/admin_recharges.ts';
 import { adminPayoutsRouter } from './routes/admin_payouts.ts';
 import { adminCashflowRouter } from './routes/admin_cashflow.ts';
 import { adminJackpotsRouter } from './routes/admin_jackpots.ts';
+import { publicAffiliatesRouter } from './routes/affiliates_public.ts';
 import telegramBotRouter from './routes/telegramBot.ts';
 import withdrawalsAdminRouter from './routes/withdrawalsAdmin.ts';
 import { webhooksRouter } from './routes/webhooks.ts';
@@ -26,6 +27,7 @@ import { kenoEngine } from './game/KenoGameEngine.ts';
 import { setupKenoSockets } from './sockets/kenoSocket.ts';
 import kenoRouter from './routes/keno.ts';
 import { telegramBotService } from './services/telegramBotService.ts';
+import { registerAffiliateEventObserver } from './services/affiliateEventObserver.ts';
 
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 
@@ -313,6 +315,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/admin/agent-recharges', adminRechargesRouter);
 app.use('/api/admin/agent-payouts', adminPayoutsRouter);
 app.use('/api/admin/cashflow', adminCashflowRouter);
+app.use('/api/affiliates', publicAffiliatesRouter);
 app.use('/api/admin/telegram', telegramBotRouter);
 app.use('/api/telegram', telegramBotRouter);
 app.use('/api/withdrawals-admin', withdrawalsAdminRouter);
@@ -498,6 +501,7 @@ if (process.env.NODE_ENV !== 'test') {
     kenoEngine.initializeFromDatabase().catch(err => {
       console.warn('⚠️ [Fast Keno Engine] DB initialization deferred:', err.message || err);
     });
+    registerAffiliateEventObserver();
   });
 }
 

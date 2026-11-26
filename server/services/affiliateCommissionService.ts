@@ -488,3 +488,285 @@ export async function runPeriodicCommissions(periodMonth: string, actor: AdminAc
 
   return { periodMonth, createdCount, totalAmount };
 }
+
+async function awardRuleCommissionTx(params: {
+  client: any;
+  affiliateId: string;
+  playerUserId: string | null;
+  depositRefId?: string | null;
+  rule: any;
+  baseAmount: number;
+  calcAmt: number;
+  periodMonth: string;
+  note: string;
+}) {
+  const { client, affiliateId, playerUserId, depositRefId, rule, baseAmount, calcAmt, periodMonth, note } = params;
+  const initialStatus = rule.auto_approve ? 'approved' : 'pending';
+  const rateVal = parseFloat(rule.rate_or_amount || '0');
+
+  const commInsert = await client.query(
+    `INSERT INTO affiliate_commissions (
+       affiliate_id, player_user_id, deposit_ref_id, commission_type, rule_version, calc_mode,
+       base_amount, rate_applied, amount, status, period_month, note, reviewed_at
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+     RETURNING id`,
+    [
+      affiliateId,
+      playerUserId,
+      depositRefId || null,
+      rule.commission_type,
+      rule.version,
+      rule.calc_mode,
+      baseAmount,
+      rateVal,
+      calcAmt,
+      initialStatus,
+      periodMonth,
+      note,
+      rule.auto_approve ? new Date() : null
+    ]
+  );
+
+  const commId = commInsert.rows[0].id;
+  if (rule.auto_approve) {
+    const affRes = await client.query(
+      `UPDATE affiliates
+       SET wallet_balance = wallet_balance + $1, total_earned = total_earned + $1, updated_at = NOW()
+       WHERE id = $2
+       RETURNING wallet_balance`,
+      [calcAmt, affiliateId]
+    );
+    await client.query(
+      `INSERT INTO affiliate_wallet_transactions (affiliate_id, type, amount, balance_after, reason, reference_id)
+       VALUES ($1, 'commission_approved', $2, $3, $4, $5)`,
+      [
+        affiliateId,
+        calcAmt,
+        parseFloat(affRes.rows[0]?.wallet_balance || '0'),
+        note,
+        commId
+      ]
+    );
+  } else {
+    await client.query(
+      `UPDATE affiliates SET pending_commission = pending_commission + $1, updated_at = NOW() WHERE id = $2`,
+      [calcAmt, affiliateId]
+    );
+  }
+
+  return { commissionId: commId, status: initialStatus, amount: calcAmt };
+}
+
+function getEatMonthKey(now: Date = new Date()): string {
+  const eat = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+  return eat.toISOString().slice(0, 7);
+}
+
+/**
+ * Checks whether an affiliate reached their monthly referred-player target and awards the Target Bonus once per month.
+ */
+export async function triggerTargetCommissionIfReached(affiliateId: string) {
+  const ruleRes = await query(
+    `SELECT * FROM affiliate_commission_rules WHERE commission_type = 'target' AND is_active = TRUE LIMIT 1`
+  );
+  if (ruleRes.rows.length === 0) return null;
+  const rule = ruleRes.rows[0];
+  const calcAmt = Number(parseFloat(rule.rate_or_amount || '0').toFixed(2));
+  if (calcAmt <= 0) return null;
+
+  const periodMonth = getEatMonthKey();
+
+  return withTransaction(async (client) => {
+    const affRes = await client.query(
+      `SELECT id, status, approval_status, monthly_target_override
+       FROM affiliates WHERE id = $1 FOR UPDATE`,
+      [affiliateId]
+    );
+    if (affRes.rows.length === 0) return null;
+    const aff = affRes.rows[0];
+    if (aff.status !== 'active' || aff.approval_status !== 'approved') return null;
+
+    const existing = await client.query(
+      `SELECT id FROM affiliate_commissions
+       WHERE affiliate_id = $1 AND commission_type = 'target' AND period_month = $2 AND status <> 'reversed'
+       LIMIT 1`,
+      [affiliateId, periodMonth]
+    );
+    if (existing.rows.length > 0) return null;
+
+    const targetThreshold = Math.max(1, parseInt(aff.monthly_target_override || rule.min_monthly_players || '50', 10));
+    const countRes = await client.query(
+      `SELECT COUNT(*) as month_players
+       FROM users
+       WHERE affiliate_id = $1
+         AND TO_CHAR((created_at AT TIME ZONE 'Africa/Addis_Ababa')::date, 'YYYY-MM') = $2`,
+      [affiliateId, periodMonth]
+    );
+    const monthPlayers = parseInt(countRes.rows[0]?.month_players || '0', 10);
+    if (monthPlayers < targetThreshold) return null;
+
+    return awardRuleCommissionTx({
+      client,
+      affiliateId,
+      playerUserId: null,
+      rule,
+      baseAmount: monthPlayers,
+      calcAmt,
+      periodMonth,
+      note: `Monthly target reached (${monthPlayers}/${targetThreshold} players in ${periodMonth})`
+    });
+  });
+}
+
+/**
+ * Awards an idempotent Registration Commission when a brand-new player signs up under an active approved affiliate.
+ */
+export async function triggerRegistrationCommission(playerUserId: string, affiliateId: string) {
+  if (!playerUserId || !affiliateId) return null;
+
+  const ruleRes = await query(
+    `SELECT * FROM affiliate_commission_rules WHERE commission_type = 'registration' AND is_active = TRUE LIMIT 1`
+  );
+
+  let awarded: any = null;
+  if (ruleRes.rows.length > 0) {
+    const rule = ruleRes.rows[0];
+    const rateVal = parseFloat(rule.rate_or_amount || '0');
+    const calcAmt = rule.calc_mode === 'fixed' ? Number(rateVal.toFixed(2)) : 0;
+
+    if (calcAmt > 0) {
+      const periodMonth = getEatMonthKey();
+      awarded = await withTransaction(async (client) => {
+        const affRes = await client.query(
+          `SELECT id, status, approval_status FROM affiliates WHERE id = $1 FOR UPDATE`,
+          [affiliateId]
+        );
+        if (affRes.rows.length === 0) return null;
+        if (affRes.rows[0].status !== 'active' || affRes.rows[0].approval_status !== 'approved') return null;
+
+        const dup = await client.query(
+          `SELECT id FROM affiliate_commissions
+           WHERE player_user_id = $1 AND commission_type = 'registration' AND status <> 'reversed'
+           LIMIT 1`,
+          [playerUserId]
+        );
+        if (dup.rows.length > 0) return null;
+
+        return awardRuleCommissionTx({
+          client,
+          affiliateId,
+          playerUserId,
+          rule,
+          baseAmount: 1,
+          calcAmt,
+          periodMonth,
+          note: `New player registration commission`
+        });
+      });
+    }
+  }
+
+  // Always check whether this registration pushed the affiliate over their monthly target
+  await triggerTargetCommissionIfReached(affiliateId).catch((err) => {
+    console.warn('⚠️ [Affiliate Target Check Non-Blocking Error]:', err);
+  });
+
+  return awarded;
+}
+
+/**
+ * Awards an idempotent First Deposit or Regular Deposit Commission when a referred player completes an approved deposit.
+ */
+export async function triggerDepositCommission(
+  playerUserId: string,
+  rawAmount: number,
+  rawDepositRefId?: string
+) {
+  const amount = Number(Number(rawAmount || 0).toFixed(2));
+  if (!playerUserId || !Number.isFinite(amount) || amount <= 0) return null;
+
+  const userRes = await query(
+    `SELECT u.id, u.affiliate_id, a.status as aff_status, a.approval_status as aff_approval
+     FROM users u
+     JOIN affiliates a ON u.affiliate_id = a.id
+     WHERE u.id = $1
+     LIMIT 1`,
+    [playerUserId]
+  );
+  if (userRes.rows.length === 0) return null;
+  const uRow = userRes.rows[0];
+  if (uRow.aff_status !== 'active' || uRow.aff_approval !== 'approved') return null;
+  const affiliateId = uRow.affiliate_id as string;
+
+  const depositRefId = (rawDepositRefId || '').trim() || `DEP-${playerUserId.slice(0, 8)}-${amount}-${getEatMonthKey()}`;
+
+  return withTransaction(async (client) => {
+    // Idempotency guard per deposit reference
+    const dupRes = await client.query(
+      `SELECT id FROM affiliate_commissions
+       WHERE deposit_ref_id = $1 AND commission_type IN ('first_deposit', 'regular_deposit') AND status <> 'reversed'
+       LIMIT 1`,
+      [depositRefId]
+    );
+    if (dupRes.rows.length > 0) return null;
+
+    // Determine whether this is the player's first deposit
+    const priorCommRes = await client.query(
+      `SELECT COUNT(*) as cnt FROM affiliate_commissions
+       WHERE player_user_id = $1 AND commission_type IN ('first_deposit', 'regular_deposit') AND status <> 'reversed'`,
+      [playerUserId]
+    );
+    const hasPriorDepositComm = parseInt(priorCommRes.rows[0]?.cnt || '0', 10) > 0;
+
+    let isFirstDeposit = !hasPriorDepositComm;
+    if (isFirstDeposit) {
+      // Check historical approved deposits excluding the current reference
+      const priorDepRes = await client.query(
+        `SELECT COUNT(*) as cnt FROM (
+           SELECT transaction_ref as ref FROM deposit_requests WHERE user_id = $1 AND status = 'approved'
+           UNION ALL
+           SELECT transaction_code as ref FROM agent_deposit_requests WHERE player_id = $1 AND status = 'approved'
+         ) t WHERE COALESCE(ref, '') <> $2`,
+        [playerUserId, depositRefId]
+      );
+      if (parseInt(priorDepRes.rows[0]?.cnt || '0', 10) > 0) {
+        isFirstDeposit = false;
+      }
+    }
+
+    const targetType = isFirstDeposit ? 'first_deposit' : 'regular_deposit';
+    const ruleRes = await client.query(
+      `SELECT * FROM affiliate_commission_rules WHERE commission_type = $1 AND is_active = TRUE LIMIT 1`,
+      [targetType]
+    );
+    if (ruleRes.rows.length === 0) return null;
+    const rule = ruleRes.rows[0];
+
+    const minQual = parseFloat(rule.min_qualifying_deposit || '0');
+    if (minQual > 0) {
+      if (targetType === 'first_deposit' && amount <= minQual) return null;
+      if (targetType === 'regular_deposit' && amount < minQual) return null;
+    }
+
+    const rateVal = parseFloat(rule.rate_or_amount || '0');
+    const calcAmt =
+      rule.calc_mode === 'fixed'
+        ? Number(rateVal.toFixed(2))
+        : Number(((amount * rateVal) / 100).toFixed(2));
+    if (calcAmt <= 0) return null;
+
+    await client.query(`SELECT id FROM affiliates WHERE id = $1 FOR UPDATE`, [affiliateId]);
+
+    return awardRuleCommissionTx({
+      client,
+      affiliateId,
+      playerUserId,
+      depositRefId,
+      rule,
+      baseAmount: amount,
+      calcAmt,
+      periodMonth: getEatMonthKey(),
+      note: `${rule.display_name} on ETB ${amount.toFixed(2)} (${depositRefId})`
+    });
+  });
+}

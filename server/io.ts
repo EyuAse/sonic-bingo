@@ -2,6 +2,25 @@ import { Server as SocketIOServer } from 'socket.io';
 import type { Server as HttpServer } from 'http';
 
 let ioInstance: SocketIOServer | null = null;
+type InternalEmitListener = (eventName: string, payload: any) => void;
+const internalEmitListeners: InternalEmitListener[] = [];
+
+export function registerInternalEmitListener(listener: InternalEmitListener): void {
+  internalEmitListeners.push(listener);
+}
+
+function dispatchInternalListeners(eventName: string, payload: any): void {
+  if (internalEmitListeners.length === 0) return;
+  setImmediate(() => {
+    for (const listener of internalEmitListeners) {
+      try {
+        listener(eventName, payload);
+      } catch (err) {
+        console.warn('⚠️ [Internal Emit Listener Error]:', err);
+      }
+    }
+  });
+}
 
 export function initSocketIO(httpServer: HttpServer, corsOrigin: string = '*'): SocketIOServer {
   ioInstance = new SocketIOServer(httpServer, {
@@ -43,6 +62,13 @@ export const io: SocketIOServer = new Proxy({} as SocketIOServer, {
       return undefined;
     }
     const val = (ioInstance as any)[prop];
+    if (prop === 'emit' && typeof val === 'function') {
+      return (...args: any[]) => {
+        const result = val.apply(ioInstance, args);
+        dispatchInternalListeners(String(args[0] || ''), args[1]);
+        return result;
+      };
+    }
     if (typeof val === 'function') {
       return val.bind(ioInstance);
     }
