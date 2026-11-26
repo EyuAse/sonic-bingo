@@ -67,6 +67,12 @@ export class KenoGameEngine extends EventEmitter {
   public readonly MIN_BET = 2.00;
   public readonly MAX_TICKET_BET = 500.00;
   public readonly MAX_ROUND_BET = 1000.00;
+  public readonly TARGET_RTP = 0.90;
+  public readonly MAX_TICKET_PAYOUT = 50000.00;
+  private readonly RTP_WINDOW_SIZE = 100;
+  private readonly CANDIDATE_DRAWS_COUNT = 24;
+
+  private rollingRounds: Array<{ wagered: number; paid: number }> = [];
 
   public currentRoundNumber = 1;
   public currentRoundDbId = '';
@@ -596,6 +602,71 @@ export class KenoGameEngine extends EventEmitter {
     }
   }
 
+  private selectSmoothRtpDraw(): number[] {
+    if (this.activeTickets.size === 0) {
+      return ProvablyFairKeno.generateDraw(this.serverSeed, this.clientSeed, this.nonce);
+    }
+
+    let roundWagered = 0;
+    const allTickets: KenoTicket[] = [];
+    for (const tickets of this.activeTickets.values()) {
+      for (const t of tickets) {
+        roundWagered += Number(t.betAmount || 0);
+        allTickets.push(t);
+      }
+    }
+
+    if (allTickets.length === 0 || roundWagered <= 0) {
+      return ProvablyFairKeno.generateDraw(this.serverSeed, this.clientSeed, this.nonce);
+    }
+
+    let rollingWagered = 0;
+    let rollingPaid = 0;
+    for (const r of this.rollingRounds) {
+      rollingWagered += r.wagered;
+      rollingPaid += r.paid;
+    }
+    const actualRtp = rollingWagered > 0 ? rollingPaid / rollingWagered : this.TARGET_RTP;
+
+    const candidates: Array<{ serverSeed: string; serverSeedHash: string; drawn: number[]; payout: number }> = [];
+    for (let i = 0; i < this.CANDIDATE_DRAWS_COUNT; i++) {
+      const cand = ProvablyFairKeno.generateRandomCandidate(this.clientSeed, this.nonce);
+      let payout = 0;
+      for (const t of allTickets) {
+        const res = evaluateKenoTicket(t.selectedNumbers, cand.drawn);
+        if (res.multiplier > 0) {
+          payout += Math.min(this.MAX_TICKET_PAYOUT, Number((t.betAmount * res.multiplier).toFixed(2)));
+        }
+      }
+      candidates.push({ ...cand, payout });
+    }
+
+    let chosen = candidates[Math.floor(Math.random() * candidates.length)];
+
+    if (actualRtp > this.TARGET_RTP) {
+      const excess = actualRtp - this.TARGET_RTP;
+      const steerProb = Math.min(0.92, Math.max(0.45, excess * 8));
+      if (Math.random() < steerProb) {
+        // Allow small <= 1.15x stake returns while filtering oversized payouts when behind
+        const softCap = roundWagered * Math.max(0.85, 1.15 - excess * 2);
+        const qualifying = candidates.filter(c => c.payout <= softCap);
+        if (qualifying.length > 0) {
+          chosen = qualifying[Math.floor(Math.random() * qualifying.length)];
+        } else {
+          // Pick randomly among lowest-payout candidates so draws stay varied
+          candidates.sort((a, b) => a.payout - b.payout);
+          const minPayout = candidates[0].payout;
+          const lowestTie = candidates.filter(c => c.payout <= minPayout + roundWagered * 0.25);
+          chosen = lowestTie[Math.floor(Math.random() * lowestTie.length)];
+        }
+      }
+    }
+
+    this.serverSeed = chosen.serverSeed;
+    this.serverSeedHash = chosen.serverSeedHash;
+    return chosen.drawn;
+  }
+
   private async startDrawPhase(): Promise<void> {
     if (this.isDrawing) return;
     this.isDrawing = true;
@@ -603,7 +674,7 @@ export class KenoGameEngine extends EventEmitter {
     this.phaseStartedAt = Date.now();
 
     try {
-      this.currentDrawSequence = ProvablyFairKeno.generateDraw(this.serverSeed, this.clientSeed, this.nonce);
+      this.currentDrawSequence = this.selectSmoothRtpDraw();
       this.drawnBallsThisRound = [];
 
       if (this.currentRoundDbId) {
@@ -759,6 +830,13 @@ export class KenoGameEngine extends EventEmitter {
             this.currentRoundDbId
           ]
         ).catch(e => console.error(`⚠️ [Fast Keno] Round settlement DB update error:`, e?.message));
+      }
+
+      if (totalRoundWagered > 0) {
+        this.rollingRounds.push({ wagered: totalRoundWagered, paid: totalRoundPayout });
+        if (this.rollingRounds.length > this.RTP_WINDOW_SIZE) {
+          this.rollingRounds.shift();
+        }
       }
 
       const completedRound: CompletedRound = {

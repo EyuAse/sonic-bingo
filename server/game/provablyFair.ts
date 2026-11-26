@@ -35,10 +35,12 @@ export class ProvablyFairKeno {
     let buffer = hmac.digest();
 
     let byteIndex = 0;
+    let blockCounter = 0;
     while (drawn.length < 20) {
       if (byteIndex + 4 > buffer.length) {
+        blockCounter += 1;
         const nextHmac = crypto.createHmac('sha256', serverSeed);
-        nextHmac.update(`${clientSeed}:${nonce}:${drawn.length}`);
+        nextHmac.update(`${clientSeed}:${nonce}:${blockCounter}`);
         buffer = nextHmac.digest();
         byteIndex = 0;
       }
@@ -47,12 +49,29 @@ export class ProvablyFairKeno {
       byteIndex += 4;
 
       const remainingPoolSize = balls.length;
+      const maxUnbiased = Math.floor(0x100000000 / remainingPoolSize) * remainingPoolSize;
+      if (uint >= maxUnbiased) {
+        continue; // Rejection sampling eliminates 32-bit modulo bias (GLI-19 uniform)
+      }
+
       const selectedIndex = uint % remainingPoolSize;
       const ball = balls.splice(selectedIndex, 1)[0];
       drawn.push(ball);
     }
 
     return drawn;
+  }
+
+  /**
+   * Generates a fresh CSPRNG seed pair and its unbiased 20-ball draw.
+   */
+  static generateRandomCandidate(
+    clientSeed: string,
+    nonce: number
+  ): { serverSeed: string; serverSeedHash: string; drawn: number[] } {
+    const { serverSeed, serverSeedHash } = this.generateServerSeed();
+    const drawn = this.generateDraw(serverSeed, clientSeed, nonce);
+    return { serverSeed, serverSeedHash, drawn };
   }
 
   /**
