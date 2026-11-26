@@ -1691,6 +1691,25 @@ export const AffiliateManagerDesk: React.FC<AffiliateManagerDeskProps> = ({ view
                       <option value="rejected">Rejected</option>
                       <option value="reversed">Reversed</option>
                     </select>
+                    {(commissions.some(c => c.status === 'pending') || Number(repKpis.pendingCount || 0) > 0) && (
+                      <button
+                        type="button"
+                        className="aff-btn-dark"
+                        style={{ padding: '7px 12px', fontSize: '12px' }}
+                        onClick={() => {
+                          const targetType = commTypeFilter !== 'all' ? commTypeFilter : undefined;
+                          apiClient.admin.affiliates
+                            .bulkApproveCommissions(targetType)
+                            .then(res => {
+                              showToast(`✅ Approved ${res.approvedCount} pending commission(s)`);
+                              loadData();
+                            })
+                            .catch(err => showToast(`❌ ${err?.message || 'Bulk approve failed'}`));
+                        }}
+                      >
+                        Approve All Pending
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -1731,7 +1750,13 @@ export const AffiliateManagerDesk: React.FC<AffiliateManagerDeskProps> = ({ view
                                 v{c.rule_version} ({c.calc_mode === 'percent' ? `${c.rate_applied}%` : `ETB ${c.rate_applied}`})
                               </td>
                               <td style={{ fontSize: '12.5px' }}>{c.player_name || '—'}</td>
-                              <td>ETB {fmtETB(c.base_amount)}</td>
+                              <td>
+                                {c.commission_type === 'registration'
+                                  ? '1 signup'
+                                  : c.commission_type === 'target'
+                                  ? '1 target'
+                                  : `ETB ${fmtETB(c.base_amount)}`}
+                              </td>
                               <td><b>ETB {fmtETB(c.amount)}</b></td>
                               <td>
                                 <span

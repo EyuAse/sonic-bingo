@@ -78,7 +78,7 @@ INSERT INTO affiliate_commission_rules (
     commission_type, display_name, description, version, calc_mode,
     rate_or_amount, min_qualifying_deposit, min_monthly_players, active_window_days, auto_approve, is_active
 ) VALUES
-    ('registration', 'Registration Commission', 'Fixed ETB reward for each successful referred player signup', 1, 'fixed', 10.00, 0.00, 0, 14, FALSE, TRUE),
+    ('registration', 'Registration Commission', 'Fixed ETB reward for each successful referred player signup', 1, 'fixed', 10.00, 0.00, 0, 14, TRUE, TRUE),
     ('first_deposit', 'First Deposit Commission', '6% commission on a player''s first qualifying deposit above ETB 500', 1, 'percent', 6.00, 500.00, 0, 14, TRUE, TRUE),
     ('regular_deposit', 'Regular Deposit Commission', '2% commission on every subsequent deposit after first deposit', 1, 'percent', 2.00, 0.00, 0, 14, TRUE, TRUE),
     ('target', 'Monthly Target Commission', 'Reward when affiliate achieves monthly player registration target (default 50)', 1, 'fixed', 500.00, 0.00, 50, 14, FALSE, TRUE),

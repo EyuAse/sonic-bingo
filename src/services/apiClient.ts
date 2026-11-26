@@ -2269,6 +2269,15 @@ export const apiClient = {
           withdrawals: any[];
         }>(res);
       },
+      async bulkApproveCommissions(commissionType?: string, note?: string) {
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/commissions/bulk-approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...adminHeaders },
+          body: JSON.stringify({ commissionType, note })
+        });
+        return handleResponse<{ success: boolean; approvedCount: number; failedCount: number }>(res);
+      },
       async approveCommission(cid: string, note?: string) {
         const adminHeaders = await getAdminAuthHeader();
         const res = await fetch(`${API_BASE}/admin/affiliates/commissions/${cid}/approve`, {

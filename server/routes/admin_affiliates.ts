@@ -874,6 +874,42 @@ adminAffiliatesRouter.get('/reports', requireAdmin, async (req: AuthenticatedReq
   }
 });
 
+adminAffiliatesRouter.post('/commissions/bulk-approve', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const commissionType = typeof req.body?.commissionType === 'string' ? req.body.commissionType.trim() : '';
+    const note = typeof req.body?.note === 'string' && req.body.note.trim()
+      ? req.body.note.trim()
+      : 'Bulk approved by Admin';
+
+    const params: any[] = [];
+    let typeCond = '';
+    if (['registration', 'first_deposit', 'regular_deposit', 'target', 'monthly', 'loyalty'].includes(commissionType)) {
+      params.push(commissionType);
+      typeCond = `AND commission_type = $1`;
+    }
+
+    const pendingRes = await query<{ id: string }>(
+      `SELECT id FROM affiliate_commissions WHERE status = 'pending' ${typeCond} ORDER BY created_at ASC`,
+      params
+    );
+
+    let approvedCount = 0;
+    let failedCount = 0;
+    for (const row of pendingRes.rows) {
+      try {
+        await approveCommission(row.id, { id: req.user?.id, fullName: req.user?.fullName }, note);
+        approvedCount += 1;
+      } catch {
+        failedCount += 1;
+      }
+    }
+
+    return res.json({ success: true, approvedCount, failedCount });
+  } catch (err: any) {
+    return res.status(400).json({ success: false, error: err?.message || 'Failed to bulk approve commissions' });
+  }
+});
+
 adminAffiliatesRouter.post('/commissions/:cid/approve', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const result = await approveCommission(
