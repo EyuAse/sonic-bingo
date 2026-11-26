@@ -93,15 +93,14 @@ export const AffiliateManagerDesk: React.FC<AffiliateManagerDeskProps> = ({ view
   const [commStatusFilter, setCommStatusFilter] = useState('all');
 
   // Modern Reports & Analytics State
-  const [reportPeriod, setReportPeriod] = useState<ReportPeriod>('month');
+  const [reportPeriod, setReportPeriod] = useState<ReportPeriod>('week');
   const [reportGranularity, setReportGranularity] = useState<ReportGranularity>('daily');
-  const [reportFrom, setReportFrom] = useState(() => getEatYmdOffset(-29));
+  const [reportFrom, setReportFrom] = useState(() => getEatYmdOffset(-6));
   const [reportTo, setReportTo] = useState(() => getEatYmdOffset(0));
   const [reportAffiliateId, setReportAffiliateId] = useState('');
   const [reportData, setReportData] = useState<any>(null);
   const [reportSubTab, setReportSubTab] = useState<'ledger' | 'leaderboard' | 'withdrawals'>('ledger');
-  const [chartSeries, setChartSeries] = useState<'commissions' | 'deposits' | 'combined' | 'players'>('commissions');
-  const [hoveredBucketIdx, setHoveredBucketIdx] = useState<number | null>(null);
+  const [chartMetric, setChartMetric] = useState<'commissions' | 'deposits'>('commissions');
   const [hoveredRuleType, setHoveredRuleType] = useState<string | null>(null);
   const [commSearch, setCommSearch] = useState('');
   const [commPage, setCommPage] = useState(1);
@@ -1242,7 +1241,7 @@ export const AffiliateManagerDesk: React.FC<AffiliateManagerDeskProps> = ({ view
           } else if (next === 'month') {
             setReportFrom(getEatYmdOffset(-29));
             setReportTo(getEatYmdOffset(0));
-            setReportGranularity('daily');
+            setReportGranularity('weekly');
           } else if (next === 'all') {
             setReportFrom('2024-01-01');
             setReportTo(getEatYmdOffset(0));
@@ -1436,158 +1435,90 @@ export const AffiliateManagerDesk: React.FC<AffiliateManagerDeskProps> = ({ view
               </div>
             </div>
 
-            {/* 3. Dashboard-Matched Visual Analytics Row: Enqu Striped Pillar Chart + Conic Donut */}
+            {/* 3. Clean Dashboard-Matched Revenue Bar Chart + Conic Donut */}
             <div className="aff-grid aff-g2">
               {(() => {
-                const chartMetricMax =
-                  chartSeries === 'players'
-                    ? Math.max(10, ...buckets.map(b => Number(b.registrations || 0)))
-                    : chartSeries === 'deposits'
-                      ? Math.max(100, ...buckets.map(b => Number(b.deposits || 0)))
-                      : chartSeries === 'commissions'
-                        ? Math.max(100, ...buckets.map(b => Number(b.commissions || 0)))
-                        : maxChartVal;
-
-                const activeIdx =
-                  hoveredBucketIdx !== null && hoveredBucketIdx < buckets.length
-                    ? hoveredBucketIdx
-                    : Math.max(0, buckets.length - 1);
-                const activeBucket = buckets[activeIdx] || null;
+                const vals = buckets.map(b =>
+                  Math.round(Number(chartMetric === 'deposits' ? b.deposits || 0 : b.commissions || 0))
+                );
+                const maxVal = Math.max(...vals, 100);
+                const todayIndex = buckets.length - 1;
+                const periodSub =
+                  reportPeriod === 'today'
+                    ? 'Today'
+                    : reportPeriod === 'yesterday'
+                      ? 'Yesterday'
+                      : reportPeriod === 'week'
+                        ? 'Last 7 Days'
+                        : reportPeriod === 'month'
+                          ? 'Last 30 Days'
+                          : reportPeriod === 'all'
+                            ? 'All Time'
+                            : `${reportFrom} - ${reportTo}`;
 
                 return (
                   <div className="aff-card">
-                    <div className="aff-chart-head">
-                      <div>
-                        <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 800 }}>
-                          Affiliate Performance ({reportGranularity.charAt(0).toUpperCase() + reportGranularity.slice(1)})
-                        </h3>
-                        <div className="aff-lab" style={{ marginTop: '2px' }}>
-                          Enqu velocity pillars · hover any bar to inspect exact period metrics
-                        </div>
-                      </div>
+                    <div className="aff-clean-head">
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>
+                        {chartMetric === 'deposits' ? 'Player Deposits' : 'Affiliate Revenue'}
+                      </h3>
 
-                      <div className="aff-seg-group" role="group" aria-label="Chart metric mode">
-                        {(
-                          [
-                            ['commissions', 'Commissions'],
-                            ['deposits', 'Deposits'],
-                            ['combined', 'Dual View'],
-                            ['players', 'Signups']
-                          ] as Array<[typeof chartSeries, string]>
-                        ).map(([mode, label]) => (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                        <span className="aff-lab">ETB ({periodSub})</span>
+                        <div className="aff-seg-group" role="group" aria-label="Chart metric toggle">
                           <button
-                            key={mode}
                             type="button"
-                            className={`aff-seg-btn ${chartSeries === mode ? 'active' : ''}`}
-                            onClick={() => setChartSeries(mode)}
+                            className={`aff-seg-btn ${chartMetric === 'commissions' ? 'active' : ''}`}
+                            onClick={() => setChartMetric('commissions')}
                           >
-                            {label}
+                            Commissions
                           </button>
-                        ))}
+                          <button
+                            type="button"
+                            className={`aff-seg-btn ${chartMetric === 'deposits' ? 'active' : ''}`}
+                            onClick={() => setChartMetric('deposits')}
+                          >
+                            Deposits
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Non-clipped Live Bucket Inspection Readout Strip */}
-                    {activeBucket && (
-                      <div className={`aff-bucket-readout ${hoveredBucketIdx !== null ? 'is-active' : ''}`}>
-                        <div>
-                          <b>{activeBucket.label}</b>{' '}
-                          {activeBucket.subLabel && <span style={{ opacity: 0.72 }}>({activeBucket.subLabel})</span>}
-                        </div>
-                        <div className="aff-bucket-metrics">
-                          <span>Commissions: ETB {fmtETB(activeBucket.commissions || 0)}</span>
-                          <span>Deposits: ETB {fmtETB(activeBucket.deposits || 0)}</span>
-                          <span>Signups: {fmtInt(activeBucket.registrations || 0)}</span>
-                          <span>Payouts: ETB {fmtETB(activeBucket.withdrawals || 0)}</span>
-                        </div>
-                      </div>
-                    )}
-
                     {buckets.length === 0 ? (
-                      <div style={{ padding: '48px 16px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
-                        No chart buckets available for this date range.
+                      <div style={{ padding: '48px 16px', textAlign: 'center', color: '#707070', fontSize: '13px' }}>
+                        No data available for this date range.
                       </div>
                     ) : (
-                      <div className="aff-chart-scroll">
+                      <div className="aff-clean-scroll">
                         <div
-                          className="aff-enqu-bars"
-                          style={{ minWidth: buckets.length > 18 ? `${buckets.length * 40}px` : '100%' }}
+                          className="aff-clean-bars"
+                          style={{ minWidth: buckets.length > 14 ? `${buckets.length * 52}px` : '100%' }}
                         >
-                          {[1, 0.75, 0.5, 0.25, 0].map((frac, i) => (
-                            <React.Fragment key={i}>
-                              <div className="aff-gridline" style={{ bottom: `${30 + frac * 162}px` }} />
-                              <div className="aff-ylabel" style={{ bottom: `${30 + frac * 162}px` }}>
-                                {fmtCompactAxis(chartMetricMax * frac)}
-                              </div>
-                            </React.Fragment>
+                          {[100, 75, 50, 25, 0].map((p, i) => (
+                            <span key={p} className="aff-clean-yl" style={{ top: `${i * 38}px` }}>
+                              {fmtInt(Math.round((maxVal * p) / 100))}
+                            </span>
                           ))}
 
-                          {buckets.map((b, idx) => {
-                            const depVal = Number(b.deposits || 0);
-                            const comVal = Number(b.commissions || 0);
-                            const regVal = Number(b.registrations || 0);
-                            const isHighlight = idx === activeIdx;
-                            const showEvery =
-                              buckets.length > 22 ? Math.ceil(buckets.length / 10) : buckets.length > 14 ? 2 : 1;
-
-                            const comH = comVal > 0 ? Math.max(12, Math.round((comVal / chartMetricMax) * 158)) : 8;
-                            const depH = depVal > 0 ? Math.max(12, Math.round((depVal / chartMetricMax) * 158)) : 8;
-                            const regH = regVal > 0 ? Math.max(12, Math.round((regVal / chartMetricMax) * 158)) : 8;
-
-                            const primaryVal =
-                              chartSeries === 'deposits'
-                                ? depVal
-                                : chartSeries === 'players'
-                                  ? regVal
-                                  : comVal;
+                          {buckets.map((b, i) => {
+                            const v = vals[i] || 0;
+                            const isHighlight = i === todayIndex;
+                            const barHeight = Math.max(8, Math.round((v / maxVal) * 145));
+                            const shortLabel =
+                              buckets.length <= 7 && b.subLabel ? b.subLabel : b.label;
 
                             return (
                               <div
-                                key={b.bucketKey || idx}
-                                className={`aff-enqu-col ${isHighlight ? 'is-highlight' : ''}`}
-                                onMouseEnter={() => setHoveredBucketIdx(idx)}
-                                onMouseLeave={() => setHoveredBucketIdx(null)}
+                                key={b.bucketKey || i}
+                                className={`aff-clean-bar ${chartMetric === 'deposits' ? 'is-dep' : ''} ${
+                                  isHighlight ? 'h' : ''
+                                }`}
                               >
-                                <div className="aff-enqu-bar-wrap">
-                                  {chartSeries === 'combined' ? (
-                                    <>
-                                      <div
-                                        className={`aff-enqu-pillar is-dual is-dep ${depVal === 0 ? 'is-zero' : ''}`}
-                                        style={{ height: `${depH}px` }}
-                                        title={`${b.label} Deposits: ETB ${fmtETB(depVal)}`}
-                                      />
-                                      <div
-                                        className={`aff-enqu-pillar is-dual ${comVal === 0 ? 'is-zero' : ''}`}
-                                        style={{ height: `${comH}px` }}
-                                        title={`${b.label} Commissions: ETB ${fmtETB(comVal)}`}
-                                      />
-                                    </>
-                                  ) : (
-                                    <div
-                                      className={`aff-enqu-pillar ${
-                                        chartSeries === 'deposits'
-                                          ? 'is-dep'
-                                          : chartSeries === 'players'
-                                            ? 'is-players'
-                                            : ''
-                                      } ${primaryVal === 0 ? 'is-zero' : ''}`}
-                                      style={{
-                                        height: `${
-                                          chartSeries === 'deposits'
-                                            ? depH
-                                            : chartSeries === 'players'
-                                              ? regH
-                                              : comH
-                                        }px`
-                                      }}
-                                    >
-                                      {primaryVal > 0 && (
-                                        <span className="aff-bar-valtag">{fmtCompactAxis(primaryVal)}</span>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                                {idx % showEvery === 0 && <div className="aff-bar-xlabel">{b.label}</div>}
+                                <i
+                                  style={{ height: `${barHeight}px` }}
+                                  title={`${b.label}: ETB ${fmtInt(v)} (${fmtInt(b.registrations || 0)} signups)`}
+                                />
+                                <span>{shortLabel}</span>
                               </div>
                             );
                           })}
