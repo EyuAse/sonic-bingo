@@ -2142,17 +2142,98 @@ export const apiClient = {
         });
         return handleResponse<{ success: boolean; settings: any }>(res);
       },
-      async listCommissions(params?: { status?: string; type?: string; affiliateId?: string; page?: number; limit?: number }) {
+      async listCommissions(params?: {
+        status?: string;
+        type?: string;
+        affiliateId?: string;
+        from?: string;
+        to?: string;
+        search?: string;
+        page?: number;
+        limit?: number;
+      }) {
         const q = new URLSearchParams();
         if (params?.status) q.set('status', params.status);
         if (params?.type) q.set('type', params.type);
         if (params?.affiliateId) q.set('affiliateId', params.affiliateId);
+        if (params?.from) q.set('from', params.from);
+        if (params?.to) q.set('to', params.to);
+        if (params?.search) q.set('search', params.search);
         if (params?.page) q.set('page', String(params.page));
         if (params?.limit) q.set('limit', String(params.limit));
         const qs = q.toString() ? `?${q.toString()}` : '';
         const adminHeaders = await getAdminAuthHeader();
         const res = await fetch(`${API_BASE}/admin/affiliates/commissions${qs}`, { headers: { ...adminHeaders } });
         return handleResponse<{ success: boolean; commissions: any[]; totalCount: number; page: number; totalPages: number }>(res);
+      },
+      async getReports(params?: {
+        period?: 'today' | 'yesterday' | 'week' | 'month' | 'all' | 'custom';
+        from?: string;
+        to?: string;
+        granularity?: 'daily' | 'weekly' | 'monthly';
+        affiliateId?: string;
+      }) {
+        const q = new URLSearchParams();
+        if (params?.period) q.set('period', params.period);
+        if (params?.from) q.set('from', params.from);
+        if (params?.to) q.set('to', params.to);
+        if (params?.granularity) q.set('granularity', params.granularity);
+        if (params?.affiliateId) q.set('affiliateId', params.affiliateId);
+        const qs = q.toString() ? `?${q.toString()}` : '';
+        const adminHeaders = await getAdminAuthHeader();
+        const res = await fetch(`${API_BASE}/admin/affiliates/reports${qs}`, { headers: { ...adminHeaders } });
+        return handleResponse<{
+          success: boolean;
+          range: { from: string; to: string; period: string; granularity: 'daily' | 'weekly' | 'monthly'; isAllTime: boolean };
+          kpis: {
+            totalCommissions: number;
+            approvedCommissions: number;
+            pendingCommissions: number;
+            pendingCount: number;
+            reversedCommissions: number;
+            generatedDeposits: number;
+            depositCount: number;
+            activeDepositors: number;
+            newPlayers: number;
+            paidWithdrawals: number;
+            approvedWithdrawals: number;
+            pendingWithdrawals: number;
+            rejectedWithdrawals: number;
+            withdrawalsCount: number;
+          };
+          trendBuckets: Array<{
+            bucketKey: string;
+            label: string;
+            subLabel: string;
+            deposits: number;
+            commissions: number;
+            withdrawals: number;
+            registrations: number;
+          }>;
+          typeBreakdown: Array<{
+            commissionType: string;
+            label: string;
+            count: number;
+            approvedAmt: number;
+            pendingAmt: number;
+            totalAmt: number;
+          }>;
+          leaderboard: Array<{
+            id: string;
+            affiliateCode: string;
+            fullName: string;
+            status: string;
+            walletBalance: number;
+            monthlyTarget: number;
+            newPlayers: number;
+            totalPlayers: number;
+            activePlayers: number;
+            deposits: number;
+            commissionsEarned: number;
+            pendingCommissions: number;
+          }>;
+          withdrawals: any[];
+        }>(res);
       },
       async approveCommission(cid: string, note?: string) {
         const adminHeaders = await getAdminAuthHeader();

@@ -284,6 +284,34 @@
   cursor: not-allowed;
 }
 
+.affiliate-enqu-root .aff-btn-dark.aff-btn-cta {
+  padding: 9px 18px;
+  box-shadow: 0 6px 16px rgba(28, 30, 29, 0.16);
+  white-space: nowrap;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.affiliate-enqu-root .aff-btn-dark.aff-btn-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(28, 30, 29, 0.24);
+}
+
+.affiliate-enqu-root .aff-dir-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.affiliate-enqu-root .aff-dir-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .affiliate-enqu-root .aff-btn-ghost {
   background: #ffffff;
   color: #1b1b1b;
@@ -397,6 +425,329 @@
   font-size: 12.5px;
   font-weight: 700;
   color: #475569;
+}
+
+/* ============================================================================
+   MODERN REPORTS & ANALYTICS STYLES (Strictly scoped to .affiliate-enqu-root)
+   ============================================================================ */
+
+.affiliate-enqu-root .aff-report-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  margin-bottom: 15px;
+}
+
+.affiliate-enqu-root .aff-seg-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 14px;
+  flex-wrap: wrap;
+}
+
+.affiliate-enqu-root .aff-seg-btn {
+  border: none;
+  background: transparent;
+  color: #475569;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 7px 13px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.affiliate-enqu-root .aff-seg-btn:hover {
+  color: #1b1b1b;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.affiliate-enqu-root .aff-seg-btn.active {
+  background: #1c1e1d;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(28, 30, 29, 0.18);
+}
+
+.affiliate-enqu-root .aff-date-cluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.affiliate-enqu-root .aff-date-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.affiliate-enqu-root .aff-date-input {
+  width: 140px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid #d9d9db;
+  background: #f8fafc;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1b1b1b;
+  outline: none;
+}
+
+.affiliate-enqu-root .aff-date-input:focus {
+  border-color: #1c1e1d;
+  background: #ffffff;
+}
+
+/* Trend Velocity Chart */
+.affiliate-enqu-root .aff-chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.affiliate-enqu-root .aff-legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  flex-wrap: wrap;
+}
+
+.affiliate-enqu-root .aff-legend-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.affiliate-enqu-root .aff-chart-scroll {
+  width: 100%;
+  overflow-x: auto;
+  padding-top: 12px;
+}
+
+.affiliate-enqu-root .aff-chart-canvas {
+  position: relative;
+  height: 205px;
+  padding: 0 10px 26px 50px;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  min-width: 100%;
+  border-bottom: 1.5px solid #e2e8f0;
+}
+
+.affiliate-enqu-root .aff-gridline {
+  position: absolute;
+  left: 50px;
+  right: 8px;
+  border-top: 1px dashed #e2e8f0;
+  pointer-events: none;
+}
+
+.affiliate-enqu-root .aff-ylabel {
+  position: absolute;
+  left: 0;
+  width: 44px;
+  text-align: right;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #94a3b8;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.affiliate-enqu-root .aff-bar-col {
+  flex: 1;
+  min-width: 26px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  position: relative;
+  cursor: pointer;
+}
+
+.affiliate-enqu-root .aff-dual-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  height: calc(100% - 2px);
+}
+
+.affiliate-enqu-root .aff-bar-dep {
+  width: clamp(8px, 1.5vw, 15px);
+  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+  border-radius: 5px 5px 0 0;
+  transition: height 0.25s ease;
+}
+
+.affiliate-enqu-root .aff-bar-com {
+  width: clamp(8px, 1.5vw, 15px);
+  background: linear-gradient(180deg, #1c1e1d 0%, #3f3f46 100%);
+  border-radius: 5px 5px 0 0;
+  transition: height 0.25s ease;
+}
+
+.affiliate-enqu-root .aff-bar-col:hover .aff-bar-dep {
+  filter: brightness(1.08);
+}
+
+.affiliate-enqu-root .aff-bar-col:hover .aff-bar-com {
+  background: linear-gradient(180deg, #6366f1 0%, #4338ca 100%);
+}
+
+.affiliate-enqu-root .aff-bar-xlabel {
+  position: absolute;
+  bottom: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.affiliate-enqu-root .aff-chart-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0f172a;
+  color: #ffffff;
+  padding: 8px 11px;
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: nowrap;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.28);
+  z-index: 40;
+  pointer-events: none;
+}
+
+/* 6-Rule Mix Breakdown */
+.affiliate-enqu-root .aff-mix-list {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.affiliate-enqu-root .aff-mix-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.affiliate-enqu-root .aff-mix-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12.5px;
+  gap: 8px;
+}
+
+.affiliate-enqu-root .aff-mix-track {
+  width: 100%;
+  height: 7px;
+  border-radius: 9999px;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+
+.affiliate-enqu-root .aff-mix-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.25s ease;
+}
+
+/* Report Subtabs & Pagination */
+.affiliate-enqu-root .aff-subtabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.affiliate-enqu-root .aff-subtab-btn {
+  padding: 9px 16px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: all 0.15s ease;
+}
+
+.affiliate-enqu-root .aff-subtab-btn.active {
+  background: #1c1e1d;
+  color: #ffffff;
+  border-color: #1c1e1d;
+  box-shadow: 0 4px 12px rgba(28, 30, 29, 0.16);
+}
+
+.affiliate-enqu-root .aff-subtab-count {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  background: rgba(100, 116, 139, 0.14);
+}
+
+.affiliate-enqu-root .aff-subtab-btn.active .aff-subtab-count {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.affiliate-enqu-root .aff-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 12.5px;
+  color: #64748b;
+  flex-wrap: wrap;
+}
+
+.affiliate-enqu-root .aff-mini-progress {
+  width: 110px;
+  height: 6px;
+  border-radius: 9999px;
+  background: #e2e8f0;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.affiliate-enqu-root .aff-mini-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #16a34a, #22c55e);
 }
 
 @media (max-width: 1120px) {

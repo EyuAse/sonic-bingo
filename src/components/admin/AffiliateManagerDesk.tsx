@@ -31,6 +31,34 @@ const fmtDate = (iso?: string) => {
   });
 };
 
+type ReportPeriod = 'today' | 'yesterday' | 'week' | 'month' | 'all' | 'custom';
+type ReportGranularity = 'daily' | 'weekly' | 'monthly';
+
+function getEatYmdOffset(daysDelta: number): string {
+  const nowEatMs = Date.now() + 3 * 60 * 60 * 1000 + daysDelta * 86400000;
+  return new Date(nowEatMs).toISOString().slice(0, 10);
+}
+
+function getClientPresetDates(period: ReportPeriod, fromInput: string, toInput: string): { from?: string; to?: string } {
+  const today = getEatYmdOffset(0);
+  if (period === 'today') return { from: today, to: today };
+  if (period === 'yesterday') {
+    const yest = getEatYmdOffset(-1);
+    return { from: yest, to: yest };
+  }
+  if (period === 'week') return { from: getEatYmdOffset(-6), to: today };
+  if (period === 'month') return { from: getEatYmdOffset(-29), to: today };
+  if (period === 'custom') return { from: fromInput || undefined, to: toInput || undefined };
+  return {};
+}
+
+const fmtCompactAxis = (n: number) => {
+  const v = Math.round(n || 0);
+  if (v >= 1000000) return `${(v / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
+  if (v >= 1000) return `${(v / 1000).toFixed(1).replace(/\.0$/, '')}k`;
+  return String(v);
+};
+
 const RULE_THEMES: Record<string, { bg: string; fg: string; badge: string; icon: string }> = {
   registration: { bg: '#dbeafe', fg: '#1d4ed8', badge: 'SIGNUP', icon: '👤' },
   first_deposit: { bg: '#dcfce7', fg: '#15803d', badge: '1ST DEPOSIT', icon: '💎' },
@@ -40,7 +68,7 @@ const RULE_THEMES: Record<string, { bg: string; fg: string; badge: string; icon:
   loyalty: { bg: '#ffe4e6', fg: '#be123c', badge: 'LOYALTY', icon: '👑' }
 };
 
-export const AffiliateManagerDesk: React.FC<AffiliateManagerDeskProps> = ({ view, onNavigateView }) => {
+export const AffiliateManagerDesk: React.FC<AffiliateManagerDeskProps> = ({ view, onNavigateView: _onNavigateView }) => {
   const { isSidebarCollapsed, toggleSidebar } = useAdmin();
   const { showToast } = useApp();
 
@@ -63,6 +91,20 @@ export const AffiliateManagerDesk: React.FC<AffiliateManagerDeskProps> = ({ view
   const [wdFilter, setWdFilter] = useState('all');
   const [commTypeFilter, setCommTypeFilter] = useState('all');
   const [commStatusFilter, setCommStatusFilter] = useState('all');
+
+  // Modern Reports & Analytics State
+  const [reportPeriod, setReportPeriod] = useState<ReportPeriod>('month');
+  const [reportGranularity, setReportGranularity] = useState<ReportGranularity>('daily');
+  const [reportFrom, setReportFrom] = useState(() => getEatYmdOffset(-29));
+  const [reportTo, setReportTo] = useState(() => getEatYmdOffset(0));
+  const [reportAffiliateId, setReportAffiliateId] = useState('');
+  const [reportData, setReportData] = useState<any>(null);
+  const [reportSubTab, setReportSubTab] = useState<'ledger' | 'leaderboard' | 'withdrawals'>('ledger');
+  const [hoveredBucketIdx, setHoveredBucketIdx] = useState<number | null>(null);
+  const [commSearch, setCommSearch] = useState('');
+  const [commPage, setCommPage] = useState(1);
+  const [commTotalPages, setCommTotalPages] = useState(1);
+  const [commTotalCount, setCommTotalCount] = useState(0);
 
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -148,15 +190,33 @@ export const AffiliateManagerDesk: React.FC<AffiliateManagerDeskProps> = ({ view
         }
         if (aRes?.success) setAuditLogs(aRes.logs || []);
       } else if (view === 'reports') {
-        const [cRes, listRes] = await Promise.all([
+        const range = getClientPresetDates(reportPeriod, reportFrom, reportTo);
+        const [repRes, cRes, listRes] = await Promise.all([
+          apiClient.admin.affiliates.getReports({
+            period: reportPeriod,
+            from: reportPeriod === 'custom' ? reportFrom : undefined,
+            to: reportPeriod === 'custom' ? reportTo : undefined,
+            granularity: reportGranularity,
+            affiliateId: reportAffiliateId || undefined
+          }),
           apiClient.admin.affiliates.listCommissions({
             type: commTypeFilter,
             status: commStatusFilter,
-            limit: 40
+            affiliateId: reportAffiliateId || undefined,
+            from: range.from,
+            to: range.to,
+            search: commSearch.trim() || undefined,
+            page: commPage,
+            limit: 20
           }),
           apiClient.admin.affiliates.list()
         ]);
-        if (cRes?.success) setCommissions(cRes.commissions || []);
+        if (repRes?.success) setReportData(repRes);
+        if (cRes?.success) {
+          setCommissions(cRes.commissions || []);
+          setCommTotalPages(cRes.totalPages || 1);
+          setCommTotalCount(cRes.totalCount || 0);
+        }
         if (listRes?.success) setAffiliates(listRes.affiliates || []);
       }
     } catch (err: any) {
@@ -164,7 +224,23 @@ export const AffiliateManagerDesk: React.FC<AffiliateManagerDeskProps> = ({ view
     } finally {
       setIsLoading(false);
     }
-  }, [view, searchQuery, statusFilter, wdFilter, commTypeFilter, commStatusFilter, selectedAffiliateId, showToast]);
+  }, [
+    view,
+    searchQuery,
+    statusFilter,
+    wdFilter,
+    commTypeFilter,
+    commStatusFilter,
+    reportPeriod,
+    reportGranularity,
+    reportFrom,
+    reportTo,
+    reportAffiliateId,
+    commSearch,
+    commPage,
+    selectedAffiliateId,
+    showToast
+  ]);
 
   useEffect(() => {
     loadData();
@@ -421,47 +497,13 @@ export const AffiliateManagerDesk: React.FC<AffiliateManagerDeskProps> = ({ view
           {view === 'directory' && 'Affiliate Manager'}
           {view === 'wallets' && 'Affiliate Wallets & Payouts'}
           {view === 'rules' && 'Commission & Payout Setup'}
-          {view === 'reports' && 'Affiliate Reports & Ledger'}
+          {view === 'reports' && 'Affiliate Reports & Analytics'}
         </h1>
 
         <div className="aff-pill-bar">
-          {onNavigateView && (
-            <>
-              <button
-                type="button"
-                className={view === 'directory' ? 'aff-btn-dark' : 'aff-btn-ghost'}
-                onClick={() => onNavigateView('affiliates-dir')}
-              >
-                Affiliates &amp; Links
-              </button>
-              <button
-                type="button"
-                className={view === 'wallets' ? 'aff-btn-dark' : 'aff-btn-ghost'}
-                onClick={() => onNavigateView('affiliates-wallets')}
-              >
-                Wallets &amp; Payouts
-              </button>
-              <button
-                type="button"
-                className={view === 'rules' ? 'aff-btn-dark' : 'aff-btn-ghost'}
-                onClick={() => onNavigateView('affiliates-rules')}
-              >
-                6 Commission Rules
-              </button>
-              <button
-                type="button"
-                className={view === 'reports' ? 'aff-btn-dark' : 'aff-btn-ghost'}
-                onClick={() => onNavigateView('affiliates-reports')}
-              >
-                Reports
-              </button>
-            </>
-          )}
-          {view === 'directory' && (
-            <button type="button" className="aff-btn-dark" onClick={() => setShowCreateModal(true)}>
-              + Register Affiliate
-            </button>
-          )}
+          <button type="button" className="aff-btn-ghost" onClick={loadData} disabled={isLoading}>
+            {isLoading ? 'Refreshing…' : '↻ Refresh'}
+          </button>
         </div>
       </div>
 
@@ -545,13 +587,18 @@ export const AffiliateManagerDesk: React.FC<AffiliateManagerDeskProps> = ({ view
             {/* Left: Affiliates Table + Registration Links */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <div className="aff-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                  <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800 }}>Affiliates Directory</h3>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <div className="aff-dir-head">
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800 }}>Affiliates Directory</h3>
+                    <div className="aff-lab" style={{ marginTop: '2px' }}>
+                      Manage approved partners, monthly player targets &amp; wallet status
+                    </div>
+                  </div>
+                  <div className="aff-dir-toolbar">
                     <input
                       type="text"
                       className="aff-input"
-                      style={{ width: '190px' }}
+                      style={{ width: '185px' }}
                       placeholder="Search name, phone, AFF-..."
                       value={searchQuery}
                       onChange={e => setSearchQuery(e.target.value)}
@@ -567,6 +614,9 @@ export const AffiliateManagerDesk: React.FC<AffiliateManagerDeskProps> = ({ view
                       <option value="inactive">Inactive</option>
                       <option value="suspended">Suspended</option>
                     </select>
+                    <button type="button" className="aff-btn-dark aff-btn-cta" onClick={() => setShowCreateModal(true)}>
+                      + Register Affiliate
+                    </button>
                   </div>
                 </div>
 
@@ -590,8 +640,13 @@ export const AffiliateManagerDesk: React.FC<AffiliateManagerDeskProps> = ({ view
                         </tr>
                       ) : affiliates.length === 0 ? (
                         <tr>
-                          <td colSpan={5} style={{ textAlign: 'center', padding: '20px', color: '#707070' }}>
-                            No affiliates yet. Click "+ Register Affiliate" or create a Registration Link below.
+                          <td colSpan={5} style={{ textAlign: 'center', padding: '24px', color: '#707070' }}>
+                            <div style={{ marginBottom: '10px' }}>
+                              No affiliates registered yet. Add one directly or generate an invite link below.
+                            </div>
+                            <button type="button" className="aff-btn-dark aff-btn-cta" onClick={() => setShowCreateModal(true)}>
+                              + Register Affiliate
+                            </button>
                           </td>
                         </tr>
                       ) : (
@@ -1132,158 +1187,714 @@ export const AffiliateManagerDesk: React.FC<AffiliateManagerDeskProps> = ({ view
       )}
 
       {/* =================================================================
-          VIEW 4: REPORTS & COMMISSION LEDGER
+          VIEW 4: MODERN REPORTS & ANALYTICS SUITE
           ================================================================= */}
-      {view === 'reports' && (
-        <>
-          <div className="aff-grid aff-g4">
-            <div className="aff-card dark-hero">
-              <div className="aff-lab">Total Commissions Earned</div>
-              <div className="aff-val">ETB {fmtETB(overview?.totalEarned || 0)}</div>
-              <div className="aff-sub">Approved + paid lifetime</div>
-            </div>
-            <div className="aff-card">
-              <div className="aff-lab">Pending Review</div>
-              <div className="aff-val">ETB {fmtETB(overview?.pendingCommissionsAmt || 0)}</div>
-              <div className="aff-sub">{fmtInt(overview?.pendingCommissionsCount || 0)} pending items</div>
-            </div>
-            <div className="aff-card">
-              <div className="aff-lab">Reversed Commissions</div>
-              <div className="aff-val">ETB {fmtETB(overview?.reversedCommissionsAmt || 0)}</div>
-              <div className="aff-sub">Fraud / deposit reversal audit</div>
-            </div>
-            <div className="aff-card">
-              <div className="aff-lab">Generated Deposits</div>
-              <div className="aff-val">ETB {fmtETB(overview?.totalAffiliateDeposits || 0)}</div>
-              <div className="aff-sub">{fmtInt(overview?.totalReferredPlayers || 0)} referred players</div>
-            </div>
-          </div>
+      {view === 'reports' && (() => {
+        const repKpis = reportData?.kpis || {
+          totalCommissions: 0,
+          approvedCommissions: 0,
+          pendingCommissions: 0,
+          pendingCount: 0,
+          reversedCommissions: 0,
+          generatedDeposits: 0,
+          depositCount: 0,
+          activeDepositors: 0,
+          newPlayers: 0,
+          paidWithdrawals: 0,
+          approvedWithdrawals: 0,
+          pendingWithdrawals: 0,
+          rejectedWithdrawals: 0,
+          withdrawalsCount: 0
+        };
+        const buckets: any[] = reportData?.trendBuckets || [];
+        const breakdown: any[] = reportData?.typeBreakdown || [];
+        const leaderboard: any[] = reportData?.leaderboard || [];
+        const periodWithdrawals: any[] = reportData?.withdrawals || [];
 
-          <div className="aff-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
-              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800 }}>Commission Transactions Ledger</h3>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <select className="aff-input" style={{ width: 'auto' }} value={commTypeFilter} onChange={e => setCommTypeFilter(e.target.value)}>
-                  <option value="all">All 6 Types</option>
-                  <option value="registration">Registration</option>
-                  <option value="first_deposit">First Deposit</option>
-                  <option value="regular_deposit">Regular Deposit</option>
-                  <option value="target">Target</option>
-                  <option value="monthly">Monthly</option>
-                  <option value="loyalty">Loyalty</option>
+        const maxChartVal = Math.max(
+          100,
+          ...buckets.map(b => Math.max(Number(b.deposits || 0), Number(b.commissions || 0)))
+        );
+        const totalBreakdownAmt = Math.max(
+          1,
+          breakdown.reduce((acc, row) => acc + Number(row.totalAmt || 0), 0)
+        );
+
+        const selectPreset = (next: ReportPeriod) => {
+          setReportPeriod(next);
+          setCommPage(1);
+          if (next === 'today') {
+            const t = getEatYmdOffset(0);
+            setReportFrom(t);
+            setReportTo(t);
+            setReportGranularity('daily');
+          } else if (next === 'yesterday') {
+            const y = getEatYmdOffset(-1);
+            setReportFrom(y);
+            setReportTo(y);
+            setReportGranularity('daily');
+          } else if (next === 'week') {
+            setReportFrom(getEatYmdOffset(-6));
+            setReportTo(getEatYmdOffset(0));
+            setReportGranularity('daily');
+          } else if (next === 'month') {
+            setReportFrom(getEatYmdOffset(-29));
+            setReportTo(getEatYmdOffset(0));
+            setReportGranularity('daily');
+          } else if (next === 'all') {
+            setReportFrom('2024-01-01');
+            setReportTo(getEatYmdOffset(0));
+            setReportGranularity('monthly');
+          }
+        };
+
+        const handleExportReportCsv = () => {
+          const esc = (v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+          let csvRows: string[] = [];
+          let fileName = `affiliate-${reportSubTab}-${reportFrom}-to-${reportTo}.csv`;
+
+          if (reportSubTab === 'leaderboard') {
+            csvRows.push(['Rank', 'Code', 'Affiliate', 'Status', 'New Players', 'Total Players', 'Active 14d', 'Monthly Target', 'Generated Deposits ETB', 'Approved Commissions ETB', 'Pending Commissions ETB'].map(esc).join(','));
+            leaderboard.forEach((row, idx) => {
+              csvRows.push([
+                idx + 1,
+                row.affiliateCode,
+                row.fullName,
+                row.status,
+                row.newPlayers,
+                row.totalPlayers,
+                row.activePlayers,
+                row.monthlyTarget,
+                row.deposits,
+                row.commissionsEarned,
+                row.pendingCommissions
+              ].map(esc).join(','));
+            });
+          } else if (reportSubTab === 'withdrawals') {
+            csvRows.push(['Code', 'Affiliate', 'Phone', 'Method', 'Account', 'Amount ETB', 'Status', 'Payment Ref', 'Created At'].map(esc).join(','));
+            periodWithdrawals.forEach(w => {
+              csvRows.push([
+                w.affiliate_code,
+                w.affiliate_name,
+                w.affiliate_phone,
+                w.payout_method,
+                w.payout_account,
+                w.amount,
+                w.status,
+                w.payment_reference || '',
+                w.created_at
+              ].map(esc).join(','));
+            });
+          } else {
+            csvRows.push(['Code', 'Affiliate', 'Commission Type', 'Rule Version', 'Mode', 'Rate', 'Base ETB', 'Commission ETB', 'Player', 'Status', 'Created At'].map(esc).join(','));
+            commissions.forEach(c => {
+              csvRows.push([
+                c.affiliate_code,
+                c.affiliate_name,
+                c.commission_type,
+                `v${c.rule_version}`,
+                c.calc_mode,
+                c.rate_applied,
+                c.base_amount,
+                c.amount,
+                c.player_name || '',
+                c.status,
+                c.created_at
+              ].map(esc).join(','));
+            });
+          }
+
+          const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = fileName;
+          link.click();
+          URL.revokeObjectURL(url);
+          showToast(`📥 Exported ${fileName}`);
+        };
+
+        return (
+          <>
+            {/* 1. Timeframe, Custom Date Search & Granularity Toolbar */}
+            <div className="aff-card aff-report-bar">
+              <div className="aff-seg-group" role="group" aria-label="Report period presets">
+                {(
+                  [
+                    ['today', 'Today (Daily)'],
+                    ['yesterday', 'Yesterday'],
+                    ['week', 'Weekly (7D)'],
+                    ['month', 'Monthly (30D)'],
+                    ['all', 'All Time'],
+                    ['custom', 'Custom Dates']
+                  ] as Array<[ReportPeriod, string]>
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`aff-seg-btn ${reportPeriod === key ? 'active' : ''}`}
+                    onClick={() => selectPreset(key)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="aff-date-cluster">
+                <span className="aff-date-label">From</span>
+                <input
+                  type="date"
+                  className="aff-date-input"
+                  value={reportFrom}
+                  onChange={e => {
+                    setReportFrom(e.target.value);
+                    setReportPeriod('custom');
+                    setCommPage(1);
+                  }}
+                />
+                <span className="aff-date-label">To</span>
+                <input
+                  type="date"
+                  className="aff-date-input"
+                  value={reportTo}
+                  onChange={e => {
+                    setReportTo(e.target.value);
+                    setReportPeriod('custom');
+                    setCommPage(1);
+                  }}
+                />
+              </div>
+
+              <div className="aff-date-cluster">
+                <div className="aff-seg-group" role="group" aria-label="Chart grouping">
+                  {(['daily', 'weekly', 'monthly'] as ReportGranularity[]).map(g => (
+                    <button
+                      key={g}
+                      type="button"
+                      className={`aff-seg-btn ${reportGranularity === g ? 'active' : ''}`}
+                      onClick={() => setReportGranularity(g)}
+                    >
+                      {g.charAt(0).toUpperCase() + g.slice(1)}
+                    </button>
+                  ))}
+                </div>
+
+                <select
+                  className="aff-input"
+                  style={{ width: 'auto', minWidth: '155px' }}
+                  value={reportAffiliateId}
+                  onChange={e => {
+                    setReportAffiliateId(e.target.value);
+                    setCommPage(1);
+                  }}
+                >
+                  <option value="">All Affiliates</option>
+                  {affiliates.map(a => (
+                    <option key={a.id} value={a.id}>
+                      {a.affiliateCode} · {a.fullName}
+                    </option>
+                  ))}
                 </select>
-                <select className="aff-input" style={{ width: 'auto' }} value={commStatusFilter} onChange={e => setCommStatusFilter(e.target.value)}>
-                  <option value="all">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
-                  <option value="reversed">Reversed</option>
-                </select>
+
+                <button type="button" className="aff-btn-dark" onClick={handleExportReportCsv}>
+                  ↓ Export CSV
+                </button>
               </div>
             </div>
 
-            <div className="aff-table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Affiliate</th>
-                    <th>Type</th>
-                    <th>Rule</th>
-                    <th>Player</th>
-                    <th>Base</th>
-                    <th>Commission</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {commissions.length === 0 ? (
-                    <tr>
-                      <td colSpan={9} style={{ textAlign: 'center', padding: '18px', color: '#707070' }}>
-                        No commission records yet.
-                      </td>
-                    </tr>
-                  ) : (
-                    commissions.map(c => (
-                      <tr key={c.id}>
-                        <td>
-                          <b>{c.affiliate_name}</b>
-                          <div style={{ fontSize: '11.5px', color: '#707070' }}>{c.affiliate_code}</div>
-                        </td>
-                        <td><span className="aff-chip">{c.commission_type}</span></td>
-                        <td style={{ fontSize: '12px' }}>
-                          v{c.rule_version} ({c.calc_mode === 'percent' ? `${c.rate_applied}%` : `ETB ${c.rate_applied}`})
-                        </td>
-                        <td style={{ fontSize: '12.5px' }}>{c.player_name || '—'}</td>
-                        <td>ETB {fmtETB(c.base_amount)}</td>
-                        <td><b>ETB {fmtETB(c.amount)}</b></td>
-                        <td>
-                          <span
-                            className={`aff-chip ${
-                              c.status === 'approved' ? 'green' : c.status === 'reversed' || c.status === 'rejected' ? 'red' : 'amber'
-                            }`}
+            {/* 2. Period-Scoped 4 Executive Hero Cards */}
+            <div className="aff-grid aff-g4">
+              <div className="aff-card dark-hero">
+                <div className="aff-lab">Commissions ({reportPeriod === 'all' ? 'All Time' : `${reportFrom} → ${reportTo}`})</div>
+                <div className="aff-val">ETB {fmtETB(repKpis.totalCommissions)}</div>
+                <div className="aff-sub">
+                  Approved: ETB {fmtETB(repKpis.approvedCommissions)}
+                </div>
+              </div>
+              <div className="aff-card">
+                <div className="aff-lab">Generated Player Deposits</div>
+                <div className="aff-val">ETB {fmtETB(repKpis.generatedDeposits)}</div>
+                <div className="aff-sub">
+                  {fmtInt(repKpis.depositCount)} deposits · {fmtInt(repKpis.activeDepositors)} depositors
+                </div>
+              </div>
+              <div className="aff-card">
+                <div className="aff-lab">New Referred Players</div>
+                <div className="aff-val">{fmtInt(repKpis.newPlayers)}</div>
+                <div className="aff-sub">
+                  Paid payouts: ETB {fmtETB(repKpis.paidWithdrawals)}
+                </div>
+              </div>
+              <div className="aff-card">
+                <div className="aff-lab">Pending Review &amp; Reversals</div>
+                <div className="aff-val">ETB {fmtETB(repKpis.pendingCommissions)}</div>
+                <div className="aff-sub">
+                  {fmtInt(repKpis.pendingCount)} pending · Reversed: ETB {fmtETB(repKpis.reversedCommissions)}
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Visual Analytics Row: Trend Chart + 6-Type Breakdown */}
+            <div className="aff-grid aff-g2">
+              <div className="aff-card">
+                <div className="aff-chart-head">
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 800 }}>
+                      Deposits vs. Commissions Velocity ({reportGranularity.charAt(0).toUpperCase() + reportGranularity.slice(1)})
+                    </h3>
+                    <div className="aff-lab" style={{ marginTop: '2px' }}>
+                      Hover bars to inspect exact deposits, commissions &amp; player signups per bucket
+                    </div>
+                  </div>
+                  <div className="aff-legend">
+                    <span>
+                      <span className="aff-legend-dot" style={{ background: '#10b981' }} />
+                      Player Deposits
+                    </span>
+                    <span>
+                      <span className="aff-legend-dot" style={{ background: '#1c1e1d' }} />
+                      Commissions
+                    </span>
+                  </div>
+                </div>
+
+                {buckets.length === 0 ? (
+                  <div style={{ padding: '48px 16px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
+                    No chart buckets available for this date range.
+                  </div>
+                ) : (
+                  <div className="aff-chart-scroll">
+                    <div
+                      className="aff-chart-canvas"
+                      style={{ minWidth: buckets.length > 16 ? `${buckets.length * 42}px` : '100%' }}
+                    >
+                      {[0, 0.33, 0.66, 1].map((frac, idx) => (
+                        <React.Fragment key={idx}>
+                          <div className="aff-gridline" style={{ bottom: `${26 + frac * 165}px` }} />
+                          <div className="aff-ylabel" style={{ bottom: `${26 + frac * 165}px` }}>
+                            {fmtCompactAxis(maxChartVal * frac)}
+                          </div>
+                        </React.Fragment>
+                      ))}
+
+                      {buckets.map((b, idx) => {
+                        const depVal = Number(b.deposits || 0);
+                        const comVal = Number(b.commissions || 0);
+                        const depPct = depVal > 0 ? Math.max(3, (depVal / maxChartVal) * 100) : 0;
+                        const comPct = comVal > 0 ? Math.max(3, (comVal / maxChartVal) * 100) : 0;
+                        const showEvery = buckets.length > 22 ? Math.ceil(buckets.length / 10) : buckets.length > 12 ? 2 : 1;
+
+                        return (
+                          <div
+                            key={b.bucketKey || idx}
+                            className="aff-bar-col"
+                            onMouseEnter={() => setHoveredBucketIdx(idx)}
+                            onMouseLeave={() => setHoveredBucketIdx(null)}
                           >
-                            {String(c.status).toUpperCase()}
+                            {hoveredBucketIdx === idx && (
+                              <div className="aff-chart-tooltip">
+                                <div style={{ fontWeight: 800, marginBottom: '2px' }}>
+                                  {b.label} {b.subLabel ? `(${b.subLabel})` : ''}
+                                </div>
+                                <div>Deposits: ETB {fmtETB(depVal)}</div>
+                                <div>Commissions: ETB {fmtETB(comVal)}</div>
+                                <div>New Players: {fmtInt(b.registrations || 0)}</div>
+                                <div>Payouts: ETB {fmtETB(b.withdrawals || 0)}</div>
+                              </div>
+                            )}
+
+                            <div className="aff-dual-bars">
+                              <div className="aff-bar-dep" style={{ height: `${depPct}%` }} />
+                              <div className="aff-bar-com" style={{ height: `${comPct}%` }} />
+                            </div>
+                            {idx % showEvery === 0 && <div className="aff-bar-xlabel">{b.label}</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="aff-card">
+                <div style={{ marginBottom: '12px' }}>
+                  <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 800 }}>6 Commission Types Breakdown</h3>
+                  <div className="aff-lab" style={{ marginTop: '2px' }}>
+                    Approved + Pending earnings mix in selected range
+                  </div>
+                </div>
+                <div className="aff-mix-list">
+                  {breakdown.map(item => {
+                    const theme = RULE_THEMES[item.commissionType] || { bg: '#f1f5f9', fg: '#334155', icon: '⚡' };
+                    const pct = Math.min(100, Math.round((Number(item.totalAmt || 0) / totalBreakdownAmt) * 100));
+                    return (
+                      <div key={item.commissionType} className="aff-mix-item">
+                        <div className="aff-mix-top">
+                          <span style={{ fontWeight: 700 }}>
+                            {theme.icon} {item.label}{' '}
+                            <span style={{ color: '#94a3b8', fontWeight: 600 }}>({fmtInt(item.count)})</span>
                           </span>
-                        </td>
-                        <td style={{ fontSize: '11.5px', color: '#707070' }}>{fmtDate(c.created_at)}</td>
-                        <td>
-                          <div style={{ display: 'flex', gap: '5px' }}>
-                            {c.status === 'pending' && (
-                              <>
-                                <button
-                                  type="button"
-                                  className="aff-btn-dark"
-                                  style={{ padding: '4px 8px', fontSize: '11.5px' }}
-                                  onClick={() => apiClient.admin.affiliates.approveCommission(c.id).then(loadData)}
+                          <b>ETB {fmtETB(item.totalAmt)}</b>
+                        </div>
+                        <div className="aff-mix-track">
+                          <div
+                            className="aff-mix-fill"
+                            style={{
+                              width: `${Number(item.totalAmt || 0) > 0 ? Math.max(4, pct) : 0}%`,
+                              background: theme.fg
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Sub-Tabs + Ledger / Leaderboard / Withdrawals Report */}
+            <div className="aff-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                <div className="aff-subtabs" style={{ marginBottom: 0 }}>
+                  <button
+                    type="button"
+                    className={`aff-subtab-btn ${reportSubTab === 'ledger' ? 'active' : ''}`}
+                    onClick={() => setReportSubTab('ledger')}
+                  >
+                    Commission Ledger <span className="aff-subtab-count">{fmtInt(commTotalCount)}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`aff-subtab-btn ${reportSubTab === 'leaderboard' ? 'active' : ''}`}
+                    onClick={() => setReportSubTab('leaderboard')}
+                  >
+                    Top Affiliates &amp; Targets <span className="aff-subtab-count">{fmtInt(leaderboard.length)}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`aff-subtab-btn ${reportSubTab === 'withdrawals' ? 'active' : ''}`}
+                    onClick={() => setReportSubTab('withdrawals')}
+                  >
+                    Withdrawals &amp; Payouts <span className="aff-subtab-count">{fmtInt(periodWithdrawals.length)}</span>
+                  </button>
+                </div>
+
+                {reportSubTab === 'ledger' && (
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <input
+                      type="text"
+                      className="aff-input"
+                      style={{ width: '215px' }}
+                      placeholder="Search affiliate, AFF-, player..."
+                      value={commSearch}
+                      onChange={e => {
+                        setCommSearch(e.target.value);
+                        setCommPage(1);
+                      }}
+                    />
+                    <select
+                      className="aff-input"
+                      style={{ width: 'auto' }}
+                      value={commTypeFilter}
+                      onChange={e => {
+                        setCommTypeFilter(e.target.value);
+                        setCommPage(1);
+                      }}
+                    >
+                      <option value="all">All 6 Types</option>
+                      <option value="registration">Registration</option>
+                      <option value="first_deposit">First Deposit</option>
+                      <option value="regular_deposit">Regular Deposit</option>
+                      <option value="target">Target</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="loyalty">Loyalty</option>
+                    </select>
+                    <select
+                      className="aff-input"
+                      style={{ width: 'auto' }}
+                      value={commStatusFilter}
+                      onChange={e => {
+                        setCommStatusFilter(e.target.value);
+                        setCommPage(1);
+                      }}
+                    >
+                      <option value="all">All Status</option>
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
+                      <option value="reversed">Reversed</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {reportSubTab === 'ledger' && (
+                <>
+                  <div className="aff-table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Affiliate</th>
+                          <th>Type</th>
+                          <th>Rule</th>
+                          <th>Player</th>
+                          <th>Base</th>
+                          <th>Commission</th>
+                          <th>Status</th>
+                          <th>Date</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {commissions.length === 0 ? (
+                          <tr>
+                            <td colSpan={9} style={{ textAlign: 'center', padding: '22px', color: '#707070' }}>
+                              No commission records match the selected date range and filters.
+                            </td>
+                          </tr>
+                        ) : (
+                          commissions.map(c => (
+                            <tr key={c.id}>
+                              <td>
+                                <b>{c.affiliate_name}</b>
+                                <div style={{ fontSize: '11.5px', color: '#707070' }}>{c.affiliate_code}</div>
+                              </td>
+                              <td><span className="aff-chip">{c.commission_type}</span></td>
+                              <td style={{ fontSize: '12px' }}>
+                                v{c.rule_version} ({c.calc_mode === 'percent' ? `${c.rate_applied}%` : `ETB ${c.rate_applied}`})
+                              </td>
+                              <td style={{ fontSize: '12.5px' }}>{c.player_name || '—'}</td>
+                              <td>ETB {fmtETB(c.base_amount)}</td>
+                              <td><b>ETB {fmtETB(c.amount)}</b></td>
+                              <td>
+                                <span
+                                  className={`aff-chip ${
+                                    c.status === 'approved' ? 'green' : c.status === 'reversed' || c.status === 'rejected' ? 'red' : 'amber'
+                                  }`}
                                 >
-                                  Approve
-                                </button>
+                                  {String(c.status).toUpperCase()}
+                                </span>
+                              </td>
+                              <td style={{ fontSize: '11.5px', color: '#707070' }}>{fmtDate(c.created_at)}</td>
+                              <td>
+                                <div style={{ display: 'flex', gap: '5px' }}>
+                                  {c.status === 'pending' && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        className="aff-btn-dark"
+                                        style={{ padding: '4px 8px', fontSize: '11.5px' }}
+                                        onClick={() => apiClient.admin.affiliates.approveCommission(c.id).then(loadData)}
+                                      >
+                                        Approve
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="aff-btn-ghost"
+                                        style={{ padding: '4px 8px', fontSize: '11.5px' }}
+                                        onClick={() => {
+                                          const r = window.prompt('Rejection reason:') || 'Declined';
+                                          apiClient.admin.affiliates.rejectCommission(c.id, r).then(loadData);
+                                        }}
+                                      >
+                                        Reject
+                                      </button>
+                                    </>
+                                  )}
+                                  {(c.status === 'pending' || c.status === 'approved') && (
+                                    <button
+                                      type="button"
+                                      className="aff-btn-ghost"
+                                      style={{ padding: '4px 8px', fontSize: '11.5px', color: '#b0302f' }}
+                                      onClick={() => {
+                                        const r = window.prompt('Reversal reason (required):');
+                                        if (!r) return;
+                                        apiClient.admin.affiliates
+                                          .reverseCommission(c.id, r)
+                                          .then(() => {
+                                            showToast('✅ Commission reversed cleanly');
+                                            loadData();
+                                          })
+                                          .catch(err => showToast(`❌ ${err?.message || 'Reversal failed'}`));
+                                      }}
+                                    >
+                                      Reverse
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="aff-pagination">
+                    <span>
+                      Page <b>{commPage}</b> of <b>{commTotalPages}</b> · {fmtInt(commTotalCount)} total records
+                    </span>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        className="aff-btn-ghost"
+                        disabled={commPage <= 1}
+                        onClick={() => setCommPage(p => Math.max(1, p - 1))}
+                      >
+                        ← Previous
+                      </button>
+                      <button
+                        type="button"
+                        className="aff-btn-ghost"
+                        disabled={commPage >= commTotalPages}
+                        onClick={() => setCommPage(p => Math.min(commTotalPages, p + 1))}
+                      >
+                        Next →
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {reportSubTab === 'leaderboard' && (
+                <div className="aff-table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Affiliate</th>
+                        <th>New Players</th>
+                        <th>Total / Active (14d)</th>
+                        <th>Target Progress</th>
+                        <th>Period Deposits</th>
+                        <th>Commissions Earned</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {leaderboard.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} style={{ textAlign: 'center', padding: '22px', color: '#707070' }}>
+                            No approved affiliates found in this period.
+                          </td>
+                        </tr>
+                      ) : (
+                        leaderboard.map((row, idx) => {
+                          const targetPct = Math.min(100, Math.round((row.newPlayers / Math.max(1, row.monthlyTarget)) * 100));
+                          return (
+                            <tr key={row.id}>
+                              <td><b>#{idx + 1}</b></td>
+                              <td>
+                                <b>{row.fullName}</b>
+                                <div style={{ fontSize: '11.5px', color: '#707070' }}>
+                                  {row.affiliateCode} · <span className={`aff-chip ${row.status === 'active' ? 'green' : 'amber'}`}>{row.status.toUpperCase()}</span>
+                                </div>
+                              </td>
+                              <td><b>{fmtInt(row.newPlayers)}</b></td>
+                              <td>
+                                {fmtInt(row.totalPlayers)} / <span style={{ color: '#16a34a', fontWeight: 700 }}>{fmtInt(row.activePlayers)}</span>
+                              </td>
+                              <td>
+                                <div style={{ fontSize: '12px', fontWeight: 700 }}>
+                                  {fmtInt(row.newPlayers)} / {fmtInt(row.monthlyTarget)} ({targetPct}%)
+                                </div>
+                                <div className="aff-mini-progress">
+                                  <div className="aff-mini-progress-fill" style={{ width: `${targetPct}%` }} />
+                                </div>
+                              </td>
+                              <td><b>ETB {fmtETB(row.deposits)}</b></td>
+                              <td>
+                                <b style={{ color: '#15803d' }}>ETB {fmtETB(row.commissionsEarned)}</b>
+                                {row.pendingCommissions > 0 && (
+                                  <div style={{ fontSize: '11px', color: '#b45309' }}>+ETB {fmtETB(row.pendingCommissions)} pending</div>
+                                )}
+                              </td>
+                              <td>
                                 <button
                                   type="button"
                                   className="aff-btn-ghost"
-                                  style={{ padding: '4px 8px', fontSize: '11.5px' }}
+                                  style={{ padding: '4px 10px', fontSize: '12px' }}
                                   onClick={() => {
-                                    const r = window.prompt('Rejection reason:') || 'Declined';
-                                    apiClient.admin.affiliates.rejectCommission(c.id, r).then(loadData);
+                                    setReportAffiliateId(row.id);
+                                    setReportSubTab('ledger');
+                                    setCommPage(1);
                                   }}
                                 >
-                                  Reject
+                                  Inspect
                                 </button>
-                              </>
-                            )}
-                            {(c.status === 'pending' || c.status === 'approved') && (
-                              <button
-                                type="button"
-                                className="aff-btn-ghost"
-                                style={{ padding: '4px 8px', fontSize: '11.5px', color: '#b0302f' }}
-                                onClick={() => {
-                                  const r = window.prompt('Reversal reason (required):');
-                                  if (!r) return;
-                                  apiClient.admin.affiliates
-                                    .reverseCommission(c.id, r)
-                                    .then(() => {
-                                      showToast('✅ Commission reversed cleanly');
-                                      loadData();
-                                    })
-                                    .catch(err => showToast(`❌ ${err?.message || 'Reversal failed'}`));
-                                }}
-                              >
-                                Reverse
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {reportSubTab === 'withdrawals' && (
+                <>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                    <span className="aff-chip green">Paid: ETB {fmtETB(repKpis.paidWithdrawals)}</span>
+                    <span className="aff-chip blue">Approved (Queued): ETB {fmtETB(repKpis.approvedWithdrawals)}</span>
+                    <span className="aff-chip amber">Pending: ETB {fmtETB(repKpis.pendingWithdrawals)}</span>
+                    <span className="aff-chip red">Rejected: ETB {fmtETB(repKpis.rejectedWithdrawals)}</span>
+                  </div>
+
+                  <div className="aff-table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Affiliate</th>
+                          <th>Method &amp; Account</th>
+                          <th>Amount</th>
+                          <th>Status</th>
+                          <th>Payment Ref</th>
+                          <th>Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {periodWithdrawals.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} style={{ textAlign: 'center', padding: '22px', color: '#707070' }}>
+                              No affiliate withdrawals in this date range.
+                            </td>
+                          </tr>
+                        ) : (
+                          periodWithdrawals.map(w => (
+                            <tr key={w.id}>
+                              <td>
+                                <b>{w.affiliate_name}</b>
+                                <div style={{ fontSize: '11.5px', color: '#707070' }}>{w.affiliate_code} · {w.affiliate_phone}</div>
+                              </td>
+                              <td>
+                                <b>{w.payout_method}</b>
+                                <div style={{ fontSize: '11.5px', color: '#707070' }}>{w.payout_account}</div>
+                              </td>
+                              <td><b>ETB {fmtETB(w.amount)}</b></td>
+                              <td>
+                                <span
+                                  className={`aff-chip ${
+                                    w.status === 'paid' ? 'green' : w.status === 'rejected' ? 'red' : w.status === 'approved' ? 'blue' : 'amber'
+                                  }`}
+                                >
+                                  {String(w.status).toUpperCase()}
+                                </span>
+                              </td>
+                              <td style={{ fontSize: '12px' }}>{w.payment_reference || w.rejection_reason || '—'}</td>
+                              <td style={{ fontSize: '11.5px', color: '#707070' }}>{fmtDate(w.created_at)}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </div>
-          </div>
-        </>
-      )}
+          </>
+        );
+      })()}
 
       {/* =================================================================
           MODALS
