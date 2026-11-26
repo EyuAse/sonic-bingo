@@ -1,4 +1,8 @@
 import { query, withTransaction } from '../db.ts';
+import {
+  recordPendingTelegramAffiliate,
+  attributeVerifiedTelegramUserFromPending
+} from './affiliateEventObserver.ts';
 
 export interface BotConfig {
   token: string;
@@ -240,6 +244,48 @@ export class TelegramBotService {
       };
     }
     return { success: false, message: res.description || 'Failed to set chat menu button' };
+  }
+
+  /**
+   * Configures the Telegram Menu Button strictly for one user's `chat_id`,
+   * keeping the global Menu Button for existing verified players untouched.
+   */
+  public async setChatMenuButtonForChat(
+    chatId: number | string,
+    mode: 'commands' | 'web_app',
+    targetUrl?: string
+  ): Promise<void> {
+    if (!chatId) return;
+    try {
+      let menuButtonPayload: any = { type: 'commands' };
+      if (mode === 'web_app') {
+        const cfg = await this.getConfig();
+        const rawUrl = targetUrl || cfg.webAppUrl;
+        if (!rawUrl) return;
+        const url = this.getVersionedWebAppUrl(rawUrl);
+        menuButtonPayload = {
+          type: 'web_app',
+          text: '🎮 Play Bingo',
+          web_app: { url }
+        };
+      }
+      await this.callApi('setChatMenuButton', {
+        chat_id: chatId,
+        menu_button: menuButtonPayload
+      });
+    } catch {
+      // Non-fatal UI enhancement
+    }
+  }
+
+  private async hasUserVerifiedPhone(tgUserId?: number | string): Promise<boolean> {
+    if (!tgUserId) return false;
+    try {
+      const userCheck = await query('SELECT phone FROM users WHERE telegram_id = $1 LIMIT 1', [tgUserId]);
+      return Boolean(userCheck.rows.length > 0 && userCheck.rows[0].phone && String(userCheck.rows[0].phone).trim() !== '');
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -1147,7 +1193,18 @@ export class TelegramBotService {
       const fullName = (firstName + ' ' + lastName).trim() || username;
 
       try {
+        let savedUserId = '';
+        let wasNewRegistration = false;
         await withTransaction(async (client) => {
+          const prevRes = await client.query(
+            `SELECT id, phone FROM users WHERE telegram_id = $1 LIMIT 1`,
+            [tgUserId]
+          );
+          wasNewRegistration =
+            prevRes.rows.length === 0 ||
+            !prevRes.rows[0].phone ||
+            String(prevRes.rows[0].phone).trim() === '';
+
           const userUpsert = await client.query(`
             INSERT INTO users (
               telegram_id, telegram_username, first_name, last_name, full_name,
@@ -1166,7 +1223,7 @@ export class TelegramBotService {
             RETURNING id;
           `, [tgUserId, username, firstName || null, lastName || null, fullName, cleanPhone]);
 
-          const savedUserId = userUpsert.rows[0].id;
+          savedUserId = userUpsert.rows[0].id;
 
           // Ensure wallet exists with 50 ETB bonus
           await client.query(`
@@ -1176,6 +1233,15 @@ export class TelegramBotService {
           `, [savedUserId]);
         });
         console.log(`📱 [Telegram Phone Verified & Saved] User ${tgUserId} (${fullName}) linked authentic SIM: ${cleanPhone}`);
+
+        if (savedUserId) {
+          attributeVerifiedTelegramUserFromPending({
+            userId: savedUserId,
+            telegramId: tgUserId,
+            verifiedPhone: cleanPhone,
+            wasNewRegistration
+          }).catch(() => {});
+        }
       } catch (dbErr) {
         console.warn('⚠️ [TelegramBotService] Failed to upsert phone for user:', dbErr);
       }
@@ -1193,6 +1259,8 @@ export class TelegramBotService {
         first_name: firstName || undefined,
         username: username || undefined
       });
+
+      this.setChatMenuButtonForChat(chatId, 'web_app', playAppUrl).catch(() => {});
 
       // 1. Send celebration with prominent inline Play button
       await this.sendMessage(chatId, confirmMsg, {
@@ -1222,7 +1290,18 @@ export class TelegramBotService {
       const fullName = (firstName + ' ' + lastName).trim() || username;
 
       try {
+        let savedUserId = '';
+        let wasNewRegistration = false;
         await withTransaction(async (client) => {
+          const prevRes = await client.query(
+            `SELECT id, phone FROM users WHERE telegram_id = $1 LIMIT 1`,
+            [tgUserId]
+          );
+          wasNewRegistration =
+            prevRes.rows.length === 0 ||
+            !prevRes.rows[0].phone ||
+            String(prevRes.rows[0].phone).trim() === '';
+
           const userUpsert = await client.query(`
             INSERT INTO users (
               telegram_id, telegram_username, first_name, last_name, full_name,
@@ -1241,7 +1320,7 @@ export class TelegramBotService {
             RETURNING id;
           `, [tgUserId, username, firstName || null, lastName || null, fullName, cleanPhone]);
 
-          const savedUserId = userUpsert.rows[0].id;
+          savedUserId = userUpsert.rows[0].id;
 
           await client.query(`
             INSERT INTO wallets (user_id, balance, bonus, locked_balance)
@@ -1250,6 +1329,15 @@ export class TelegramBotService {
           `, [savedUserId]);
         });
         console.log(`📱 [Telegram Phone Verified via Text] User ${tgUserId} linked phone: ${cleanPhone}`);
+
+        if (savedUserId) {
+          attributeVerifiedTelegramUserFromPending({
+            userId: savedUserId,
+            telegramId: tgUserId,
+            verifiedPhone: cleanPhone,
+            wasNewRegistration
+          }).catch(() => {});
+        }
 
         const confirmMsg =
           `✅ <b>ስልክ ቁጥርዎ በተሳካ ሁኔታ ተረጋግጧል!</b> 📱🎉\n\n` +
@@ -1264,6 +1352,8 @@ export class TelegramBotService {
           first_name: firstName || undefined,
           username: username || undefined
         });
+
+        this.setChatMenuButtonForChat(chatId, 'web_app', playAppUrl).catch(() => {});
 
         // 1. Send celebration with prominent inline Play button
         await this.sendMessage(chatId, confirmMsg, {
@@ -1317,12 +1407,15 @@ export class TelegramBotService {
         return true;
       }
 
-      const parts = text.split(' ');
+      const parts = text.split(/\s+/);
       const startParam = parts.length > 1 ? parts[1].trim() : '';
       const playAppUrl = this.getVersionedWebAppUrl(webAppUrl, startParam);
 
-      // ── 💼 AGENT REFERRAL ATTRIBUTION ON /START ──
-      if (msg.from?.id && startParam) {
+      // ── 🤝 AFFILIATE REFERRAL TRACE ON /START (Strictly new/unregistered users only) ──
+      if (msg.from?.id && /^aff[_-]?/i.test(startParam)) {
+        await recordPendingTelegramAffiliate(msg.from.id, startParam);
+      } else if (msg.from?.id && startParam) {
+        // ── 💼 AGENT REFERRAL ATTRIBUTION ON /START ──
         let agentCandidate = startParam.replace(/^ref_/, '');
         if (agentCandidate.toLowerCase().startsWith('agent_')) {
           agentCandidate = agentCandidate.substring(6);
@@ -1387,8 +1480,9 @@ export class TelegramBotService {
         }
       }
 
-      // 🛑 MANDATORY GATE: If user has NOT shared phone yet, DO NOT show the Play button. Send ONLY the contact keyboard!
+      // 🛑 MANDATORY GATE: If user has NOT shared phone yet, hide Menu Button for this chat_id and send ONLY the contact keyboard!
       if (!hasVerifiedPhone) {
+        this.setChatMenuButtonForChat(chatId, 'commands').catch(() => {});
         const gateMsg =
           `👋 <b>እንኳን ወደ ሶኒክ ቢንጎ በደህና መጡ!</b> 👑🎁\n` +
           `<b>Welcome to Sonic Bingo!</b>\n\n` +
@@ -1442,6 +1536,8 @@ export class TelegramBotService {
         username: msg.from?.username || undefined
       });
 
+      this.setChatMenuButtonForChat(chatId, 'web_app', verifiedPlayAppUrl).catch(() => {});
+
       const inlineKeyboard = [
         [{ text: '🎮 Play Bingo Now (50 ETB Gift)', web_app: { url: verifiedPlayAppUrl } }],
         [{ text: '📢 Join Official Channel', url: channelLink }]
@@ -1465,6 +1561,17 @@ export class TelegramBotService {
     }
 
     if (text === '/help') {
+      const verified = await this.hasUserVerifiedPhone(msg.from?.id);
+      if (!verified) {
+        this.setChatMenuButtonForChat(chatId, 'commands').catch(() => {});
+        await this.sendMessage(
+          chatId,
+          `📖 <b>Sonic Bingo Help</b>\n\n🔒 ጨዋታውን ለመክፈት መጀመሪያ ከታች ያለውን <b>"📱 ስልክ ቁጥርዎን ያጋሩ (Share Phone Number)"</b> በመጫን ስልክ ቁጥርዎን ያረጋግጡ 👇`,
+          { replyMarkup: this.getContactShareKeyboard() }
+        );
+        return true;
+      }
+
       const helpText =
         `📖 <b>Sonic Bingo Help & Guides</b> 👑\n\n` +
         `1️⃣ <b>Select a Room:</b> Choose 10, 20, 50, or 100 ETB stake room.\n` +
@@ -1636,6 +1743,10 @@ export class TelegramBotService {
 
     // ── 📖 HOW TO PLAY / RULES COMMAND ──
     if (text === '/rules' || text === '📖 How to Play / Rules' || text.startsWith('📖')) {
+      const verified = await this.hasUserVerifiedPhone(msg.from?.id);
+      if (!verified) {
+        this.setChatMenuButtonForChat(chatId, 'commands').catch(() => {});
+      }
       const rulesMsg =
         `📖 <b>የሶኒክ ቢንጎ አጨዋወት እና ህጎች</b> 👑\n` +
         `<b>How to Play 75-Ball Express Bingo:</b>\n\n` +
@@ -1650,11 +1761,15 @@ export class TelegramBotService {
         `5️⃣ <b>ፈጣን ክፍያ (Instant Cashout):</b> እንዳሸነፉ 80% የክፍሉ ገቢ በሰከንድ ውስጥ ወደ ቦርሳዎ ይገባል!\n\n` +
         `👇 <i>አሁኑኑ ይጫወቱ እና ያሸንፉ!</i>`;
 
-      await this.sendMessage(chatId, rulesMsg, {
-        inlineKeyboard: [
-          [{ text: '🎮 Play Bingo Now', web_app: { url: this.getVersionedWebAppUrl(webAppUrl) } }]
-        ]
-      });
+      if (!verified) {
+        await this.sendMessage(chatId, rulesMsg, { replyMarkup: this.getContactShareKeyboard() });
+      } else {
+        await this.sendMessage(chatId, rulesMsg, {
+          inlineKeyboard: [
+            [{ text: '🎮 Play Bingo Now', web_app: { url: this.getVersionedWebAppUrl(webAppUrl) } }]
+          ]
+        });
+      }
       return true;
     }
 

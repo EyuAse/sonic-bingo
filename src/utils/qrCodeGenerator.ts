@@ -451,7 +451,7 @@ export async function downloadPromoPosterPng(
 
   ctx.fillStyle = '#94a3b8';
   ctx.font = '600 19px Urbanist, system-ui, sans-serif';
-  ctx.fillText('Scan QR Code with your camera or Telegram to join Sonic Bingo', width / 2, 1144);
+  ctx.fillText('Scan QR to open @sonicbingobot on Telegram & Win Real ETB', width / 2, 1144);
 
   const pngUrl = canvas.toDataURL('image/png');
   const link = document.createElement('a');

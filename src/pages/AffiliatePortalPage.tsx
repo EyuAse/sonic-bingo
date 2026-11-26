@@ -206,17 +206,15 @@ export const AffiliatePortalPage: React.FC = () => {
     if (activeTab === 'wallet') loadWallet();
   }, [token, activeTab, loadPlayers, loadCommissions, loadWallet]);
 
-  const originBase = typeof window !== 'undefined' ? window.location.origin : '';
   const affiliateCode = overview?.affiliateCode || '';
-  const botUsername = overview?.botUsername || 'LomiBingobot';
-  const webReferralUrl = affiliateCode ? `${originBase}/?ref=aff_${affiliateCode}` : '';
-  const tgReferralUrl = affiliateCode ? `https://t.me/${botUsername}?startapp=aff_${affiliateCode}` : '';
+  const botUsername = (overview?.botUsername || 'sonicbingobot').replace(/^@/, '');
+  const tgReferralUrl = affiliateCode ? `https://t.me/${botUsername}?start=aff_${affiliateCode}` : '';
 
   useEffect(() => {
-    if ((activeTab === 'overview' || activeTab === 'profile') && webReferralUrl && qrCanvasRef.current) {
-      renderQrToCanvas(qrCanvasRef.current, webReferralUrl, 200);
+    if ((activeTab === 'overview' || activeTab === 'profile') && tgReferralUrl && qrCanvasRef.current) {
+      renderQrToCanvas(qrCanvasRef.current, tgReferralUrl, 200);
     }
-  }, [activeTab, webReferralUrl]);
+  }, [activeTab, tgReferralUrl]);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -659,18 +657,10 @@ export const AffiliatePortalPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div style={{ marginBottom: '6px', fontSize: '12px', fontWeight: 700, color: '#475569' }}>Web Referral Link</div>
-                <div className="aff-portal-link-row">
-                  <code>{webReferralUrl || 'Loading...'}</code>
-                  <button type="button" className="aff-portal-btn-ghost" onClick={() => handleCopy(webReferralUrl, 'Web Link')}>
-                    Copy
-                  </button>
-                </div>
-
-                <div style={{ marginBottom: '6px', fontSize: '12px', fontWeight: 700, color: '#475569' }}>Telegram Mini-App Link</div>
+                <div style={{ marginBottom: '6px', fontSize: '12px', fontWeight: 700, color: '#475569' }}>Telegram Bot Referral Link</div>
                 <div className="aff-portal-link-row">
                   <code>{tgReferralUrl || 'Loading...'}</code>
-                  <button type="button" className="aff-portal-btn-ghost" onClick={() => handleCopy(tgReferralUrl, 'Telegram Link')}>
+                  <button type="button" className="aff-portal-btn-ghost" onClick={() => handleCopy(tgReferralUrl, 'Telegram Bot Link')}>
                     Copy
                   </button>
                 </div>
@@ -679,16 +669,15 @@ export const AffiliatePortalPage: React.FC = () => {
                   type="button"
                   className="aff-portal-btn-dark"
                   style={{ width: '100%', marginTop: '8px' }}
-                  disabled={!webReferralUrl}
+                  disabled={!tgReferralUrl}
                   onClick={() => {
                     const promoText = [
                       '🔥 SONIC BINGO VIP • LIVE 75-BALL & KENO ARENA 🔥',
                       '🎯 ሶኒክ ቢንጎን ዛሬውኑ ይቀላቀሉ — በየጨዋታው እውነተኛ ETB ያሸንፉ!',
                       '✅ 10–100 ETB Rooms | ⚡ Instant Telebirr Payouts',
-                      `👉 Play Now: ${webReferralUrl}`,
-                      `📱 Telegram App: ${tgReferralUrl}`,
+                      `🤖 Start & Play on Telegram: ${tgReferralUrl}`,
                     ].join('\n');
-                    handleCopy(promoText, 'Promo Ad Post + Link');
+                    handleCopy(promoText, 'Promo Ad Post + Bot Link');
                   }}
                 >
                   ✨ Copy Eye-Catching Promo Post + Link
@@ -699,9 +688,9 @@ export const AffiliatePortalPage: React.FC = () => {
                     type="button"
                     className="aff-portal-btn-ghost"
                     style={{ width: '100%', fontWeight: 700 }}
-                    disabled={!webReferralUrl}
+                    disabled={!tgReferralUrl}
                     onClick={() => {
-                      downloadPromoPosterPng(webReferralUrl, affiliateCode, `sonic-bingo-${affiliateCode}-poster.png`);
+                      downloadPromoPosterPng(tgReferralUrl, affiliateCode, `sonic-bingo-${affiliateCode}-poster.png`);
                       showToast('🎨 Downloading VIP Promo Ad Poster PNG');
                     }}
                   >
@@ -711,9 +700,9 @@ export const AffiliatePortalPage: React.FC = () => {
                     type="button"
                     className="aff-portal-btn-ghost"
                     style={{ width: '100%', fontWeight: 700 }}
-                    disabled={!webReferralUrl}
+                    disabled={!tgReferralUrl}
                     onClick={() => {
-                      downloadQrPng(webReferralUrl, `sonic-bingo-${affiliateCode}-qr.png`);
+                      downloadQrPng(tgReferralUrl, `sonic-bingo-${affiliateCode}-qr.png`);
                       showToast('📥 Downloaded referral QR code PNG');
                     }}
                   >
@@ -1351,8 +1340,8 @@ export const AffiliatePortalPage: React.FC = () => {
                 </div>
               </div>
               <div className="aff-portal-link-row">
-                <code>{webReferralUrl}</code>
-                <button type="button" className="aff-portal-btn-ghost" onClick={() => handleCopy(webReferralUrl, 'Referral Link')}>
+                <code>{tgReferralUrl || 'Loading...'}</code>
+                <button type="button" className="aff-portal-btn-ghost" onClick={() => handleCopy(tgReferralUrl, 'Telegram Bot Link')}>
                   Copy
                 </button>
               </div>
@@ -1361,8 +1350,8 @@ export const AffiliatePortalPage: React.FC = () => {
                   type="button"
                   className="aff-portal-btn-dark"
                   style={{ width: '100%' }}
-                  disabled={!webReferralUrl}
-                  onClick={() => downloadPromoPosterPng(webReferralUrl, affiliateCode, `sonic-bingo-${affiliateCode}-poster.png`)}
+                  disabled={!tgReferralUrl}
+                  onClick={() => downloadPromoPosterPng(tgReferralUrl, affiliateCode, `sonic-bingo-${affiliateCode}-poster.png`)}
                 >
                   🎨 Ad Poster PNG
                 </button>
@@ -1370,8 +1359,8 @@ export const AffiliatePortalPage: React.FC = () => {
                   type="button"
                   className="aff-portal-btn-ghost"
                   style={{ width: '100%', fontWeight: 700 }}
-                  disabled={!webReferralUrl}
-                  onClick={() => downloadQrPng(webReferralUrl, `sonic-bingo-${affiliateCode}-qr.png`)}
+                  disabled={!tgReferralUrl}
+                  onClick={() => downloadQrPng(tgReferralUrl, `sonic-bingo-${affiliateCode}-qr.png`)}
                 >
                   ↓ QR Only PNG
                 </button>

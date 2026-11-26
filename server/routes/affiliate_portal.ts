@@ -230,7 +230,7 @@ affiliatePortalRouter.get('/overview', requireAffiliate, async (req: AffiliateAu
         scheduleStatus,
         activeRules: activeRulesRes.rows,
         impersonatedByAdmin: req.impersonatedByAdmin || null,
-        botUsername: process.env.TELEGRAM_BOT_USERNAME || 'LomiBingobot'
+        botUsername: (process.env.TELEGRAM_BOT_USERNAME || 'sonicbingobot').replace(/^@/, '')
       }
     });
   } catch (err: any) {
